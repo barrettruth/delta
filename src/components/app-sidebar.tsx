@@ -32,9 +32,15 @@ export function AppSidebar({ categories }: { categories: string[] }) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 py-3">
-        <Link href="/" className="text-xl font-bold tracking-tight">
-          &Delta;
+      <SidebarHeader className="px-4 py-4 border-b border-border/60">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-2xl font-bold tracking-tight text-primary hover:text-primary/80 transition-colors select-none"
+        >
+          <span className="text-3xl leading-none">&Delta;</span>
+          <span className="text-sm font-medium text-muted-foreground">
+            delta
+          </span>
         </Link>
       </SidebarHeader>
       <SidebarContent>

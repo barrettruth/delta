@@ -35,39 +35,47 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm flex flex-col gap-4 p-8"
-      >
-        <h1 className="text-3xl font-bold tracking-tight text-center mb-4">
-          &Delta;
-        </h1>
-        {error && (
-          <p className="text-sm text-destructive text-center">{error}</p>
-        )}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <Button type="submit" disabled={loading || !username || !password}>
-          {loading ? "Signing in..." : "Sign in"}
-        </Button>
-      </form>
+    <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="w-full max-w-sm rounded-lg border bg-card p-8 shadow-lg">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <h1 className="text-4xl font-bold tracking-tight text-center text-primary select-none">
+            &Delta;
+          </h1>
+          <p className="text-sm text-muted-foreground text-center -mt-2">
+            Sign in to delta
+          </p>
+          {error && (
+            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive text-center">
+              {error}
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={loading || !username || !password}
+            className="mt-1"
+          >
+            {loading ? "Signing in\u2026" : "Sign in"}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

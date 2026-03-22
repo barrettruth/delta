@@ -4,6 +4,7 @@ import {
   Circle,
   CircleCheck,
   Clock,
+  Inbox,
   Loader2,
   Plus,
   Trash2,
@@ -33,7 +34,7 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
 function PriorityIndicator({ priority }: { priority: number | null }) {
   if (!priority || priority === 0) return null;
   return (
-    <span className="text-xs font-medium text-primary">
+    <span className="text-xs font-semibold text-primary">
       {"!".repeat(Math.min(priority, 3))}
     </span>
   );
@@ -73,24 +74,34 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b">
-        <h1 className="text-lg font-semibold">{title ?? "Tasks"}</h1>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4 mr-1" />
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
+        <h1 className="text-lg font-semibold tracking-tight">
+          {title ?? "Tasks"}
+        </h1>
+        <Button
+          size="sm"
+          onClick={() => setCreateOpen(true)}
+          className="gap-1.5"
+        >
+          <Plus className="size-4" />
           New
         </Button>
       </div>
       <div className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground">
-            No tasks yet. Press{" "}
-            <kbd className="mx-1 px-1 rounded bg-muted font-mono text-xs">
-              o
-            </kbd>{" "}
-            to create one.
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
+            <Inbox className="size-10 opacity-40" />
+            <p className="text-sm">No tasks yet</p>
+            <p className="text-xs">
+              Press{" "}
+              <kbd className="mx-0.5 px-1.5 py-0.5 rounded bg-muted border border-border/60 font-mono text-xs">
+                o
+              </kbd>{" "}
+              to create one
+            </p>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-border/60">
             {tasks.map((task, i) => (
               <button
                 type="button"
@@ -98,7 +109,7 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
                 ref={(el) => {
                   if (el) rowRefs.current.set(task.id, el);
                 }}
-                className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left ${
+                className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left focus-visible:outline-none focus-visible:bg-accent ${
                   i === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
                 }`}
                 onClick={() => setSelectedTask(task)}
@@ -113,19 +124,19 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
                   {statusIcon[task.status as TaskStatus]}
                 </span>
                 <span
-                  className={`flex-1 truncate ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
+                  className={`flex-1 truncate text-sm ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
                 >
                   {task.description}
                 </span>
                 <PriorityIndicator priority={task.priority} />
                 {task.category && task.category !== "Todo" && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-muted/50">
                     {task.category}
                   </span>
                 )}
                 <StatusBadge status={task.status as TaskStatus} />
                 {task.due && (
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
                     {new Date(task.due).toLocaleDateString()}
                   </span>
                 )}

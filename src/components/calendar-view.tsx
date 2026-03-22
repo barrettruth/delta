@@ -76,28 +76,47 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
   }
 
   return (
-    <div className="flex flex-col h-full p-4">
-      <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" size="icon" onClick={prevMonth}>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/60 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={prevMonth}
+          className="hover:bg-accent"
+        >
           <ChevronLeft className="size-4" />
         </Button>
-        <h2 className="text-lg font-semibold">{formatMonth(current)}</h2>
-        <Button variant="ghost" size="icon" onClick={nextMonth}>
+        <h2 className="text-lg font-semibold tracking-tight">
+          {formatMonth(current)}
+        </h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={nextMonth}
+          className="hover:bg-accent"
+        >
           <ChevronRight className="size-4" />
         </Button>
       </div>
-      <div className="grid grid-cols-7 gap-px flex-1">
+      <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
         {DAY_NAMES.map((d) => (
           <div
             key={d}
-            className="text-xs font-medium text-muted-foreground text-center py-1"
+            className="text-xs font-medium text-muted-foreground text-center py-2"
           >
             {d}
           </div>
         ))}
+      </div>
+      <div className="grid grid-cols-7 flex-1 auto-rows-fr">
         {cells.map((cell) => {
           if (cell.day === null) {
-            return <div key={cell.key} className="bg-muted/30 rounded" />;
+            return (
+              <div
+                key={cell.key}
+                className="border-b border-r border-border/30 bg-muted/10"
+              />
+            );
           }
 
           const day = cell.day;
@@ -115,42 +134,46 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
             <button
               type="button"
               key={cell.key}
-              className={`flex flex-col rounded p-1 min-h-[72px] text-left transition-colors hover:bg-accent/50 ${
-                isToday ? "ring-1 ring-primary bg-primary/5" : ""
-              } ${isPast ? "opacity-60" : ""}`}
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 focus-visible:outline-none focus-visible:bg-accent ${
+                isToday ? "bg-primary/5" : ""
+              } ${isPast ? "opacity-50" : ""}`}
               onClick={() => handleDayClick(day)}
             >
               <span
-                className={`text-xs font-medium mb-0.5 ${
-                  isToday ? "text-primary" : "text-muted-foreground"
+                className={`text-xs font-medium mb-1 inline-flex items-center justify-center size-5 rounded-full ${
+                  isToday
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
                 {day}
               </span>
-              {dayTasks.slice(0, 3).map((task) => (
-                <button
-                  type="button"
-                  key={task.id}
-                  className={`text-xs truncate px-1 rounded w-full text-left ${
-                    task.status === "done"
-                      ? "text-status-done line-through"
-                      : task.status === "blocked"
-                        ? "text-status-blocked"
-                        : "text-foreground"
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedTask(task);
-                  }}
-                >
-                  {task.description}
-                </button>
-              ))}
-              {dayTasks.length > 3 && (
-                <span className="text-xs text-muted-foreground px-1">
-                  +{dayTasks.length - 3} more
-                </span>
-              )}
+              <div className="flex flex-col gap-0.5 overflow-hidden flex-1">
+                {dayTasks.slice(0, 3).map((task) => (
+                  <button
+                    type="button"
+                    key={task.id}
+                    className={`text-xs truncate px-1 py-0.5 rounded transition-colors hover:bg-accent w-full text-left ${
+                      task.status === "done"
+                        ? "text-status-done line-through"
+                        : task.status === "blocked"
+                          ? "text-status-blocked"
+                          : "text-foreground"
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTask(task);
+                    }}
+                  >
+                    {task.description}
+                  </button>
+                ))}
+                {dayTasks.length > 3 && (
+                  <span className="text-xs text-muted-foreground px-1">
+                    +{dayTasks.length - 3} more
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}

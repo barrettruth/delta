@@ -29,10 +29,10 @@ export default async function DashboardLayout({
     <>
       <AppSidebar categories={categories} />
       <SidebarInset className="flex flex-col h-dvh">
-        <header className="flex items-center gap-2 px-4 h-12 border-b shrink-0">
-          <SidebarTrigger />
+        <header className="flex items-center gap-2 px-4 h-12 border-b border-border/60 shrink-0">
+          <SidebarTrigger className="hover:bg-accent transition-colors rounded-md" />
         </header>
-        <main className="flex-1 overflow-hidden">{children}</main>
+        <main className="flex-1 overflow-hidden bg-background">{children}</main>
         <KeyboardHints />
       </SidebarInset>
     </>

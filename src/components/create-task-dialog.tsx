@@ -53,11 +53,11 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="description">Description</Label>
             <Input
@@ -104,7 +104,7 @@ export function CreateTaskDialog({
               onChange={(e) => setDue(e.target.value)}
             />
           </div>
-          <Button type="submit" disabled={!description.trim()}>
+          <Button type="submit" disabled={!description.trim()} className="mt-1">
             Create
           </Button>
         </form>
