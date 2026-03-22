@@ -24,3 +24,15 @@ jobs:
       - run: pnpm tsc --noEmit
       - run: pnpm vitest run
       - run: pnpm build
+
+  deploy:
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: 152.53.168.144
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: /opt/delta/scripts/deploy.sh
