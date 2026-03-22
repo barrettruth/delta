@@ -22,14 +22,16 @@ import {
 export function CreateTaskDialog({
   open,
   onOpenChange,
+  defaultDue,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultDue?: string;
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Todo");
   const [priority, setPriority] = useState("0");
-  const [due, setDue] = useState("");
+  const [due, setDue] = useState(defaultDue ?? "");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -8,7 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
@@ -20,6 +20,7 @@ import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Task, TaskStatus } from "@/core/types";
+import { useKeyboard } from "@/hooks/use-keyboard";
 
 const statusIcon: Record<TaskStatus, React.ReactNode> = {
   pending: <Circle className="size-4 text-status-pending" />,
@@ -41,6 +42,26 @@ function PriorityIndicator({ priority }: { priority: number | null }) {
 export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const rowRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  const { selectedIndex } = useKeyboard({
+    tasks,
+    onComplete: (id) => completeTaskAction(id),
+    onDelete: (id) => {
+      deleteTaskAction(id);
+      if (selectedTask?.id === id) setSelectedTask(null);
+    },
+    onCreate: () => setCreateOpen(true),
+    onSelect: (task) => setSelectedTask(task),
+    onDeselect: () => setSelectedTask(null),
+  });
+
+  useEffect(() => {
+    if (selectedIndex >= 0 && selectedIndex < tasks.length) {
+      const el = rowRefs.current.get(tasks[selectedIndex].id);
+      el?.scrollIntoView({ block: "nearest" });
+    }
+  }, [selectedIndex, tasks]);
 
   async function handleToggle(task: Task) {
     if (task.status === "done") {
@@ -48,11 +69,6 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
     } else {
       await completeTaskAction(task.id);
     }
-  }
-
-  async function handleDelete(id: number) {
-    await deleteTaskAction(id);
-    if (selectedTask?.id === id) setSelectedTask(null);
   }
 
   return (
@@ -67,15 +83,24 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
       <div className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            No tasks
+            No tasks yet. Press{" "}
+            <kbd className="mx-1 px-1 rounded bg-muted font-mono text-xs">
+              o
+            </kbd>{" "}
+            to create one.
           </div>
         ) : (
           <div className="divide-y">
-            {tasks.map((task) => (
+            {tasks.map((task, i) => (
               <button
                 type="button"
                 key={task.id}
-                className="flex w-full items-center gap-3 px-6 py-3 hover:bg-accent/50 cursor-pointer transition-colors text-left"
+                ref={(el) => {
+                  if (el) rowRefs.current.set(task.id, el);
+                }}
+                className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left ${
+                  i === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
+                }`}
                 onClick={() => setSelectedTask(task)}
               >
                 <Checkbox
@@ -104,17 +129,6 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
                     {new Date(task.due).toLocaleDateString()}
                   </span>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 size-7 opacity-0 group-hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(task.id);
-                  }}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
               </button>
             ))}
           </div>
