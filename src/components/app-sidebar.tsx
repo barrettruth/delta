@@ -1,0 +1,87 @@
+"use client";
+
+import {
+  Calendar,
+  CheckSquare,
+  Columns3,
+  List,
+  type LucideIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+
+const views: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: "List", href: "/", icon: List },
+  { label: "Kanban", href: "/kanban", icon: Columns3 },
+  { label: "Calendar", href: "/calendar", icon: Calendar },
+];
+
+export function AppSidebar({ categories }: { categories: string[] }) {
+  const pathname = usePathname();
+
+  return (
+    <Sidebar>
+      <SidebarHeader className="px-4 py-3">
+        <Link href="/" className="text-xl font-bold tracking-tight">
+          &Delta;
+        </Link>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Views</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {views.map((view) => (
+                <SidebarMenuItem key={view.href}>
+                  <SidebarMenuButton
+                    render={<Link href={view.href} />}
+                    isActive={pathname === view.href}
+                  >
+                    <view.icon className="size-4" />
+                    <span>{view.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Categories</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton render={<Link href="/" />}>
+                  <CheckSquare className="size-4" />
+                  <span>All</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {categories.map((cat) => (
+                <SidebarMenuItem key={cat}>
+                  <SidebarMenuButton
+                    render={
+                      <Link href={`/?category=${encodeURIComponent(cat)}`} />
+                    }
+                  >
+                    <CheckSquare className="size-4" />
+                    <span>{cat}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
