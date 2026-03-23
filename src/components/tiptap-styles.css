@@ -99,6 +99,13 @@
   font-weight: 600;
 }
 
+.tiptap pre.shiki,
+.tiptap pre.shiki code,
+.tiptap pre.shiki code span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
 html.dark .tiptap pre.shiki,
 html.dark .tiptap pre.shiki code,
 html.dark .tiptap pre.shiki code span {

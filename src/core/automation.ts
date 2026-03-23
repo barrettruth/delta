@@ -91,6 +91,8 @@ let _recipesLoaded = false;
 export async function loadBuiltinRecipes(): Promise<void> {
   if (_recipesLoaded) return;
   const { githubIssuesHandler } = await import("./recipes/github-issues");
+  const { githubDevHandler } = await import("./recipes/github-dev");
   registerRecipe("github_issues", githubIssuesHandler);
+  registerRecipe("github_dev", githubDevHandler);
   _recipesLoaded = true;
 }
