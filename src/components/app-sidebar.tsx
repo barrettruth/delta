@@ -42,10 +42,8 @@ export function AppSidebar({ categories }: { categories: string[] }) {
           href="/"
           className="flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors select-none"
         >
-          <span className="text-3xl font-serif leading-none">&Delta;</span>
-          <span className="text-sm font-medium text-muted-foreground">
-            delta
-          </span>
+          <span className="text-4xl font-serif leading-none">&Delta;</span>
+          <span className="text-lg font-medium">delta</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
