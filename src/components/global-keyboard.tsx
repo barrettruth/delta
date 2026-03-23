@@ -20,7 +20,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
 
-      if (e.key === "b" && !document.querySelector("[role=dialog]")) {
+      if (e.key === "-" && !document.querySelector("[role=dialog]")) {
         e.preventDefault();
         toggleSidebar();
         return;

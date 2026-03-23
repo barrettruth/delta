@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createTaskAction } from "@/app/actions/tasks";
 import { CategoryColorPicker } from "@/components/category-color-picker";
-import { CreateTaskDialog } from "@/components/create-task-dialog";
+import { Input } from "@/components/ui/input";
 import {
   Sidebar,
   SidebarContent,
@@ -43,7 +44,18 @@ export function AppSidebar({
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const [editingColor, setEditingColor] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newCat, setNewCat] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleAdd() {
+    const name = newCat.trim();
+    if (name && !categories.includes(name)) {
+      createTaskAction({ description: `New ${name} task`, category: name });
+    }
+    setNewCat("");
+    setAdding(false);
+  }
 
   return (
     <Sidebar>
@@ -69,7 +81,7 @@ export function AppSidebar({
                   >
                     <view.icon className="size-4" />
                     <span className="flex-1">{view.label}</span>
-                    <kbd className="text-[10px] font-mono text-muted-foreground">
+                    <kbd className="text-[10px] text-muted-foreground">
                       {view.key}
                     </kbd>
                   </SidebarMenuButton>
@@ -79,14 +91,17 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <div className="flex h-8 shrink-0 items-center justify-between px-2 pr-3">
+          <div className="flex h-8 shrink-0 items-center justify-between px-2">
             <span className="text-xs font-medium text-sidebar-foreground/70">
               Categories
             </span>
             <button
               type="button"
               className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setCreateOpen(true)}
+              onClick={() => {
+                setAdding(true);
+                requestAnimationFrame(() => inputRef.current?.focus());
+              }}
             >
               <Plus className="size-3.5" />
             </button>
@@ -118,7 +133,7 @@ export function AppSidebar({
                         </span>
                         <span className="flex-1">{cat}</span>
                         {shortcutKey && (
-                          <kbd className="text-[10px] font-mono text-muted-foreground">
+                          <kbd className="text-[10px] text-muted-foreground">
                             {shortcutKey}
                           </kbd>
                         )}
@@ -146,15 +161,30 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 );
               })}
+              {adding && (
+                <SidebarMenuItem>
+                  <Input
+                    ref={inputRef}
+                    value={newCat}
+                    onChange={(e) => setNewCat(e.target.value)}
+                    onBlur={handleAdd}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAdd();
+                      if (e.key === "Escape") {
+                        setNewCat("");
+                        setAdding(false);
+                      }
+                      e.stopPropagation();
+                    }}
+                    placeholder="category name"
+                    className="h-8 text-sm mx-2 w-auto"
+                  />
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <CreateTaskDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        categories={categories}
-      />
     </Sidebar>
   );
 }
