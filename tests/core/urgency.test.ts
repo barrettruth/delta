@@ -1,0 +1,135 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { addDependency } from "@/core/dag";
+import { createTask, listTasks, updateTask } from "@/core/task";
+import type { Db, Task } from "@/core/types";
+import { computeUrgency, rankTasks } from "@/core/urgency";
+import { createTestDb } from "../helpers";
+
+let db: Db;
+
+function daysFromNow(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString();
+}
+
+function makeTask(overrides: Partial<Task> = {}): Task {
+  return {
+    id: 1,
+    description: "Test",
+    status: "pending",
+    category: "Todo",
+    priority: 0,
+    due: null,
+    recurrence: null,
+    recurMode: null,
+    notes: null,
+    order: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    completedAt: null,
+    ...overrides,
+  };
+}
+
+describe("computeUrgency", () => {
+  it("returns 0 for done tasks", () => {
+    expect(computeUrgency(makeTask({ status: "done" }), 0, false)).toBe(0);
+  });
+
+  it("returns 0 for cancelled tasks", () => {
+    expect(computeUrgency(makeTask({ status: "cancelled" }), 0, false)).toBe(0);
+  });
+
+  it("increases with priority", () => {
+    const low = computeUrgency(makeTask({ priority: 1 }), 0, false);
+    const mid = computeUrgency(makeTask({ priority: 2 }), 0, false);
+    const high = computeUrgency(makeTask({ priority: 3 }), 0, false);
+    expect(high).toBeGreaterThan(mid);
+    expect(mid).toBeGreaterThan(low);
+  });
+
+  it("overdue tasks score higher than future tasks", () => {
+    const overdue = computeUrgency(
+      makeTask({ due: daysFromNow(-3) }),
+      0,
+      false,
+    );
+    const future = computeUrgency(makeTask({ due: daysFromNow(10) }), 0, false);
+    expect(overdue).toBeGreaterThan(future);
+  });
+
+  it("wip tasks get a boost", () => {
+    const pending = computeUrgency(makeTask({ status: "pending" }), 0, false);
+    const wip = computeUrgency(makeTask({ status: "wip" }), 0, false);
+    expect(wip).toBeGreaterThan(pending);
+  });
+
+  it("blocking tasks get a boost per blocked task", () => {
+    const blocking0 = computeUrgency(makeTask(), 0, false);
+    const blocking2 = computeUrgency(makeTask(), 2, false);
+    expect(blocking2).toBeGreaterThan(blocking0);
+  });
+
+  it("blocked tasks get a large penalty", () => {
+    const normal = computeUrgency(makeTask(), 0, false);
+    const blocked = computeUrgency(makeTask(), 0, true);
+    expect(blocked).toBeLessThan(0);
+    expect(normal).toBeGreaterThan(blocked);
+  });
+});
+
+describe("rankTasks", () => {
+  beforeEach(() => {
+    db = createTestDb();
+  });
+
+  it("sorts tasks by urgency descending", () => {
+    createTask(db, { description: "Low", priority: 0 });
+    createTask(db, {
+      description: "Urgent",
+      priority: 3,
+      due: daysFromNow(1),
+      status: "wip",
+    });
+    createTask(db, { description: "Medium", priority: 2 });
+
+    const tasks = listTasks(db);
+    const ranked = rankTasks(db, tasks);
+
+    expect(ranked[0].description).toBe("Urgent");
+    expect(ranked[0].urgency).toBeGreaterThan(
+      ranked[ranked.length - 1].urgency,
+    );
+  });
+
+  it("excludes done and cancelled tasks", () => {
+    createTask(db, { description: "Active", priority: 1 });
+    const done = createTask(db, { description: "Done" });
+    updateTask(db, done.id, { status: "done" });
+
+    const tasks = listTasks(db);
+    const ranked = rankTasks(db, tasks);
+
+    expect(ranked.every((t) => t.status !== "done")).toBe(true);
+  });
+
+  it("accounts for blocking relationships", () => {
+    const blocker = createTask(db, {
+      description: "Blocker",
+      priority: 1,
+    });
+    const dependent = createTask(db, {
+      description: "Dependent",
+      priority: 1,
+    });
+    addDependency(db, dependent.id, blocker.id);
+
+    const tasks = listTasks(db);
+    const ranked = rankTasks(db, tasks);
+
+    const blockerRank = ranked.find((t) => t.id === blocker.id);
+    expect(blockerRank).toBeDefined();
+    expect(blockerRank?.urgency).toBeGreaterThan(0);
+  });
+});

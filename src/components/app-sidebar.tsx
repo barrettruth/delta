@@ -6,6 +6,7 @@ import {
   Columns3,
   List,
   type LucideIcon,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const views: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: "Queue", href: "/queue", icon: Zap },
   { label: "List", href: "/", icon: List },
   { label: "Kanban", href: "/kanban", icon: Columns3 },
   { label: "Calendar", href: "/calendar", icon: Calendar },
