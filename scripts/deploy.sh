@@ -12,6 +12,9 @@ git pull origin main
 echo "==> Installing dependencies"
 pnpm install --frozen-lockfile
 
+echo "==> Fetching fonts"
+bash scripts/fetch-fonts.sh
+
 echo "==> Building"
 pnpm build
 
