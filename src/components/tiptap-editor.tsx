@@ -109,7 +109,7 @@ export function TiptapEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       CodeBlockShiki.configure({
-        defaultTheme: "midnight",
+        themes: { light: "daylight", dark: "midnight" } as never,
         defaultLanguage: null,
         customThemes: [midnight, daylight],
       }),

@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
@@ -53,7 +53,25 @@ export function TaskDetail({
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("0");
   const [due, setDue] = useState("");
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const notesRef = useRef<string | null>(null);
+
+  const allCategories = useMemo(() => {
+    if (!tasks) return [];
+    const cats = new Set<string>();
+    for (const t of tasks) {
+      if (t.category) cats.add(t.category);
+    }
+    return [...cats].sort();
+  }, [tasks]);
+
+  const filteredCategories = useMemo(() => {
+    if (!category) return allCategories;
+    const lower = category.toLowerCase();
+    return allCategories.filter(
+      (c) => c.toLowerCase().includes(lower) && c !== category,
+    );
+  }, [allCategories, category]);
 
   useEffect(() => {
     if (task) {
@@ -167,24 +185,51 @@ export function TaskDetail({
               </SelectContent>
             </Select>
 
-            <Input
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="category"
-              className="h-7 w-28 text-xs"
-            />
+            <div className="relative">
+              <Input
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setShowCategorySuggestions(true);
+                }}
+                onFocus={() => setShowCategorySuggestions(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowCategorySuggestions(false), 150)
+                }
+                placeholder="category"
+                className="h-8 w-28 text-xs"
+              />
+              {showCategorySuggestions && filteredCategories.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                  {filteredCategories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setCategory(c);
+                        setShowCategorySuggestions(false);
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Input
               type="datetime-local"
               value={due}
               onChange={(e) => setDue(e.target.value)}
-              className="h-7 w-auto text-xs"
+              className="h-8 w-auto text-xs"
             />
 
             <div className="flex-1" />
 
             {task.createdAt && (
-              <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+              <span className="text-xs text-muted-foreground/60 tabular-nums">
                 {formatDate(new Date(task.createdAt))}
               </span>
             )}
@@ -203,7 +248,7 @@ export function TaskDetail({
             <Button size="sm" onClick={handleSave}>
               Save
             </Button>
-            <span className="text-[10px] text-muted-foreground">Ctrl+S</span>
+            <span className="text-xs text-muted-foreground">Ctrl+S</span>
             <div className="flex-1" />
             <Button size="sm" variant="destructive" onClick={handleDelete}>
               Delete

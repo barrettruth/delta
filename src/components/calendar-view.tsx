@@ -121,6 +121,7 @@ export function CalendarView({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string>("");
+  const [selectedDayIdx, setSelectedDayIdx] = useState(-1);
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState(() => new Date());
@@ -198,6 +199,31 @@ export function CalendarView({
         return;
       }
 
+      if (viewMode === "week" && e.key === "h") {
+        e.preventDefault();
+        setSelectedDayIdx((i) => {
+          const cur = i < 0 ? 0 : i;
+          if (cur === 0) {
+            prevWeek();
+            return 6;
+          }
+          return cur - 1;
+        });
+        return;
+      }
+      if (viewMode === "week" && e.key === "l") {
+        e.preventDefault();
+        setSelectedDayIdx((i) => {
+          const cur = i < 0 ? 0 : i;
+          if (cur === 6) {
+            nextWeek();
+            return 0;
+          }
+          return cur + 1;
+        });
+        return;
+      }
+
       if (e.key === "[" || e.key === "]") {
         e.preventDefault();
         pendingBracket.current = e.key;
@@ -224,7 +250,7 @@ export function CalendarView({
         return;
       }
     },
-    [prevWeek, nextWeek, prevMonth, nextMonth, goToday],
+    [viewMode, prevWeek, nextWeek, prevMonth, nextMonth, goToday],
   );
 
   useEffect(() => {
@@ -317,6 +343,7 @@ export function CalendarView({
           onTaskClick={setSelectedTask}
           dayNames={DAY_NAMES}
           categoryColors={categoryColors}
+          selectedDayIdx={selectedDayIdx}
         />
       ) : (
         <MonthView
@@ -354,6 +381,7 @@ function WeekView({
   onTaskClick,
   dayNames,
   categoryColors,
+  selectedDayIdx,
 }: {
   weekStart: Date;
   today: Date;
@@ -362,6 +390,7 @@ function WeekView({
   onTaskClick: (task: Task) => void;
   dayNames: string[];
   categoryColors: Record<string, string>;
+  selectedDayIdx: number;
 }) {
   const days = useMemo(() => {
     const result: Date[] = [];
@@ -376,19 +405,18 @@ function WeekView({
       <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
         {days.map((date, idx) => {
           const isToday = isSameDay(date, today);
+          const isSelected = idx === selectedDayIdx;
           return (
             <div
               key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 ${isToday ? "bg-primary/5" : ""}`}
+              className={`flex flex-col items-center py-2 ${isSelected ? "bg-accent" : isToday ? "bg-primary/5" : ""}`}
             >
               <span className="text-xs text-muted-foreground">
                 {dayNames[idx]}
               </span>
               <span
                 className={`text-sm font-semibold mt-0.5 ${
-                  isToday
-                    ? "bg-primary text-primary-foreground w-7 h-7 flex items-center justify-center"
-                    : "text-foreground"
+                  isToday ? "text-primary" : "text-foreground"
                 }`}
               >
                 {date.getDate()}
@@ -398,17 +426,18 @@ function WeekView({
         })}
       </div>
       <div className="grid grid-cols-7 flex-1 overflow-auto">
-        {days.map((date) => {
+        {days.map((date, idx) => {
           const key = formatDateKey(date);
           const dayTasks = tasksByDate.get(key) ?? [];
           const isToday = isSameDay(date, today);
+          const isSelected = idx === selectedDayIdx;
 
           const blend = dayBlendStyle(dayTasks, categoryColors);
           return (
             <div
               key={key}
               className={`flex flex-col p-2 border-r border-border/30 ${
-                isToday ? "bg-primary/5" : ""
+                isSelected ? "bg-accent" : isToday ? "bg-primary/5" : ""
               }`}
               style={!isToday ? blend : undefined}
             >
@@ -421,7 +450,7 @@ function WeekView({
                     onClick={() => onTaskClick(task)}
                   >
                     <span
-                      className={`shrink-0 mt-1 w-1.5 h-1.5 rounded-full ${statusDot(task)}`}
+                      className={`shrink-0 mt-1 w-1.5 h-1.5 ${statusDot(task)}`}
                     />
                     <span className="truncate">{task.description}</span>
                   </button>
@@ -509,8 +538,8 @@ function MonthView({
             <div
               key={cell.key}
               className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${
-                isToday ? "ring-1 ring-primary/50" : ""
-              } ${isPast ? "opacity-50" : ""}`}
+                isPast ? "opacity-50" : ""
+              }`}
               style={blend}
             >
               <span
@@ -529,7 +558,7 @@ function MonthView({
                     onClick={() => onTaskClick(task)}
                   >
                     <span
-                      className={`shrink-0 mt-[3px] w-1.5 h-1.5 rounded-full ${statusDot(task)}`}
+                      className={`shrink-0 mt-[3px] w-1.5 h-1.5 ${statusDot(task)}`}
                     />
                     <span className="truncate">{task.description}</span>
                   </button>
