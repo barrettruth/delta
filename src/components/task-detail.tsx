@@ -65,6 +65,18 @@ export function TaskDetail({
     }
   }, [task]);
 
+  const handleSave = useCallback(async () => {
+    if (!task) return;
+    await updateTaskAction(task.id, {
+      description,
+      category: category || null,
+      priority: Number(priority),
+      due: due ? new Date(due).toISOString() : null,
+      notes: notesRef.current || null,
+    });
+    onClose();
+  }, [task, description, category, priority, due, onClose]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -86,22 +98,10 @@ export function TaskDetail({
         }
       }
     },
-    [task, tasks, onSelectTask],
+    [task, tasks, onSelectTask, handleSave],
   );
 
   if (!task) return null;
-
-  async function handleSave() {
-    if (!task) return;
-    await updateTaskAction(task.id, {
-      description,
-      category: category || null,
-      priority: Number(priority),
-      due: due ? new Date(due).toISOString() : null,
-      notes: notesRef.current || null,
-    });
-    onClose();
-  }
 
   async function handleStatusChange(status: string) {
     if (!task) return;
@@ -155,10 +155,7 @@ export function TaskDetail({
               </SelectContent>
             </Select>
 
-            <Select
-              value={priority}
-              onValueChange={(v) => v && setPriority(v)}
-            >
+            <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
               <SelectTrigger size="sm" className="w-auto gap-1">
                 <SelectValue>{PRIORITY_LABELS[priority]}</SelectValue>
               </SelectTrigger>
@@ -208,11 +205,7 @@ export function TaskDetail({
             </Button>
             <span className="text-[10px] text-muted-foreground">Ctrl+S</span>
             <div className="flex-1" />
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={handleDelete}
-            >
+            <Button size="sm" variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
           </div>

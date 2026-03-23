@@ -189,10 +189,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                       key={task.id}
                       draggable
                       onDragStart={(e) => {
-                        e.dataTransfer.setData(
-                          "text/plain",
-                          String(task.id),
-                        );
+                        e.dataTransfer.setData("text/plain", String(task.id));
                         setDragId(task.id);
                       }}
                       onDragEnd={() => {

@@ -126,7 +126,7 @@ export function CalendarView({
       now.getTime();
     const timer = setTimeout(() => setToday(new Date()), msUntilMidnight + 100);
     return () => clearTimeout(timer);
-  }, [today]);
+  }, []);
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();

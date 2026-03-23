@@ -49,9 +49,7 @@ export function LoginForm({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-64">
-        {error && (
-          <div className="text-sm text-destructive">{error}</div>
-        )}
+        {error && <div className="text-sm text-destructive">{error}</div>}
         <Input
           value={username}
           onChange={(e) => setUsername(e.target.value)}

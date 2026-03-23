@@ -4,7 +4,6 @@ import Placeholder from "@tiptap/extension-placeholder";
 import type { JSONContent } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import CodeBlockShiki from "tiptap-extension-code-block-shiki";
 import {
   Bold,
   Code,
@@ -17,6 +16,7 @@ import {
   Quote,
 } from "lucide-react";
 import { useEffect } from "react";
+import CodeBlockShiki from "tiptap-extension-code-block-shiki";
 import { Button } from "@/components/ui/button";
 import "./tiptap-styles.css";
 
@@ -111,6 +111,7 @@ export function TiptapEditor({
       CodeBlockShiki.configure({
         defaultTheme: "midnight",
         defaultLanguage: null,
+        customThemes: [midnight, daylight],
       }),
       Placeholder.configure({ placeholder: "Add notes\u2026" }),
     ],

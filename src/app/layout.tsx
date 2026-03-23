@@ -5,10 +5,26 @@ import "./globals.css";
 
 const berkeleyMono = localFont({
   src: [
-    { path: "../fonts/BerkeleyMono-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../fonts/BerkeleyMono-Italic.ttf", weight: "400", style: "italic" },
-    { path: "../fonts/BerkeleyMono-Bold.ttf", weight: "700", style: "normal" },
-    { path: "../fonts/BerkeleyMono-BoldItalic.ttf", weight: "700", style: "italic" },
+    {
+      path: "../fonts/BerkeleyMono-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/BerkeleyMono-Italic.ttf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../fonts/BerkeleyMono-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../fonts/BerkeleyMono-BoldItalic.ttf",
+      weight: "700",
+      style: "italic",
+    },
   ],
   variable: "--font-mono",
   display: "swap",
