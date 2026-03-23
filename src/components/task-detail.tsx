@@ -2,13 +2,8 @@
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  completeTaskAction,
-  deleteTaskAction,
-  updateTaskAction,
-} from "@/app/actions/tasks";
+import { completeTaskAction, updateTaskAction } from "@/app/actions/tasks";
 import { TiptapEditor } from "@/components/tiptap-editor";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,7 +25,7 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  "0": "—",
+  "0": "\u2014",
   "1": "!",
   "2": "!!",
   "3": "!!!",
@@ -92,8 +87,12 @@ export function TaskDetail({
       due: due ? new Date(due).toISOString() : null,
       notes: notesRef.current || null,
     });
+  }, [task, description, category, priority, due]);
+
+  const handleClose = useCallback(async () => {
+    await handleSave();
     onClose();
-  }, [task, description, category, priority, due, onClose]);
+  }, [handleSave, onClose]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -108,6 +107,7 @@ export function TaskDetail({
 
       if (e.key === "j" || e.key === "k") {
         e.preventDefault();
+        handleSave();
         const idx = tasks.findIndex((t) => t.id === task.id);
         if (idx === -1) return;
         const next = e.key === "j" ? idx + 1 : idx - 1;
@@ -128,17 +128,10 @@ export function TaskDetail({
     } else {
       await updateTaskAction(task.id, { status: status as TaskStatus });
     }
-    onClose();
-  }
-
-  async function handleDelete() {
-    if (!task) return;
-    await deleteTaskAction(task.id);
-    onClose();
   }
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={(o) => !o && onClose()}>
+    <DialogPrimitive.Root open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup
@@ -155,6 +148,40 @@ export function TaskDetail({
           </div>
 
           <div className="flex flex-wrap items-center gap-3 px-6 pb-2 border-b border-border/40">
+            <div className="relative">
+              <Input
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setShowCategorySuggestions(true);
+                }}
+                onFocus={() => setShowCategorySuggestions(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowCategorySuggestions(false), 150)
+                }
+                placeholder="# category"
+                className="h-8 w-28 text-xs"
+              />
+              {showCategorySuggestions && filteredCategories.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                  {filteredCategories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setCategory(c);
+                        setShowCategorySuggestions(false);
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Select
               value={task.status}
               onValueChange={(v) => v && handleStatusChange(v)}
@@ -178,46 +205,12 @@ export function TaskDetail({
                 <SelectValue>{PRIORITY_LABELS[priority]}</SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value="0">— None</SelectItem>
+                <SelectItem value="0">{"\u2014"} None</SelectItem>
                 <SelectItem value="1">! Low</SelectItem>
                 <SelectItem value="2">!! Medium</SelectItem>
                 <SelectItem value="3">!!! High</SelectItem>
               </SelectContent>
             </Select>
-
-            <div className="relative">
-              <Input
-                value={category}
-                onChange={(e) => {
-                  setCategory(e.target.value);
-                  setShowCategorySuggestions(true);
-                }}
-                onFocus={() => setShowCategorySuggestions(true)}
-                onBlur={() =>
-                  setTimeout(() => setShowCategorySuggestions(false), 150)
-                }
-                placeholder="category"
-                className="h-8 w-28 text-xs"
-              />
-              {showCategorySuggestions && filteredCategories.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
-                  {filteredCategories.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setCategory(c);
-                        setShowCategorySuggestions(false);
-                      }}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <Input
               type="datetime-local"
@@ -242,17 +235,6 @@ export function TaskDetail({
                 notesRef.current = json;
               }}
             />
-          </div>
-
-          <div className="flex items-center gap-2 px-6 py-3 border-t border-border/40">
-            <Button size="sm" onClick={handleSave}>
-              Save
-            </Button>
-            <span className="text-xs text-muted-foreground">Ctrl+S</span>
-            <div className="flex-1" />
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
           </div>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>
