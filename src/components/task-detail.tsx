@@ -227,7 +227,12 @@ export function TaskDetail({
                 <Button size="sm" onClick={handleSave}>
                   Save
                 </Button>
-                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleDelete}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={handleDelete}
+                >
                   Delete
                 </Button>
               </div>

@@ -160,9 +160,12 @@ export function SettingsForm({
                 <SelectTrigger>
                   <SelectValue>
                     {
-                      { queue: "Queue", list: "List", kanban: "Kanban", calendar: "Calendar" }[
-                        settings.defaultView
-                      ]
+                      {
+                        queue: "Queue",
+                        list: "List",
+                        kanban: "Kanban",
+                        calendar: "Calendar",
+                      }[settings.defaultView]
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -199,7 +202,11 @@ export function SettingsForm({
               >
                 <SelectTrigger>
                   <SelectValue>
-                    {{ "1": "Monday", "0": "Sunday" }[String(settings.weekStartDay)]}
+                    {
+                      { "1": "Monday", "0": "Sunday" }[
+                        String(settings.weekStartDay)
+                      ]
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -215,7 +222,11 @@ export function SettingsForm({
               >
                 <SelectTrigger>
                   <SelectValue>
-                    {{ us: "MM/DD/YYYY", iso: "YYYY-MM-DD", eu: "DD/MM/YYYY" }[settings.dateFormat]}
+                    {
+                      { us: "MM/DD/YYYY", iso: "YYYY-MM-DD", eu: "DD/MM/YYYY" }[
+                        settings.dateFormat
+                      ]
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -233,7 +244,6 @@ export function SettingsForm({
             <WeightInput
               label="Priority"
               value={settings.urgencyWeights.priority}
-
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, priority: v },
@@ -243,7 +253,6 @@ export function SettingsForm({
             <WeightInput
               label="Due date"
               value={settings.urgencyWeights.due}
-
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, due: v },
@@ -253,7 +262,6 @@ export function SettingsForm({
             <WeightInput
               label="Age"
               value={settings.urgencyWeights.age}
-
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, age: v },
@@ -263,7 +271,6 @@ export function SettingsForm({
             <WeightInput
               label="Work in progress"
               value={settings.urgencyWeights.wip}
-
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, wip: v },
@@ -273,7 +280,6 @@ export function SettingsForm({
             <WeightInput
               label="Blocking"
               value={settings.urgencyWeights.blocking}
-
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, blocking: v },

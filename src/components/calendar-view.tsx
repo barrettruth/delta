@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
-import type { DateFormat, WeekStartDay } from "@/core/settings";
+import type { WeekStartDay } from "@/core/settings";
 import type { Task } from "@/core/types";
 
 type ViewMode = "week" | "month";
@@ -114,13 +114,11 @@ export function CalendarView({
   tasks,
   categories,
   weekStartDay = 1,
-  dateFormat = "us",
   defaultCategory,
 }: {
   tasks: Task[];
   categories?: string[];
   weekStartDay?: WeekStartDay;
-  dateFormat?: DateFormat;
   defaultCategory?: string;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");

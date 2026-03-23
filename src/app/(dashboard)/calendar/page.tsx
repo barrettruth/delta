@@ -20,7 +20,6 @@ export default async function CalendarPage() {
       tasks={tasks}
       categories={categories}
       weekStartDay={settings?.weekStartDay ?? 1}
-      dateFormat={settings?.dateFormat ?? "us"}
       defaultCategory={settings?.defaultCategory}
     />
   );

@@ -50,7 +50,7 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            {tasks.map((task, i) => (
+            {tasks.map((task) => (
               <button
                 type="button"
                 key={task.id}

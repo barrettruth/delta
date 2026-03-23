@@ -19,11 +19,7 @@ function isInputFocused(): boolean {
 const viewRoutes = ["/", "/kanban", "/calendar", "/settings"];
 const CATEGORY_KEYS = ["5", "6", "7", "8", "9"];
 
-export function GlobalKeyboard({
-  categories = [],
-}: {
-  categories?: string[];
-}) {
+export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
 
