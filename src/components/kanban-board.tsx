@@ -139,6 +139,19 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
+        case "1":
+        case "2":
+        case "3":
+        case "4": {
+          e.preventDefault();
+          const ci = Number(e.key) - 1;
+          if (ci < columns.length) {
+            setKbActive(true);
+            setColIdx(ci);
+            setRowIdx(0);
+          }
+          break;
+        }
         case "Escape": {
           setKbActive(false);
           setColIdx(0);
@@ -193,9 +206,14 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             }}
           >
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
-              <span className="text-xs font-medium">{col.label}</span>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {colTasks.length}
+              <span className="text-xs font-medium">
+                {col.label}
+                <span className="text-muted-foreground/40 ml-1.5">
+                  {colTasks.length}
+                </span>
+              </span>
+              <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums">
+                {ci + 1}
               </span>
             </div>
             <div className="flex-1 overflow-y-auto">
