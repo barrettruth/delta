@@ -33,6 +33,6 @@
     }
   },
   "files": {
-    "includes": ["**", "!.next", "!drizzle", "!src/components/ui"]
+    "includes": ["**", "!.next", "!.claude", "!drizzle", "!src/components/ui"]
   }
 }

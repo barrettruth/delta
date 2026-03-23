@@ -56,6 +56,7 @@ export function verifyPassword(
     .where(eq(users.username, username))
     .get();
   if (!user) return null;
+  if (!user.passwordHash) return null;
   if (!compareSync(password, user.passwordHash)) return null;
   return toSafeUser(user);
 }
@@ -101,6 +102,11 @@ export function validateApiKey(db: Db, apiKey: string): SafeUser | null {
   const user = db.select().from(users).where(eq(users.apiKey, apiKey)).get();
   if (!user) return null;
   return toSafeUser(user);
+}
+
+export function userHasPassword(db: Db, userId: number): boolean {
+  const user = db.select().from(users).where(eq(users.id, userId)).get();
+  return !!user?.passwordHash;
 }
 
 export function regenerateApiKey(db: Db, userId: number): string {
