@@ -11,14 +11,9 @@ export interface UrgencyWeights {
 }
 
 export type ViewType = "queue" | "list" | "kanban" | "calendar";
-export type DateFormat = "us" | "iso" | "eu";
-export type WeekStartDay = 0 | 1;
-
 export interface UserSettings {
   defaultCategory: string;
   defaultView: ViewType;
-  weekStartDay: WeekStartDay;
-  dateFormat: DateFormat;
   showCompletedTasks: boolean;
   urgencyWeights: UrgencyWeights;
 }
@@ -26,8 +21,6 @@ export interface UserSettings {
 export const DEFAULT_SETTINGS: UserSettings = {
   defaultCategory: "Todo",
   defaultView: "list",
-  weekStartDay: 1,
-  dateFormat: "us",
   showCompletedTasks: true,
   urgencyWeights: {
     priority: 6,
