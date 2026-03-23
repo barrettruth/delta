@@ -6,7 +6,7 @@ import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/core/types";
-import { isInputFocused } from "@/lib/utils";
+import { blendColors, isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
 
@@ -85,6 +85,18 @@ function statusColor(task: Task): string {
   return "text-foreground";
 }
 
+function dayBlendStyle(
+  tasks: Task[],
+  colors: Record<string, string>,
+): React.CSSProperties | undefined {
+  const hexes = tasks
+    .map((t) => (t.category ? colors[t.category] : undefined))
+    .filter((c): c is string => !!c);
+  const blended = blendColors(hexes);
+  if (!blended) return undefined;
+  return { backgroundColor: `${blended}18` };
+}
+
 function statusDot(task: Task): string {
   if (task.status === "done") return "bg-status-done";
   if (task.status === "blocked") return "bg-status-blocked";
@@ -97,10 +109,12 @@ export function CalendarView({
   tasks,
   categories,
   defaultCategory,
+  categoryColors = {},
 }: {
   tasks: Task[];
   categories?: string[];
   defaultCategory?: string;
+  categoryColors?: Record<string, string>;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -302,6 +316,7 @@ export function CalendarView({
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
           dayNames={DAY_NAMES}
+          categoryColors={categoryColors}
         />
       ) : (
         <MonthView
@@ -311,6 +326,7 @@ export function CalendarView({
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
           dayNames={DAY_NAMES}
+          categoryColors={categoryColors}
         />
       )}
 
@@ -337,6 +353,7 @@ function WeekView({
   onDayClick,
   onTaskClick,
   dayNames,
+  categoryColors,
 }: {
   weekStart: Date;
   today: Date;
@@ -344,6 +361,7 @@ function WeekView({
   onDayClick: (date: Date) => void;
   onTaskClick: (task: Task) => void;
   dayNames: string[];
+  categoryColors: Record<string, string>;
 }) {
   const days = useMemo(() => {
     const result: Date[] = [];
@@ -385,12 +403,14 @@ function WeekView({
           const dayTasks = tasksByDate.get(key) ?? [];
           const isToday = isSameDay(date, today);
 
+          const blend = dayBlendStyle(dayTasks, categoryColors);
           return (
             <div
               key={key}
               className={`flex flex-col p-2 border-r border-border/30 ${
                 isToday ? "bg-primary/5" : ""
               }`}
+              style={!isToday ? blend : undefined}
             >
               <div className="flex flex-col gap-1 w-full">
                 {dayTasks.map((task) => (
@@ -427,6 +447,7 @@ function MonthView({
   onDayClick,
   onTaskClick,
   dayNames,
+  categoryColors,
 }: {
   monthStart: Date;
   today: Date;
@@ -434,6 +455,7 @@ function MonthView({
   onDayClick: (date: Date) => void;
   onTaskClick: (task: Task) => void;
   dayNames: string[];
+  categoryColors: Record<string, string>;
 }) {
   const totalDays = daysInMonth(monthStart);
   const offset = weekOffset(monthStart);
@@ -481,31 +503,15 @@ function MonthView({
           const dayTasks = tasksByDate.get(dateKey) ?? [];
           const isToday = isSameDay(cellDate, today);
           const isPast = cellDate < today && !isToday;
-          const hasOverdue = dayTasks.some(
-            (t) =>
-              t.status !== "done" &&
-              t.status !== "cancelled" &&
-              t.due &&
-              new Date(t.due) < today,
-          );
-          const hasHigh = dayTasks.some(
-            (t) =>
-              t.status !== "done" &&
-              t.status !== "cancelled" &&
-              (t.priority ?? 0) >= 3,
-          );
-
-          let dayBg = "";
-          if (hasOverdue) dayBg = "bg-status-blocked/8";
-          else if (hasHigh) dayBg = "bg-status-wip/8";
-          else if (dayTasks.length > 0) dayBg = "bg-primary/5";
+          const blend = dayBlendStyle(dayTasks, categoryColors);
 
           return (
             <div
               key={cell.key}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${dayBg} ${
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${
                 isToday ? "ring-1 ring-primary/50" : ""
               } ${isPast ? "opacity-50" : ""}`}
+              style={blend}
             >
               <span
                 className={`text-xs font-medium mb-1 ${

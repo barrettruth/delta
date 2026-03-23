@@ -8,7 +8,7 @@ import { TaskDetail } from "@/components/task-detail";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
-const columns: { status: TaskStatus; label: string }[] = [
+const defaultColumns: { status: TaskStatus; label: string }[] = [
   { status: "pending", label: "Pending" },
   { status: "wip", label: "In Progress" },
   { status: "blocked", label: "Blocked" },
@@ -32,11 +32,12 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [colIdx, setColIdx] = useState(0);
   const [rowIdx, setRowIdx] = useState(0);
   const [kbActive, setKbActive] = useState(false);
+  const [columns, setColumns] = useState(defaultColumns);
   const grouped = groupByStatus(tasks);
 
   const getColTasks = useCallback(
     (ci: number) => grouped[columns[ci].status] ?? [],
-    [grouped],
+    [grouped, columns],
   );
 
   const handler = useCallback(
@@ -76,36 +77,58 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "H": {
           e.preventDefault();
-          const colTasks = getColTasks(colIdx);
-          if (colTasks.length === 0 || rowIdx >= colTasks.length) break;
-          const task = colTasks[rowIdx];
-          const newCol = Math.max(colIdx - 1, 0);
-          if (newCol !== colIdx) {
-            const newStatus = columns[newCol].status;
+          const colTasksH = getColTasks(colIdx);
+          if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
+          const taskH = colTasksH[rowIdx];
+          const newColH = Math.max(colIdx - 1, 0);
+          if (newColH !== colIdx) {
+            const newStatus = columns[newColH].status;
             if (newStatus === "done") {
-              completeTaskAction(task.id);
+              completeTaskAction(taskH.id);
             } else {
-              updateTaskAction(task.id, { status: newStatus });
+              updateTaskAction(taskH.id, { status: newStatus });
             }
-            setColIdx(newCol);
+            setColIdx(newColH);
           }
           break;
         }
         case "L": {
           e.preventDefault();
-          const colTasks = getColTasks(colIdx);
-          if (colTasks.length === 0 || rowIdx >= colTasks.length) break;
-          const task = colTasks[rowIdx];
-          const newCol = Math.min(colIdx + 1, columns.length - 1);
-          if (newCol !== colIdx) {
-            const newStatus = columns[newCol].status;
+          const colTasksL = getColTasks(colIdx);
+          if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
+          const taskL = colTasksL[rowIdx];
+          const newColL = Math.min(colIdx + 1, columns.length - 1);
+          if (newColL !== colIdx) {
+            const newStatus = columns[newColL].status;
             if (newStatus === "done") {
-              completeTaskAction(task.id);
+              completeTaskAction(taskL.id);
             } else {
-              updateTaskAction(task.id, { status: newStatus });
+              updateTaskAction(taskL.id, { status: newStatus });
             }
-            setColIdx(newCol);
+            setColIdx(newColL);
           }
+          break;
+        }
+        case "<": {
+          e.preventDefault();
+          if (colIdx <= 0) break;
+          setColumns((prev) => {
+            const next = [...prev];
+            [next[colIdx - 1], next[colIdx]] = [next[colIdx], next[colIdx - 1]];
+            return next;
+          });
+          setColIdx((c) => c - 1);
+          break;
+        }
+        case ">": {
+          e.preventDefault();
+          if (colIdx >= columns.length - 1) break;
+          setColumns((prev) => {
+            const next = [...prev];
+            [next[colIdx], next[colIdx + 1]] = [next[colIdx + 1], next[colIdx]];
+            return next;
+          });
+          setColIdx((c) => c + 1);
           break;
         }
         case "Enter": {
@@ -124,7 +147,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
       }
     },
-    [colIdx, rowIdx, getColTasks, selectedTask],
+    [colIdx, rowIdx, getColTasks, selectedTask, columns],
   );
 
   useEffect(() => {
