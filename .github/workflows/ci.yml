@@ -23,7 +23,7 @@ jobs:
       - run: biome check .
       - run: pnpm tsc --noEmit
       - run: pnpm vitest run
-      - run: pnpm build
+      - run: mkdir -p data && DATABASE_URL=./data/ci.db pnpm build
 
   deploy:
     needs: ci
