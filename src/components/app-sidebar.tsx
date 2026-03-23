@@ -5,7 +5,6 @@ import {
   Columns3,
   type LucideIcon,
   Palette,
-  Plus,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -13,7 +12,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { createTaskAction } from "@/app/actions/tasks";
 import { CategoryColorPicker } from "@/components/category-color-picker";
-import { Input } from "@/components/ui/input";
 import {
   Sidebar,
   SidebarContent,
@@ -44,7 +42,6 @@ export function AppSidebar({
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const [editingColor, setEditingColor] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
   const [newCat, setNewCat] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +51,6 @@ export function AppSidebar({
       createTaskAction({ description: `New ${name} task`, category: name });
     }
     setNewCat("");
-    setAdding(false);
   }
 
   return (
@@ -91,21 +87,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <div className="flex h-8 shrink-0 items-center justify-between px-2">
-            <span className="text-xs font-medium text-sidebar-foreground/70">
-              Categories
-            </span>
-            <button
-              type="button"
-              className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => {
-                setAdding(true);
-                requestAnimationFrame(() => inputRef.current?.focus());
-              }}
-            >
-              <Plus className="size-3.5" />
-            </button>
-          </div>
+          <SidebarGroupLabel>Categories</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {categories.map((cat, idx) => {
@@ -161,26 +143,23 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 );
               })}
-              {adding && (
-                <SidebarMenuItem>
-                  <Input
-                    ref={inputRef}
-                    value={newCat}
-                    onChange={(e) => setNewCat(e.target.value)}
-                    onBlur={handleAdd}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAdd();
-                      if (e.key === "Escape") {
-                        setNewCat("");
-                        setAdding(false);
-                      }
-                      e.stopPropagation();
-                    }}
-                    placeholder="category name"
-                    className="h-8 text-sm mx-2 w-auto"
-                  />
-                </SidebarMenuItem>
-              )}
+              <SidebarMenuItem>
+                <input
+                  ref={inputRef}
+                  value={newCat}
+                  onChange={(e) => setNewCat(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAdd();
+                    if (e.key === "Escape") {
+                      setNewCat("");
+                      inputRef.current?.blur();
+                    }
+                    e.stopPropagation();
+                  }}
+                  placeholder="new category..."
+                  className="w-full h-8 px-2 text-sm bg-transparent text-muted-foreground placeholder:text-muted-foreground/40 outline-none"
+                />
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
