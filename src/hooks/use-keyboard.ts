@@ -27,6 +27,7 @@ export function useKeyboard(actions: KeyboardActions) {
   const [cursor, setCursor] = useState(-1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [visualMode, setVisualMode] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<number[] | null>(null);
   const visualAnchor = useRef(-1);
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,7 +49,18 @@ export function useKeyboard(actions: KeyboardActions) {
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
 
-      const { tasks, onComplete, onDelete, onCreate, onSelect, onDeselect } =
+      if (pendingDelete) {
+        e.preventDefault();
+        if (e.key === "y") {
+          actionsRef.current.onDelete(pendingDelete);
+          setSelectedIds(new Set());
+          setVisualMode(false);
+        }
+        setPendingDelete(null);
+        return;
+      }
+
+      const { tasks, onComplete, onCreate, onSelect, onDeselect } =
         actionsRef.current;
 
       if (pendingG.current) {
@@ -108,11 +120,9 @@ export function useKeyboard(actions: KeyboardActions) {
           e.preventDefault();
           if (tasks.length === 0) break;
           if (selectedIds.size > 0) {
-            onDelete([...selectedIds]);
-            setSelectedIds(new Set());
-            setVisualMode(false);
+            setPendingDelete([...selectedIds]);
           } else if (cursor >= 0 && cursor < tasks.length) {
-            onDelete([tasks[cursor].id]);
+            setPendingDelete([tasks[cursor].id]);
           }
           break;
         }
@@ -155,7 +165,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [cursor, selectedIds, visualMode],
+    [cursor, selectedIds, visualMode, pendingDelete],
   );
 
   useEffect(() => {
@@ -178,5 +188,12 @@ export function useKeyboard(actions: KeyboardActions) {
     });
   }
 
-  return { cursor, setCursor, selectedIds, toggleSelect, visualMode };
+  return {
+    cursor,
+    setCursor,
+    selectedIds,
+    toggleSelect,
+    visualMode,
+    pendingDelete,
+  };
 }
