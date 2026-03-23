@@ -79,7 +79,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <div className="flex h-8 shrink-0 items-center justify-between px-2">
+          <div className="flex h-8 shrink-0 items-center justify-between px-2 pr-3">
             <span className="text-xs font-medium text-sidebar-foreground/70">
               Categories
             </span>
