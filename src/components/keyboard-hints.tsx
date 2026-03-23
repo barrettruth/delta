@@ -31,6 +31,12 @@ export function KeyboardHints() {
       </span>
       <span>
         <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 font-mono text-[10px]">
+          /
+        </kbd>{" "}
+        search
+      </span>
+      <span>
+        <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 font-mono text-[10px]">
           Enter
         </kbd>{" "}
         open

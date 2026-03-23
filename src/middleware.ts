@@ -1,6 +1,24 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+function addSecurityHeaders(response: NextResponse, request: NextRequest) {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    request.nextUrl.hostname !== "localhost";
+  if (isProduction) {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains",
+    );
+  }
+
+  return response;
+}
+
 export function middleware(request: NextRequest) {
   const session = request.cookies.get("session");
   const { pathname } = request.nextUrl;
@@ -10,18 +28,24 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
   ) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next(), request);
   }
 
   if (!session && pathname !== "/login") {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return addSecurityHeaders(
+      NextResponse.redirect(new URL("/login", request.url)),
+      request,
+    );
   }
 
   if (session && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return addSecurityHeaders(
+      NextResponse.redirect(new URL("/", request.url)),
+      request,
+    );
   }
 
-  return NextResponse.next();
+  return addSecurityHeaders(NextResponse.next(), request);
 }
 
 export const config = {

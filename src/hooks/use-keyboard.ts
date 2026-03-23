@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type RefObject, useCallback, useEffect, useState } from "react";
 import type { Task } from "@/core/types";
 
 interface KeyboardActions {
@@ -10,6 +10,7 @@ interface KeyboardActions {
   onCreate: () => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
+  searchRef?: RefObject<HTMLInputElement | null>;
 }
 
 function isInputFocused(): boolean {
@@ -34,6 +35,12 @@ export function useKeyboard(actions: KeyboardActions) {
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
+      if (e.key === "/" && !isInputFocused()) {
+        e.preventDefault();
+        actions.searchRef?.current?.focus();
+        return;
+      }
+
       if (isInputFocused()) return;
 
       const { tasks, onComplete, onDelete, onCreate, onSelect, onDeselect } =

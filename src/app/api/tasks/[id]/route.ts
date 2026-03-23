@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { completeTask, deleteTask, getTask, updateTask } from "@/core/task";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { validateUpdateTask } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -25,13 +26,23 @@ export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
   const body = await request.json();
 
-  if (body.status === "done") {
+  const result = validateUpdateTask(body);
+  if (!result.success || !result.data) {
+    return NextResponse.json(
+      { error: "Validation failed", details: result.errors },
+      { status: 400 },
+    );
+  }
+
+  const validated = result.data;
+
+  if (validated.status === "done") {
     const task = completeTask(db, Number(id));
     return NextResponse.json(task);
   }
 
   try {
-    const task = updateTask(db, Number(id), body);
+    const task = updateTask(db, Number(id), validated);
     return NextResponse.json(task);
   } catch (e) {
     if (e instanceof Error && e.message.includes("not found")) {

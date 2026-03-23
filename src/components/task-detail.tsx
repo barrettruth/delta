@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { StatusBadge } from "@/components/status-badge";
+import { TiptapEditor } from "@/components/tiptap-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +41,7 @@ export function TaskDetail({
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("0");
   const [due, setDue] = useState("");
-  const [notes, setNotes] = useState("");
+  const notesRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (task) {
@@ -48,7 +49,7 @@ export function TaskDetail({
       setCategory(task.category ?? "");
       setPriority(String(task.priority ?? 0));
       setDue(task.due ? task.due.slice(0, 16) : "");
-      setNotes(task.notes ?? "");
+      notesRef.current = task.notes ?? null;
     }
   }, [task]);
 
@@ -61,7 +62,7 @@ export function TaskDetail({
       category: category || null,
       priority: Number(priority),
       due: due ? new Date(due).toISOString() : null,
-      notes: notes || null,
+      notes: notesRef.current || null,
     });
     onClose();
   }
@@ -158,13 +159,12 @@ export function TaskDetail({
           </div>
           <Separator className="bg-border/60" />
           <div className="flex flex-col gap-2">
-            <Label htmlFor="detail-notes">Notes</Label>
-            <textarea
-              id="detail-notes"
-              className="min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground resize-y"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes\u2026"
+            <Label>Notes</Label>
+            <TiptapEditor
+              content={task.notes ?? null}
+              onChange={(json) => {
+                notesRef.current = json;
+              }}
             />
           </div>
           {task.createdAt && (

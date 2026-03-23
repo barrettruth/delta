@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +29,8 @@ const views: { label: string; href: string; icon: LucideIcon }[] = [
 
 export function AppSidebar({ categories }: { categories: string[] }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get("category");
 
   return (
     <Sidebar>
@@ -67,7 +69,10 @@ export function AppSidebar({ categories }: { categories: string[] }) {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton render={<Link href="/" />}>
+                <SidebarMenuButton
+                  render={<Link href="/" />}
+                  isActive={pathname === "/" && !activeCategory}
+                >
                   <CheckSquare className="size-4" />
                   <span>All</span>
                 </SidebarMenuButton>
@@ -78,6 +83,7 @@ export function AppSidebar({ categories }: { categories: string[] }) {
                     render={
                       <Link href={`/?category=${encodeURIComponent(cat)}`} />
                     }
+                    isActive={activeCategory === cat}
                   >
                     <CheckSquare className="size-4" />
                     <span>{cat}</span>

@@ -3,6 +3,7 @@ import { createTask, listTasks } from "@/core/task";
 import type { TaskFilters, TaskStatus } from "@/core/types";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { validateCreateTask } from "@/lib/validation";
 
 export async function GET(request: Request) {
   const user = await getAuthUserFromRequest(request);
@@ -44,14 +45,15 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
 
   const body = await request.json();
+  const result = validateCreateTask(body);
 
-  if (!body.description) {
+  if (!result.success || !result.data) {
     return NextResponse.json(
-      { error: "description is required" },
+      { error: "Validation failed", details: result.errors },
       { status: 400 },
     );
   }
 
-  const task = createTask(db, body);
+  const task = createTask(db, result.data);
   return NextResponse.json(task, { status: 201 });
 }
