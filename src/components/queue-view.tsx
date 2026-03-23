@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { TaskStatus } from "@/core/types";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
+import { formatDate } from "@/lib/utils";
 
 const statusIcon: Record<TaskStatus, React.ReactNode> = {
   pending: <Circle className="size-4 text-status-pending" />,
@@ -154,7 +155,7 @@ export function QueueView({
                       : ""}
                   </span>
                   <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
-                    {task.due ? new Date(task.due).toLocaleDateString() : ""}
+                    {task.due ? formatDate(new Date(task.due)) : ""}
                   </span>
                   <span
                     className={`w-12 text-xs font-semibold tabular-nums text-center shrink-0 px-1.5 py-0.5 ${urgencyColor(task.urgency)} ${urgencyBg(task.urgency)}`}

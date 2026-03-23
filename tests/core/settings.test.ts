@@ -71,22 +71,6 @@ describe("updateSettings", () => {
     expect(fetched.showCompletedTasks).toBe(false);
   });
 
-  it("stores weekStartDay correctly", () => {
-    const updated = updateSettings(db, userId, { weekStartDay: 0 });
-    expect(updated.weekStartDay).toBe(0);
-
-    const fetched = getSettings(db, userId);
-    expect(fetched.weekStartDay).toBe(0);
-  });
-
-  it("stores dateFormat correctly", () => {
-    const updated = updateSettings(db, userId, { dateFormat: "iso" });
-    expect(updated.dateFormat).toBe("iso");
-
-    const fetched = getSettings(db, userId);
-    expect(fetched.dateFormat).toBe("iso");
-  });
-
   it("replaces all urgency weights at once", () => {
     const customWeights = {
       priority: 1,

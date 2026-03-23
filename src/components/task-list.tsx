@@ -19,6 +19,7 @@ import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Task, TaskStatus } from "@/core/types";
 import { useKeyboard } from "@/hooks/use-keyboard";
+import { formatDate } from "@/lib/utils";
 
 const statusIcon: Record<TaskStatus, React.ReactNode> = {
   pending: <Circle className="size-4 text-status-pending" />,
@@ -114,7 +115,7 @@ export function TaskList({
                     : ""}
                 </span>
                 <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
-                  {task.due ? new Date(task.due).toLocaleDateString() : ""}
+                  {task.due ? formatDate(new Date(task.due)) : ""}
                 </span>
               </div>
             ))}

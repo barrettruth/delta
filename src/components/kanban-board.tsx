@@ -6,7 +6,7 @@ import { completeTaskAction, updateTaskAction } from "@/app/actions/tasks";
 
 import { TaskDetail } from "@/components/task-detail";
 import type { Task, TaskStatus } from "@/core/types";
-import { isInputFocused } from "@/lib/utils";
+import { formatDate, isInputFocused } from "@/lib/utils";
 
 const columns: { status: TaskStatus; label: string }[] = [
   { status: "pending", label: "Pending" },
@@ -221,7 +221,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                           )}
                           {task.due && (
                             <span className="text-xs text-muted-foreground ml-auto tabular-nums">
-                              {new Date(task.due).toLocaleDateString()}
+                              {formatDate(new Date(task.due))}
                             </span>
                           )}
                         </div>

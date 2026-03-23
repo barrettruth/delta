@@ -9,7 +9,6 @@ const VIEW_KEYS: Record<string, string> = {
   Q: "/",
   K: "/kanban",
   C: "/calendar",
-  S: "/settings",
 };
 const CATEGORY_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 

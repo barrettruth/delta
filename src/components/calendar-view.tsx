@@ -5,14 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
-import type { WeekStartDay } from "@/core/settings";
 import type { Task } from "@/core/types";
 import { isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
 
-const DAY_NAMES_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAY_NAMES_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -22,11 +20,9 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-function getWeekStart(date: Date, startDay: WeekStartDay): Date {
+function getWeekStart(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = startDay === 1 ? (day === 0 ? 6 : day - 1) : day;
-  d.setDate(d.getDate() - diff);
+  d.setDate(d.getDate() - d.getDay());
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -45,10 +41,8 @@ function daysInMonth(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
-function weekOffset(date: Date, startDay: WeekStartDay): number {
-  const day = date.getDay();
-  if (startDay === 1) return day === 0 ? 6 : day - 1;
-  return day;
+function weekOffset(date: Date): number {
+  return date.getDay();
 }
 
 function formatDateKey(date: Date): string {
@@ -102,12 +96,10 @@ function statusDot(task: Task): string {
 export function CalendarView({
   tasks,
   categories,
-  weekStartDay = 1,
   defaultCategory,
 }: {
   tasks: Task[];
   categories?: string[];
-  weekStartDay?: WeekStartDay;
   defaultCategory?: string;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
@@ -139,12 +131,7 @@ export function CalendarView({
     return map;
   }, [tasks]);
 
-  const dayNames = weekStartDay === 1 ? DAY_NAMES_MON : DAY_NAMES_SUN;
-
-  const weekAnchor = useMemo(
-    () => getWeekStart(anchor, weekStartDay),
-    [anchor, weekStartDay],
-  );
+  const weekAnchor = useMemo(() => getWeekStart(anchor), [anchor]);
   const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
 
   function handleDayClick(date: Date) {
@@ -314,7 +301,7 @@ export function CalendarView({
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
-          dayNames={dayNames}
+          dayNames={DAY_NAMES}
         />
       ) : (
         <MonthView
@@ -323,8 +310,7 @@ export function CalendarView({
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
-          weekStartDay={weekStartDay}
-          dayNames={dayNames}
+          dayNames={DAY_NAMES}
         />
       )}
 
@@ -440,7 +426,6 @@ function MonthView({
   tasksByDate,
   onDayClick,
   onTaskClick,
-  weekStartDay,
   dayNames,
 }: {
   monthStart: Date;
@@ -448,11 +433,10 @@ function MonthView({
   tasksByDate: Map<string, Task[]>;
   onDayClick: (date: Date) => void;
   onTaskClick: (task: Task) => void;
-  weekStartDay: WeekStartDay;
   dayNames: string[];
 }) {
   const totalDays = daysInMonth(monthStart);
-  const offset = weekOffset(monthStart, weekStartDay);
+  const offset = weekOffset(monthStart);
 
   const cells = useMemo(() => {
     const result: { key: string; day: number | null }[] = [];

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
-import { isInputFocused } from "@/lib/utils";
+import { formatDate, isInputFocused } from "@/lib/utils";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   pending: "Pending",
@@ -185,7 +185,7 @@ export function TaskDetail({
 
             {task.createdAt && (
               <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                {new Date(task.createdAt).toLocaleDateString()}
+                {formatDate(new Date(task.createdAt))}
               </span>
             )}
           </div>
