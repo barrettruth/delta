@@ -131,6 +131,7 @@ export function QueueView({
                   className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left select-none ${bg}`}
                   onClick={(e) => handleRowClick(task, i, e)}
                   onKeyDown={() => {}}
+                  tabIndex={0}
                   role="row"
                 >
                   <Checkbox

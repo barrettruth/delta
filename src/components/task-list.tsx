@@ -48,8 +48,7 @@ export function TaskList({
     },
     onDelete: (ids) => {
       for (const id of ids) deleteTaskAction(id);
-      if (selectedTask && ids.includes(selectedTask.id))
-        setSelectedTask(null);
+      if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
     },
     onCreate: () => setCreateOpen(true),
     onSelect: (task) => setSelectedTask(task),
@@ -92,6 +91,7 @@ export function TaskList({
                 }`}
                 onClick={() => setSelectedTask(task)}
                 onKeyDown={() => {}}
+                tabIndex={0}
                 role="row"
               >
                 <Checkbox
