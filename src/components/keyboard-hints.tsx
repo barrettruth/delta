@@ -44,7 +44,7 @@ export function KeyboardHints() {
         </>
       )}
       <div className="flex-1" />
-      <Hint keys="1-4" label="views" />
+      <Hint keys="QKCS" label="views" />
       <Hint keys="b" label="sidebar" />
       <Hint keys="q" label="logout" />
     </div>

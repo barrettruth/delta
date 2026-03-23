@@ -16,8 +16,13 @@ function isInputFocused(): boolean {
   );
 }
 
-const viewRoutes = ["/", "/kanban", "/calendar", "/settings"];
-const CATEGORY_KEYS = ["5", "6", "7", "8", "9"];
+const VIEW_KEYS: Record<string, string> = {
+  Q: "/",
+  K: "/kanban",
+  C: "/calendar",
+  S: "/settings",
+};
+const CATEGORY_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const router = useRouter();
@@ -27,13 +32,13 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
 
-      if (e.key === "b") {
+      if (e.key === "b" && !document.querySelector("[role=dialog]")) {
         e.preventDefault();
         toggleSidebar();
         return;
       }
 
-      if (e.key === "q" && !e.ctrlKey && !e.metaKey) {
+      if (e.key === "q") {
         e.preventDefault();
         fetch("/api/auth/logout", { method: "POST" }).then(() => {
           router.push("/login");
@@ -41,17 +46,17 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
+      const viewRoute = VIEW_KEYS[e.key];
+      if (viewRoute) {
+        e.preventDefault();
+        router.push(viewRoute);
+        return;
+      }
+
       const catIdx = CATEGORY_KEYS.indexOf(e.key);
       if (catIdx !== -1 && catIdx < categories.length) {
         e.preventDefault();
         router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
-        return;
-      }
-
-      const viewIndex = Number(e.key) - 1;
-      if (viewIndex >= 0 && viewIndex < viewRoutes.length) {
-        e.preventDefault();
-        router.push(viewRoutes[viewIndex]);
       }
     },
     [router, toggleSidebar, categories],
