@@ -25,6 +25,6 @@ export async function getAuthUserFromRequest(
   return getAuthUser();
 }
 
-export function unauthorized() {
+export function unauthorized(): NextResponse {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }

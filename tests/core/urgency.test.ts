@@ -108,11 +108,7 @@ describe("computeUrgency", () => {
   });
 
   it("blocked penalty dominates even with high priority", () => {
-    const score = computeUrgency(
-      makeTask({ priority: 3 }),
-      0,
-      true,
-    );
+    const score = computeUrgency(makeTask({ priority: 3 }), 0, true);
     expect(score).toBeLessThan(0);
   });
 });

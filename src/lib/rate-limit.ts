@@ -16,27 +16,17 @@ function cleanup() {
   }
 }
 
+const _global = globalThis as Record<string, unknown>;
+
 if (
   typeof globalThis !== "undefined" &&
   !("__rateLimitCleanup" in globalThis)
 ) {
-  (globalThis as Record<string, unknown>).__rateLimitCleanup = setInterval(
-    cleanup,
-    CLEANUP_INTERVAL_MS,
-  );
-  if (
-    typeof (
-      (globalThis as Record<string, unknown>).__rateLimitCleanup as {
-        unref?: () => void;
-      }
-    )?.unref === "function"
-  ) {
-    (
-      (globalThis as Record<string, unknown>).__rateLimitCleanup as {
-        unref: () => void;
-      }
-    ).unref();
+  const interval = setInterval(cleanup, CLEANUP_INTERVAL_MS);
+  if (typeof interval.unref === "function") {
+    interval.unref();
   }
+  _global.__rateLimitCleanup = interval;
 }
 
 export function isRateLimited(ip: string): boolean {

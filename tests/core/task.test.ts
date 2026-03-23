@@ -191,7 +191,9 @@ describe("updateTask", () => {
   it("updates an already-done task without changing completedAt", () => {
     const task = createTask(db, { description: "Test" });
     const done = updateTask(db, task.id, { status: "done" });
-    const updated = updateTask(db, task.id, { description: "Updated done task" });
+    const updated = updateTask(db, task.id, {
+      description: "Updated done task",
+    });
     expect(updated.description).toBe("Updated done task");
     expect(updated.status).toBe("done");
     expect(updated.completedAt).toBe(done.completedAt);

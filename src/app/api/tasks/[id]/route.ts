@@ -36,12 +36,12 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const validated = result.data;
 
-  if (validated.status === "done") {
-    const task = completeTask(db, Number(id));
-    return NextResponse.json(task);
-  }
-
   try {
+    if (validated.status === "done") {
+      const task = completeTask(db, Number(id));
+      return NextResponse.json(task);
+    }
+
     const task = updateTask(db, Number(id), validated);
     return NextResponse.json(task);
   } catch (e) {

@@ -23,7 +23,7 @@ export function KeyboardHints() {
   const isList = pathname === "/" || pathname === "/queue";
 
   return (
-    <div className="flex items-center gap-4 px-4 h-8 border-t border-border/60 text-xs text-muted-foreground shrink-0 select-none">
+    <div className="flex items-center gap-4 px-4 h-8 border-t border-border/60 text-xs text-muted-foreground/70 shrink-0 select-none">
       {isList && (
         <>
           <Hint keys="j/k" label="navigate" />

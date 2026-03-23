@@ -73,7 +73,7 @@ export function TiptapEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-md border border-input bg-background transition-colors focus-within:ring-1 focus-within:ring-ring">
+    <div className="rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
       <div className="flex flex-wrap gap-0.5 border-b border-input px-1 py-1">
         <Button
           type="button"

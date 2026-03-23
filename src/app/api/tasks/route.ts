@@ -54,6 +54,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const task = createTask(db, result.data);
-  return NextResponse.json(task, { status: 201 });
+  try {
+    const task = createTask(db, result.data);
+    return NextResponse.json(task, { status: 201 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to create task";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
