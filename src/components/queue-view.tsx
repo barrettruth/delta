@@ -50,12 +50,14 @@ function InlineEdit({
   className,
   type = "text",
   suggestions,
+  prefix,
 }: {
   value: string;
   onSave: (v: string) => void;
   className?: string;
   type?: "text" | "date";
   suggestions?: string[];
+  prefix?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -86,7 +88,9 @@ function InlineEdit({
       >
         {type === "date" && value
           ? formatDate(new Date(value))
-          : value || "\u00a0"}
+          : value
+            ? `${prefix ?? ""}${value}`
+            : "\u00a0"}
       </button>
     );
   }
@@ -245,6 +249,7 @@ export function QueueView({
                       updateTaskAction(task.id, { category: v || null })
                     }
                     suggestions={categories}
+                    prefix="#"
                     className="w-24 truncate text-xs text-muted-foreground text-right shrink-0"
                   />
                   <InlineEdit

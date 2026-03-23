@@ -342,7 +342,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                           )}
                           {task.category && task.category !== "Todo" && (
                             <span className="text-xs text-muted-foreground">
-                              {task.category}
+                              #{task.category}
                             </span>
                           )}
                           {task.due && (
