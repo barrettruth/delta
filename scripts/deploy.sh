@@ -5,6 +5,7 @@ DEPLOY_DIR="/opt/delta"
 
 echo "==> Pulling latest code"
 cd "$DEPLOY_DIR"
+git config --global --add safe.directory "$DEPLOY_DIR" 2>/dev/null || true
 git pull origin main
 
 echo "==> Installing dependencies"
