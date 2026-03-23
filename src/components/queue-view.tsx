@@ -9,8 +9,9 @@ import {
 } from "@/app/actions/tasks";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import type { TaskStatus } from "@/core/types";
+
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { formatDate } from "@/lib/utils";
@@ -37,10 +38,116 @@ function urgencyColor(score: number): string {
   return "text-muted-foreground";
 }
 
-function urgencyBg(score: number): string {
-  if (score >= 20) return "bg-status-blocked/10";
-  if (score >= 10) return "bg-status-wip/10";
-  return "";
+function nextStatus(current: TaskStatus): TaskStatus {
+  const order: TaskStatus[] = [
+    "pending",
+    "wip",
+    "blocked",
+    "done",
+    "cancelled",
+  ];
+  const idx = order.indexOf(current);
+  return order[(idx + 1) % order.length];
+}
+
+function InlineEdit({
+  value,
+  onSave,
+  className,
+  type = "text",
+  suggestions,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  className?: string;
+  type?: "text" | "date";
+  suggestions?: string[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = suggestions?.filter(
+    (s) => s.toLowerCase().includes(draft.toLowerCase()) && s !== draft,
+  );
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(value);
+      setShowSuggestions(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [editing, value]);
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={(e) => {
+          e.stopPropagation();
+          setEditing(true);
+        }}
+      >
+        {type === "date" && value
+          ? formatDate(new Date(value))
+          : value || "\u00a0"}
+      </button>
+    );
+  }
+
+  function commit() {
+    setEditing(false);
+    setShowSuggestions(false);
+    if (draft !== value) onSave(draft);
+  }
+
+  return (
+    <span
+      className="relative"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      role="listbox"
+    >
+      <Input
+        ref={inputRef}
+        type={type}
+        value={type === "date" && draft ? draft.slice(0, 10) : draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          if (suggestions) setShowSuggestions(true);
+        }}
+        onBlur={() => setTimeout(commit, 150)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+          e.stopPropagation();
+        }}
+        className={`h-auto py-0 px-1 text-inherit border-0 border-b border-border bg-transparent focus-visible:ring-0 ${className ?? ""}`}
+      />
+      {showSuggestions && filtered && filtered.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+          {filtered.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setDraft(s);
+                setShowSuggestions(false);
+                setEditing(false);
+                if (s !== value) onSave(s);
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
 }
 
 export function QueueView({
@@ -77,14 +184,6 @@ export function QueueView({
     }
   }, [cursor, tasks]);
 
-  async function handleToggle(task: RankedTask) {
-    if (task.status === "done") {
-      await updateTaskAction(task.id, { status: "pending" });
-    } else {
-      await completeTaskAction(task.id);
-    }
-  }
-
   function handleRowClick(task: RankedTask, idx: number, e: React.MouseEvent) {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -92,7 +191,6 @@ export function QueueView({
       return;
     }
     setCursor(idx);
-    setSelectedTask(task);
   }
 
   return (
@@ -109,7 +207,7 @@ export function QueueView({
               const isCursor = i === cursor;
               const isSelected = selectedIds.has(task.id);
 
-              let bg = `${urgencyBg(task.urgency)} hover:bg-accent/50`;
+              let bg = "hover:bg-accent/50";
               if (isSelected) bg = "bg-primary/10";
               else if (isCursor) bg = "bg-accent";
 
@@ -119,36 +217,52 @@ export function QueueView({
                   ref={(el) => {
                     if (el) rowRefs.current.set(task.id, el);
                   }}
-                  className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left select-none ${bg}`}
+                  className={`flex w-full items-center gap-3 px-6 py-2.5 cursor-pointer transition-colors text-left select-none ${bg}`}
                   onClick={(e) => handleRowClick(task, i, e)}
                   onKeyDown={() => {}}
                   tabIndex={0}
                   role="row"
                 >
-                  <Checkbox
-                    checked={task.status === "done"}
-                    onCheckedChange={() => handleToggle(task)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="shrink-0"
-                  />
-                  <span
-                    className={`w-16 text-xs shrink-0 ${STATUS_COLOR[task.status as TaskStatus]}`}
+                  <button
+                    type="button"
+                    className={`w-16 text-xs shrink-0 text-left hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = nextStatus(task.status as TaskStatus);
+                      if (next === "done") {
+                        completeTaskAction(task.id);
+                      } else {
+                        updateTaskAction(task.id, { status: next });
+                      }
+                    }}
                   >
                     {STATUS_LABEL[task.status as TaskStatus]}
-                  </span>
-                  <span
-                    className={`flex-1 truncate text-sm ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
-                  >
-                    {task.description}
-                  </span>
-                  <span className="w-24 truncate text-xs text-muted-foreground text-right shrink-0">
-                    {task.category && task.category !== "Todo"
-                      ? task.category
-                      : ""}
-                  </span>
-                  <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
-                    {task.due ? formatDate(new Date(task.due)) : ""}
-                  </span>
+                  </button>
+                  <InlineEdit
+                    value={task.description}
+                    onSave={(v) =>
+                      updateTaskAction(task.id, { description: v })
+                    }
+                    className={`flex-1 truncate text-sm text-left ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
+                  />
+                  <InlineEdit
+                    value={task.category ?? ""}
+                    onSave={(v) =>
+                      updateTaskAction(task.id, { category: v || null })
+                    }
+                    suggestions={categories}
+                    className="w-24 truncate text-xs text-muted-foreground text-right shrink-0"
+                  />
+                  <InlineEdit
+                    value={task.due ?? ""}
+                    type="date"
+                    onSave={(v) =>
+                      updateTaskAction(task.id, {
+                        due: v ? new Date(`${v}T12:00:00`).toISOString() : null,
+                      })
+                    }
+                    className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0"
+                  />
                   <span
                     className={`w-12 text-xs font-semibold tabular-nums text-center shrink-0 ${urgencyColor(task.urgency)}`}
                   >
