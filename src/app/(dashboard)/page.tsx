@@ -21,5 +21,5 @@ export default async function ListPage({
 
   const tasks = listTasks(db, filters);
 
-  return <TaskList tasks={tasks} title={params.category ?? "All Tasks"} />;
+  return <TaskList tasks={tasks} />;
 }

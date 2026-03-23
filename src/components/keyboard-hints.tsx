@@ -30,7 +30,6 @@ export function KeyboardHints() {
           <Hint keys="x" label="complete" />
           <Hint keys="d" label="delete" />
           <Hint keys="o" label="new" />
-          <Hint keys="/" label="search" />
           <Hint keys="Enter" label="open" />
         </>
       )}
