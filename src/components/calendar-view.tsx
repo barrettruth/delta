@@ -5,11 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
+import type { DateFormat, WeekStartDay } from "@/core/settings";
 import type { Task } from "@/core/types";
 
 type ViewMode = "week" | "month";
 
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_NAMES_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_NAMES_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -19,10 +21,10 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-function getMondayOfWeek(date: Date): Date {
+function getWeekStart(date: Date, startDay: WeekStartDay): Date {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = day === 0 ? 6 : day - 1;
+  const diff = startDay === 1 ? (day === 0 ? 6 : day - 1) : day;
   d.setDate(d.getDate() - diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -42,9 +44,10 @@ function daysInMonth(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
-function mondayOffset(date: Date): number {
+function weekOffset(date: Date, startDay: WeekStartDay): number {
   const day = date.getDay();
-  return day === 0 ? 6 : day - 1;
+  if (startDay === 1) return day === 0 ? 6 : day - 1;
+  return day;
 }
 
 function formatDateKey(date: Date): string {
@@ -54,25 +57,25 @@ function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function formatWeekRange(monday: Date): string {
-  const sunday = addDays(monday, 6);
+function formatWeekRange(weekStart: Date): string {
+  const weekEnd = addDays(weekStart, 6);
   const mOpts: Intl.DateTimeFormatOptions = {
     month: "short",
     day: "numeric",
   };
-  const start = monday.toLocaleDateString("en-US", mOpts);
-  if (monday.getFullYear() !== sunday.getFullYear()) {
-    const end = sunday.toLocaleDateString("en-US", {
+  const start = weekStart.toLocaleDateString("en-US", mOpts);
+  if (weekStart.getFullYear() !== weekEnd.getFullYear()) {
+    const end = weekEnd.toLocaleDateString("en-US", {
       ...mOpts,
       year: "numeric",
     });
-    return `${start}, ${monday.getFullYear()} \u2013 ${end}`;
+    return `${start}, ${weekStart.getFullYear()} \u2013 ${end}`;
   }
-  if (monday.getMonth() !== sunday.getMonth()) {
-    const end = sunday.toLocaleDateString("en-US", mOpts);
-    return `${start} \u2013 ${end}, ${monday.getFullYear()}`;
+  if (weekStart.getMonth() !== weekEnd.getMonth()) {
+    const end = weekEnd.toLocaleDateString("en-US", mOpts);
+    return `${start} \u2013 ${end}, ${weekStart.getFullYear()}`;
   }
-  return `${start} \u2013 ${sunday.getDate()}, ${monday.getFullYear()}`;
+  return `${start} \u2013 ${weekEnd.getDate()}, ${weekStart.getFullYear()}`;
 }
 
 function formatMonthTitle(date: Date): string {
@@ -110,9 +113,15 @@ function statusDot(task: Task): string {
 export function CalendarView({
   tasks,
   categories,
+  weekStartDay = 1,
+  dateFormat = "us",
+  defaultCategory,
 }: {
   tasks: Task[];
   categories?: string[];
+  weekStartDay?: WeekStartDay;
+  dateFormat?: DateFormat;
+  defaultCategory?: string;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -134,7 +143,12 @@ export function CalendarView({
     return map;
   }, [tasks]);
 
-  const weekMonday = useMemo(() => getMondayOfWeek(anchor), [anchor]);
+  const dayNames = weekStartDay === 1 ? DAY_NAMES_MON : DAY_NAMES_SUN;
+
+  const weekAnchor = useMemo(
+    () => getWeekStart(anchor, weekStartDay),
+    [anchor, weekStartDay],
+  );
   const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
 
   function handleDayClick(date: Date) {
@@ -229,7 +243,7 @@ export function CalendarView({
 
   const headerTitle =
     viewMode === "week"
-      ? formatWeekRange(weekMonday)
+      ? formatWeekRange(weekAnchor)
       : formatMonthTitle(monthStart);
 
   function handlePrev() {
@@ -299,11 +313,13 @@ export function CalendarView({
 
       {viewMode === "week" ? (
         <WeekView
-          monday={weekMonday}
+          weekStart={weekAnchor}
           today={today}
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
+          dayNames={dayNames}
+          dateFormat={dateFormat}
         />
       ) : (
         <MonthView
@@ -312,6 +328,9 @@ export function CalendarView({
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
+          weekStartDay={weekStartDay}
+          dayNames={dayNames}
+          dateFormat={dateFormat}
         />
       )}
 
@@ -320,6 +339,7 @@ export function CalendarView({
         onOpenChange={setCreateOpen}
         defaultDue={createDate}
         categories={categories}
+        defaultCategory={defaultCategory}
       />
       <TaskDetail
         task={selectedTask}
@@ -331,25 +351,29 @@ export function CalendarView({
 }
 
 function WeekView({
-  monday,
+  weekStart,
   today,
   tasksByDate,
   onDayClick,
   onTaskClick,
+  dayNames,
+  dateFormat: _dateFormat,
 }: {
-  monday: Date;
+  weekStart: Date;
   today: Date;
   tasksByDate: Map<string, Task[]>;
   onDayClick: (date: Date) => void;
   onTaskClick: (task: Task) => void;
+  dayNames: string[];
+  dateFormat: DateFormat;
 }) {
   const days = useMemo(() => {
     const result: Date[] = [];
     for (let i = 0; i < 7; i++) {
-      result.push(addDays(monday, i));
+      result.push(addDays(weekStart, i));
     }
     return result;
-  }, [monday]);
+  }, [weekStart]);
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -362,7 +386,7 @@ function WeekView({
               className={`flex flex-col items-center py-2 ${isToday ? "bg-primary/5" : ""}`}
             >
               <span className="text-xs text-muted-foreground">
-                {DAY_NAMES[idx]}
+                {dayNames[idx]}
               </span>
               <span
                 className={`text-sm font-semibold mt-0.5 ${
@@ -424,15 +448,21 @@ function MonthView({
   tasksByDate,
   onDayClick,
   onTaskClick,
+  weekStartDay,
+  dayNames,
+  dateFormat: _dateFormat,
 }: {
   monthStart: Date;
   today: Date;
   tasksByDate: Map<string, Task[]>;
   onDayClick: (date: Date) => void;
   onTaskClick: (task: Task) => void;
+  weekStartDay: WeekStartDay;
+  dayNames: string[];
+  dateFormat: DateFormat;
 }) {
   const totalDays = daysInMonth(monthStart);
-  const offset = mondayOffset(monthStart);
+  const offset = weekOffset(monthStart, weekStartDay);
 
   const cells = useMemo(() => {
     const result: { key: string; day: number | null }[] = [];
@@ -447,7 +477,7 @@ function MonthView({
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
-        {DAY_NAMES.map((d) => (
+        {dayNames.map((d) => (
           <div
             key={d}
             className="text-xs font-medium text-muted-foreground text-center py-2"

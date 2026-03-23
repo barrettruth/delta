@@ -16,7 +16,7 @@ function isInputFocused(): boolean {
   );
 }
 
-const viewRoutes = ["/queue", "/", "/kanban", "/calendar"];
+const viewRoutes = ["/queue", "/", "/kanban", "/calendar", "/settings"];
 
 export function GlobalKeyboard() {
   const router = useRouter();

@@ -7,6 +7,7 @@ import {
   List,
   type LucideIcon,
   Palette,
+  Settings,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -31,6 +32,7 @@ const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
     { label: "List", href: "/", icon: List, key: "2" },
     { label: "Kanban", href: "/kanban", icon: Columns3, key: "3" },
     { label: "Calendar", href: "/calendar", icon: Calendar, key: "4" },
+    { label: "Settings", href: "/settings", icon: Settings, key: "5" },
   ];
 
 export function AppSidebar({

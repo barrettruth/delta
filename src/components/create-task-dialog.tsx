@@ -25,22 +25,26 @@ export function CreateTaskDialog({
   onOpenChange,
   defaultDue,
   categories,
+  defaultCategory = "Todo",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultDue?: string;
   categories?: string[];
+  defaultCategory?: string;
 }) {
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Todo");
+  const [category, setCategory] = useState(defaultCategory);
   const [priority, setPriority] = useState("0");
-  const [due, setDue] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("");
   const [showCategories, setShowCategories] = useState(false);
   const categoryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && defaultDue) {
-      setDue(defaultDue.slice(0, 10));
+      setDueDate(defaultDue.slice(0, 10));
+      setDueTime("");
     }
   }, [open, defaultDue]);
 
@@ -59,7 +63,9 @@ export function CreateTaskDialog({
       description: description.trim(),
       category,
       priority: Number(priority),
-      due: due ? new Date(`${due}T12:00:00`).toISOString() : undefined,
+      due: dueDate
+        ? new Date(`${dueDate}T${dueTime || "12:00"}:00`).toISOString()
+        : undefined,
     });
 
     if ("error" in result) {
@@ -68,9 +74,10 @@ export function CreateTaskDialog({
     }
 
     setDescription("");
-    setCategory("Todo");
+    setCategory(defaultCategory);
     setPriority("0");
-    setDue("");
+    setDueDate("");
+    setDueTime("");
     onOpenChange(false);
   }
 
@@ -144,15 +151,29 @@ export function CreateTaskDialog({
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="due">Due Date</Label>
-            <Input
-              id="due"
-              type="date"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              className="text-sm"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="due-date">Due Date</Label>
+              <Input
+                id="due-date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="due-time">
+                Time <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="due-time"
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="text-sm"
+              />
+            </div>
           </div>
           <Button type="submit" disabled={!description.trim()} className="mt-1">
             Create

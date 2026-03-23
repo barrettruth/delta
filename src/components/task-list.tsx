@@ -41,9 +41,11 @@ function PriorityIndicator({ priority }: { priority: number | null }) {
 export function TaskList({
   tasks,
   categories,
+  defaultCategory,
 }: {
   tasks: Task[];
   categories?: string[];
+  defaultCategory?: string;
 }) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -140,6 +142,7 @@ export function TaskList({
         open={createOpen}
         onOpenChange={setCreateOpen}
         categories={categories}
+        defaultCategory={defaultCategory}
       />
       <TaskDetail
         task={selectedTask}

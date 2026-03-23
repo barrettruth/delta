@@ -60,6 +60,13 @@ export const categoryColors = sqliteTable("category_colors", {
   color: text("color").notNull(),
 });
 
+export const userSettings = sqliteTable("user_settings", {
+  userId: integer("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  settings: text("settings").notNull(),
+});
+
 export const automations = sqliteTable("automations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),

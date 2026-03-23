@@ -1,7 +1,8 @@
 import { taskDependencies } from "@/db/schema";
+import type { UrgencyWeights } from "./settings";
 import type { Db, Task } from "./types";
 
-const WEIGHTS = {
+const DEFAULT_WEIGHTS = {
   priority: 6.0,
   due: 12.0,
   age: 2.0,
@@ -30,20 +31,22 @@ export function computeUrgency(
   task: Task,
   blockingCount: number,
   isBlocked: boolean,
+  customWeights?: Partial<UrgencyWeights>,
 ): number {
   if (task.status === "done" || task.status === "cancelled") return 0;
 
+  const weights = { ...DEFAULT_WEIGHTS, ...customWeights };
   const now = new Date();
   let score = 0;
 
-  score += WEIGHTS.priority * ((task.priority ?? 0) / 3);
-  score += WEIGHTS.due * dueCoefficient(task.due, now);
-  score += WEIGHTS.age * ageCoefficient(task.createdAt, now);
+  score += weights.priority * ((task.priority ?? 0) / 3);
+  score += weights.due * dueCoefficient(task.due, now);
+  score += weights.age * ageCoefficient(task.createdAt, now);
 
-  if (task.status === "wip") score += WEIGHTS.wip;
-  if (isBlocked) score += WEIGHTS.blocked;
+  if (task.status === "wip") score += weights.wip;
+  if (isBlocked) score += DEFAULT_WEIGHTS.blocked;
 
-  score += WEIGHTS.blocking * blockingCount;
+  score += weights.blocking * blockingCount;
 
   return Math.round(score * 10) / 10;
 }
@@ -52,7 +55,11 @@ export interface RankedTask extends Task {
   urgency: number;
 }
 
-export function rankTasks(db: Db, tasks: Task[]): RankedTask[] {
+export function rankTasks(
+  db: Db,
+  tasks: Task[],
+  customWeights?: Partial<UrgencyWeights>,
+): RankedTask[] {
   const allDeps = db.select().from(taskDependencies).all();
 
   const blockingCounts = new Map<number, number>();
@@ -73,6 +80,7 @@ export function rankTasks(db: Db, tasks: Task[]): RankedTask[] {
         task,
         blockingCounts.get(task.id) ?? 0,
         blockedSet.has(task.id),
+        customWeights,
       ),
     }))
     .filter((t) => t.urgency > 0)
