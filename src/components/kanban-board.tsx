@@ -39,7 +39,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   }
 
   return (
-    <div className="grid grid-cols-4 gap-3 p-4 h-full max-w-7xl mx-auto w-full">
+    <div className="grid grid-cols-4 gap-4 p-4 h-full w-full">
       {columns.map((col) => {
         const colTasks = grouped[col.status] ?? [];
         return (
@@ -74,8 +74,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
               {colTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
-                  <Inbox className="size-6 opacity-30" />
+                <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+                  <Inbox className="size-5 opacity-30" />
                   <p className="text-xs">No tasks</p>
                 </div>
               ) : (

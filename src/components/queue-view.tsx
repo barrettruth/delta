@@ -42,7 +42,7 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/60">
         <div className="flex items-center gap-2">
           <Zap className="size-5 text-primary" />
           <h1 className="text-lg font-semibold tracking-tight">Queue</h1>
@@ -95,7 +95,7 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                   {task.due ? new Date(task.due).toLocaleDateString() : ""}
                 </span>
                 <span
-                  className={`w-10 text-xs font-mono font-semibold tabular-nums text-right shrink-0 ${urgencyColor(task.urgency)}`}
+                  className={`w-12 text-xs font-mono font-semibold tabular-nums text-center shrink-0 rounded px-1.5 py-0.5 ${urgencyColor(task.urgency)} ${urgencyBg(task.urgency)}`}
                 >
                   {task.urgency}
                 </span>

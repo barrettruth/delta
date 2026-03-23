@@ -4,7 +4,6 @@ import type * as schema from "@/db/schema";
 export type Db = BetterSQLite3Database<typeof schema>;
 
 export type Task = typeof schema.tasks.$inferSelect;
-export type NewTask = typeof schema.tasks.$inferInsert;
 
 export const TASK_STATUSES = [
   "pending",

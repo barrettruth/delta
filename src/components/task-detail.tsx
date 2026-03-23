@@ -86,7 +86,7 @@ export function TaskDetail({
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-[400px] sm:w-[480px] flex flex-col">
-        <SheetHeader>
+        <SheetHeader className="border-b border-border/60 pb-4">
           <div className="flex items-center gap-2">
             <SheetTitle className="flex-1 text-base">
               Task #{task.id}
@@ -94,7 +94,7 @@ export function TaskDetail({
             <StatusBadge status={task.status as TaskStatus} />
           </div>
         </SheetHeader>
-        <div className="flex-1 overflow-auto py-4 flex flex-col gap-4">
+        <div className="flex-1 overflow-auto px-4 py-4 flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="detail-description">Description</Label>
             <Input
@@ -173,7 +173,7 @@ export function TaskDetail({
             </p>
           )}
         </div>
-        <div className="flex gap-2 pt-4 border-t border-border/60">
+        <div className="flex gap-2 px-4 py-4 border-t border-border/60">
           <Button onClick={handleSave} className="flex-1">
             Save
           </Button>

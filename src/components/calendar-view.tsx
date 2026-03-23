@@ -151,8 +151,10 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
           return (
             <div
               key={cell.key}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 cursor-pointer ${dayBg} ${
-                isToday ? "border-l-2 border-l-primary" : ""
+              role="button"
+              tabIndex={0}
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${dayBg} ${
+                isToday ? "ring-1 ring-primary/50" : ""
               } ${isPast ? "opacity-50" : ""}`}
               onClick={() => handleDayClick(day)}
               onKeyDown={(e) => {

@@ -36,7 +36,7 @@ export default function LoginPage() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
-      <div className="w-full max-w-sm rounded-lg border bg-card p-8 shadow-lg">
+      <div className="w-full max-w-xs rounded-lg border border-border/60 bg-card p-8 shadow-lg">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <h1 className="text-5xl text-center text-foreground select-none font-serif">
             &Delta;

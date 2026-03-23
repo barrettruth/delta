@@ -20,6 +20,8 @@ export async function runAutomation(
   db: Db,
   automationId: number,
 ): Promise<void> {
+  await loadBuiltinRecipes();
+
   const automation = db
     .select()
     .from(automations)
@@ -44,7 +46,9 @@ export async function runAutomation(
     .run();
 }
 
-export function startScheduler(db: Db): () => void {
+export async function startScheduler(db: Db): Promise<() => void> {
+  await loadBuiltinRecipes();
+
   const allAutomations = db
     .select()
     .from(automations)
@@ -73,9 +77,11 @@ export function stopScheduler(): void {
   jobs.clear();
 }
 
-async function loadBuiltinRecipes() {
+let _recipesLoaded = false;
+
+export async function loadBuiltinRecipes(): Promise<void> {
+  if (_recipesLoaded) return;
   const { githubIssuesHandler } = await import("./recipes/github-issues");
   registerRecipe("github_issues", githubIssuesHandler);
+  _recipesLoaded = true;
 }
-
-loadBuiltinRecipes();

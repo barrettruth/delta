@@ -61,6 +61,27 @@ describe("addDependency", () => {
 
     expect(() => addDependency(db, c.id, a.id)).toThrow("cycle");
   });
+
+  it("allows adding a dependency on a done task without blocking", () => {
+    const a = createTask(db, { description: "A" });
+    const b = createTask(db, { description: "B" });
+    updateTask(db, b.id, { status: "done" });
+
+    addDependency(db, a.id, b.id);
+    const deps = getDependencies(db, a.id);
+    expect(deps).toHaveLength(1);
+    expect(deps[0].id).toBe(b.id);
+  });
+
+  it("does not block a non-pending task when adding a dependency", () => {
+    const a = createTask(db, { description: "A" });
+    const b = createTask(db, { description: "B" });
+    updateTask(db, a.id, { status: "wip" });
+    addDependency(db, a.id, b.id);
+
+    const task = getTask(db, a.id);
+    expect(task?.status).toBe("wip");
+  });
 });
 
 describe("removeDependency", () => {
@@ -187,5 +208,21 @@ describe("updateBlockedStatus", () => {
     updateBlockedStatus(db, b.id);
 
     expect(getTask(db, a.id)?.status).toBe("pending");
+  });
+
+  it("unblocks multiple dependents when a shared dependency is deleted", () => {
+    const dep = createTask(db, { description: "Shared" });
+    const t1 = createTask(db, { description: "T1" });
+    const t2 = createTask(db, { description: "T2" });
+    addDependency(db, t1.id, dep.id);
+    addDependency(db, t2.id, dep.id);
+    expect(getTask(db, t1.id)?.status).toBe("blocked");
+    expect(getTask(db, t2.id)?.status).toBe("blocked");
+
+    updateTask(db, dep.id, { status: "cancelled" });
+    updateBlockedStatus(db, dep.id);
+
+    expect(getTask(db, t1.id)?.status).toBe("pending");
+    expect(getTask(db, t2.id)?.status).toBe("pending");
   });
 });

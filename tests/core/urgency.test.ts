@@ -77,6 +77,44 @@ describe("computeUrgency", () => {
     expect(blocked).toBeLessThan(0);
     expect(normal).toBeGreaterThan(blocked);
   });
+
+  it("returns a near-zero score for a brand-new task with no due date and no priority", () => {
+    const score = computeUrgency(
+      makeTask({
+        priority: 0,
+        due: null,
+        createdAt: new Date().toISOString(),
+      }),
+      0,
+      false,
+    );
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThan(1);
+  });
+
+  it("caps age coefficient at 1.0 for a task pending over a year", () => {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 2);
+    const score = computeUrgency(
+      makeTask({
+        priority: 0,
+        due: null,
+        createdAt: oneYearAgo.toISOString(),
+      }),
+      0,
+      false,
+    );
+    expect(score).toBeCloseTo(2.0, 1);
+  });
+
+  it("blocked penalty dominates even with high priority", () => {
+    const score = computeUrgency(
+      makeTask({ priority: 3 }),
+      0,
+      true,
+    );
+    expect(score).toBeLessThan(0);
+  });
 });
 
 describe("rankTasks", () => {

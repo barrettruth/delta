@@ -146,6 +146,19 @@ describe("listTasks", () => {
     expect(result[0].description).toBe("B");
     expect(result[2].description).toBe("C");
   });
+
+  it("combines status, category, and due range filters", () => {
+    const result = listTasks(db, {
+      status: "pending",
+      category: "Work",
+      dueAfter: "2026-03-20T00:00:00.000Z",
+      dueBefore: "2026-04-15T00:00:00.000Z",
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe("A");
+    expect(result[0].status).toBe("pending");
+    expect(result[0].category).toBe("Work");
+  });
 });
 
 describe("updateTask", () => {
@@ -173,6 +186,34 @@ describe("updateTask", () => {
     expect(() => updateTask(db, 999, { description: "X" })).toThrow(
       "Task 999 not found",
     );
+  });
+
+  it("updates an already-done task without changing completedAt", () => {
+    const task = createTask(db, { description: "Test" });
+    const done = updateTask(db, task.id, { status: "done" });
+    const updated = updateTask(db, task.id, { description: "Updated done task" });
+    expect(updated.description).toBe("Updated done task");
+    expect(updated.status).toBe("done");
+    expect(updated.completedAt).toBe(done.completedAt);
+  });
+
+  it("re-completing an already-done task preserves completedAt", () => {
+    const task = createTask(db, { description: "Test" });
+    const done = updateTask(db, task.id, { status: "done" });
+    const reDone = updateTask(db, task.id, { status: "done" });
+    expect(reDone.completedAt).toBe(done.completedAt);
+  });
+
+  it("accepts empty string description via updateTask", () => {
+    const task = createTask(db, { description: "Original" });
+    const updated = updateTask(db, task.id, { description: "" });
+    expect(updated.description).toBe("");
+  });
+
+  it("accepts negative priority via updateTask", () => {
+    const task = createTask(db, { description: "Test" });
+    const updated = updateTask(db, task.id, { priority: -1 });
+    expect(updated.priority).toBe(-1);
   });
 });
 

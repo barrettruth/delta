@@ -28,7 +28,7 @@ export function getNextOccurrence(
 export function getNextTaskData(task: Task): CreateTaskInput | null {
   if (!task.recurrence || !task.completedAt) return null;
 
-  const mode = (task.recurMode ?? "scheduled") as RecurMode;
+  const mode: RecurMode = task.recurMode ?? "scheduled";
   const nextDue = getNextOccurrence(
     task.recurrence,
     mode,

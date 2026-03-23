@@ -33,6 +33,39 @@ describe("createUser", () => {
       "Username already taken",
     );
   });
+
+  it("creates a user with empty password", () => {
+    const user = createUser(db, "emptypass", "");
+    expect(user.username).toBe("emptypass");
+    const verified = verifyPassword(db, "emptypass", "");
+    expect(verified).not.toBeNull();
+  });
+
+  it("creates a user with empty username", () => {
+    const user = createUser(db, "", "password123");
+    expect(user.username).toBe("");
+  });
+
+  it("creates a user with a very long username", () => {
+    const longName = "a".repeat(1000);
+    const user = createUser(db, longName, "password123");
+    expect(user.username).toBe(longName);
+  });
+
+  it("creates a user with a very long password", () => {
+    const longPass = "x".repeat(1000);
+    const user = createUser(db, "longpassuser", longPass);
+    expect(user.username).toBe("longpassuser");
+    const verified = verifyPassword(db, "longpassuser", longPass);
+    expect(verified).not.toBeNull();
+  });
+
+  it("creates a user with unicode characters in username", () => {
+    const user = createUser(db, "用户名テスト", "password123");
+    expect(user.username).toBe("用户名テスト");
+    const verified = verifyPassword(db, "用户名テスト", "password123");
+    expect(verified).not.toBeNull();
+  });
 });
 
 describe("verifyPassword", () => {
