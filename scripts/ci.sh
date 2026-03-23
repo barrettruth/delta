@@ -11,4 +11,6 @@ echo "==> Tests"
 pnpm vitest run
 
 echo "==> Build"
-pnpm build
+mkdir -p data
+DATABASE_URL=./data/ci.db pnpm build
+rm -f data/ci.db
