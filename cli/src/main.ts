@@ -13,7 +13,7 @@ function printHelp(): void {
   const text = `delta - task manager CLI
 
 Usage:
-  delta add "description" [--category Cat] [--priority N] [--due "2026-04-01"]
+  delta add "description" [--category Cat] [--priority N] [--due "${new Date().getFullYear()}-04-01"]
   delta list [--status pending,wip] [--category Work]
   delta done <id>
   delta delete <id>

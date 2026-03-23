@@ -50,6 +50,7 @@ export function TiptapEditor({
       Placeholder.configure({ placeholder: "Add notes\u2026" }),
     ],
     content: parseContent(content),
+    immediatelyRender: false,
     onUpdate: ({ editor: e }) => {
       onChange(JSON.stringify(e.getJSON()));
     },

@@ -3,7 +3,7 @@
 import { Inbox } from "lucide-react";
 import { useState } from "react";
 import { completeTaskAction, updateTaskAction } from "@/app/actions/tasks";
-import { StatusBadge } from "@/components/status-badge";
+
 import { TaskDetail } from "@/components/task-detail";
 import type { Task, TaskStatus } from "@/core/types";
 
@@ -65,12 +65,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             }}
           >
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
-              <div className="flex items-center gap-2">
-                <StatusBadge status={col.status} />
-                <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                  {colTasks.length}
-                </span>
-              </div>
+              <span className="text-xs font-medium">{col.label}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {colTasks.length}
+              </span>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
               {colTasks.length === 0 ? (

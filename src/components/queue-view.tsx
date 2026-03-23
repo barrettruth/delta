@@ -3,7 +3,7 @@
 import { Circle, CircleCheck, Clock, Loader2, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
 import { completeTaskAction, updateTaskAction } from "@/app/actions/tasks";
-import { StatusBadge } from "@/components/status-badge";
+
 import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TaskStatus } from "@/core/types";
@@ -42,15 +42,6 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <Zap className="size-5 text-primary" />
-          <h1 className="text-lg font-semibold tracking-tight">Queue</h1>
-          <span className="text-xs text-muted-foreground">
-            {tasks.length} tasks ranked by urgency
-          </span>
-        </div>
-      </div>
       <div className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
@@ -66,9 +57,6 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                 className="flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left hover:bg-accent/50"
                 onClick={() => setSelectedTask(task)}
               >
-                <span className="text-xs text-muted-foreground tabular-nums w-5 shrink-0 text-right">
-                  {i + 1}
-                </span>
                 <Checkbox
                   checked={task.status === "done"}
                   onCheckedChange={() => handleToggle(task)}
@@ -88,9 +76,6 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                     ? task.category
                     : ""}
                 </span>
-                <span className="w-16 shrink-0">
-                  <StatusBadge status={task.status as TaskStatus} />
-                </span>
                 <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
                   {task.due ? new Date(task.due).toLocaleDateString() : ""}
                 </span>
@@ -108,6 +93,8 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
         task={selectedTask}
         open={selectedTask !== null}
         onClose={() => setSelectedTask(null)}
+        tasks={tasks}
+        onSelectTask={(t) => setSelectedTask(t as RankedTask)}
       />
     </div>
   );

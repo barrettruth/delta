@@ -85,13 +85,6 @@ export function TaskList({
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
             <Inbox className="size-10 opacity-40" />
             <p className="text-sm">No tasks yet</p>
-            <p className="text-xs">
-              Press{" "}
-              <kbd className="mx-0.5 px-1.5 py-0.5 rounded bg-muted border border-border/60 font-mono text-xs">
-                o
-              </kbd>{" "}
-              to create one
-            </p>
           </div>
         ) : (
           <div className="divide-y divide-border/60">

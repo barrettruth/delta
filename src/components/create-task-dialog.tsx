@@ -159,19 +159,15 @@ export function CreateTaskDialog({
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="due-time">
-                Time <span className="text-muted-foreground">(optional)</span>
-              </Label>
+              <Label htmlFor="due-time">Time</Label>
               <Input
                 id="due-time"
                 type="time"
                 value={dueTime}
                 onChange={(e) => setDueTime(e.target.value)}
-                className="text-sm"
               />
             </div>
           </div>

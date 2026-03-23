@@ -43,7 +43,7 @@ export default async function DashboardLayout({
         <main className="flex-1 overflow-hidden bg-background">{children}</main>
         <KeyboardHints />
       </SidebarInset>
-      <GlobalKeyboard />
+      <GlobalKeyboard categories={categories} />
     </Suspense>
   );
 }

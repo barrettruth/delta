@@ -58,22 +58,15 @@ function Field({
 function WeightInput({
   label,
   value,
-  defaultValue,
   onChange,
 }: {
   label: string;
   value: number;
-  defaultValue: number;
   onChange: (v: number) => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-8">
-      <div className="flex items-center gap-2">
-        <Label className="text-sm text-muted-foreground">{label}</Label>
-        <span className="text-[10px] text-muted-foreground/60">
-          (default: {defaultValue})
-        </span>
-      </div>
+      <Label className="text-sm text-muted-foreground">{label}</Label>
       <Input
         type="number"
         step="0.5"
@@ -165,7 +158,13 @@ export function SettingsForm({
                 onValueChange={(v) => update({ defaultView: v as ViewType })}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {
+                      { queue: "Queue", list: "List", kanban: "Kanban", calendar: "Calendar" }[
+                        settings.defaultView
+                      ]
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="queue">Queue</SelectItem>
@@ -199,7 +198,9 @@ export function SettingsForm({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {{ "1": "Monday", "0": "Sunday" }[String(settings.weekStartDay)]}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">Monday</SelectItem>
@@ -213,7 +214,9 @@ export function SettingsForm({
                 onValueChange={(v) => update({ dateFormat: v as DateFormat })}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {{ us: "MM/DD/YYYY", iso: "YYYY-MM-DD", eu: "DD/MM/YYYY" }[settings.dateFormat]}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="us">MM/DD/YYYY</SelectItem>
@@ -230,7 +233,7 @@ export function SettingsForm({
             <WeightInput
               label="Priority"
               value={settings.urgencyWeights.priority}
-              defaultValue={DEFAULT_SETTINGS.urgencyWeights.priority}
+
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, priority: v },
@@ -240,7 +243,7 @@ export function SettingsForm({
             <WeightInput
               label="Due date"
               value={settings.urgencyWeights.due}
-              defaultValue={DEFAULT_SETTINGS.urgencyWeights.due}
+
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, due: v },
@@ -250,7 +253,7 @@ export function SettingsForm({
             <WeightInput
               label="Age"
               value={settings.urgencyWeights.age}
-              defaultValue={DEFAULT_SETTINGS.urgencyWeights.age}
+
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, age: v },
@@ -260,7 +263,7 @@ export function SettingsForm({
             <WeightInput
               label="Work in progress"
               value={settings.urgencyWeights.wip}
-              defaultValue={DEFAULT_SETTINGS.urgencyWeights.wip}
+
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, wip: v },
@@ -270,7 +273,7 @@ export function SettingsForm({
             <WeightInput
               label="Blocking"
               value={settings.urgencyWeights.blocking}
-              defaultValue={DEFAULT_SETTINGS.urgencyWeights.blocking}
+
               onChange={(v) =>
                 update({
                   urgencyWeights: { ...settings.urgencyWeights, blocking: v },

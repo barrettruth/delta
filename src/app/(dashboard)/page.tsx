@@ -1,21 +1,22 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { TaskList } from "@/components/task-list";
+import { QueueView } from "@/components/queue-view";
 import { validateSession } from "@/core/auth";
 import type { ViewType } from "@/core/settings";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
 import type { TaskFilters, TaskStatus } from "@/core/types";
+import { rankTasks } from "@/core/urgency";
 import { db } from "@/db";
 
 const viewRoutes: Record<ViewType, string> = {
-  queue: "/queue",
+  queue: "/",
   list: "/",
   kanban: "/kanban",
   calendar: "/calendar",
 };
 
-export default async function ListPage({
+export default async function QueuePage({
   searchParams,
 }: {
   searchParams: Promise<{ category?: string; status?: string }>;
@@ -28,6 +29,7 @@ export default async function ListPage({
 
   if (
     settings &&
+    settings.defaultView !== "queue" &&
     settings.defaultView !== "list" &&
     !params.category &&
     !params.status
@@ -35,10 +37,7 @@ export default async function ListPage({
     redirect(viewRoutes[settings.defaultView]);
   }
 
-  const filters: TaskFilters = {
-    sortBy: "createdAt",
-    sortOrder: "desc",
-  };
+  const filters: TaskFilters = {};
 
   if (params.category) filters.category = params.category;
   if (params.status) {
@@ -49,17 +48,8 @@ export default async function ListPage({
     filters.status = ["pending", "wip", "blocked"];
   }
 
-  const allTasks = listTasks(db);
   const tasks = listTasks(db, filters);
-  const categories = [
-    ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
-  ] as string[];
+  const ranked = rankTasks(db, tasks, settings?.urgencyWeights);
 
-  return (
-    <TaskList
-      tasks={tasks}
-      categories={categories}
-      defaultCategory={settings?.defaultCategory}
-    />
-  );
+  return <QueueView tasks={ranked} />;
 }

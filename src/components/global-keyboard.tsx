@@ -16,9 +16,14 @@ function isInputFocused(): boolean {
   );
 }
 
-const viewRoutes = ["/queue", "/", "/kanban", "/calendar", "/settings"];
+const viewRoutes = ["/", "/kanban", "/calendar", "/settings"];
+const CATEGORY_KEYS = ["5", "6", "7", "8", "9"];
 
-export function GlobalKeyboard() {
+export function GlobalKeyboard({
+  categories = [],
+}: {
+  categories?: string[];
+}) {
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
 
@@ -40,13 +45,20 @@ export function GlobalKeyboard() {
         return;
       }
 
+      const catIdx = CATEGORY_KEYS.indexOf(e.key);
+      if (catIdx !== -1 && catIdx < categories.length) {
+        e.preventDefault();
+        router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
+        return;
+      }
+
       const viewIndex = Number(e.key) - 1;
       if (viewIndex >= 0 && viewIndex < viewRoutes.length) {
         e.preventDefault();
         router.push(viewRoutes[viewIndex]);
       }
     },
-    [router, toggleSidebar],
+    [router, toggleSidebar, categories],
   );
 
   useEffect(() => {

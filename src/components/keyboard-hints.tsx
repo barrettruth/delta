@@ -12,15 +12,16 @@ function Kbd({ children }: { children: React.ReactNode }) {
 
 function Hint({ keys, label }: { keys: string; label: string }) {
   return (
-    <span>
-      <Kbd>{keys}</Kbd> {label}
+    <span className="inline-flex items-center gap-1.5">
+      <Kbd>{keys}</Kbd>
+      <span>{label}</span>
     </span>
   );
 }
 
 export function KeyboardHints() {
   const pathname = usePathname();
-  const isList = pathname === "/" || pathname === "/queue";
+  const isList = pathname === "/";
   const isCalendar = pathname === "/calendar";
 
   return (
@@ -43,7 +44,7 @@ export function KeyboardHints() {
         </>
       )}
       <div className="flex-1" />
-      <Hint keys="1-5" label="views" />
+      <Hint keys="1-4" label="views" />
       <Hint keys="b" label="sidebar" />
       <Hint keys="q" label="logout" />
     </div>
