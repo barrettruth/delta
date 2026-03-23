@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if ! command -v biome &>/dev/null; then
+  BIOME="nix develop -c biome"
+else
+  BIOME="biome"
+fi
+
 echo "==> Biome check"
-biome check .
+$BIOME check .
 
 echo "==> TypeScript check"
 pnpm tsc --noEmit

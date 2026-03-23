@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
-import type { DateFormat, WeekStartDay } from "@/core/settings";
+import type { WeekStartDay } from "@/core/settings";
 import type { Task } from "@/core/types";
 
 type ViewMode = "week" | "month";
@@ -114,13 +114,11 @@ export function CalendarView({
   tasks,
   categories,
   weekStartDay = 1,
-  dateFormat = "us",
   defaultCategory,
 }: {
   tasks: Task[];
   categories?: string[];
   weekStartDay?: WeekStartDay;
-  dateFormat?: DateFormat;
   defaultCategory?: string;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
@@ -319,7 +317,6 @@ export function CalendarView({
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
           dayNames={dayNames}
-          dateFormat={dateFormat}
         />
       ) : (
         <MonthView
@@ -330,7 +327,6 @@ export function CalendarView({
           onTaskClick={setSelectedTask}
           weekStartDay={weekStartDay}
           dayNames={dayNames}
-          dateFormat={dateFormat}
         />
       )}
 
@@ -357,7 +353,6 @@ function WeekView({
   onDayClick,
   onTaskClick,
   dayNames,
-  dateFormat: _dateFormat,
 }: {
   weekStart: Date;
   today: Date;
@@ -365,7 +360,6 @@ function WeekView({
   onDayClick: (date: Date) => void;
   onTaskClick: (task: Task) => void;
   dayNames: string[];
-  dateFormat: DateFormat;
 }) {
   const days = useMemo(() => {
     const result: Date[] = [];
@@ -450,7 +444,6 @@ function MonthView({
   onTaskClick,
   weekStartDay,
   dayNames,
-  dateFormat: _dateFormat,
 }: {
   monthStart: Date;
   today: Date;
@@ -459,7 +452,6 @@ function MonthView({
   onTaskClick: (task: Task) => void;
   weekStartDay: WeekStartDay;
   dayNames: string[];
-  dateFormat: DateFormat;
 }) {
   const totalDays = daysInMonth(monthStart);
   const offset = weekOffset(monthStart, weekStartDay);
@@ -545,10 +537,13 @@ function MonthView({
                   <button
                     type="button"
                     key={task.id}
-                    className={`text-[10px] leading-tight truncate max-w-full px-1 py-0.5 rounded transition-colors hover:bg-accent w-full text-left block ${statusColor(task)}`}
+                    className={`flex items-start gap-1 text-[10px] leading-tight max-w-full px-1 py-0.5 rounded transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
                     onClick={() => onTaskClick(task)}
                   >
-                    {task.description}
+                    <span
+                      className={`shrink-0 mt-[3px] w-1.5 h-1.5 rounded-full ${statusDot(task)}`}
+                    />
+                    <span className="truncate">{task.description}</span>
                   </button>
                 ))}
                 {dayTasks.length > 3 && (
