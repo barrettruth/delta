@@ -4,5 +4,8 @@ import { db } from "@/db";
 
 export default function CalendarPage() {
   const tasks = listTasks(db);
-  return <CalendarView tasks={tasks} />;
+  const categories = [
+    ...new Set(tasks.map((t) => t.category).filter(Boolean)),
+  ] as string[];
+  return <CalendarView tasks={tasks} categories={categories} />;
 }

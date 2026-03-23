@@ -6,11 +6,13 @@ import {
 } from "@/lib/rate-limit";
 
 beforeEach(() => {
+  vi.stubEnv("NODE_ENV", "production");
   resetForTesting();
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 describe("rate limiter", () => {

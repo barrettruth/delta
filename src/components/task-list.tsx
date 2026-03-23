@@ -38,7 +38,13 @@ function PriorityIndicator({ priority }: { priority: number | null }) {
   );
 }
 
-export function TaskList({ tasks }: { tasks: Task[] }) {
+export function TaskList({
+  tasks,
+  categories,
+}: {
+  tasks: Task[];
+  categories?: string[];
+}) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const rowRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -130,7 +136,11 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
           </div>
         )}
       </div>
-      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateTaskDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        categories={categories}
+      />
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}

@@ -107,7 +107,13 @@ function statusDot(task: Task): string {
   return "bg-status-pending";
 }
 
-export function CalendarView({ tasks }: { tasks: Task[] }) {
+export function CalendarView({
+  tasks,
+  categories,
+}: {
+  tasks: Task[];
+  categories?: string[];
+}) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -313,6 +319,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultDue={createDate}
+        categories={categories}
       />
       <TaskDetail
         task={selectedTask}
