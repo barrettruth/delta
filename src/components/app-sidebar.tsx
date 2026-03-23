@@ -2,7 +2,6 @@
 
 import {
   Calendar,
-  CheckSquare,
   Columns3,
   type LucideIcon,
   Palette,
@@ -27,10 +26,10 @@ import {
 
 const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
   [
-    { label: "Queue", href: "/", icon: Zap, key: "1" },
-    { label: "Kanban", href: "/kanban", icon: Columns3, key: "2" },
-    { label: "Calendar", href: "/calendar", icon: Calendar, key: "3" },
-    { label: "Settings", href: "/settings", icon: Settings, key: "4" },
+    { label: "Queue", href: "/", icon: Zap, key: "Q" },
+    { label: "Kanban", href: "/kanban", icon: Columns3, key: "K" },
+    { label: "Calendar", href: "/calendar", icon: Calendar, key: "C" },
+    { label: "Settings", href: "/settings", icon: Settings, key: "S" },
   ];
 
 export function AppSidebar({
@@ -82,21 +81,12 @@ export function AppSidebar({
           <SidebarGroupLabel>Categories</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link href="/" />}
-                  isActive={pathname === "/" && !activeCategory}
-                >
-                  <CheckSquare className="size-4" />
-                  <span>All</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               {categories.map((cat, idx) => {
-                const KEYS = ["5", "6", "7", "8", "9"];
+                const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
                 const shortcutKey = idx < KEYS.length ? KEYS[idx] : null;
                 return (
                   <SidebarMenuItem key={cat}>
-                    <div className="flex items-center">
+                    <div className="relative">
                       <SidebarMenuButton
                         render={
                           <Link
@@ -104,7 +94,6 @@ export function AppSidebar({
                           />
                         }
                         isActive={activeCategory === cat}
-                        className="flex-1"
                       >
                         <span
                           className="text-xs font-bold shrink-0"
@@ -124,7 +113,7 @@ export function AppSidebar({
                       </SidebarMenuButton>
                       <button
                         type="button"
-                        className="p-1 rounded hover:bg-accent transition-colors opacity-0 group-hover/sidebar:opacity-100"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-accent transition-colors opacity-0 group-hover/sidebar:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingColor(editingColor === cat ? null : cat);

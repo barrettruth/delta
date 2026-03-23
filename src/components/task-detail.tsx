@@ -128,7 +128,7 @@ export function TaskDetail({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xl duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup
           className="fixed inset-4 sm:inset-8 z-50 mx-auto max-w-3xl flex flex-col rounded-xl bg-card ring-1 ring-border/40 shadow-2xl duration-150 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.97] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.97]"
           onKeyDown={handleKeyDown}
@@ -142,7 +142,7 @@ export function TaskDetail({
             />
           </div>
 
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 min-h-0">
             <div className="flex-1 overflow-auto px-8 pb-8">
               <TiptapEditor
                 content={task.notes ?? null}
