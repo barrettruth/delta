@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
@@ -121,8 +122,9 @@ export function CalendarView({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string>("");
-  const [selectedDayIdx, setSelectedDayIdx] = useState(-1);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
+  const router = useRouter();
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState(() => new Date());
 
@@ -171,6 +173,15 @@ export function CalendarView({
     setAnchor(new Date());
   }, []);
 
+  const moveSelection = useCallback((days: number) => {
+    setSelectedDate((prev) => {
+      const base = prev ?? new Date();
+      const next = addDays(base, days);
+      setAnchor(next);
+      return next;
+    });
+  }, []);
+
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
@@ -199,28 +210,34 @@ export function CalendarView({
         return;
       }
 
-      if (viewMode === "week" && e.key === "h") {
+      if (e.key === "h") {
         e.preventDefault();
-        setSelectedDayIdx((i) => {
-          const cur = i < 0 ? 0 : i;
-          if (cur === 0) {
-            prevWeek();
-            return 6;
-          }
-          return cur - 1;
-        });
+        moveSelection(-1);
         return;
       }
-      if (viewMode === "week" && e.key === "l") {
+      if (e.key === "l") {
         e.preventDefault();
-        setSelectedDayIdx((i) => {
-          const cur = i < 0 ? 0 : i;
-          if (cur === 6) {
-            nextWeek();
-            return 0;
-          }
-          return cur + 1;
-        });
+        moveSelection(1);
+        return;
+      }
+      if (e.key === "j") {
+        e.preventDefault();
+        moveSelection(7);
+        return;
+      }
+      if (e.key === "k") {
+        e.preventDefault();
+        moveSelection(-7);
+        return;
+      }
+      if (e.key === "Enter" && selectedDate) {
+        e.preventDefault();
+        router.push(`/?date=${formatDateKey(selectedDate)}`);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSelectedDate(null);
         return;
       }
 
@@ -250,7 +267,16 @@ export function CalendarView({
         return;
       }
     },
-    [viewMode, prevWeek, nextWeek, prevMonth, nextMonth, goToday],
+    [
+      moveSelection,
+      selectedDate,
+      router,
+      prevWeek,
+      nextWeek,
+      prevMonth,
+      nextMonth,
+      goToday,
+    ],
   );
 
   useEffect(() => {
@@ -343,7 +369,7 @@ export function CalendarView({
           onTaskClick={setSelectedTask}
           dayNames={DAY_NAMES}
           categoryColors={categoryColors}
-          selectedDayIdx={selectedDayIdx}
+          selectedDate={selectedDate}
         />
       ) : (
         <MonthView
@@ -354,6 +380,7 @@ export function CalendarView({
           onTaskClick={setSelectedTask}
           dayNames={DAY_NAMES}
           categoryColors={categoryColors}
+          selectedDate={selectedDate}
         />
       )}
 
@@ -381,7 +408,7 @@ function WeekView({
   onTaskClick,
   dayNames,
   categoryColors,
-  selectedDayIdx,
+  selectedDate,
 }: {
   weekStart: Date;
   today: Date;
@@ -390,7 +417,7 @@ function WeekView({
   onTaskClick: (task: Task) => void;
   dayNames: string[];
   categoryColors: Record<string, string>;
-  selectedDayIdx: number;
+  selectedDate: Date | null;
 }) {
   const days = useMemo(() => {
     const result: Date[] = [];
@@ -405,11 +432,12 @@ function WeekView({
       <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
         {days.map((date, idx) => {
           const isToday = isSameDay(date, today);
-          const isSelected = idx === selectedDayIdx;
+          const isSelected =
+            selectedDate !== null && isSameDay(date, selectedDate);
           return (
             <div
               key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 ${isSelected ? "bg-accent" : isToday ? "bg-primary/5" : ""}`}
+              className={`flex flex-col items-center py-2 ${isSelected ? "bg-accent" : ""} ${isToday ? "ring-1 ring-primary/50" : ""}`}
             >
               <span className="text-xs text-muted-foreground">
                 {dayNames[idx]}
@@ -426,19 +454,20 @@ function WeekView({
         })}
       </div>
       <div className="grid grid-cols-7 flex-1 overflow-auto">
-        {days.map((date, idx) => {
+        {days.map((date) => {
           const key = formatDateKey(date);
           const dayTasks = tasksByDate.get(key) ?? [];
           const isToday = isSameDay(date, today);
-          const isSelected = idx === selectedDayIdx;
+          const isSelected =
+            selectedDate !== null && isSameDay(date, selectedDate);
 
           const blend = dayBlendStyle(dayTasks, categoryColors);
           return (
             <div
               key={key}
               className={`flex flex-col p-2 border-r border-border/30 ${
-                isSelected ? "bg-accent" : isToday ? "bg-primary/5" : ""
-              }`}
+                isSelected ? "bg-accent" : ""
+              } ${isToday ? "ring-1 ring-inset ring-primary/50" : ""}`}
               style={!isToday ? blend : undefined}
             >
               <div className="flex flex-col gap-1 w-full">
@@ -477,6 +506,7 @@ function MonthView({
   onTaskClick,
   dayNames,
   categoryColors,
+  selectedDate,
 }: {
   monthStart: Date;
   today: Date;
@@ -485,6 +515,7 @@ function MonthView({
   onTaskClick: (task: Task) => void;
   dayNames: string[];
   categoryColors: Record<string, string>;
+  selectedDate: Date | null;
 }) {
   const totalDays = daysInMonth(monthStart);
   const offset = weekOffset(monthStart);
@@ -531,6 +562,8 @@ function MonthView({
           const dateKey = formatDateKey(cellDate);
           const dayTasks = tasksByDate.get(dateKey) ?? [];
           const isToday = isSameDay(cellDate, today);
+          const isSelected =
+            selectedDate !== null && isSameDay(cellDate, selectedDate);
           const isPast = cellDate < today && !isToday;
           const blend = dayBlendStyle(dayTasks, categoryColors);
 
@@ -538,8 +571,8 @@ function MonthView({
             <div
               key={cell.key}
               className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${
-                isPast ? "opacity-50" : ""
-              }`}
+                isSelected ? "bg-accent" : ""
+              } ${isToday ? "ring-1 ring-inset ring-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
               style={blend}
             >
               <span

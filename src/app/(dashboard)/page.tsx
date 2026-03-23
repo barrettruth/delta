@@ -19,7 +19,7 @@ const viewRoutes: Record<ViewType, string> = {
 export default async function QueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; status?: string }>;
+  searchParams: Promise<{ category?: string; status?: string; date?: string }>;
 }) {
   const params = await searchParams;
   const cookieStore = await cookies();
@@ -33,7 +33,8 @@ export default async function QueuePage({
     settings.defaultView !== "queue" &&
     settings.defaultView !== "list" &&
     !params.category &&
-    !params.status
+    !params.status &&
+    !params.date
   ) {
     redirect(viewRoutes[settings.defaultView]);
   }
@@ -43,6 +44,10 @@ export default async function QueuePage({
   if (params.category) filters.category = params.category;
   if (params.status) {
     filters.status = params.status.split(",") as TaskStatus[];
+  }
+  if (params.date) {
+    filters.dueAfter = `${params.date}T00:00:00.000Z`;
+    filters.dueBefore = `${params.date}T23:59:59.999Z`;
   }
 
   if (!settings.showCompletedTasks && !params.status) {
