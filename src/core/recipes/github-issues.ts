@@ -104,7 +104,12 @@ export async function githubIssuesHandler(
   const category = config.category ?? "Todo";
 
   for (const repo of config.repos) {
-    const issues = await fetchOpenIssues(repo, config.token);
+    let issues: GitHubIssue[];
+    try {
+      issues = await fetchOpenIssues(repo, config.token);
+    } catch {
+      continue;
+    }
 
     for (const issue of issues) {
       if (issue.pull_request) continue;
