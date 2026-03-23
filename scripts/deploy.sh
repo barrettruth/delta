@@ -2,6 +2,7 @@
 set -euo pipefail
 
 DEPLOY_DIR="/opt/delta"
+export DATABASE_URL="${DATABASE_URL:-/var/lib/delta/data.db}"
 
 echo "==> Pulling latest code"
 cd "$DEPLOY_DIR"
