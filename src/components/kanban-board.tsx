@@ -1,7 +1,7 @@
 "use client";
 
 import { Inbox } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
@@ -50,7 +50,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [visualMode, setVisualMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const visualAnchor = useRef(-1);
-  const grouped = groupByStatus(tasks);
+  const grouped = useMemo(() => groupByStatus(tasks), [tasks]);
 
   const getColTasks = useCallback(
     (ci: number) => grouped[columns[ci].status] ?? [],
@@ -59,9 +59,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   useEffect(() => {
     if (!visualMode) return;
-    const colTasks = getColTasks(colIdx);
+    const colTasks = grouped[columns[colIdx].status] ?? [];
     setSelectedIds(rangeSet(colTasks, visualAnchor.current, rowIdx));
-  }, [rowIdx, colIdx, visualMode, getColTasks]);
+  }, [rowIdx, colIdx, visualMode, grouped, columns]);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
