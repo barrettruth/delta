@@ -129,12 +129,30 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
           const dayTasks = tasksByDate.get(dateKey) ?? [];
           const isToday = isSameDay(cellDate, today);
           const isPast = cellDate < today && !isToday;
+          const hasOverdue = dayTasks.some(
+            (t) =>
+              t.status !== "done" &&
+              t.status !== "cancelled" &&
+              t.due &&
+              new Date(t.due) < today,
+          );
+          const hasHigh = dayTasks.some(
+            (t) =>
+              t.status !== "done" &&
+              t.status !== "cancelled" &&
+              (t.priority ?? 0) >= 3,
+          );
+
+          let dayBg = "";
+          if (hasOverdue) dayBg = "bg-status-blocked/8";
+          else if (hasHigh) dayBg = "bg-status-wip/8";
+          else if (dayTasks.length > 0) dayBg = "bg-primary/5";
 
           return (
             <div
               key={cell.key}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 cursor-pointer ${
-                isToday ? "bg-primary/5" : ""
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 cursor-pointer ${dayBg} ${
+                isToday ? "border-l-2 border-l-primary" : ""
               } ${isPast ? "opacity-50" : ""}`}
               onClick={() => handleDayClick(day)}
               onKeyDown={(e) => {
@@ -142,10 +160,8 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
               }}
             >
               <span
-                className={`text-xs font-medium mb-1 inline-flex items-center justify-center size-5 rounded-full ${
-                  isToday
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground"
+                className={`text-xs font-medium mb-1 ${
+                  isToday ? "text-primary font-bold" : "text-muted-foreground"
                 }`}
               >
                 {day}
@@ -155,7 +171,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                   <button
                     type="button"
                     key={task.id}
-                    className={`text-xs truncate px-1 py-0.5 rounded transition-colors hover:bg-accent w-full text-left ${
+                    className={`text-[10px] leading-tight truncate max-w-full px-1 py-0.5 rounded transition-colors hover:bg-accent w-full text-left ${
                       task.status === "done"
                         ? "text-status-done line-through"
                         : task.status === "blocked"
@@ -171,8 +187,8 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                   </button>
                 ))}
                 {dayTasks.length > 3 && (
-                  <span className="text-xs text-muted-foreground px-1">
-                    +{dayTasks.length - 3} more
+                  <span className="text-[10px] text-muted-foreground px-1">
+                    +{dayTasks.length - 3}
                   </span>
                 )}
               </div>

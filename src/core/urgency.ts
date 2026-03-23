@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { taskDependencies } from "@/db/schema";
 import type { Db, Task } from "./types";
 

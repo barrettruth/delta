@@ -6,7 +6,6 @@ import {
   Clock,
   Inbox,
   Loader2,
-  Plus,
   Search,
   Trash2,
   X,
@@ -62,7 +61,7 @@ function useDebounce(value: string, delay: number): string {
   return debounced;
 }
 
-export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
+export function TaskList({ tasks }: { tasks: Task[]; title?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
@@ -145,19 +144,6 @@ export function TaskList({ tasks, title }: { tasks: Task[]; title?: string }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
-        <h1 className="text-lg font-semibold tracking-tight">
-          {title ?? "Tasks"}
-        </h1>
-        <Button
-          size="sm"
-          onClick={() => setCreateOpen(true)}
-          className="gap-1.5"
-        >
-          <Plus className="size-4" />
-          New
-        </Button>
-      </div>
       <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-b border-border/60">
         <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />

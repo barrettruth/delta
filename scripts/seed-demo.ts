@@ -90,7 +90,7 @@ createTask(db, {
   recurMode: "completion",
 });
 
-const cs3120hw = createTask(db, {
+const _cs3120hw = createTask(db, {
   description: "CS 3120: Homework 6 — NP-completeness proofs",
   category: "School",
   priority: 3,

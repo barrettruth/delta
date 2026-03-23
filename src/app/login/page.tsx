@@ -38,11 +38,11 @@ export default function LoginPage() {
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="w-full max-w-sm rounded-lg border bg-card p-8 shadow-lg">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <h1 className="text-4xl font-bold tracking-tight text-center text-primary select-none">
+          <h1 className="text-5xl text-center text-foreground select-none font-serif">
             &Delta;
           </h1>
           <p className="text-sm text-muted-foreground text-center -mt-2">
-            Sign in to delta
+            Sign in
           </p>
           {error && (
             <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive text-center">

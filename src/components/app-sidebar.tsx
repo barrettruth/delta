@@ -22,12 +22,13 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const views: { label: string; href: string; icon: LucideIcon }[] = [
-  { label: "Queue", href: "/queue", icon: Zap },
-  { label: "List", href: "/", icon: List },
-  { label: "Kanban", href: "/kanban", icon: Columns3 },
-  { label: "Calendar", href: "/calendar", icon: Calendar },
-];
+const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
+  [
+    { label: "Queue", href: "/queue", icon: Zap, key: "1" },
+    { label: "List", href: "/", icon: List, key: "2" },
+    { label: "Kanban", href: "/kanban", icon: Columns3, key: "3" },
+    { label: "Calendar", href: "/calendar", icon: Calendar, key: "4" },
+  ];
 
 export function AppSidebar({ categories }: { categories: string[] }) {
   const pathname = usePathname();
@@ -36,15 +37,12 @@ export function AppSidebar({ categories }: { categories: string[] }) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 py-4 border-b border-border/60">
+      <SidebarHeader className="flex items-center justify-center py-6 border-b border-border/60">
         <Link
           href="/"
-          className="flex items-center gap-2 text-2xl font-bold tracking-tight text-primary hover:text-primary/80 transition-colors select-none"
+          className="text-foreground hover:text-foreground/80 transition-colors select-none"
         >
-          <span className="text-3xl leading-none">&Delta;</span>
-          <span className="text-sm font-medium text-muted-foreground">
-            delta
-          </span>
+          <span className="text-4xl font-serif">&Delta;</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -59,7 +57,10 @@ export function AppSidebar({ categories }: { categories: string[] }) {
                     isActive={pathname === view.href}
                   >
                     <view.icon className="size-4" />
-                    <span>{view.label}</span>
+                    <span className="flex-1">{view.label}</span>
+                    <kbd className="text-[10px] font-mono text-muted-foreground">
+                      {view.key}
+                    </kbd>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

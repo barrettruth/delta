@@ -2,11 +2,7 @@
 
 import { Circle, CircleCheck, Clock, Loader2, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
-import {
-  completeTaskAction,
-  deleteTaskAction,
-  updateTaskAction,
-} from "@/app/actions/tasks";
+import { completeTaskAction, updateTaskAction } from "@/app/actions/tasks";
 import { StatusBadge } from "@/components/status-badge";
 import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
