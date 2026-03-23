@@ -131,13 +131,15 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
           const isPast = cellDate < today && !isToday;
 
           return (
-            <button
-              type="button"
+            <div
               key={cell.key}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 focus-visible:outline-none focus-visible:bg-accent ${
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 cursor-pointer ${
                 isToday ? "bg-primary/5" : ""
               } ${isPast ? "opacity-50" : ""}`}
               onClick={() => handleDayClick(day)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleDayClick(day);
+              }}
             >
               <span
                 className={`text-xs font-medium mb-1 inline-flex items-center justify-center size-5 rounded-full ${
@@ -174,7 +176,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
