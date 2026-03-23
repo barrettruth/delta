@@ -30,6 +30,7 @@ if (
 }
 
 export function isRateLimited(ip: string): boolean {
+  if (process.env.NODE_ENV !== "production") return false;
   const now = Date.now();
   const cutoff = now - WINDOW_MS;
   const timestamps = (attempts.get(ip) ?? []).filter((t) => t > cutoff);
