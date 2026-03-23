@@ -55,6 +55,11 @@ export const sessions = sqliteTable("sessions", {
   createdAt: text("created_at").notNull(),
 });
 
+export const categoryColors = sqliteTable("category_colors", {
+  category: text("category").primaryKey(),
+  color: text("color").notNull(),
+});
+
 export const automations = sqliteTable("automations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),

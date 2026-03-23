@@ -8,6 +8,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
 import { listTasks } from "@/core/task";
 import { db } from "@/db";
+import { categoryColors } from "@/db/schema";
 
 export default async function DashboardLayout({
   children,
@@ -27,9 +28,17 @@ export default async function DashboardLayout({
     ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
   ] as string[];
 
+  const colors = Object.fromEntries(
+    db
+      .select()
+      .from(categoryColors)
+      .all()
+      .map((c) => [c.category, c.color]),
+  );
+
   return (
     <Suspense>
-      <AppSidebar categories={categories} />
+      <AppSidebar categories={categories} categoryColors={colors} />
       <SidebarInset className="flex flex-col h-dvh">
         <main className="flex-1 overflow-hidden bg-background">{children}</main>
         <KeyboardHints />

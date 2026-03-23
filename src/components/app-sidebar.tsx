@@ -6,10 +6,13 @@ import {
   Columns3,
   List,
   type LucideIcon,
+  Palette,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { CategoryColorPicker } from "@/components/category-color-picker";
 import {
   Sidebar,
   SidebarContent,
@@ -30,10 +33,17 @@ const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
     { label: "Calendar", href: "/calendar", icon: Calendar, key: "4" },
   ];
 
-export function AppSidebar({ categories }: { categories: string[] }) {
+export function AppSidebar({
+  categories,
+  categoryColors,
+}: {
+  categories: string[];
+  categoryColors: Record<string, string>;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
+  const [editingColor, setEditingColor] = useState<string | null>(null);
 
   return (
     <Sidebar>
@@ -83,15 +93,43 @@ export function AppSidebar({ categories }: { categories: string[] }) {
               </SidebarMenuItem>
               {categories.map((cat) => (
                 <SidebarMenuItem key={cat}>
-                  <SidebarMenuButton
-                    render={
-                      <Link href={`/?category=${encodeURIComponent(cat)}`} />
-                    }
-                    isActive={activeCategory === cat}
-                  >
-                    <CheckSquare className="size-4" />
-                    <span>{cat}</span>
-                  </SidebarMenuButton>
+                  <div className="flex items-center">
+                    <SidebarMenuButton
+                      render={
+                        <Link href={`/?category=${encodeURIComponent(cat)}`} />
+                      }
+                      isActive={activeCategory === cat}
+                      className="flex-1"
+                    >
+                      <span
+                        className="size-3 rounded-full shrink-0 border border-border/60"
+                        style={{
+                          backgroundColor:
+                            categoryColors[cat] ?? "var(--muted-foreground)",
+                        }}
+                      />
+                      <span className="flex-1">{cat}</span>
+                    </SidebarMenuButton>
+                    <button
+                      type="button"
+                      className="p-1 rounded hover:bg-accent transition-colors opacity-0 group-hover/sidebar:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingColor(editingColor === cat ? null : cat);
+                      }}
+                    >
+                      <Palette className="size-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                  {editingColor === cat && (
+                    <div className="mt-1 ml-2 rounded-lg border border-border/60 bg-popover shadow-lg">
+                      <CategoryColorPicker
+                        category={cat}
+                        currentColor={categoryColors[cat] ?? null}
+                        onClose={() => setEditingColor(null)}
+                      />
+                    </div>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

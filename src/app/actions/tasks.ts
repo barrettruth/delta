@@ -1,10 +1,12 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { addDependency, removeDependency } from "@/core/dag";
 import { completeTask, createTask, deleteTask, updateTask } from "@/core/task";
 import type { CreateTaskInput, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
+import { categoryColors } from "@/db/schema";
 
 type ActionResult<T> = { data: T } | { error: string };
 
@@ -70,6 +72,43 @@ export async function addDependencyAction(
   } catch (e) {
     return {
       error: e instanceof Error ? e.message : "Failed to add dependency",
+    };
+  }
+}
+
+export async function setCategoryColorAction(
+  category: string,
+  color: string,
+): Promise<ActionResult<null>> {
+  try {
+    db.insert(categoryColors)
+      .values({ category, color })
+      .onConflictDoUpdate({
+        target: categoryColors.category,
+        set: { color },
+      })
+      .run();
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to set category color",
+    };
+  }
+}
+
+export async function removeCategoryColorAction(
+  category: string,
+): Promise<ActionResult<null>> {
+  try {
+    db.delete(categoryColors)
+      .where(eq(categoryColors.category, category))
+      .run();
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to remove category color",
     };
   }
 }

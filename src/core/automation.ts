@@ -49,11 +49,16 @@ export async function runAutomation(
 export async function startScheduler(db: Db): Promise<() => void> {
   await loadBuiltinRecipes();
 
-  const allAutomations = db
-    .select()
-    .from(automations)
-    .all()
-    .filter((a) => a.enabled === 1);
+  let allAutomations: (typeof automations.$inferSelect)[] = [];
+  try {
+    allAutomations = db
+      .select()
+      .from(automations)
+      .all()
+      .filter((a) => a.enabled === 1);
+  } catch {
+    return stopScheduler;
+  }
 
   for (const automation of allAutomations) {
     if (!validate(automation.cron)) continue;
