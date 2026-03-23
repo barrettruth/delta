@@ -89,7 +89,7 @@ function InlineEdit({
         {type === "date" && value
           ? formatDate(new Date(value))
           : value
-            ? `${prefix ?? ""}${value}`
+            ? `${prefix ? `${prefix} ` : ""}${value}`
             : "\u00a0"}
       </button>
     );
