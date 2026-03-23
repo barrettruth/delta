@@ -30,6 +30,8 @@ export function useKeyboard(actions: KeyboardActions) {
   const visualAnchor = useRef(-1);
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
 
   const taskCount = actions.tasks.length;
   useEffect(() => {
@@ -38,16 +40,16 @@ export function useKeyboard(actions: KeyboardActions) {
 
   useEffect(() => {
     if (!visualMode) return;
-    const { tasks } = actions;
+    const { tasks } = actionsRef.current;
     setSelectedIds(rangeSet(tasks, visualAnchor.current, cursor));
-  }, [cursor, visualMode, actions]);
+  }, [cursor, visualMode]);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
 
       const { tasks, onComplete, onDelete, onCreate, onSelect, onDeselect } =
-        actions;
+        actionsRef.current;
 
       if (pendingG.current) {
         pendingG.current = false;
@@ -153,7 +155,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [actions, cursor, selectedIds, visualMode],
+    [cursor, selectedIds, visualMode],
   );
 
   useEffect(() => {
