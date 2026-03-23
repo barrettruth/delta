@@ -32,12 +32,6 @@ const STATUS_COLOR: Record<TaskStatus, string> = {
   cancelled: "text-status-cancelled",
 };
 
-function urgencyColor(score: number): string {
-  if (score >= 20) return "text-status-blocked";
-  if (score >= 10) return "text-status-wip";
-  return "text-muted-foreground";
-}
-
 function nextStatus(current: TaskStatus): TaskStatus {
   const order: TaskStatus[] = [
     "pending",
@@ -263,11 +257,6 @@ export function QueueView({
                     }
                     className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0"
                   />
-                  <span
-                    className={`w-12 text-xs font-semibold tabular-nums text-center shrink-0 ${urgencyColor(task.urgency)}`}
-                  >
-                    {task.urgency}
-                  </span>
                 </div>
               );
             })}
