@@ -83,19 +83,19 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                 >
                   {task.description}
                 </span>
-                {task.category && task.category !== "Todo" && (
-                  <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-muted/50">
-                    {task.category}
-                  </span>
-                )}
-                <StatusBadge status={task.status as TaskStatus} />
-                {task.due && (
-                  <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-                    {new Date(task.due).toLocaleDateString()}
-                  </span>
-                )}
+                <span className="w-24 truncate text-xs text-muted-foreground text-right shrink-0">
+                  {task.category && task.category !== "Todo"
+                    ? task.category
+                    : ""}
+                </span>
+                <span className="w-16 shrink-0">
+                  <StatusBadge status={task.status as TaskStatus} />
+                </span>
+                <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
+                  {task.due ? new Date(task.due).toLocaleDateString() : ""}
+                </span>
                 <span
-                  className={`text-xs font-mono font-semibold tabular-nums px-1.5 py-0.5 rounded ${urgencyColor(task.urgency)} ${urgencyBg(task.urgency)}`}
+                  className={`w-10 text-xs font-mono font-semibold tabular-nums text-right shrink-0 ${urgencyColor(task.urgency)}`}
                 >
                   {task.urgency}
                 </span>
