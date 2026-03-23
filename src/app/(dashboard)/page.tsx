@@ -48,8 +48,18 @@ export default async function QueuePage({
     filters.status = ["pending", "wip", "blocked"];
   }
 
+  const allTasks = listTasks(db);
   const tasks = listTasks(db, filters);
   const ranked = rankTasks(db, tasks, settings?.urgencyWeights);
+  const categories = [
+    ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
+  ] as string[];
 
-  return <QueueView tasks={ranked} />;
+  return (
+    <QueueView
+      tasks={ranked}
+      categories={categories}
+      defaultCategory={settings?.defaultCategory}
+    />
+  );
 }

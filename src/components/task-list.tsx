@@ -15,7 +15,6 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
-import { StatusBadge } from "@/components/status-badge";
 import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Task, TaskStatus } from "@/core/types";
@@ -29,15 +28,6 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
   cancelled: <Trash2 className="size-4 text-status-cancelled" />,
 };
 
-function PriorityIndicator({ priority }: { priority: number | null }) {
-  if (!priority || priority === 0) return null;
-  return (
-    <span className="text-xs font-semibold text-primary">
-      {"!".repeat(Math.min(priority, 3))}
-    </span>
-  );
-}
-
 export function TaskList({
   tasks,
   categories,
@@ -49,14 +39,17 @@ export function TaskList({
 }) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const rowRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const { selectedIndex } = useKeyboard({
+  const { cursor } = useKeyboard({
     tasks,
-    onComplete: (id) => completeTaskAction(id),
-    onDelete: (id) => {
-      deleteTaskAction(id);
-      if (selectedTask?.id === id) setSelectedTask(null);
+    onComplete: (ids) => {
+      for (const id of ids) completeTaskAction(id);
+    },
+    onDelete: (ids) => {
+      for (const id of ids) deleteTaskAction(id);
+      if (selectedTask && ids.includes(selectedTask.id))
+        setSelectedTask(null);
     },
     onCreate: () => setCreateOpen(true),
     onSelect: (task) => setSelectedTask(task),
@@ -64,11 +57,11 @@ export function TaskList({
   });
 
   useEffect(() => {
-    if (selectedIndex >= 0 && selectedIndex < tasks.length) {
-      const el = rowRefs.current.get(tasks[selectedIndex].id);
+    if (cursor >= 0 && cursor < tasks.length) {
+      const el = rowRefs.current.get(tasks[cursor].id);
       el?.scrollIntoView({ block: "nearest" });
     }
-  }, [selectedIndex, tasks]);
+  }, [cursor, tasks]);
 
   async function handleToggle(task: Task) {
     if (task.status === "done") {
@@ -89,16 +82,17 @@ export function TaskList({
         ) : (
           <div className="divide-y divide-border/60">
             {tasks.map((task, i) => (
-              <button
-                type="button"
+              <div
                 key={task.id}
                 ref={(el) => {
                   if (el) rowRefs.current.set(task.id, el);
                 }}
-                className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left focus-visible:outline-none focus-visible:bg-accent ${
-                  i === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
+                className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left ${
+                  i === cursor ? "bg-accent" : "hover:bg-accent/50"
                 }`}
                 onClick={() => setSelectedTask(task)}
+                onKeyDown={() => {}}
+                role="row"
               >
                 <Checkbox
                   checked={task.status === "done"}
@@ -114,19 +108,15 @@ export function TaskList({
                 >
                   {task.description}
                 </span>
-                <PriorityIndicator priority={task.priority} />
                 <span className="w-24 truncate text-xs text-muted-foreground text-right shrink-0">
                   {task.category && task.category !== "Todo"
                     ? task.category
                     : ""}
                 </span>
-                <span className="w-16 shrink-0">
-                  <StatusBadge status={task.status as TaskStatus} />
-                </span>
                 <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
                   {task.due ? new Date(task.due).toLocaleDateString() : ""}
                 </span>
-              </button>
+              </div>
             ))}
           </div>
         )}
