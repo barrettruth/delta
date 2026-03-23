@@ -79,8 +79,10 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between">
-            <span>Categories</span>
+          <div className="flex h-8 shrink-0 items-center justify-between px-2">
+            <span className="text-xs font-medium text-sidebar-foreground/70">
+              Categories
+            </span>
             <button
               type="button"
               className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
@@ -88,7 +90,7 @@ export function AppSidebar({
             >
               <Plus className="size-3.5" />
             </button>
-          </SidebarGroupLabel>
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {categories.map((cat, idx) => {
