@@ -39,13 +39,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   }
 
   return (
-    <div className="flex gap-3 p-4 h-full overflow-x-auto">
+    <div className="grid grid-cols-4 gap-3 p-4 h-full max-w-7xl mx-auto w-full">
       {columns.map((col) => {
         const colTasks = grouped[col.status] ?? [];
         return (
           <section
             key={col.status}
-            className={`flex flex-col w-72 shrink-0 rounded-lg border transition-colors ${
+            className={`flex flex-col min-w-0 rounded-lg border transition-colors ${
               dragOver === col.status
                 ? "border-primary/50 bg-primary/5"
                 : "border-border/60 bg-muted/30"
