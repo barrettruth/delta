@@ -89,6 +89,12 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   }, [handler]);
 
   useEffect(() => {
+    const open = () => setHelpOpen(true);
+    window.addEventListener("open-keymap-help", open);
+    return () => window.removeEventListener("open-keymap-help", open);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
     };

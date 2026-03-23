@@ -11,6 +11,7 @@ interface KeyboardActions {
   onCreate: () => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
+  onHelp?: () => void;
 }
 
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
@@ -72,6 +73,11 @@ export function useKeyboard(actions: KeyboardActions) {
         if (e.key === "g") {
           e.preventDefault();
           if (tasks.length > 0) setCursor(0);
+          return;
+        }
+        if (e.key === "?") {
+          e.preventDefault();
+          actionsRef.current.onHelp?.();
           return;
         }
         return;

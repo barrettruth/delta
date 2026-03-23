@@ -175,6 +175,7 @@ export function QueueView({
       onCreate: () => setCreateOpen(true),
       onSelect: (task) => setSelectedTask(task as RankedTask),
       onDeselect: () => setSelectedTask(null),
+      onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
     });
 
   useEffect(() => {
