@@ -1,42 +1,32 @@
 # delta (Δ)
 
-Personal todo/productivity platform. Self-hosted Next.js app with SQLite.
+A personal, self-hosted todo platform.
 
-## Stack
+## Self-hosting
 
-Next.js, TypeScript, Drizzle ORM, SQLite, Tailwind, shadcn/ui, Tiptap, Biome, Vitest
-
-## Setup
+Requires Node.js 22+, pnpm, and SQLite.
 
 ```bash
-nix develop          # or install node 22 + pnpm manually
+git clone https://github.com/barrettruth/delta.git
+cd delta
 pnpm install
 pnpm db:generate
 mkdir -p data
+DATABASE_URL=./data/delta.db pnpm db:migrate
 DATABASE_URL=./data/delta.db npx tsx scripts/seed.ts <username> <password>
-pnpm dev
+DATABASE_URL=./data/delta.db pnpm build
 ```
 
-## Scripts
-
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start dev server (Turbopack) |
-| `pnpm build` | Production build (standalone) |
-| `pnpm test` | Run tests |
-| `pnpm lint` | Biome check |
-| `pnpm typecheck` | TypeScript check |
-| `pnpm db:generate` | Generate Drizzle migrations |
-| `pnpm db:migrate` | Apply migrations |
-| `pnpm ci` | Run all checks |
-
-## CLI
+Run the standalone server:
 
 ```bash
-cd cli && bun build src/main.ts --compile --outfile delta
-DELTA_API_URL=https://delta.barrettruth.com DELTA_API_KEY=<key> ./delta list
+cp -r public .next/standalone/public
+cp -r .next/static .next/standalone/.next/static
+DATABASE_URL=/path/to/data.db PORT=3001 node .next/standalone/server.js
 ```
 
-## Deploy
+Put nginx or Caddy in front with HTTPS. The app runs on `PORT` (default 3000).
 
-Self-hosted on NixOS with systemd + nginx + ACME. Push to `main` triggers CI → deploy via SSH.
+### NixOS
+
+A systemd service, nginx virtualHost, and R2 backup timer are defined in the project's design docs. See `.ai-docs/design.md` for the full deployment architecture.
