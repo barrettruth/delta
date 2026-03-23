@@ -157,7 +157,7 @@ export function QueueView({
                     {task.due ? new Date(task.due).toLocaleDateString() : ""}
                   </span>
                   <span
-                    className={`w-12 text-xs font-mono font-semibold tabular-nums text-center shrink-0 rounded px-1.5 py-0.5 ${urgencyColor(task.urgency)} ${urgencyBg(task.urgency)}`}
+                    className={`w-12 text-xs font-semibold tabular-nums text-center shrink-0 px-1.5 py-0.5 ${urgencyColor(task.urgency)} ${urgencyBg(task.urgency)}`}
                   >
                     {task.urgency}
                   </span>

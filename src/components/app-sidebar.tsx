@@ -113,7 +113,7 @@ export function AppSidebar({
                       </SidebarMenuButton>
                       <button
                         type="button"
-                        className="absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-accent transition-colors opacity-0 group-hover/sidebar:opacity-100"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 p-1 hover:bg-accent transition-colors opacity-0 group-hover/sidebar:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingColor(editingColor === cat ? null : cat);
@@ -123,7 +123,7 @@ export function AppSidebar({
                       </button>
                     </div>
                     {editingColor === cat && (
-                      <div className="mt-1 ml-2 rounded-lg border border-border/60 bg-popover shadow-lg">
+                      <div className="mt-1 ml-2 border border-border bg-popover">
                         <CategoryColorPicker
                           category={cat}
                           currentColor={categoryColors[cat] ?? null}

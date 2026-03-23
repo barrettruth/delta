@@ -10,7 +10,6 @@ import {
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
+import { isInputFocused } from "@/lib/utils";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   pending: "Pending",
@@ -30,23 +30,11 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  "0": "None",
-  "1": "Low",
-  "2": "Medium",
-  "3": "High",
+  "0": "—",
+  "1": "!",
+  "2": "!!",
+  "3": "!!!",
 };
-
-function isInputFocused(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
 
 export function TaskDetail({
   task,
@@ -79,6 +67,12 @@ export function TaskDetail({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+
       if (!tasks || !onSelectTask || !task) return;
       if (isInputFocused()) return;
 
@@ -128,115 +122,99 @@ export function TaskDetail({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup
-          className="fixed inset-4 sm:inset-8 z-50 mx-auto max-w-3xl flex flex-col rounded-xl bg-card ring-1 ring-border/40 shadow-2xl duration-150 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.97] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.97]"
+          className="fixed inset-4 sm:inset-8 z-50 mx-auto max-w-3xl flex flex-col border border-border bg-card duration-150 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.97] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.97]"
           onKeyDown={handleKeyDown}
         >
-          <div className="px-8 pt-8 pb-4">
+          <div className="px-6 pt-6 pb-3">
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full text-xl font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+              className="w-full text-lg font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
               placeholder="Task description"
             />
           </div>
 
-          <div className="flex flex-1 min-h-0">
-            <div className="flex-1 overflow-auto px-8 pb-8">
-              <TiptapEditor
-                content={task.notes ?? null}
-                onChange={(json) => {
-                  notesRef.current = json;
-                }}
-              />
-            </div>
+          <div className="flex flex-wrap items-center gap-3 px-6 pb-3 border-b border-border/40">
+            <Select
+              value={task.status}
+              onValueChange={(v) => v && handleStatusChange(v)}
+            >
+              <SelectTrigger size="sm" className="w-auto gap-1">
+                <SelectValue>
+                  {STATUS_LABELS[task.status as TaskStatus]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                {TASK_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="w-64 shrink-0 border-l border-border/40 px-6 py-2 overflow-auto flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">Status</Label>
-                <Select
-                  value={task.status}
-                  onValueChange={(v) => v && handleStatusChange(v)}
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue>
-                      {STATUS_LABELS[task.status as TaskStatus]}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    {TASK_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <Select
+              value={priority}
+              onValueChange={(v) => v && setPriority(v)}
+            >
+              <SelectTrigger size="sm" className="w-auto gap-1">
+                <SelectValue>{PRIORITY_LABELS[priority]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value="0">— None</SelectItem>
+                <SelectItem value="1">! Low</SelectItem>
+                <SelectItem value="2">!! Medium</SelectItem>
+                <SelectItem value="3">!!! High</SelectItem>
+              </SelectContent>
+            </Select>
 
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Priority
-                </Label>
-                <Select
-                  value={priority}
-                  onValueChange={(v) => v && setPriority(v)}
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue>{PRIORITY_LABELS[priority]}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    <SelectItem value="0">None</SelectItem>
-                    <SelectItem value="1">Low</SelectItem>
-                    <SelectItem value="2">Medium</SelectItem>
-                    <SelectItem value="3">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <Input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="category"
+              className="h-7 w-28 text-xs"
+            />
 
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Category
-                </Label>
-                <Input
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="h-8 text-sm"
-                />
-              </div>
+            <Input
+              type="datetime-local"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              className="h-7 w-auto text-xs"
+            />
 
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">Due</Label>
-                <Input
-                  type="datetime-local"
-                  value={due}
-                  onChange={(e) => setDue(e.target.value)}
-                  className="h-8 text-sm"
-                />
-              </div>
+            <div className="flex-1" />
 
-              <div className="flex-1" />
+            {task.createdAt && (
+              <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                {new Date(task.createdAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
 
-              {task.createdAt && (
-                <p className="text-[10px] text-muted-foreground/60 tabular-nums">
-                  Created {new Date(task.createdAt).toLocaleDateString()}
-                </p>
-              )}
+          <div className="flex-1 min-h-0 overflow-auto p-6">
+            <TiptapEditor
+              content={task.notes ?? null}
+              onChange={(json) => {
+                notesRef.current = json;
+              }}
+            />
+          </div>
 
-              <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-                <Button size="sm" onClick={handleSave}>
-                  Save
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  onClick={handleDelete}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 px-6 py-3 border-t border-border/40">
+            <Button size="sm" onClick={handleSave}>
+              Save
+            </Button>
+            <span className="text-[10px] text-muted-foreground">Ctrl+S</span>
+            <div className="flex-1" />
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
           </div>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>

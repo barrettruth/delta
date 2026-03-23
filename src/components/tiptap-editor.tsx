@@ -4,6 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import type { JSONContent } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import CodeBlockShiki from "tiptap-extension-code-block-shiki";
 import {
   Bold,
   Code,
@@ -18,6 +19,66 @@ import {
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import "./tiptap-styles.css";
+
+const midnight = {
+  name: "midnight" as const,
+  type: "dark" as const,
+  colors: {
+    "editor.background": "#222222",
+    "editor.foreground": "#e0e0e0",
+  },
+  tokenColors: [
+    {
+      scope: [
+        "storage.type",
+        "storage.modifier",
+        "keyword.control",
+        "keyword.operator.new",
+      ],
+      settings: { foreground: "#7aa2f7" },
+    },
+    {
+      scope: [
+        "string.quoted",
+        "constant.numeric",
+        "constant.language",
+        "constant.character",
+        "number",
+      ],
+      settings: { foreground: "#98c379" },
+    },
+  ],
+};
+
+const daylight = {
+  name: "daylight" as const,
+  type: "light" as const,
+  colors: {
+    "editor.background": "#ebebeb",
+    "editor.foreground": "#1a1a1a",
+  },
+  tokenColors: [
+    {
+      scope: [
+        "storage.type",
+        "storage.modifier",
+        "keyword.control",
+        "keyword.operator.new",
+      ],
+      settings: { foreground: "#3b5bdb" },
+    },
+    {
+      scope: [
+        "string.quoted",
+        "constant.numeric",
+        "constant.language",
+        "constant.character",
+        "number",
+      ],
+      settings: { foreground: "#2d7f3e" },
+    },
+  ],
+};
 
 function parseContent(content: string | null): JSONContent | undefined {
   if (!content) return undefined;
@@ -46,7 +107,11 @@ export function TiptapEditor({
 }) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
+      CodeBlockShiki.configure({
+        defaultTheme: "midnight",
+        defaultLanguage: null,
+      }),
       Placeholder.configure({ placeholder: "Add notes\u2026" }),
     ],
     content: parseContent(content),
@@ -74,7 +139,7 @@ export function TiptapEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+    <div className="border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/50">
       <div className="flex flex-wrap gap-0.5 border-b border-input px-1 py-1">
         <Button
           type="button"

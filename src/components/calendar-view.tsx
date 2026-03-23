@@ -7,6 +7,7 @@ import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
 import type { WeekStartDay } from "@/core/settings";
 import type { Task } from "@/core/types";
+import { isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
 
@@ -82,18 +83,6 @@ function formatMonthTitle(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-function isInputFocused(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
-
 function statusColor(task: Task): string {
   if (task.status === "done") return "text-status-done line-through";
   if (task.status === "blocked") return "text-status-blocked";
@@ -128,7 +117,16 @@ export function CalendarView({
   const [createDate, setCreateDate] = useState<string>("");
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
+
+  useEffect(() => {
+    const now = new Date();
+    const msUntilMidnight =
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
+      now.getTime();
+    const timer = setTimeout(() => setToday(new Date()), msUntilMidnight + 100);
+    return () => clearTimeout(timer);
+  }, [today]);
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -283,11 +281,11 @@ export function CalendarView({
           </Button>
         </div>
         <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
-        <div className="flex items-center gap-1 rounded-md border border-border/60 p-0.5">
+        <div className="flex items-center gap-1 border border-border/60 p-0.5">
           <button
             type="button"
             onClick={() => setViewMode("week")}
-            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+            className={`px-3 py-1 text-xs font-medium transition-colors ${
               viewMode === "week"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -298,7 +296,7 @@ export function CalendarView({
           <button
             type="button"
             onClick={() => setViewMode("month")}
-            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+            className={`px-3 py-1 text-xs font-medium transition-colors ${
               viewMode === "month"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -385,7 +383,7 @@ function WeekView({
               <span
                 className={`text-sm font-semibold mt-0.5 ${
                   isToday
-                    ? "bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center"
+                    ? "bg-primary text-primary-foreground w-7 h-7 flex items-center justify-center"
                     : "text-foreground"
                 }`}
               >
@@ -413,7 +411,7 @@ function WeekView({
                   <button
                     type="button"
                     key={task.id}
-                    className={`flex items-start gap-1.5 text-xs leading-snug px-1.5 py-1 rounded transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
+                    className={`flex items-start gap-1.5 text-xs leading-snug px-1.5 py-1 transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
                     onClick={() => onTaskClick(task)}
                   >
                     <span
@@ -425,7 +423,7 @@ function WeekView({
               </div>
               <button
                 type="button"
-                className="flex-1 min-h-[2rem] w-full hover:bg-accent/30 rounded transition-colors cursor-pointer"
+                className="flex-1 min-h-[2rem] w-full hover:bg-accent/30 transition-colors cursor-pointer"
                 onClick={() => onDayClick(date)}
               />
             </div>
@@ -537,7 +535,7 @@ function MonthView({
                   <button
                     type="button"
                     key={task.id}
-                    className={`flex items-start gap-1 text-[10px] leading-tight max-w-full px-1 py-0.5 rounded transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
+                    className={`flex items-start gap-1 text-[10px] leading-tight max-w-full px-1 py-0.5 transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
                     onClick={() => onTaskClick(task)}
                   >
                     <span
@@ -554,7 +552,7 @@ function MonthView({
               </div>
               <button
                 type="button"
-                className="flex-1 min-h-[1rem] w-full hover:bg-accent/50 rounded transition-colors cursor-pointer"
+                className="flex-1 min-h-[1rem] w-full hover:bg-accent/50 transition-colors cursor-pointer"
                 onClick={() => onDayClick(cellDate)}
               />
             </div>

@@ -113,7 +113,7 @@ export function CreateTaskDialog({
                 onBlur={() => setTimeout(() => setShowCategories(false), 150)}
               />
               {showCategories && filteredCategories.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-md border border-border bg-popover py-1 shadow-md">
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
                   {filteredCategories.map((c) => (
                     <button
                       key={c}
@@ -138,7 +138,7 @@ export function CreateTaskDialog({
                   <button
                     key={p.value}
                     type="button"
-                    className={`flex-1 h-9 rounded-md text-xs font-medium transition-colors border ${
+                    className={`flex-1 h-9 text-xs font-medium transition-colors border ${
                       priority === p.value
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-transparent text-muted-foreground border-border hover:bg-accent"
