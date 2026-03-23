@@ -5,12 +5,14 @@ import {
   Columns3,
   type LucideIcon,
   Palette,
+  Plus,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { CategoryColorPicker } from "@/components/category-color-picker";
+import { CreateTaskDialog } from "@/components/create-task-dialog";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +43,7 @@ export function AppSidebar({
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const [editingColor, setEditingColor] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <Sidebar>
@@ -76,7 +79,16 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Categories</SidebarGroupLabel>
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <span>Categories</span>
+            <button
+              type="button"
+              className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {categories.map((cat, idx) => {
@@ -136,6 +148,11 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <CreateTaskDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        categories={categories}
+      />
     </Sidebar>
   );
 }
