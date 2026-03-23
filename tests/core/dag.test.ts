@@ -9,18 +9,20 @@ import {
 } from "@/core/dag";
 import { createTask, getTask, updateTask } from "@/core/task";
 import type { Db } from "@/core/types";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
+let userId: number;
 
 beforeEach(() => {
   db = createTestDb();
+  userId = createTestUser(db).id;
 });
 
 describe("addDependency", () => {
   it("adds a dependency between tasks", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
 
     const deps = getDependencies(db, a.id);
@@ -29,8 +31,8 @@ describe("addDependency", () => {
   });
 
   it("blocks the dependent task", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
 
     const task = getTask(db, a.id);
@@ -38,24 +40,24 @@ describe("addDependency", () => {
   });
 
   it("prevents self-dependency", () => {
-    const a = createTask(db, { description: "A" });
+    const a = createTask(db, userId, { description: "A" });
     expect(() => addDependency(db, a.id, a.id)).toThrow(
       "cannot depend on itself",
     );
   });
 
   it("detects direct cycle", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
 
     expect(() => addDependency(db, b.id, a.id)).toThrow("cycle");
   });
 
   it("detects indirect cycle", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
-    const c = createTask(db, { description: "C" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
+    const c = createTask(db, userId, { description: "C" });
     addDependency(db, a.id, b.id);
     addDependency(db, b.id, c.id);
 
@@ -63,8 +65,8 @@ describe("addDependency", () => {
   });
 
   it("allows adding a dependency on a done task without blocking", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     updateTask(db, b.id, { status: "done" });
 
     addDependency(db, a.id, b.id);
@@ -74,8 +76,8 @@ describe("addDependency", () => {
   });
 
   it("does not block a non-pending task when adding a dependency", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     updateTask(db, a.id, { status: "wip" });
     addDependency(db, a.id, b.id);
 
@@ -86,8 +88,8 @@ describe("addDependency", () => {
 
 describe("removeDependency", () => {
   it("removes a dependency", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
     removeDependency(db, a.id, b.id);
 
@@ -95,8 +97,8 @@ describe("removeDependency", () => {
   });
 
   it("unblocks task when last dependency removed", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
 
     expect(getTask(db, a.id)?.status).toBe("blocked");
@@ -106,9 +108,9 @@ describe("removeDependency", () => {
   });
 
   it("keeps task blocked when other dependencies remain", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
-    const c = createTask(db, { description: "C" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
+    const c = createTask(db, userId, { description: "C" });
     addDependency(db, a.id, b.id);
     addDependency(db, a.id, c.id);
 
@@ -119,9 +121,9 @@ describe("removeDependency", () => {
 
 describe("getDependencies", () => {
   it("returns all dependencies of a task", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
-    const c = createTask(db, { description: "C" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
+    const c = createTask(db, userId, { description: "C" });
     addDependency(db, a.id, b.id);
     addDependency(db, a.id, c.id);
 
@@ -131,16 +133,16 @@ describe("getDependencies", () => {
   });
 
   it("returns empty array for task with no dependencies", () => {
-    const a = createTask(db, { description: "A" });
+    const a = createTask(db, userId, { description: "A" });
     expect(getDependencies(db, a.id)).toHaveLength(0);
   });
 });
 
 describe("getDependents", () => {
   it("returns all tasks that depend on a task", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
-    const c = createTask(db, { description: "C" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
+    const c = createTask(db, userId, { description: "C" });
     addDependency(db, b.id, a.id);
     addDependency(db, c.id, a.id);
 
@@ -151,22 +153,22 @@ describe("getDependents", () => {
 
 describe("hasCycle", () => {
   it("returns false for valid dependency", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     expect(hasCycle(db, a.id, b.id)).toBe(false);
   });
 
   it("returns true for direct cycle", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
     expect(hasCycle(db, b.id, a.id)).toBe(true);
   });
 
   it("returns true for transitive cycle", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
-    const c = createTask(db, { description: "C" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
+    const c = createTask(db, userId, { description: "C" });
     addDependency(db, a.id, b.id);
     addDependency(db, b.id, c.id);
     expect(hasCycle(db, c.id, a.id)).toBe(true);
@@ -175,8 +177,8 @@ describe("hasCycle", () => {
 
 describe("updateBlockedStatus", () => {
   it("unblocks task when all dependencies completed", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
     expect(getTask(db, a.id)?.status).toBe("blocked");
 
@@ -187,9 +189,9 @@ describe("updateBlockedStatus", () => {
   });
 
   it("keeps task blocked when unresolved dependencies remain", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
-    const c = createTask(db, { description: "C" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
+    const c = createTask(db, userId, { description: "C" });
     addDependency(db, a.id, b.id);
     addDependency(db, a.id, c.id);
 
@@ -200,8 +202,8 @@ describe("updateBlockedStatus", () => {
   });
 
   it("treats cancelled dependencies as resolved", () => {
-    const a = createTask(db, { description: "A" });
-    const b = createTask(db, { description: "B" });
+    const a = createTask(db, userId, { description: "A" });
+    const b = createTask(db, userId, { description: "B" });
     addDependency(db, a.id, b.id);
 
     updateTask(db, b.id, { status: "cancelled" });
@@ -211,9 +213,9 @@ describe("updateBlockedStatus", () => {
   });
 
   it("unblocks multiple dependents when a shared dependency is deleted", () => {
-    const dep = createTask(db, { description: "Shared" });
-    const t1 = createTask(db, { description: "T1" });
-    const t2 = createTask(db, { description: "T2" });
+    const dep = createTask(db, userId, { description: "Shared" });
+    const t1 = createTask(db, userId, { description: "T1" });
+    const t2 = createTask(db, userId, { description: "T2" });
     addDependency(db, t1.id, dep.id);
     addDependency(db, t2.id, dep.id);
     expect(getTask(db, t1.id)?.status).toBe("blocked");

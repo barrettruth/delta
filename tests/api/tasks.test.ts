@@ -9,17 +9,19 @@ import {
   updateTask,
 } from "@/core/task";
 import type { Db } from "@/core/types";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
+let userId: number;
 
 beforeEach(() => {
   db = createTestDb();
+  userId = createTestUser(db).id;
 });
 
 describe("task lifecycle", () => {
   it("create, list, update, complete, delete end-to-end", () => {
-    const task = createTask(db, {
+    const task = createTask(db, userId, {
       description: "Write tests",
       category: "Dev",
       priority: 2,
@@ -29,7 +31,7 @@ describe("task lifecycle", () => {
     expect(task.id).toBe(1);
     expect(task.status).toBe("pending");
 
-    const all = listTasks(db);
+    const all = listTasks(db, userId);
     expect(all).toHaveLength(1);
     expect(all[0].id).toBe(task.id);
 
@@ -41,26 +43,26 @@ describe("task lifecycle", () => {
     expect(updated.priority).toBe(3);
     expect(updated.updatedAt).not.toBe(task.updatedAt);
 
-    const completed = completeTask(db, task.id);
+    const completed = completeTask(db, userId, task.id);
     expect(completed.status).toBe("done");
     expect(completed.completedAt).toBeTruthy();
 
-    const afterComplete = listTasks(db);
+    const afterComplete = listTasks(db, userId);
     expect(afterComplete).toHaveLength(1);
     expect(afterComplete[0].status).toBe("done");
   });
 
   it("creates multiple tasks and lists them all", () => {
-    createTask(db, { description: "Task 1" });
-    createTask(db, { description: "Task 2" });
-    createTask(db, { description: "Task 3" });
+    createTask(db, userId, { description: "Task 1" });
+    createTask(db, userId, { description: "Task 2" });
+    createTask(db, userId, { description: "Task 3" });
 
-    const all = listTasks(db);
+    const all = listTasks(db, userId);
     expect(all).toHaveLength(3);
   });
 
   it("soft deletes via deleteTask", () => {
-    const task = createTask(db, { description: "Doomed" });
+    const task = createTask(db, userId, { description: "Doomed" });
     const deleted = deleteTask(db, task.id);
 
     expect(deleted.status).toBe("cancelled");
@@ -73,7 +75,7 @@ describe("task lifecycle", () => {
 
 describe("status transitions", () => {
   it("pending -> wip -> done", () => {
-    const task = createTask(db, { description: "Flow test" });
+    const task = createTask(db, userId, { description: "Flow test" });
     expect(task.status).toBe("pending");
 
     const wip = updateTask(db, task.id, { status: "wip" });
@@ -86,19 +88,18 @@ describe("status transitions", () => {
   });
 
   it("pending -> blocked via dependency -> pending via auto-unblock", () => {
-    const blocker = createTask(db, { description: "Blocker" });
-    const blocked = createTask(db, { description: "Blocked" });
-    addDependency(db, blocked.id, blocker.id);
+    const blocker = createTask(db, userId, { description: "Blocker" });
+    const blocked = createTask(db, userId, { description: "Blocked" });
 
+    addDependency(db, blocked.id, blocker.id);
     expect(getTask(db, blocked.id)?.status).toBe("blocked");
 
-    completeTask(db, blocker.id);
-
+    completeTask(db, userId, blocker.id);
     expect(getTask(db, blocked.id)?.status).toBe("pending");
   });
 
   it("done -> pending clears completedAt", () => {
-    const task = createTask(db, { description: "Reopenable" });
+    const task = createTask(db, userId, { description: "Reopenable" });
     const done = updateTask(db, task.id, { status: "done" });
     expect(done.completedAt).toBeTruthy();
 
@@ -108,7 +109,7 @@ describe("status transitions", () => {
   });
 
   it("cancelled -> wip clears completedAt", () => {
-    const task = createTask(db, { description: "Revived" });
+    const task = createTask(db, userId, { description: "Revived" });
     const cancelled = deleteTask(db, task.id);
     expect(cancelled.completedAt).toBeTruthy();
 
@@ -120,28 +121,28 @@ describe("status transitions", () => {
 
 describe("listing filters", () => {
   beforeEach(() => {
-    createTask(db, {
+    createTask(db, userId, {
       description: "Work task",
       status: "pending",
       category: "Work",
       priority: 3,
       due: "2026-04-01T00:00:00.000Z",
     });
-    createTask(db, {
+    createTask(db, userId, {
       description: "Personal task",
       status: "done",
       category: "Personal",
       priority: 1,
       due: "2026-03-15T00:00:00.000Z",
     });
-    createTask(db, {
+    createTask(db, userId, {
       description: "Urgent work",
       status: "wip",
       category: "Work",
       priority: 5,
       due: "2026-03-20T00:00:00.000Z",
     });
-    createTask(db, {
+    createTask(db, userId, {
       description: "Low prio",
       status: "pending",
       category: "Personal",
@@ -150,13 +151,13 @@ describe("listing filters", () => {
   });
 
   it("filters by single status", () => {
-    const pending = listTasks(db, { status: "pending" });
+    const pending = listTasks(db, userId, { status: "pending" });
     expect(pending).toHaveLength(2);
     expect(pending.every((t) => t.status === "pending")).toBe(true);
   });
 
   it("filters by multiple statuses", () => {
-    const active = listTasks(db, { status: ["pending", "wip"] });
+    const active = listTasks(db, userId, { status: ["pending", "wip"] });
     expect(active).toHaveLength(3);
     expect(
       active.every((t) => t.status === "pending" || t.status === "wip"),
@@ -164,13 +165,13 @@ describe("listing filters", () => {
   });
 
   it("filters by category", () => {
-    const work = listTasks(db, { category: "Work" });
+    const work = listTasks(db, userId, { category: "Work" });
     expect(work).toHaveLength(2);
     expect(work.every((t) => t.category === "Work")).toBe(true);
   });
 
   it("filters by due date range", () => {
-    const range = listTasks(db, {
+    const range = listTasks(db, userId, {
       dueAfter: "2026-03-18T00:00:00.000Z",
       dueBefore: "2026-03-25T00:00:00.000Z",
     });
@@ -179,25 +180,31 @@ describe("listing filters", () => {
   });
 
   it("filters by minimum priority", () => {
-    const highPrio = listTasks(db, { minPriority: 3 });
+    const highPrio = listTasks(db, userId, { minPriority: 3 });
     expect(highPrio).toHaveLength(2);
     expect(highPrio.every((t) => (t.priority ?? 0) >= 3)).toBe(true);
   });
 
   it("combines status and category filters", () => {
-    const result = listTasks(db, { status: "pending", category: "Personal" });
+    const result = listTasks(db, userId, {
+      status: "pending",
+      category: "Personal",
+    });
     expect(result).toHaveLength(1);
     expect(result[0].description).toBe("Low prio");
   });
 
   it("sorts by priority descending", () => {
-    const sorted = listTasks(db, { sortBy: "priority", sortOrder: "desc" });
+    const sorted = listTasks(db, userId, {
+      sortBy: "priority",
+      sortOrder: "desc",
+    });
     expect(sorted[0].priority).toBe(5);
     expect(sorted[sorted.length - 1].priority).toBe(0);
   });
 
   it("sorts by due ascending", () => {
-    const sorted = listTasks(db, { sortBy: "due", sortOrder: "asc" });
+    const sorted = listTasks(db, userId, { sortBy: "due", sortOrder: "asc" });
     const withDue = sorted.filter((t) => t.due !== null);
     for (let i = 1; i < withDue.length; i++) {
       expect((withDue[i].due ?? "") >= (withDue[i - 1].due ?? "")).toBe(true);
@@ -205,14 +212,14 @@ describe("listing filters", () => {
   });
 
   it("returns empty array when no tasks match", () => {
-    const result = listTasks(db, { category: "NonexistentCategory" });
+    const result = listTasks(db, userId, { category: "NonexistentCategory" });
     expect(result).toHaveLength(0);
   });
 });
 
 describe("recurring task completion", () => {
   it("spawns a new pending task with next due date", () => {
-    createTask(db, {
+    createTask(db, userId, {
       description: "Weekly standup",
       due: "2026-03-22T09:00:00.000Z",
       recurrence: "FREQ=WEEKLY",
@@ -221,9 +228,9 @@ describe("recurring task completion", () => {
       priority: 2,
     });
 
-    completeTask(db, 1);
+    completeTask(db, userId, 1);
 
-    const all = listTasks(db);
+    const all = listTasks(db, userId);
     expect(all).toHaveLength(2);
 
     const original = all.find((t) => t.status === "done");
@@ -242,25 +249,25 @@ describe("recurring task completion", () => {
   });
 
   it("does not spawn when task has no recurrence", () => {
-    createTask(db, { description: "One-off task" });
-    completeTask(db, 1);
+    createTask(db, userId, { description: "One-off task" });
+    completeTask(db, userId, 1);
 
-    const all = listTasks(db);
+    const all = listTasks(db, userId);
     expect(all).toHaveLength(1);
     expect(all[0].status).toBe("done");
   });
 
   it("handles completion-based recurrence", () => {
-    createTask(db, {
+    createTask(db, userId, {
       description: "Water plants",
       due: "2026-03-20T08:00:00.000Z",
       recurrence: "FREQ=WEEKLY",
       recurMode: "completion",
     });
 
-    completeTask(db, 1);
+    completeTask(db, userId, 1);
 
-    const all = listTasks(db);
+    const all = listTasks(db, userId);
     expect(all).toHaveLength(2);
 
     const spawned = all.find((t) => t.status === "pending");
@@ -270,16 +277,16 @@ describe("recurring task completion", () => {
   });
 
   it("spawns daily recurring task", () => {
-    createTask(db, {
+    createTask(db, userId, {
       description: "Daily review",
       due: "2026-03-22T18:00:00.000Z",
       recurrence: "FREQ=DAILY",
       recurMode: "scheduled",
     });
 
-    completeTask(db, 1);
+    completeTask(db, userId, 1);
 
-    const all = listTasks(db);
+    const all = listTasks(db, userId);
     expect(all).toHaveLength(2);
 
     const spawned = all.find((t) => t.status === "pending");

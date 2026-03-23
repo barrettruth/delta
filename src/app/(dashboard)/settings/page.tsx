@@ -14,7 +14,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const settings = getSettings(db, user.id);
-  const allTasks = listTasks(db);
+  const allTasks = listTasks(db, user.id);
   const categories = [
     ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
   ] as string[];

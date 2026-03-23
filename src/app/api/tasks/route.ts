@@ -37,7 +37,7 @@ export async function GET(request: Request) {
   const sortOrder = searchParams.get("sort_order");
   if (sortOrder) filters.sortOrder = sortOrder as TaskFilters["sortOrder"];
 
-  return NextResponse.json(listTasks(db, filters));
+  return NextResponse.json(listTasks(db, user.id, filters));
 }
 
 export async function POST(request: Request) {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const task = createTask(db, result.data);
+    const task = createTask(db, user.id, result.data);
     return NextResponse.json(task, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to create task";

@@ -3,9 +3,10 @@ import { addDependency } from "@/core/dag";
 import { createTask, listTasks, updateTask } from "@/core/task";
 import type { Db, Task } from "@/core/types";
 import { computeUrgency, rankTasks } from "@/core/urgency";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
+let userId: number;
 
 function daysFromNow(n: number): string {
   const d = new Date();
@@ -16,6 +17,7 @@ function daysFromNow(n: number): string {
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
     id: 1,
+    userId: 1,
     description: "Test",
     status: "pending",
     category: "Todo",
@@ -116,19 +118,20 @@ describe("computeUrgency", () => {
 describe("rankTasks", () => {
   beforeEach(() => {
     db = createTestDb();
+    userId = createTestUser(db).id;
   });
 
   it("sorts tasks by urgency descending", () => {
-    createTask(db, { description: "Low", priority: 0 });
-    createTask(db, {
+    createTask(db, userId, { description: "Low", priority: 0 });
+    createTask(db, userId, {
       description: "Urgent",
       priority: 3,
       due: daysFromNow(1),
       status: "wip",
     });
-    createTask(db, { description: "Medium", priority: 2 });
+    createTask(db, userId, { description: "Medium", priority: 2 });
 
-    const tasks = listTasks(db);
+    const tasks = listTasks(db, userId);
     const ranked = rankTasks(db, tasks);
 
     expect(ranked[0].description).toBe("Urgent");
@@ -138,28 +141,28 @@ describe("rankTasks", () => {
   });
 
   it("excludes done and cancelled tasks", () => {
-    createTask(db, { description: "Active", priority: 1 });
-    const done = createTask(db, { description: "Done" });
+    createTask(db, userId, { description: "Active", priority: 1 });
+    const done = createTask(db, userId, { description: "Done" });
     updateTask(db, done.id, { status: "done" });
 
-    const tasks = listTasks(db);
+    const tasks = listTasks(db, userId);
     const ranked = rankTasks(db, tasks);
 
     expect(ranked.every((t) => t.status !== "done")).toBe(true);
   });
 
   it("accounts for blocking relationships", () => {
-    const blocker = createTask(db, {
+    const blocker = createTask(db, userId, {
       description: "Blocker",
       priority: 1,
     });
-    const dependent = createTask(db, {
+    const dependent = createTask(db, userId, {
       description: "Dependent",
       priority: 1,
     });
     addDependency(db, dependent.id, blocker.id);
 
-    const tasks = listTasks(db);
+    const tasks = listTasks(db, userId);
     const ranked = rankTasks(db, tasks);
 
     const blockerRank = ranked.find((t) => t.id === blocker.id);

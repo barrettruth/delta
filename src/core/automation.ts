@@ -3,7 +3,11 @@ import { type ScheduledTask, schedule, validate } from "node-cron";
 import { automations } from "@/db/schema";
 import type { Db } from "./types";
 
-export type RecipeHandler = (db: Db, config: unknown) => Promise<void>;
+export type RecipeHandler = (
+  db: Db,
+  userId: number,
+  config: unknown,
+) => Promise<void>;
 
 const recipes = new Map<string, RecipeHandler>();
 const jobs = new Map<number, ScheduledTask>();
@@ -38,7 +42,7 @@ export async function runAutomation(
   }
 
   const config: unknown = JSON.parse(automation.config);
-  await handler(db, config);
+  await handler(db, automation.userId, config);
 
   db.update(automations)
     .set({ lastRunAt: new Date().toISOString() })
