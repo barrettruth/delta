@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useRef, useState } from "react";
-import { createTaskAction } from "@/app/actions/tasks";
+import { useState } from "react";
 import { CategoryColorPicker } from "@/components/category-color-picker";
 import {
   Sidebar,
@@ -42,16 +41,6 @@ export function AppSidebar({
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const [editingColor, setEditingColor] = useState<string | null>(null);
-  const [newCat, setNewCat] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function handleAdd() {
-    const name = newCat.trim();
-    if (name && !categories.includes(name)) {
-      createTaskAction({ description: `New ${name} task`, category: name });
-    }
-    setNewCat("");
-  }
 
   return (
     <Sidebar>
@@ -143,23 +132,6 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 );
               })}
-              <SidebarMenuItem>
-                <input
-                  ref={inputRef}
-                  value={newCat}
-                  onChange={(e) => setNewCat(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAdd();
-                    if (e.key === "Escape") {
-                      setNewCat("");
-                      inputRef.current?.blur();
-                    }
-                    e.stopPropagation();
-                  }}
-                  placeholder="new category..."
-                  className="w-full h-8 px-2 text-sm bg-transparent text-muted-foreground placeholder:text-muted-foreground/40 outline-none"
-                />
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
