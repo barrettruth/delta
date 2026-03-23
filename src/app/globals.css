@@ -7,9 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
-  --font-serif: Signifier, "Times New Roman", Georgia, serif;
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -45,24 +44,24 @@
   --color-status-done: var(--status-done);
   --color-status-blocked: var(--status-blocked);
   --color-status-cancelled: var(--status-cancelled);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
 }
 
 :root {
   --background: #f5f5f5;
   --foreground: #1a1a1a;
-  --card: #ffffff;
+  --card: #f5f5f5;
   --card-foreground: #1a1a1a;
-  --popover: #ffffff;
+  --popover: #f5f5f5;
   --popover-foreground: #1a1a1a;
   --primary: #3b5bdb;
-  --primary-foreground: #ffffff;
+  --primary-foreground: #f5f5f5;
   --secondary: #e8e8e8;
   --secondary-foreground: #1a1a1a;
   --muted: #e8e8e8;
@@ -70,17 +69,17 @@
   --accent: #e8e8e8;
   --accent-foreground: #1a1a1a;
   --destructive: #c7254e;
-  --border: #d4d4d4;
-  --input: #d4d4d4;
+  --border: #d0d0d0;
+  --input: #d0d0d0;
   --ring: #3b5bdb;
-  --radius: 0.5rem;
-  --sidebar: #efefef;
+  --radius: 0px;
+  --sidebar: #ebebeb;
   --sidebar-foreground: #1a1a1a;
   --sidebar-primary: #3b5bdb;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary-foreground: #f5f5f5;
   --sidebar-accent: #e8e8e8;
   --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #d4d4d4;
+  --sidebar-border: #d0d0d0;
   --sidebar-ring: #3b5bdb;
   --status-pending: #3b5bdb;
   --status-wip: #996800;
@@ -97,7 +96,7 @@
 .dark {
   --background: #121212;
   --foreground: #e0e0e0;
-  --card: #1a1a1a;
+  --card: #121212;
   --card-foreground: #e0e0e0;
   --popover: #1a1a1a;
   --popover-foreground: #e0e0e0;
@@ -138,6 +137,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground min-h-dvh;
+    @apply bg-background text-foreground min-h-dvh font-mono text-[13.5px] leading-relaxed tracking-tight antialiased;
   }
 }

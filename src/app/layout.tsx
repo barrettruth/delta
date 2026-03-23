@@ -1,10 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const geistSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const berkeleyMono = localFont({
+  src: [
+    { path: "../fonts/BerkeleyMono-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../fonts/BerkeleyMono-Italic.ttf", weight: "400", style: "italic" },
+    { path: "../fonts/BerkeleyMono-Bold.ttf", weight: "700", style: "normal" },
+    { path: "../fonts/BerkeleyMono-BoldItalic.ttf", weight: "700", style: "italic" },
+  ],
+  variable: "--font-mono",
+  display: "swap",
+});
+
+const signifier = localFont({
+  src: [
+    { path: "../fonts/Signifier-Regular.ttf", weight: "400", style: "normal" },
+  ],
+  variable: "--font-serif",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "delta",
@@ -18,9 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
-      >
+      <body className={`${berkeleyMono.variable} ${signifier.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
