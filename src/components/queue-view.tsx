@@ -48,21 +48,19 @@ export function QueueView({
   const [createOpen, setCreateOpen] = useState(false);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const { cursor, setCursor, selectedIds, toggleSelect, visualMode } =
-    useKeyboard({
-      tasks,
-      onComplete: (ids) => {
-        for (const id of ids) completeTaskAction(id);
-      },
-      onDelete: (ids) => {
-        for (const id of ids) deleteTaskAction(id);
-        if (selectedTask && ids.includes(selectedTask.id))
-          setSelectedTask(null);
-      },
-      onCreate: () => setCreateOpen(true),
-      onSelect: (task) => setSelectedTask(task as RankedTask),
-      onDeselect: () => setSelectedTask(null),
-    });
+  const { cursor, setCursor, selectedIds, toggleSelect } = useKeyboard({
+    tasks,
+    onComplete: (ids) => {
+      for (const id of ids) completeTaskAction(id);
+    },
+    onDelete: (ids) => {
+      for (const id of ids) deleteTaskAction(id);
+      if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
+    },
+    onCreate: () => setCreateOpen(true),
+    onSelect: (task) => setSelectedTask(task as RankedTask),
+    onDeselect: () => setSelectedTask(null),
+  });
 
   useEffect(() => {
     if (cursor >= 0 && cursor < tasks.length) {
@@ -91,22 +89,6 @@ export function QueueView({
 
   return (
     <div className="flex flex-col h-full">
-      {visualMode && (
-        <div className="flex items-center gap-2 px-6 py-1.5 bg-primary/10 text-xs text-primary border-b border-primary/20">
-          <span className="font-medium">VISUAL</span>
-          <span className="text-primary/70">
-            {selectedIds.size} selected — x complete, d delete, Esc cancel
-          </span>
-        </div>
-      )}
-      {!visualMode && selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 px-6 py-1.5 bg-primary/10 text-xs text-primary border-b border-primary/20">
-          <span className="font-medium">{selectedIds.size} selected</span>
-          <span className="text-primary/70">
-            x complete, d delete, Esc clear
-          </span>
-        </div>
-      )}
       <div className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
@@ -119,7 +101,7 @@ export function QueueView({
               const isCursor = i === cursor;
               const isSelected = selectedIds.has(task.id);
 
-              let bg = "hover:bg-accent/50";
+              let bg = `${urgencyBg(task.urgency)} hover:bg-accent/50`;
               if (isSelected) bg = "bg-primary/10";
               else if (isCursor) bg = "bg-accent";
 

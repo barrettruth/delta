@@ -1,8 +1,12 @@
 "use client";
 
 import { Inbox } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { completeTaskAction, updateTaskAction } from "@/app/actions/tasks";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  completeTaskAction,
+  deleteTaskAction,
+  updateTaskAction,
+} from "@/app/actions/tasks";
 
 import { TaskDetail } from "@/components/task-detail";
 import type { Task, TaskStatus } from "@/core/types";
@@ -14,6 +18,16 @@ const defaultColumns: { status: TaskStatus; label: string }[] = [
   { status: "blocked", label: "Blocked" },
   { status: "done", label: "Done" },
 ];
+
+function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  const ids = new Set<number>();
+  for (let i = lo; i <= hi; i++) {
+    if (i >= 0 && i < tasks.length) ids.add(tasks[i].id);
+  }
+  return ids;
+}
 
 function groupByStatus(tasks: Task[]): Record<string, Task[]> {
   const grouped: Record<string, Task[]> = {};
@@ -33,12 +47,21 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [rowIdx, setRowIdx] = useState(0);
   const [kbActive, setKbActive] = useState(false);
   const [columns, setColumns] = useState(defaultColumns);
+  const [visualMode, setVisualMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const visualAnchor = useRef(-1);
   const grouped = groupByStatus(tasks);
 
   const getColTasks = useCallback(
     (ci: number) => grouped[columns[ci].status] ?? [],
     [grouped, columns],
   );
+
+  useEffect(() => {
+    if (!visualMode) return;
+    const colTasks = getColTasks(colIdx);
+    setSelectedIds(rangeSet(colTasks, visualAnchor.current, rowIdx));
+  }, [rowIdx, colIdx, visualMode, getColTasks]);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
@@ -48,6 +71,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       switch (e.key) {
         case "h": {
           e.preventDefault();
+          if (visualMode) break;
           setKbActive(true);
           setColIdx((c) => Math.max(c - 1, 0));
           setRowIdx(0);
@@ -55,6 +79,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "l": {
           e.preventDefault();
+          if (visualMode) break;
           setKbActive(true);
           setColIdx((c) => Math.min(c + 1, columns.length - 1));
           setRowIdx(0);
@@ -77,6 +102,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "H": {
           e.preventDefault();
+          if (visualMode) break;
           const colTasksH = getColTasks(colIdx);
           if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
           const taskH = colTasksH[rowIdx];
@@ -94,6 +120,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "L": {
           e.preventDefault();
+          if (visualMode) break;
           const colTasksL = getColTasks(colIdx);
           if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
           const taskL = colTasksL[rowIdx];
@@ -111,6 +138,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "<": {
           e.preventDefault();
+          if (visualMode) break;
           if (colIdx <= 0) break;
           setColumns((prev) => {
             const next = [...prev];
@@ -122,6 +150,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case ">": {
           e.preventDefault();
+          if (visualMode) break;
           if (colIdx >= columns.length - 1) break;
           setColumns((prev) => {
             const next = [...prev];
@@ -152,15 +181,72 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
+        case "V": {
+          e.preventDefault();
+          if (visualMode) {
+            setVisualMode(false);
+            setSelectedIds(new Set());
+          } else if (kbActive) {
+            const colTasks = getColTasks(colIdx);
+            if (colTasks.length > 0 && rowIdx < colTasks.length) {
+              setVisualMode(true);
+              visualAnchor.current = rowIdx;
+              setSelectedIds(new Set([colTasks[rowIdx].id]));
+            }
+          }
+          break;
+        }
+        case "x": {
+          e.preventDefault();
+          if (selectedIds.size > 0) {
+            for (const id of selectedIds) completeTaskAction(id);
+            setSelectedIds(new Set());
+            setVisualMode(false);
+          } else if (kbActive) {
+            const colTasks = getColTasks(colIdx);
+            if (colTasks.length > 0 && rowIdx < colTasks.length) {
+              completeTaskAction(colTasks[rowIdx].id);
+            }
+          }
+          break;
+        }
+        case "d": {
+          e.preventDefault();
+          if (selectedIds.size > 0) {
+            for (const id of selectedIds) deleteTaskAction(id);
+            setSelectedIds(new Set());
+            setVisualMode(false);
+          } else if (kbActive) {
+            const colTasks = getColTasks(colIdx);
+            if (colTasks.length > 0 && rowIdx < colTasks.length) {
+              deleteTaskAction(colTasks[rowIdx].id);
+            }
+          }
+          break;
+        }
         case "Escape": {
-          setKbActive(false);
-          setColIdx(0);
-          setRowIdx(0);
+          if (visualMode) {
+            setVisualMode(false);
+            setSelectedIds(new Set());
+          } else {
+            setKbActive(false);
+            setColIdx(0);
+            setRowIdx(0);
+          }
           break;
         }
       }
     },
-    [colIdx, rowIdx, getColTasks, selectedTask, columns],
+    [
+      colIdx,
+      rowIdx,
+      getColTasks,
+      selectedTask,
+      columns,
+      kbActive,
+      visualMode,
+      selectedIds,
+    ],
   );
 
   useEffect(() => {
@@ -225,6 +311,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               ) : (
                 colTasks.map((task, ri) => {
                   const isCursor = isActiveCol && ri === rowIdx;
+                  const isSelected = selectedIds.has(task.id);
+                  let bg = "hover:bg-accent/50";
+                  if (isSelected) bg = "bg-primary/10";
+                  else if (isCursor) bg = "bg-accent";
                   return (
                     <article
                       key={task.id}
@@ -237,9 +327,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                         setDragId(null);
                         setDragOver(null);
                       }}
-                      className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors hover:bg-accent/50 ${
+                      className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors ${bg} ${
                         dragId === task.id ? "opacity-40" : ""
-                      } ${isCursor ? "bg-accent" : ""}`}
+                      }`}
                     >
                       <button
                         type="button"
