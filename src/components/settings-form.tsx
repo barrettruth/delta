@@ -3,6 +3,7 @@
 import { Settings } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { unlinkAccountAction } from "@/app/actions/accounts";
 import { updateSettingsAction } from "@/app/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { OAuthProvider } from "@/core/oauth";
 import type {
   DateFormat,
   UserSettings,
@@ -22,6 +24,12 @@ import type {
   WeekStartDay,
 } from "@/core/settings";
 import { DEFAULT_SETTINGS } from "@/core/settings";
+
+const providerLabels: Record<OAuthProvider, string> = {
+  github: "GitHub",
+  google: "Google",
+  gitlab: "GitLab",
+};
 
 function Section({
   title,
@@ -83,11 +91,18 @@ function WeightInput({
 export function SettingsForm({
   settings: initial,
   categories,
+  linkedProviders: initialLinked = [],
+  availableProviders = [],
+  hasPassword = true,
 }: {
   settings: UserSettings;
   categories: string[];
+  linkedProviders?: OAuthProvider[];
+  availableProviders?: OAuthProvider[];
+  hasPassword?: boolean;
 }) {
   const [settings, setSettings] = useState<UserSettings>(initial);
+  const [linked, setLinked] = useState<OAuthProvider[]>(initialLinked);
   const [isPending, startTransition] = useTransition();
 
   function update(partial: Partial<UserSettings>) {
@@ -114,6 +129,18 @@ export function SettingsForm({
 
   function handleReset() {
     setSettings({ ...DEFAULT_SETTINGS });
+  }
+
+  function handleUnlink(provider: OAuthProvider) {
+    startTransition(async () => {
+      const result = await unlinkAccountAction(provider);
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        setLinked((prev) => prev.filter((p) => p !== provider));
+        toast.success(`Unlinked ${providerLabels[provider]}`);
+      }
+    });
   }
 
   return (
@@ -287,6 +314,51 @@ export function SettingsForm({
               }
             />
           </Section>
+
+          {availableProviders.length > 0 && (
+            <>
+              <div className="h-px bg-border/60" />
+
+              <Section title="Linked Accounts">
+                <div className="space-y-3">
+                  {availableProviders.map((provider) => {
+                    const isLinked = linked.includes(provider);
+                    const canUnlink = hasPassword || linked.length > 1;
+                    return (
+                      <div
+                        key={provider}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm text-muted-foreground">
+                          {providerLabels[provider]}
+                        </span>
+                        {isLinked ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={!canUnlink || isPending}
+                            onClick={() => handleUnlink(provider)}
+                          >
+                            Unlink
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              window.location.href = `/api/auth/${provider}`;
+                            }}
+                          >
+                            Link
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            </>
+          )}
         </div>
       </div>
     </div>

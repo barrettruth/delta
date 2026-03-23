@@ -17,5 +17,6 @@
 next-env.d.ts
 
 .ai-docs/
+.claude/
 CLAUDE.md
 AGENTS.md
