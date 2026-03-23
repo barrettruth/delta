@@ -1,6 +1,5 @@
 "use client";
 
-import { Inbox } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -102,38 +101,64 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "H": {
           e.preventDefault();
-          if (visualMode) break;
-          const colTasksH = getColTasks(colIdx);
-          if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
-          const taskH = colTasksH[rowIdx];
           const newColH = Math.max(colIdx - 1, 0);
-          if (newColH !== colIdx) {
+          if (newColH === colIdx) break;
+          if (visualMode) {
+            const colTasks = getColTasks(colIdx);
+            const ids =
+              selectedIds.size > 0
+                ? [...selectedIds]
+                : colTasks.length > 0 && rowIdx < colTasks.length
+                  ? [colTasks[rowIdx].id]
+                  : [];
             const newStatus = columns[newColH].status;
-            if (newStatus === "done") {
-              completeTaskAction(taskH.id);
-            } else {
-              updateTaskAction(taskH.id, { status: newStatus });
+            for (const id of ids) {
+              if (newStatus === "done") completeTaskAction(id);
+              else updateTaskAction(id, { status: newStatus });
             }
-            setColIdx(newColH);
+            setSelectedIds(new Set());
+            setVisualMode(false);
+          } else {
+            const colTasksH = getColTasks(colIdx);
+            if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
+            const taskH = colTasksH[rowIdx];
+            const newStatus = columns[newColH].status;
+            if (newStatus === "done") completeTaskAction(taskH.id);
+            else updateTaskAction(taskH.id, { status: newStatus });
           }
+          setColIdx(newColH);
+          setRowIdx(0);
           break;
         }
         case "L": {
           e.preventDefault();
-          if (visualMode) break;
-          const colTasksL = getColTasks(colIdx);
-          if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
-          const taskL = colTasksL[rowIdx];
           const newColL = Math.min(colIdx + 1, columns.length - 1);
-          if (newColL !== colIdx) {
+          if (newColL === colIdx) break;
+          if (visualMode) {
+            const colTasks = getColTasks(colIdx);
+            const ids =
+              selectedIds.size > 0
+                ? [...selectedIds]
+                : colTasks.length > 0 && rowIdx < colTasks.length
+                  ? [colTasks[rowIdx].id]
+                  : [];
             const newStatus = columns[newColL].status;
-            if (newStatus === "done") {
-              completeTaskAction(taskL.id);
-            } else {
-              updateTaskAction(taskL.id, { status: newStatus });
+            for (const id of ids) {
+              if (newStatus === "done") completeTaskAction(id);
+              else updateTaskAction(id, { status: newStatus });
             }
-            setColIdx(newColL);
+            setSelectedIds(new Set());
+            setVisualMode(false);
+          } else {
+            const colTasksL = getColTasks(colIdx);
+            if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
+            const taskL = colTasksL[rowIdx];
+            const newStatus = columns[newColL].status;
+            if (newStatus === "done") completeTaskAction(taskL.id);
+            else updateTaskAction(taskL.id, { status: newStatus });
           }
+          setColIdx(newColL);
+          setRowIdx(0);
           break;
         }
         case "<": {
@@ -262,9 +287,22 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     }
   }
 
+  const visibleColumns = columns.filter(
+    (col) => (grouped[col.status] ?? []).length > 0,
+  );
+  const gridCols =
+    visibleColumns.length <= 1
+      ? "grid-cols-1"
+      : visibleColumns.length === 2
+        ? "grid-cols-2"
+        : visibleColumns.length === 3
+          ? "grid-cols-3"
+          : "grid-cols-4";
+
   return (
-    <div className="grid grid-cols-4 gap-0 h-full w-full">
-      {columns.map((col, ci) => {
+    <div className={`grid ${gridCols} gap-0 h-full w-full`}>
+      {visibleColumns.map((col) => {
+        const ci = columns.indexOf(col);
         const colTasks = grouped[col.status] ?? [];
         const isActiveCol = kbActive && ci === colIdx;
         return (
@@ -298,64 +336,57 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               </span>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {colTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-                  <Inbox className="size-5 opacity-30" />
-                  <p className="text-xs">No tasks</p>
-                </div>
-              ) : (
-                colTasks.map((task, ri) => {
-                  const isCursor = isActiveCol && ri === rowIdx;
-                  const isSelected = selectedIds.has(task.id);
-                  let bg = "hover:bg-accent/50";
-                  if (isSelected) bg = "bg-primary/10";
-                  else if (isCursor) bg = "bg-accent";
-                  return (
-                    <article
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData("text/plain", String(task.id));
-                        setDragId(task.id);
-                      }}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setDragOver(null);
-                      }}
-                      className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors ${bg} ${
-                        dragId === task.id ? "opacity-40" : ""
-                      }`}
+              {colTasks.map((task, ri) => {
+                const isCursor = isActiveCol && ri === rowIdx;
+                const isSelected = selectedIds.has(task.id);
+                let bg = "hover:bg-accent/50";
+                if (isSelected) bg = "bg-primary/10";
+                else if (isCursor) bg = "bg-accent";
+                return (
+                  <article
+                    key={task.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", String(task.id));
+                      setDragId(task.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDragOver(null);
+                    }}
+                    className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors ${bg} ${
+                      dragId === task.id ? "opacity-40" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      onClick={() => setSelectedTask(task)}
                     >
-                      <button
-                        type="button"
-                        className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        onClick={() => setSelectedTask(task)}
-                      >
-                        <p className="text-sm font-medium leading-snug">
-                          {task.description}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          {task.priority !== null && task.priority > 0 && (
-                            <span className="text-xs font-semibold text-primary">
-                              {"!".repeat(Math.min(task.priority, 3))}
-                            </span>
-                          )}
-                          {task.category && task.category !== "Todo" && (
-                            <span className="text-xs text-muted-foreground">
-                              # {task.category}
-                            </span>
-                          )}
-                          {task.due && (
-                            <span className="text-xs text-muted-foreground ml-auto tabular-nums">
-                              {formatDate(new Date(task.due))}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    </article>
-                  );
-                })
-              )}
+                      <p className="text-sm font-medium leading-snug">
+                        {task.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        {task.priority !== null && task.priority > 0 && (
+                          <span className="text-xs font-semibold text-primary">
+                            {"!".repeat(Math.min(task.priority, 3))}
+                          </span>
+                        )}
+                        {task.category && task.category !== "Todo" && (
+                          <span className="text-xs text-muted-foreground">
+                            # {task.category}
+                          </span>
+                        )}
+                        {task.due && (
+                          <span className="text-xs text-muted-foreground ml-auto tabular-nums">
+                            {formatDate(new Date(task.due))}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  </article>
+                );
+              })}
             </div>
           </section>
         );
