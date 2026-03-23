@@ -21,6 +21,7 @@ function Hint({ keys, label }: { keys: string; label: string }) {
 export function KeyboardHints() {
   const pathname = usePathname();
   const isList = pathname === "/" || pathname === "/queue";
+  const isCalendar = pathname === "/calendar";
 
   return (
     <div className="flex items-center gap-4 px-4 h-8 border-t border-border/60 text-xs text-muted-foreground/70 shrink-0 select-none">
@@ -31,6 +32,14 @@ export function KeyboardHints() {
           <Hint keys="d" label="delete" />
           <Hint keys="o" label="new" />
           <Hint keys="Enter" label="open" />
+        </>
+      )}
+      {isCalendar && (
+        <>
+          <Hint keys="w/m" label="switch view" />
+          <Hint keys="[w/]w" label="prev/next week" />
+          <Hint keys="[m/]m" label="prev/next month" />
+          <Hint keys="t" label="today" />
         </>
       )}
       <div className="flex-1" />

@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEPLOY_DIR="/opt/delta"
-
-echo "==> Pulling latest code"
-cd "$DEPLOY_DIR"
-git pull origin main
-
 echo "==> Installing dependencies"
 pnpm install --frozen-lockfile
 
@@ -22,7 +16,14 @@ cp -r .next/static .next/standalone/.next/static
 echo "==> Running migrations"
 pnpm db:migrate
 
-echo "==> Restarting service"
-systemctl restart delta
+echo ""
+echo "==> Create your account"
+read -rp "Username: " username
+read -rsp "Password: " password
+echo ""
 
-echo "==> Deploy complete"
+npx tsx scripts/seed.ts "$username" "$password"
+
+echo ""
+echo "==> Setup complete. Start the server with:"
+echo "    PORT=3001 node .next/standalone/server.js"

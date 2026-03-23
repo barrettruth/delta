@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
@@ -5,6 +7,7 @@ import { createUser } from "../src/core/auth";
 import * as schema from "../src/db/schema";
 
 const dbPath = process.env.DATABASE_URL ?? "./data/delta.db";
+mkdirSync(dirname(dbPath), { recursive: true });
 const username = process.argv[2];
 const password = process.argv[3];
 

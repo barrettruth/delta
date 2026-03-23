@@ -59,7 +59,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: mkdir -p data && DATABASE_URL=./data/ci.db pnpm build
+      - run: pnpm build
 
   deploy:
     runs-on: ubuntu-latest
