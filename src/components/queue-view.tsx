@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, CircleCheck, Clock, Loader2, Trash2, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -15,12 +15,20 @@ import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { formatDate } from "@/lib/utils";
 
-const statusIcon: Record<TaskStatus, React.ReactNode> = {
-  pending: <Circle className="size-4 text-status-pending" />,
-  wip: <Loader2 className="size-4 text-status-wip" />,
-  done: <CircleCheck className="size-4 text-status-done" />,
-  blocked: <Clock className="size-4 text-status-blocked" />,
-  cancelled: <Trash2 className="size-4 text-status-cancelled" />,
+const STATUS_LABEL: Record<TaskStatus, string> = {
+  pending: "todo",
+  wip: "wip",
+  done: "done",
+  blocked: "blocked",
+  cancelled: "cancelled",
+};
+
+const STATUS_COLOR: Record<TaskStatus, string> = {
+  pending: "text-status-pending",
+  wip: "text-status-wip",
+  done: "text-status-done",
+  blocked: "text-status-blocked",
+  cancelled: "text-status-cancelled",
 };
 
 function urgencyColor(score: number): string {
@@ -32,7 +40,7 @@ function urgencyColor(score: number): string {
 function urgencyBg(score: number): string {
   if (score >= 20) return "bg-status-blocked/10";
   if (score >= 10) return "bg-status-wip/10";
-  return "bg-muted/50";
+  return "";
 }
 
 export function QueueView({
@@ -123,8 +131,10 @@ export function QueueView({
                     onClick={(e) => e.stopPropagation()}
                     className="shrink-0"
                   />
-                  <span className="shrink-0">
-                    {statusIcon[task.status as TaskStatus]}
+                  <span
+                    className={`w-16 text-xs shrink-0 ${STATUS_COLOR[task.status as TaskStatus]}`}
+                  >
+                    {STATUS_LABEL[task.status as TaskStatus]}
                   </span>
                   <span
                     className={`flex-1 truncate text-sm ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
@@ -140,7 +150,7 @@ export function QueueView({
                     {task.due ? formatDate(new Date(task.due)) : ""}
                   </span>
                   <span
-                    className={`w-12 text-xs font-semibold tabular-nums text-center shrink-0 px-1.5 py-0.5 ${urgencyColor(task.urgency)} ${urgencyBg(task.urgency)}`}
+                    className={`w-12 text-xs font-semibold tabular-nums text-center shrink-0 ${urgencyColor(task.urgency)}`}
                   >
                     {task.urgency}
                   </span>
