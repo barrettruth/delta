@@ -145,7 +145,7 @@ export function TaskDetail({
           className="fixed inset-4 sm:inset-8 z-50 mx-auto max-w-3xl flex flex-col border border-border bg-card duration-150 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.97] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.97]"
           onKeyDown={handleKeyDown}
         >
-          <div className="px-6 pt-6 pb-3">
+          <div className="px-6 pt-4 pb-2">
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -154,7 +154,7 @@ export function TaskDetail({
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 px-6 pb-3 border-b border-border/40">
+          <div className="flex flex-wrap items-center gap-3 px-6 pb-2 border-b border-border/40">
             <Select
               value={task.status}
               onValueChange={(v) => v && handleStatusChange(v)}
@@ -235,7 +235,7 @@ export function TaskDetail({
             )}
           </div>
 
-          <div className="flex-1 min-h-0 overflow-auto p-6">
+          <div className="flex-1 min-h-0 overflow-auto px-6 pt-3 pb-6">
             <TiptapEditor
               content={task.notes ?? null}
               onChange={(json) => {

@@ -292,12 +292,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             }}
           >
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
-              <span className="text-xs font-medium">
-                {col.label}
-                <span className="text-muted-foreground/40 ml-1.5">
-                  {colTasks.length}
-                </span>
-              </span>
+              <span className="text-xs font-medium">{col.label}</span>
               <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums">
                 {ci + 1}
               </span>
