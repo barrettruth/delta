@@ -77,6 +77,40 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
         case "H": {
           e.preventDefault();
+          const colTasksH = getColTasks(colIdx);
+          if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
+          const taskH = colTasksH[rowIdx];
+          const newColH = Math.max(colIdx - 1, 0);
+          if (newColH !== colIdx) {
+            const newStatus = columns[newColH].status;
+            if (newStatus === "done") {
+              completeTaskAction(taskH.id);
+            } else {
+              updateTaskAction(taskH.id, { status: newStatus });
+            }
+            setColIdx(newColH);
+          }
+          break;
+        }
+        case "L": {
+          e.preventDefault();
+          const colTasksL = getColTasks(colIdx);
+          if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
+          const taskL = colTasksL[rowIdx];
+          const newColL = Math.min(colIdx + 1, columns.length - 1);
+          if (newColL !== colIdx) {
+            const newStatus = columns[newColL].status;
+            if (newStatus === "done") {
+              completeTaskAction(taskL.id);
+            } else {
+              updateTaskAction(taskL.id, { status: newStatus });
+            }
+            setColIdx(newColL);
+          }
+          break;
+        }
+        case "<": {
+          e.preventDefault();
           if (colIdx <= 0) break;
           setColumns((prev) => {
             const next = [...prev];
@@ -86,15 +120,15 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setColIdx((c) => c - 1);
           break;
         }
-        case "L": {
+        case ">": {
           e.preventDefault();
+          if (colIdx >= columns.length - 1) break;
           setColumns((prev) => {
-            if (colIdx >= prev.length - 1) return prev;
             const next = [...prev];
             [next[colIdx], next[colIdx + 1]] = [next[colIdx + 1], next[colIdx]];
             return next;
           });
-          setColIdx((c) => Math.min(c + 1, columns.length - 1));
+          setColIdx((c) => c + 1);
           break;
         }
         case "Enter": {
@@ -113,7 +147,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
       }
     },
-    [colIdx, rowIdx, getColTasks, selectedTask, columns.length],
+    [colIdx, rowIdx, getColTasks, selectedTask, columns],
   );
 
   useEffect(() => {
