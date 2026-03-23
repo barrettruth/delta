@@ -62,6 +62,7 @@ describe("getNextOccurrence", () => {
 describe("getNextTaskData", () => {
   const baseTask: Task = {
     id: 1,
+    userId: 1,
     description: "Weekly review",
     status: "done",
     category: "Work",

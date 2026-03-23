@@ -15,6 +15,9 @@ export const users = sqliteTable("users", {
 
 export const tasks = sqliteTable("tasks", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
   status: text("status", {
     enum: ["pending", "done", "wip", "blocked", "cancelled"],
@@ -55,10 +58,17 @@ export const sessions = sqliteTable("sessions", {
   createdAt: text("created_at").notNull(),
 });
 
-export const categoryColors = sqliteTable("category_colors", {
-  category: text("category").primaryKey(),
-  color: text("color").notNull(),
-});
+export const categoryColors = sqliteTable(
+  "category_colors",
+  {
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    category: text("category").notNull(),
+    color: text("color").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.category] })],
+);
 
 export const userSettings = sqliteTable("user_settings", {
   userId: integer("user_id")
@@ -69,6 +79,9 @@ export const userSettings = sqliteTable("user_settings", {
 
 export const automations = sqliteTable("automations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   cron: text("cron").notNull(),
   type: text("type").notNull(),

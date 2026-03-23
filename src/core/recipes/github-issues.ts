@@ -94,6 +94,7 @@ function taskExistsForIssue(
 
 export async function githubIssuesHandler(
   db: Db,
+  userId: number,
   config: unknown,
 ): Promise<void> {
   if (!isValidConfig(config)) {
@@ -121,7 +122,7 @@ export async function githubIssuesHandler(
 
       if (taskExistsForIssue(db, repo, issue.number)) continue;
 
-      createTask(db, {
+      createTask(db, userId, {
         description: formatDescription(repo, issue.title, issue.number),
         category,
       });

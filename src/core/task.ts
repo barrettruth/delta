@@ -14,11 +14,16 @@ function timestamp(): string {
   return new Date().toISOString();
 }
 
-export function createTask(db: Db, input: CreateTaskInput): Task {
+export function createTask(
+  db: Db,
+  userId: number,
+  input: CreateTaskInput,
+): Task {
   const ts = timestamp();
   return db
     .insert(tasks)
     .values({
+      userId,
       description: input.description,
       status: input.status ?? "pending",
       category: input.category ?? "Todo",
@@ -52,8 +57,12 @@ function getSortColumn(sortBy: string | undefined) {
   }
 }
 
-export function listTasks(db: Db, filters?: TaskFilters): Task[] {
-  const conditions = [];
+export function listTasks(
+  db: Db,
+  userId: number,
+  filters?: TaskFilters,
+): Task[] {
+  const conditions = [eq(tasks.userId, userId)];
 
   if (filters?.status) {
     if (Array.isArray(filters.status)) {
@@ -79,7 +88,7 @@ export function listTasks(db: Db, filters?: TaskFilters): Task[] {
     conditions.push(gte(tasks.priority, filters.minPriority));
   }
 
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const where = and(...conditions);
   const sortColumn = getSortColumn(filters?.sortBy);
   const sortFn = filters?.sortOrder === "asc" ? asc : desc;
 
@@ -112,11 +121,11 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
     .get();
 }
 
-export function completeTask(db: Db, id: number): Task {
+export function completeTask(db: Db, userId: number, id: number): Task {
   const task = updateTask(db, id, { status: "done" });
 
   const nextData = getNextTaskData(task);
-  if (nextData) createTask(db, nextData);
+  if (nextData) createTask(db, userId, nextData);
 
   updateBlockedStatus(db, id);
 

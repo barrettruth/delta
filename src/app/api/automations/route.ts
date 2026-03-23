@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { automations } from "@/db/schema";
@@ -7,7 +8,9 @@ export async function GET(request: Request) {
   const user = await getAuthUserFromRequest(request);
   if (!user) return unauthorized();
 
-  return NextResponse.json(db.select().from(automations).all());
+  return NextResponse.json(
+    db.select().from(automations).where(eq(automations.userId, user.id)).all(),
+  );
 }
 
 export async function POST(request: Request) {
@@ -26,6 +29,7 @@ export async function POST(request: Request) {
   const automation = db
     .insert(automations)
     .values({
+      userId: user.id,
       name: body.name,
       cron: body.cron,
       type: body.type,

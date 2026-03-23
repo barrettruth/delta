@@ -7,9 +7,10 @@ import {
 } from "@/core/automation";
 import type { Db } from "@/core/types";
 import { automations } from "@/db/schema";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
+let userId: number;
 
 function insertAutomation(
   db: Db,
@@ -19,6 +20,7 @@ function insertAutomation(
   return db
     .insert(automations)
     .values({
+      userId,
       name: "Test Automation",
       cron: "0 9 * * *",
       type: "test_recipe",
@@ -34,6 +36,7 @@ function insertAutomation(
 
 beforeEach(() => {
   db = createTestDb();
+  userId = createTestUser(db).id;
 });
 
 describe("registerRecipe", () => {
@@ -72,7 +75,7 @@ describe("runAutomation", () => {
     await runAutomation(db, automation.id);
 
     expect(handler).toHaveBeenCalledOnce();
-    expect(handler).toHaveBeenCalledWith(db, { key: "value" });
+    expect(handler).toHaveBeenCalledWith(db, userId, { key: "value" });
 
     const updated = db
       .select()
@@ -135,7 +138,7 @@ describe("githubIssuesHandler", () => {
     const { githubIssuesHandler } = await import(
       "@/core/recipes/github-issues"
     );
-    await githubIssuesHandler(db, config);
+    await githubIssuesHandler(db, userId, config);
 
     const { tasks } = await import("@/db/schema");
     const allTasks = db.select().from(tasks).all();
@@ -149,7 +152,7 @@ describe("githubIssuesHandler", () => {
 
   it("skips issues that already have a corresponding task", async () => {
     const { createTask } = await import("@/core/task");
-    createTask(db, {
+    createTask(db, userId, {
       description: "[owner/repo] Existing issue (#5)",
     });
 
@@ -181,7 +184,7 @@ describe("githubIssuesHandler", () => {
     const { githubIssuesHandler } = await import(
       "@/core/recipes/github-issues"
     );
-    await githubIssuesHandler(db, {
+    await githubIssuesHandler(db, userId, {
       repos: ["owner/repo"],
       token: "ghp_test",
     });
@@ -197,9 +200,9 @@ describe("githubIssuesHandler", () => {
     const { githubIssuesHandler } = await import(
       "@/core/recipes/github-issues"
     );
-    await expect(githubIssuesHandler(db, { bad: true })).rejects.toThrow(
-      "Invalid github_issues config",
-    );
+    await expect(
+      githubIssuesHandler(db, userId, { bad: true }),
+    ).rejects.toThrow("Invalid github_issues config");
   });
 
   it("creates tasks without label filter", async () => {
@@ -231,7 +234,7 @@ describe("githubIssuesHandler", () => {
     const { githubIssuesHandler } = await import(
       "@/core/recipes/github-issues"
     );
-    await githubIssuesHandler(db, {
+    await githubIssuesHandler(db, userId, {
       repos: ["owner/repo"],
       token: "ghp_test",
     });

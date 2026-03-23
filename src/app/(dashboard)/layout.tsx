@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -23,7 +24,7 @@ export default async function DashboardLayout({
   const user = validateSession(db, sessionId);
   if (!user) redirect("/login");
 
-  const allTasks = listTasks(db);
+  const allTasks = listTasks(db, user.id);
   const categories = [
     ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
   ] as string[];
@@ -32,6 +33,7 @@ export default async function DashboardLayout({
     db
       .select()
       .from(categoryColors)
+      .where(eq(categoryColors.userId, user.id))
       .all()
       .map((c) => [c.category, c.color]),
   );

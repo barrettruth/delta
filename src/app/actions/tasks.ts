@@ -1,20 +1,41 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { addDependency, removeDependency } from "@/core/dag";
-import { completeTask, createTask, deleteTask, updateTask } from "@/core/task";
+import {
+  completeTask,
+  createTask,
+  deleteTask,
+  getTask,
+  updateTask,
+} from "@/core/task";
 import type { CreateTaskInput, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
 import { categoryColors } from "@/db/schema";
+import { getAuthUser } from "@/lib/auth-middleware";
 
 type ActionResult<T> = { data: T } | { error: string };
+
+async function requireUser() {
+  const user = await getAuthUser();
+  if (!user) throw new Error("Not authenticated");
+  return user;
+}
+
+async function requireOwnedTask(taskId: number) {
+  const user = await requireUser();
+  const task = getTask(db, taskId);
+  if (!task || task.userId !== user.id) throw new Error("Task not found");
+  return { user, task };
+}
 
 export async function createTaskAction(
   input: CreateTaskInput,
 ): Promise<ActionResult<ReturnType<typeof createTask>>> {
   try {
-    const task = createTask(db, input);
+    const user = await requireUser();
+    const task = createTask(db, user.id, input);
     revalidatePath("/");
     return { data: task };
   } catch (e) {
@@ -27,6 +48,8 @@ export async function updateTaskAction(
   input: UpdateTaskInput,
 ): Promise<ActionResult<ReturnType<typeof updateTask>>> {
   try {
+    const { user } = await requireOwnedTask(id);
+    void user;
     const task = updateTask(db, id, input);
     revalidatePath("/");
     return { data: task };
@@ -39,7 +62,8 @@ export async function completeTaskAction(
   id: number,
 ): Promise<ActionResult<ReturnType<typeof completeTask>>> {
   try {
-    const task = completeTask(db, id);
+    const { user } = await requireOwnedTask(id);
+    const task = completeTask(db, user.id, id);
     revalidatePath("/");
     return { data: task };
   } catch (e) {
@@ -53,6 +77,7 @@ export async function deleteTaskAction(
   id: number,
 ): Promise<ActionResult<ReturnType<typeof deleteTask>>> {
   try {
+    await requireOwnedTask(id);
     const task = deleteTask(db, id);
     revalidatePath("/");
     return { data: task };
@@ -66,6 +91,8 @@ export async function addDependencyAction(
   dependsOnId: number,
 ): Promise<ActionResult<null>> {
   try {
+    await requireOwnedTask(taskId);
+    await requireOwnedTask(dependsOnId);
     addDependency(db, taskId, dependsOnId);
     revalidatePath("/");
     return { data: null };
@@ -81,10 +108,11 @@ export async function setCategoryColorAction(
   color: string,
 ): Promise<ActionResult<null>> {
   try {
+    const user = await requireUser();
     db.insert(categoryColors)
-      .values({ category, color })
+      .values({ userId: user.id, category, color })
       .onConflictDoUpdate({
-        target: categoryColors.category,
+        target: [categoryColors.userId, categoryColors.category],
         set: { color },
       })
       .run();
@@ -101,8 +129,14 @@ export async function removeCategoryColorAction(
   category: string,
 ): Promise<ActionResult<null>> {
   try {
+    const user = await requireUser();
     db.delete(categoryColors)
-      .where(eq(categoryColors.category, category))
+      .where(
+        and(
+          eq(categoryColors.userId, user.id),
+          eq(categoryColors.category, category),
+        ),
+      )
       .run();
     revalidatePath("/");
     return { data: null };
@@ -118,6 +152,7 @@ export async function removeDependencyAction(
   dependsOnId: number,
 ): Promise<ActionResult<null>> {
   try {
+    await requireOwnedTask(taskId);
     removeDependency(db, taskId, dependsOnId);
     revalidatePath("/");
     return { data: null };

@@ -29,6 +29,13 @@
       "when": 1774229762414,
       "tag": "0003_flippant_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1774234338600,
+      "tag": "0004_even_red_shift",
+      "breakpoints": true
     }
   ]
 }
