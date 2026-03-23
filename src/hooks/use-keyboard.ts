@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Task } from "@/core/types";
+import { isInputFocused } from "@/lib/utils";
 
 interface KeyboardActions {
   tasks: Task[];
@@ -10,18 +11,6 @@ interface KeyboardActions {
   onCreate: () => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
-}
-
-function isInputFocused(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
 }
 
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
@@ -39,6 +28,8 @@ export function useKeyboard(actions: KeyboardActions) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [visualMode, setVisualMode] = useState(false);
   const visualAnchor = useRef(-1);
+  const pendingG = useRef(false);
+  const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const taskCount = actions.tasks.length;
   useEffect(() => {
@@ -58,19 +49,50 @@ export function useKeyboard(actions: KeyboardActions) {
       const { tasks, onComplete, onDelete, onCreate, onSelect, onDeselect } =
         actions;
 
+      if (pendingG.current) {
+        pendingG.current = false;
+        if (gTimer.current) {
+          clearTimeout(gTimer.current);
+          gTimer.current = null;
+        }
+        if (e.key === "g") {
+          e.preventDefault();
+          if (tasks.length > 0) setCursor(0);
+          return;
+        }
+        return;
+      }
+
       switch (e.key) {
+        case "g": {
+          e.preventDefault();
+          pendingG.current = true;
+          gTimer.current = setTimeout(() => {
+            pendingG.current = false;
+            gTimer.current = null;
+          }, 500);
+          break;
+        }
+        case "G": {
+          e.preventDefault();
+          if (tasks.length > 0) setCursor(tasks.length - 1);
+          break;
+        }
         case "j": {
           e.preventDefault();
+          if (tasks.length === 0) break;
           setCursor((i) => Math.min(i + 1, tasks.length - 1));
           break;
         }
         case "k": {
           e.preventDefault();
+          if (tasks.length === 0) break;
           setCursor((i) => Math.max(i - 1, 0));
           break;
         }
         case "x": {
           e.preventDefault();
+          if (tasks.length === 0) break;
           if (selectedIds.size > 0) {
             onComplete([...selectedIds]);
             setSelectedIds(new Set());
@@ -82,6 +104,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
         case "d": {
           e.preventDefault();
+          if (tasks.length === 0) break;
           if (selectedIds.size > 0) {
             onDelete([...selectedIds]);
             setSelectedIds(new Set());
@@ -97,6 +120,7 @@ export function useKeyboard(actions: KeyboardActions) {
           break;
         }
         case "Enter": {
+          if (tasks.length === 0) break;
           if (cursor >= 0 && cursor < tasks.length) {
             e.preventDefault();
             onSelect(tasks[cursor]);
@@ -136,6 +160,12 @@ export function useKeyboard(actions: KeyboardActions) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handler]);
+
+  useEffect(() => {
+    return () => {
+      if (gTimer.current) clearTimeout(gTimer.current);
+    };
+  }, []);
 
   function toggleSelect(taskId: number) {
     setSelectedIds((prev) => {

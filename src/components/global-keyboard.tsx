@@ -3,18 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
-
-function isInputFocused(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
+import { isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
   Q: "/",
