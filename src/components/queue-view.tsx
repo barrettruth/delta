@@ -14,7 +14,7 @@ import type { TaskStatus } from "@/core/types";
 
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
-import { formatDate } from "@/lib/utils";
+import { formatDate, isInputFocused } from "@/lib/utils";
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: "todo",
@@ -83,13 +83,18 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
     scrollRef,
   });
 
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setSearchActive(false);
+  }, []);
+
   const openSearch = useCallback(() => {
     setSearchActive(true);
     requestAnimationFrame(() => searchRef.current?.focus());
   }, []);
 
   useEffect(() => {
-    function handleSlash(e: KeyboardEvent) {
+    function handleSearchKeys(e: KeyboardEvent) {
       if (
         e.key === "/" &&
         !searchActive &&
@@ -102,10 +107,14 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
         e.preventDefault();
         openSearch();
       }
+      if (e.key === "Escape" && searchActive && !isInputFocused()) {
+        e.preventDefault();
+        clearSearch();
+      }
     }
-    window.addEventListener("keydown", handleSlash);
-    return () => window.removeEventListener("keydown", handleSlash);
-  }, [searchActive, openSearch]);
+    window.addEventListener("keydown", handleSearchKeys);
+    return () => window.removeEventListener("keydown", handleSearchKeys);
+  }, [searchActive, openSearch, clearSearch]);
 
   useEffect(() => {
     if (cursor >= 0 && cursor < filtered.length) {
@@ -124,11 +133,6 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
     setSelectedTask(task);
   }
 
-  function clearSearch() {
-    setSearchQuery("");
-    setSearchActive(false);
-  }
-
   return (
     <div className="flex flex-col h-full">
       {searchActive && (
@@ -145,7 +149,7 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
               }
               if (e.key === "Enter") {
                 e.preventDefault();
-                searchRef.current?.blur();
+                (document.activeElement as HTMLElement)?.blur();
               }
             }}
             placeholder="filter tasks..."
