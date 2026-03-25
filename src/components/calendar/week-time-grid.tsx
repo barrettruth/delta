@@ -77,7 +77,11 @@ export function WeekTimeGrid({
   weekStart: Date;
   today: Date;
   timedTasksByDate: Map<string, Task[]>;
-  onSlotClick: (date: Date, minuteOfDay: number, anchorEl: HTMLElement) => void;
+  onSlotClick: (
+    date: Date,
+    minuteOfDay: number,
+    anchor: Element | { getBoundingClientRect: () => DOMRect },
+  ) => void;
   onTaskClick: (task: Task) => void;
   categoryColors: Record<string, string>;
   selectedDate: Date | null;
@@ -208,7 +212,11 @@ export function WeekTimeGrid({
                     e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
                   const minutes = Math.floor((y / HOUR_HEIGHT) * 60);
                   const snapped = Math.round(minutes / 15) * 15;
-                  onSlotClick(date, snapped, e.currentTarget);
+                  const cx = e.clientX;
+                  const cy = e.clientY;
+                  onSlotClick(date, snapped, {
+                    getBoundingClientRect: () => new DOMRect(cx, cy, 0, 0),
+                  });
                 }}
               >
                 {HOURS.map((h) => (
@@ -225,6 +233,7 @@ export function WeekTimeGrid({
                 {isCursorDay && selectedHour >= 0 && (
                   <div
                     ref={cursorRef}
+                    data-calendar-cursor=""
                     className="absolute left-0 right-0 bg-accent border border-primary/30 pointer-events-none z-[5]"
                     style={{
                       top: `${selectedHour * HOUR_HEIGHT}px`,

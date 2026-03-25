@@ -19,12 +19,14 @@ export function CreateTaskDrawer({
   open,
   onOpenChange,
   defaultDue,
+  defaultDescription,
   categories,
   defaultCategory = "Todo",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultDue?: string;
+  defaultDescription?: string;
   categories?: string[];
   defaultCategory?: string;
 }) {
@@ -40,9 +42,10 @@ export function CreateTaskDrawer({
   useEffect(() => {
     if (open) {
       if (defaultDue) setDueDate(defaultDue.slice(0, 10));
+      if (defaultDescription) setDescription(defaultDescription);
       requestAnimationFrame(() => descRef.current?.focus());
     }
-  }, [open, defaultDue]);
+  }, [open, defaultDue, defaultDescription]);
 
   const filteredCategories = (categories ?? []).filter(
     (c) => c.toLowerCase().includes(category.toLowerCase()) && c !== category,

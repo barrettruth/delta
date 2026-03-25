@@ -4,16 +4,20 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
+import { QuickCreatePopover } from "@/components/quick-create-popover";
 import { TaskDetail } from "@/components/task-detail";
 import { useNavigation } from "@/contexts/navigation";
 import type { Task } from "@/core/types";
 import {
   addDays,
+  buildDayPreFill,
+  buildSlotPreFill,
   DAY_NAMES,
   formatDateKey,
   formatMonthTitle,
   formatWeekRange,
   getWeekStart,
+  type QuickCreatePreFill,
   startOfMonth,
 } from "@/lib/calendar-utils";
 import { isInputFocused } from "@/lib/utils";
@@ -43,6 +47,10 @@ export function CalendarView({
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
+  const [quickCreate, setQuickCreate] = useState<{
+    anchor: Element | { getBoundingClientRect: () => DOMRect };
+    preFill: QuickCreatePreFill;
+  } | null>(null);
 
   useEffect(() => {
     const savedAnchor = nav.getViewState<string>("cal:anchor");
@@ -99,18 +107,28 @@ export function CalendarView({
     [anchor],
   );
 
-  function handleDayClick(date: Date, _anchorEl?: HTMLElement) {
+  function handleDayClick(date: Date, anchorEl?: HTMLElement) {
     setSelectedDate(date);
     setAnchor(date);
+    if (anchorEl) {
+      setQuickCreate({
+        anchor: anchorEl,
+        preFill: buildDayPreFill(date),
+      });
+    }
   }
 
   function handleSlotClick(
     date: Date,
-    _minuteOfDay: number,
-    _anchorEl: HTMLElement,
+    minuteOfDay: number,
+    anchor: Element | { getBoundingClientRect: () => DOMRect },
   ) {
     setSelectedDate(date);
     setAnchor(date);
+    setQuickCreate({
+      anchor,
+      preFill: buildSlotPreFill(date, minuteOfDay),
+    });
   }
 
   const prevWeek = useCallback(() => {
@@ -368,6 +386,24 @@ export function CalendarView({
     };
   }, []);
 
+  useEffect(() => {
+    const handleQuickCreate = () => {
+      const cursorEl = document.querySelector("[data-calendar-cursor]");
+      if (!cursorEl || !selectedDate) return;
+      const preFill =
+        viewMode === "week"
+          ? buildSlotPreFill(selectedDate, selectedDate.getHours() * 60)
+          : buildDayPreFill(selectedDate);
+      setQuickCreate({ anchor: cursorEl, preFill });
+    };
+    window.addEventListener("open-calendar-quick-create", handleQuickCreate);
+    return () =>
+      window.removeEventListener(
+        "open-calendar-quick-create",
+        handleQuickCreate,
+      );
+  }, [selectedDate, viewMode]);
+
   const headerTitle =
     viewMode === "week"
       ? formatWeekRange(weekAnchor)
@@ -410,6 +446,20 @@ export function CalendarView({
           selectedDate={selectedDate}
         />
       )}
+
+      <QuickCreatePopover
+        open={quickCreate !== null}
+        onOpenChange={(open) => {
+          if (!open) setQuickCreate(null);
+        }}
+        anchor={quickCreate?.anchor ?? null}
+        preFill={quickCreate?.preFill}
+        onExpandToFull={(data) => {
+          window.dispatchEvent(
+            new CustomEvent("open-create-task-with-data", { detail: data }),
+          );
+        }}
+      />
 
       <TaskDetail
         task={selectedTask}
