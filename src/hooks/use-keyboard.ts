@@ -11,6 +11,7 @@ interface KeyboardActions {
   onSelect: (task: Task) => void;
   onDeselect: () => void;
   onHelp?: () => void;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
@@ -81,6 +82,21 @@ export function useKeyboard(actions: KeyboardActions) {
           actionsRef.current.onHelp?.();
           return;
         }
+        return;
+      }
+
+      if (e.ctrlKey && (e.key === "d" || e.key === "u")) {
+        e.preventDefault();
+        if (tasks.length === 0) return;
+        const container = actionsRef.current.scrollRef?.current;
+        const rowHeight = 44;
+        const viewportRows = container
+          ? Math.max(1, Math.floor(container.clientHeight / rowHeight / 2))
+          : 10;
+        const delta = e.key === "d" ? viewportRows : -viewportRows;
+        setCursor((i) =>
+          Math.max(0, Math.min(i + delta, tasks.length - 1)),
+        );
         return;
       }
 

@@ -53,6 +53,7 @@ export function QueueView({
 }) {
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { cursor, setCursor, selectedIds, toggleSelect, pendingDelete } =
     useKeyboard({
@@ -68,6 +69,7 @@ export function QueueView({
       onSelect: (task) => setSelectedTask(task as RankedTask),
       onDeselect: () => setSelectedTask(null),
       onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
+      scrollRef,
     });
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export function QueueView({
           </span>
         </div>
       )}
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollRef} className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
             <Zap className="size-10 opacity-40" />
