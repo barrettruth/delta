@@ -7,9 +7,7 @@ import {
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
-import { Input } from "@/components/ui/input";
 import type { TaskStatus } from "@/core/types";
 
 import type { RankedTask } from "@/core/urgency";
@@ -44,110 +42,6 @@ function nextStatus(current: TaskStatus): TaskStatus {
   return order[(idx + 1) % order.length];
 }
 
-function InlineEdit({
-  value,
-  onSave,
-  className,
-  type = "text",
-  suggestions,
-  prefix,
-}: {
-  value: string;
-  onSave: (v: string) => void;
-  className?: string;
-  type?: "text" | "date";
-  suggestions?: string[];
-  prefix?: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const filtered = suggestions?.filter(
-    (s) => s.toLowerCase().includes(draft.toLowerCase()) && s !== draft,
-  );
-
-  useEffect(() => {
-    if (editing) {
-      setDraft(value);
-      setShowSuggestions(false);
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }, [editing, value]);
-
-  if (!editing) {
-    return (
-      <button
-        type="button"
-        className={className}
-        onClick={(e) => {
-          e.stopPropagation();
-          setEditing(true);
-        }}
-      >
-        {type === "date" && value
-          ? formatDate(new Date(value))
-          : value
-            ? `${prefix ? `${prefix} ` : ""}${value}`
-            : "\u00a0"}
-      </button>
-    );
-  }
-
-  function commit() {
-    setEditing(false);
-    setShowSuggestions(false);
-    if (draft !== value) onSave(draft);
-  }
-
-  return (
-    <span
-      className="relative"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-      role="listbox"
-    >
-      <Input
-        ref={inputRef}
-        type={type}
-        value={type === "date" && draft ? draft.slice(0, 10) : draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          if (suggestions) setShowSuggestions(true);
-        }}
-        onBlur={() => setTimeout(commit, 150)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") setEditing(false);
-          e.stopPropagation();
-        }}
-        className={`h-auto py-0 px-1 text-inherit border-0 border-b border-border bg-transparent focus-visible:ring-0 ${className ?? ""}`}
-      />
-      {showSuggestions && filtered && filtered.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
-          {filtered.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setDraft(s);
-                setShowSuggestions(false);
-                setEditing(false);
-                if (s !== value) onSave(s);
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-    </span>
-  );
-}
-
 export function QueueView({
   tasks,
   categories,
@@ -158,7 +52,6 @@ export function QueueView({
   defaultCategory?: string;
 }) {
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const { cursor, setCursor, selectedIds, toggleSelect, pendingDelete } =
@@ -172,7 +65,7 @@ export function QueueView({
         if (selectedTask && ids.includes(selectedTask.id))
           setSelectedTask(null);
       },
-      onCreate: () => setCreateOpen(true),
+      onCreate: () => {},
       onSelect: (task) => setSelectedTask(task as RankedTask),
       onDeselect: () => setSelectedTask(null),
       onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
@@ -192,6 +85,7 @@ export function QueueView({
       return;
     }
     setCursor(idx);
+    setSelectedTask(task);
   }
 
   return (
@@ -247,44 +141,27 @@ export function QueueView({
                   >
                     {STATUS_LABEL[task.status as TaskStatus]}
                   </button>
-                  <InlineEdit
-                    value={task.description}
-                    onSave={(v) =>
-                      updateTaskAction(task.id, { description: v })
-                    }
-                    className={`flex-1 truncate text-sm text-left ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
-                  />
-                  <InlineEdit
-                    value={task.category ?? ""}
-                    onSave={(v) =>
-                      updateTaskAction(task.id, { category: v || null })
-                    }
-                    suggestions={categories}
-                    prefix="#"
-                    className="w-24 truncate text-xs text-muted-foreground text-right shrink-0"
-                  />
-                  <InlineEdit
-                    value={task.due ?? ""}
-                    type="date"
-                    onSave={(v) =>
-                      updateTaskAction(task.id, {
-                        due: v ? new Date(`${v}T12:00:00`).toISOString() : null,
-                      })
-                    }
-                    className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0"
-                  />
+                  <span
+                    className={`flex-1 truncate text-sm ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
+                  >
+                    {task.description}
+                  </span>
+                  {task.category && (
+                    <span className="w-24 truncate text-xs text-muted-foreground text-right shrink-0">
+                      # {task.category}
+                    </span>
+                  )}
+                  {task.due && (
+                    <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
+                      {formatDate(new Date(task.due))}
+                    </span>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
-      <CreateTaskDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        categories={categories}
-        defaultCategory={defaultCategory}
-      />
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
