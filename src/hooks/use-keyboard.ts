@@ -1,13 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Task } from "@/core/types";
+import type { Task, TaskStatus } from "@/core/types";
 import { isInputFocused } from "@/lib/utils";
+
+const STATUS_OPS: Record<string, TaskStatus> = {
+  p: "pending",
+  w: "wip",
+  b: "blocked",
+};
+
+const OP_KEYS = new Set(["d", "p", "w", "b"]);
 
 interface KeyboardActions {
   tasks: Task[];
   onComplete: (ids: number[]) => void;
   onDelete: (ids: number[]) => void;
+  onStatusChange: (ids: number[], status: TaskStatus) => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
   onHelp?: () => void;
@@ -31,7 +40,9 @@ export function useKeyboard(actions: KeyboardActions) {
   const [pendingDelete, setPendingDelete] = useState<number[] | null>(null);
   const visualAnchor = useRef(-1);
   const pendingG = useRef(false);
+  const pendingOp = useRef<string | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
 
@@ -55,6 +66,18 @@ export function useKeyboard(actions: KeyboardActions) {
     });
   }, []);
 
+  const applyOp = useCallback((op: string, ids: number[]) => {
+    if (ids.length === 0) return;
+    if (op === "d") {
+      setPendingDelete(ids);
+    } else {
+      const status = STATUS_OPS[op];
+      if (status) actionsRef.current.onStatusChange(ids, status);
+    }
+    setSelectedIds(new Set());
+    setVisualMode(false);
+  }, []);
+
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
@@ -73,6 +96,22 @@ export function useKeyboard(actions: KeyboardActions) {
       const { tasks, onComplete, onSelect, onDeselect } = actionsRef.current;
 
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+
+      if (pendingOp.current && !isModifier) {
+        const op = pendingOp.current;
+        pendingOp.current = null;
+        if (opTimer.current) {
+          clearTimeout(opTimer.current);
+          opTimer.current = null;
+        }
+        if (e.key === op) {
+          e.preventDefault();
+          if (cursor >= 0 && cursor < tasks.length) {
+            applyOp(op, [tasks[cursor].id]);
+          }
+        }
+        return;
+      }
 
       if (pendingG.current && !isModifier) {
         pendingG.current = false;
@@ -103,6 +142,21 @@ export function useKeyboard(actions: KeyboardActions) {
           : 10;
         const delta = e.key === "d" ? viewportRows : -viewportRows;
         setCursor((i) => Math.max(0, Math.min(i + delta, tasks.length - 1)));
+        return;
+      }
+
+      if (OP_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if (tasks.length === 0) return;
+        if (selectedIds.size > 0) {
+          applyOp(e.key, [...selectedIds]);
+        } else {
+          pendingOp.current = e.key;
+          opTimer.current = setTimeout(() => {
+            pendingOp.current = null;
+            opTimer.current = null;
+          }, 500);
+        }
         return;
       }
 
@@ -142,16 +196,6 @@ export function useKeyboard(actions: KeyboardActions) {
             setVisualMode(false);
           } else if (cursor >= 0 && cursor < tasks.length) {
             onComplete([tasks[cursor].id]);
-          }
-          break;
-        }
-        case "d": {
-          e.preventDefault();
-          if (tasks.length === 0) break;
-          if (selectedIds.size > 0) {
-            setPendingDelete([...selectedIds]);
-          } else if (cursor >= 0 && cursor < tasks.length) {
-            setPendingDelete([tasks[cursor].id]);
           }
           break;
         }
@@ -199,7 +243,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [cursor, selectedIds, visualMode, pendingDelete, toggleSelect],
+    [cursor, selectedIds, visualMode, pendingDelete, toggleSelect, applyOp],
   );
 
   useEffect(() => {
@@ -210,6 +254,7 @@ export function useKeyboard(actions: KeyboardActions) {
   useEffect(() => {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
+      if (opTimer.current) clearTimeout(opTimer.current);
     };
   }, []);
 

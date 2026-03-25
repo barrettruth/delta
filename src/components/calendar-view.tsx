@@ -246,12 +246,12 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === "W") {
+      if (e.key === "w") {
         e.preventDefault();
         setViewMode("week");
         return;
       }
-      if (e.key === "M") {
+      if (e.key === "m") {
         e.preventDefault();
         setViewMode("month");
         return;

@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CreateTaskDrawer } from "@/components/create-task-drawer";
 import { KeymapHelp } from "@/components/keymap-help";
 import { useSidebar } from "@/components/ui/sidebar";
-import { useLineNumbers } from "@/contexts/line-numbers";
 import { isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
@@ -13,7 +12,7 @@ const VIEW_KEYS: Record<string, string> = {
   K: "/kanban",
   C: "/calendar",
 };
-const CATEGORY_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 export function GlobalKeyboard({
   categories = [],
@@ -26,7 +25,6 @@ export function GlobalKeyboard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toggleSidebar } = useSidebar();
-  const { cycleMode } = useLineNumbers();
   const [helpOpen, setHelpOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const pendingG = useRef(false);
@@ -50,12 +48,13 @@ export function GlobalKeyboard({
           gTimer.current = null;
         }
 
-        if (key === "?") {
+        const catIdx = DIGIT_KEYS.indexOf(key);
+        if (catIdx !== -1 && catIdx < categories.length) {
+          router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
+        } else if (key === "?") {
           setHelpOpen(true);
         } else if (key === "c") {
           setCreateOpen(true);
-        } else if (key === "n") {
-          cycleMode();
         } else if (key === ".") {
           const params = new URLSearchParams(searchParams.toString());
           if (params.has("showDone")) {
@@ -105,14 +104,8 @@ export function GlobalKeyboard({
         router.push(viewRoute);
         return;
       }
-
-      const catIdx = CATEGORY_KEYS.indexOf(e.key);
-      if (catIdx !== -1 && catIdx < categories.length) {
-        e.preventDefault();
-        router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
-      }
     },
-    [router, pathname, searchParams, toggleSidebar, cycleMode, categories],
+    [router, pathname, searchParams, toggleSidebar, categories],
   );
 
   useEffect(() => {

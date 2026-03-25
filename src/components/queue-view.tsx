@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/tasks";
 import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
-import { useLineNumbers } from "@/contexts/line-numbers";
+import { getLineNumber } from "@/contexts/line-numbers";
 import type { TaskStatus } from "@/core/types";
 
 import type { RankedTask } from "@/core/urgency";
@@ -45,7 +45,6 @@ function nextStatus(current: TaskStatus): TaskStatus {
 }
 
 export function QueueView({ tasks }: { tasks: RankedTask[] }) {
-  const { mode: lnMode, getLineNumber } = useLineNumbers();
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -63,6 +62,8 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
     );
   }, [tasks, searchQuery]);
 
+  const gutterWidth = String(filtered.length).length;
+
   const { cursor, setCursor, selectedIds, toggleSelect, pendingDelete } =
     useKeyboard({
       tasks: filtered,
@@ -73,6 +74,9 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
         for (const id of ids) deleteTaskAction(id);
         if (selectedTask && ids.includes(selectedTask.id))
           setSelectedTask(null);
+      },
+      onStatusChange: (ids, status) => {
+        for (const id of ids) updateTaskAction(id, { status });
       },
       onSelect: (task) => setSelectedTask(task as RankedTask),
       onDeselect: () => setSelectedTask(null),
@@ -185,19 +189,18 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                   ref={(el) => {
                     if (el) rowRefs.current.set(task.id, el);
                   }}
-                  className={`flex w-full items-center gap-3 px-6 py-2.5 cursor-pointer transition-colors text-left select-none ${bg}`}
+                  className={`flex w-full items-center gap-3 pl-3 pr-6 py-2.5 cursor-pointer transition-colors text-left select-none ${bg}`}
                   onClick={(e) => handleRowClick(task, i, e)}
                   onKeyDown={() => {}}
                   tabIndex={0}
                   role="row"
                 >
-                  {lnMode !== "none" && (
-                    <span
-                      className={`w-8 text-xs text-right tabular-nums shrink-0 ${isCursor ? "text-cursor-line-nr" : "text-line-nr"}`}
-                    >
-                      {getLineNumber(i, cursor)}
-                    </span>
-                  )}
+                  <span
+                    className={`text-xs text-right tabular-nums shrink-0 ${isCursor ? "text-cursor-line-nr" : "text-line-nr"}`}
+                    style={{ minWidth: `${gutterWidth}ch` }}
+                  >
+                    {getLineNumber(i, cursor)}
+                  </span>
                   <button
                     type="button"
                     className={`w-16 text-xs shrink-0 text-left hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
