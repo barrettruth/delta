@@ -24,10 +24,19 @@ export function addDependency(
     .get();
 
   if (task?.status === "pending") {
-    db.update(tasks)
-      .set({ status: "blocked", updatedAt: new Date().toISOString() })
-      .where(eq(tasks.id, taskId))
-      .run();
+    const depTask = db
+      .select({ status: tasks.status })
+      .from(tasks)
+      .where(eq(tasks.id, dependsOnId))
+      .get();
+    const resolved =
+      depTask?.status === "done" || depTask?.status === "cancelled";
+    if (!resolved) {
+      db.update(tasks)
+        .set({ status: "blocked", updatedAt: new Date().toISOString() })
+        .where(eq(tasks.id, taskId))
+        .run();
+    }
   }
 }
 
