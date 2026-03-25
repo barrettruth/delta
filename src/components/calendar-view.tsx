@@ -3,128 +3,48 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MonthGrid } from "@/components/calendar/month-grid";
+import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/core/types";
-import { blendColors, isInputFocused } from "@/lib/utils";
+import {
+  addDays,
+  DAY_NAMES,
+  formatDateKey,
+  formatMonthTitle,
+  formatWeekRange,
+  getWeekStart,
+  startOfMonth,
+} from "@/lib/calendar-utils";
+import { isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
-
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function daysInMonth(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-}
-
-function weekOffset(date: Date): number {
-  return date.getDay();
-}
-
-function formatDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatWeekRange(weekStart: Date): string {
-  const weekEnd = addDays(weekStart, 6);
-  const mOpts: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-  };
-  const start = weekStart.toLocaleDateString("en-US", mOpts);
-  if (weekStart.getFullYear() !== weekEnd.getFullYear()) {
-    const end = weekEnd.toLocaleDateString("en-US", {
-      ...mOpts,
-      year: "numeric",
-    });
-    return `${start}, ${weekStart.getFullYear()} \u2013 ${end}`;
-  }
-  if (weekStart.getMonth() !== weekEnd.getMonth()) {
-    const end = weekEnd.toLocaleDateString("en-US", mOpts);
-    return `${start} \u2013 ${end}, ${weekStart.getFullYear()}`;
-  }
-  return `${start} \u2013 ${weekEnd.getDate()}, ${weekStart.getFullYear()}`;
-}
-
-function formatMonthTitle(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
-function statusColor(task: Task): string {
-  if (task.status === "done") return "text-status-done line-through";
-  if (task.status === "blocked") return "text-status-blocked";
-  if (task.status === "wip") return "text-status-wip";
-  if (task.status === "cancelled") return "text-status-cancelled line-through";
-  return "text-foreground";
-}
-
-function dayBlendStyle(
-  tasks: Task[],
-  colors: Record<string, string>,
-): React.CSSProperties | undefined {
-  const hexes = tasks
-    .map((t) => (t.category ? colors[t.category] : undefined))
-    .filter((c): c is string => !!c);
-  const blended = blendColors(hexes);
-  if (!blended) return undefined;
-  return { backgroundColor: `${blended}18` };
-}
-
-function statusDot(task: Task): string {
-  if (task.status === "done") return "bg-status-done";
-  if (task.status === "blocked") return "bg-status-blocked";
-  if (task.status === "wip") return "bg-status-wip";
-  if (task.status === "cancelled") return "bg-status-cancelled";
-  return "bg-status-pending";
-}
 
 export function CalendarView({
   tasks,
   categoryColors = {},
+  categories: _categories = [],
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
+  categories?: string[];
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [anchor, setAnchor] = useState(() => new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [anchor, setAnchor] = useState<Date | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    () => new Date(),
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
+  const weekScrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [today, setToday] = useState(() => new Date());
+  const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
     const now = new Date();
+    setAnchor(now);
+    setSelectedDate(now);
+    setToday(now);
     const msUntilMidnight =
       new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
       now.getTime();
@@ -135,39 +55,74 @@ export function CalendarView({
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
     for (const task of tasks) {
-      if (!task.due) continue;
-      const key = task.due.slice(0, 10);
+      const dateSource = task.startAt || task.due;
+      if (!dateSource) continue;
+      const key = dateSource.slice(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(task);
     }
     return map;
   }, [tasks]);
 
-  const weekAnchor = useMemo(() => getWeekStart(anchor), [anchor]);
-  const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
+  const timedTasksByDate = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const task of tasks) {
+      if (!task.startAt || task.allDay === 1) continue;
+      const key = task.startAt.slice(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)?.push(task);
+    }
+    return map;
+  }, [tasks]);
 
-  function handleDayClick(date: Date) {
+  const weekAnchor = useMemo(
+    () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
+    [anchor],
+  );
+  const monthStart = useMemo(
+    () => (anchor ? startOfMonth(anchor) : startOfMonth(new Date())),
+    [anchor],
+  );
+
+  function handleDayClick(date: Date, _anchorEl?: HTMLElement) {
+    setSelectedDate(date);
+    setAnchor(date);
+  }
+
+  function handleSlotClick(
+    date: Date,
+    _minuteOfDay: number,
+    _anchorEl: HTMLElement,
+  ) {
     setSelectedDate(date);
     setAnchor(date);
   }
 
   const prevWeek = useCallback(() => {
-    setAnchor((d) => addDays(d, -7));
+    setAnchor((d) => addDays(d ?? new Date(), -7));
   }, []);
   const nextWeek = useCallback(() => {
-    setAnchor((d) => addDays(d, 7));
+    setAnchor((d) => addDays(d ?? new Date(), 7));
   }, []);
   const prevMonth = useCallback(() => {
-    setAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, d.getDate()));
+    setAnchor((d) => {
+      const b = d ?? new Date();
+      return new Date(b.getFullYear(), b.getMonth() - 1, b.getDate());
+    });
   }, []);
   const nextMonth = useCallback(() => {
-    setAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()));
+    setAnchor((d) => {
+      const b = d ?? new Date();
+      return new Date(b.getFullYear(), b.getMonth() + 1, b.getDate());
+    });
   }, []);
   const goToday = useCallback(() => {
     setAnchor(new Date());
   }, []);
 
-  const moveSelection = useCallback((days: number) => {
+  const countBuf = useRef("");
+
+  const moveSelectionDays = useCallback((days: number) => {
     setSelectedDate((prev) => {
       const base = prev ?? new Date();
       const next = addDays(base, days);
@@ -176,9 +131,43 @@ export function CalendarView({
     });
   }, []);
 
+  const moveSelectionHours = useCallback((hours: number) => {
+    setSelectedDate((prev) => {
+      const base = prev ?? new Date();
+      const next = new Date(base.getTime() + hours * 60 * 60 * 1000);
+      setAnchor(next);
+      return next;
+    });
+  }, []);
+
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
+
+      if (e.ctrlKey && viewMode === "week" && weekScrollRef.current) {
+        const el = weekScrollRef.current;
+        if (e.key === "e") {
+          e.preventDefault();
+          el.scrollBy({ top: 60, behavior: "smooth" });
+          return;
+        }
+        if (e.key === "y") {
+          e.preventDefault();
+          el.scrollBy({ top: -60, behavior: "smooth" });
+          return;
+        }
+        if (e.key === "d") {
+          e.preventDefault();
+          el.scrollBy({ top: el.clientHeight / 2, behavior: "smooth" });
+          return;
+        }
+        if (e.key === "u") {
+          e.preventDefault();
+          el.scrollBy({ top: -el.clientHeight / 2, behavior: "smooth" });
+          return;
+        }
+      }
+
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
@@ -202,27 +191,52 @@ export function CalendarView({
           }
           return;
         }
+        countBuf.current = "";
         return;
       }
 
+      if (e.key >= "1" && e.key <= "9" && !e.shiftKey) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+      if (e.key === "0" && countBuf.current.length > 0) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+
+      const count = countBuf.current
+        ? Number.parseInt(countBuf.current, 10)
+        : 1;
+      countBuf.current = "";
+
       if (e.key === "h") {
         e.preventDefault();
-        moveSelection(-1);
+        moveSelectionDays(-count);
         return;
       }
       if (e.key === "l") {
         e.preventDefault();
-        moveSelection(1);
+        moveSelectionDays(count);
         return;
       }
       if (e.key === "j") {
         e.preventDefault();
-        moveSelection(7);
+        if (viewMode === "week") {
+          moveSelectionHours(count);
+        } else {
+          moveSelectionDays(7 * count);
+        }
         return;
       }
       if (e.key === "k") {
         e.preventDefault();
-        moveSelection(-7);
+        if (viewMode === "week") {
+          moveSelectionHours(-count);
+        } else {
+          moveSelectionDays(-7 * count);
+        }
         return;
       }
       if (e.key === "Enter" && selectedDate) {
@@ -263,7 +277,8 @@ export function CalendarView({
       }
     },
     [
-      moveSelection,
+      moveSelectionDays,
+      moveSelectionHours,
       selectedDate,
       router,
       viewMode,
@@ -357,20 +372,20 @@ export function CalendarView({
       </div>
 
       {viewMode === "week" ? (
-        <WeekView
+        <WeekTimeGrid
           weekStart={weekAnchor}
-          today={today}
-          tasksByDate={tasksByDate}
-          onDayClick={handleDayClick}
+          today={today ?? new Date()}
+          timedTasksByDate={timedTasksByDate}
+          onSlotClick={handleSlotClick}
           onTaskClick={setSelectedTask}
-          dayNames={DAY_NAMES}
           categoryColors={categoryColors}
           selectedDate={selectedDate}
+          scrollRef={weekScrollRef}
         />
       ) : (
-        <MonthView
+        <MonthGrid
           monthStart={monthStart}
-          today={today}
+          today={today ?? new Date()}
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
@@ -385,221 +400,6 @@ export function CalendarView({
         open={selectedTask !== null}
         onClose={() => setSelectedTask(null)}
       />
-    </div>
-  );
-}
-
-function WeekView({
-  weekStart,
-  today,
-  tasksByDate,
-  onDayClick,
-  onTaskClick,
-  dayNames,
-  categoryColors,
-  selectedDate,
-}: {
-  weekStart: Date;
-  today: Date;
-  tasksByDate: Map<string, Task[]>;
-  onDayClick: (date: Date) => void;
-  onTaskClick: (task: Task) => void;
-  dayNames: string[];
-  categoryColors: Record<string, string>;
-  selectedDate: Date | null;
-}) {
-  const days = useMemo(() => {
-    const result: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-      result.push(addDays(weekStart, i));
-    }
-    return result;
-  }, [weekStart]);
-
-  return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
-        {days.map((date, idx) => {
-          const isToday = isSameDay(date, today);
-          const isSelected =
-            selectedDate !== null && isSameDay(date, selectedDate);
-          return (
-            <div
-              key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 border-r border-border/30 last:border-r-0 ${isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""}`}
-            >
-              <span className="text-xs text-muted-foreground">
-                {dayNames[idx]}
-              </span>
-              <span
-                className={`text-sm font-semibold mt-0.5 ${
-                  isToday ? "text-primary" : "text-foreground"
-                }`}
-              >
-                {date.getDate()}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="grid grid-cols-7 flex-1 overflow-auto">
-        {days.map((date) => {
-          const key = formatDateKey(date);
-          const dayTasks = tasksByDate.get(key) ?? [];
-          const isToday = isSameDay(date, today);
-          const isSelected =
-            selectedDate !== null && isSameDay(date, selectedDate);
-
-          const blend = dayBlendStyle(dayTasks, categoryColors);
-          return (
-            <div
-              key={key}
-              className={`flex flex-col p-2 border-r border-b border-border/30 ${
-                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
-              }`}
-              style={!isToday && !isSelected ? blend : undefined}
-            >
-              <div className="flex flex-col gap-1 w-full">
-                {dayTasks.map((task) => (
-                  <button
-                    type="button"
-                    key={task.id}
-                    className={`flex items-start gap-1.5 text-xs leading-snug px-1.5 py-1 transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
-                    onClick={() => onTaskClick(task)}
-                  >
-                    <span
-                      className={`shrink-0 mt-1 w-1.5 h-1.5 ${statusDot(task)}`}
-                    />
-                    <span className="truncate">{task.description}</span>
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="flex-1 min-h-[2rem] w-full hover:bg-accent/30 transition-colors cursor-pointer"
-                onClick={() => onDayClick(date)}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function MonthView({
-  monthStart,
-  today,
-  tasksByDate,
-  onDayClick,
-  onTaskClick,
-  dayNames,
-  categoryColors,
-  selectedDate,
-}: {
-  monthStart: Date;
-  today: Date;
-  tasksByDate: Map<string, Task[]>;
-  onDayClick: (date: Date) => void;
-  onTaskClick: (task: Task) => void;
-  dayNames: string[];
-  categoryColors: Record<string, string>;
-  selectedDate: Date | null;
-}) {
-  const totalDays = daysInMonth(monthStart);
-  const offset = weekOffset(monthStart);
-
-  const cells = useMemo(() => {
-    const result: { key: string; day: number | null }[] = [];
-    for (let i = 0; i < offset; i++)
-      result.push({ key: `pre-${i}`, day: null });
-    for (let d = 1; d <= totalDays; d++) result.push({ key: `d-${d}`, day: d });
-    while (result.length % 7 !== 0)
-      result.push({ key: `post-${result.length}`, day: null });
-    return result;
-  }, [offset, totalDays]);
-
-  return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
-        {dayNames.map((d) => (
-          <div
-            key={d}
-            className="text-xs font-medium text-muted-foreground text-center py-2"
-          >
-            {d}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 flex-1 auto-rows-fr overflow-auto">
-        {cells.map((cell) => {
-          if (cell.day === null) {
-            return (
-              <div
-                key={cell.key}
-                className="border-b border-r border-border/30 bg-muted/10"
-              />
-            );
-          }
-
-          const day = cell.day;
-          const cellDate = new Date(
-            monthStart.getFullYear(),
-            monthStart.getMonth(),
-            day,
-          );
-          const dateKey = formatDateKey(cellDate);
-          const dayTasks = tasksByDate.get(dateKey) ?? [];
-          const isToday = isSameDay(cellDate, today);
-          const isSelected =
-            selectedDate !== null && isSameDay(cellDate, selectedDate);
-          const isPast = cellDate < today && !isToday;
-          const blend = dayBlendStyle(dayTasks, categoryColors);
-
-          return (
-            <div
-              key={cell.key}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${
-                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
-              } ${isPast ? "opacity-50" : ""}`}
-              style={!isToday && !isSelected ? blend : undefined}
-            >
-              <span
-                className={`text-xs font-medium mb-1 ${
-                  isToday ? "text-primary font-bold" : "text-muted-foreground"
-                }`}
-              >
-                {day}
-              </span>
-              <div className="flex flex-col gap-0.5 overflow-hidden w-full">
-                {dayTasks.slice(0, 3).map((task) => (
-                  <button
-                    type="button"
-                    key={task.id}
-                    className={`flex items-start gap-1 text-[10px] leading-tight max-w-full px-1 py-0.5 transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
-                    onClick={() => onTaskClick(task)}
-                  >
-                    <span
-                      className={`shrink-0 mt-[3px] w-1.5 h-1.5 ${statusDot(task)}`}
-                    />
-                    <span className="truncate">{task.description}</span>
-                  </button>
-                ))}
-                {dayTasks.length > 3 && (
-                  <span className="text-[10px] text-muted-foreground px-1">
-                    +{dayTasks.length - 3}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                className="flex-1 min-h-[1rem] w-full hover:bg-accent/50 transition-colors cursor-pointer"
-                onClick={() => onDayClick(cellDate)}
-              />
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

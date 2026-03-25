@@ -58,6 +58,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const visualAnchor = useRef(-1);
   const pendingOp = useRef(false);
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countBuf = useRef("");
 
   const filteredTasks = useMemo(() => {
     if (!searchQuery) return tasks;
@@ -112,12 +113,32 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         return;
       }
 
+      if (e.key >= "1" && e.key <= "9" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+      if (
+        e.key === "0" &&
+        countBuf.current.length > 0 &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+
+      const rawCount = countBuf.current;
+      countBuf.current = "";
+      const n = rawCount ? Number.parseInt(rawCount, 10) : 1;
+
       switch (e.key) {
         case "h": {
           e.preventDefault();
           if (visualMode) break;
           setKbActive(true);
-          setColIdx((c) => Math.max(c - 1, 0));
+          setColIdx((c) => Math.max(c - n, 0));
           setRowIdx(0);
           break;
         }
@@ -125,7 +146,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           if (visualMode) break;
           setKbActive(true);
-          setColIdx((c) => Math.min(c + 1, columns.length - 1));
+          setColIdx((c) => Math.min(c + n, columns.length - 1));
           setRowIdx(0);
           break;
         }
@@ -134,14 +155,14 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setKbActive(true);
           setRowIdx((r) => {
             const colTasks = getColTasks(colIdx);
-            return Math.min(r + 1, colTasks.length - 1);
+            return Math.min(r + n, colTasks.length - 1);
           });
           break;
         }
         case "k": {
           e.preventDefault();
           setKbActive(true);
-          setRowIdx((r) => Math.max(r - 1, 0));
+          setRowIdx((r) => Math.max(r - n, 0));
           break;
         }
         case "H": {
@@ -230,11 +251,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setColIdx((c) => c + 1);
           break;
         }
-        case "Enter": {
+        case "e": {
+          e.preventDefault();
           const colTasks = getColTasks(colIdx);
-          if (colTasks.length > 0 && rowIdx < colTasks.length) {
-            e.preventDefault();
+          if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
             setSelectedTask(colTasks[rowIdx]);
+          } else {
+            window.dispatchEvent(new Event("open-create-task"));
           }
           break;
         }
