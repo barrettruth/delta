@@ -25,8 +25,8 @@ const sections = [
       ["j / k", "Move down / up"],
       ["gg", "Jump to top"],
       ["G", "Jump to bottom"],
-      ["Ctrl+d", "Half page down"],
-      ["Ctrl+u", "Half page up"],
+      ["<C-d>", "Half page down"],
+      ["<C-u>", "Half page up"],
       ["/", "Search filter"],
       ["e", "Edit / create task"],
       ["x", "Complete task"],
@@ -36,7 +36,7 @@ const sections = [
       ["bb", "Set blocked"],
       ["v", "Toggle select"],
       ["V", "Visual select mode"],
-      ["Escape", "Clear / close"],
+      ["<Esc>", "Clear / close"],
     ],
   },
   {
@@ -52,7 +52,7 @@ const sections = [
       ["V", "Visual select mode"],
       ["x", "Complete task"],
       ["dd", "Delete task"],
-      ["Escape", "Deactivate keyboard"],
+      ["<Esc>", "Deactivate keyboard"],
     ],
   },
   {
@@ -66,15 +66,15 @@ const sections = [
       ["[[", "Previous period"],
       ["]]", "Next period"],
       ["t", "Jump to today"],
-      ["Escape", "Clear selection"],
+      ["<Esc>", "Clear selection"],
     ],
   },
   {
     title: "Task Detail",
     keys: [
       ["j / k", "Next / previous task"],
-      ["Ctrl+S", "Save"],
-      ["Escape", "Close"],
+      ["<C-s>", "Save"],
+      ["<Esc>", "Close"],
     ],
   },
 ];
