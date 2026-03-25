@@ -119,3 +119,45 @@ export function dayBlendStyle(
 }
 
 export const HOUR_HEIGHT = 60;
+
+export interface QuickCreatePreFill {
+  due?: string;
+  startAt?: string;
+  endAt?: string;
+  allDay?: number;
+  timezone?: string;
+  category?: string;
+}
+
+export function buildSlotPreFill(
+  date: Date,
+  minuteOfDay: number,
+): QuickCreatePreFill {
+  const snapped = Math.round(minuteOfDay / 15) * 15;
+  const hours = Math.floor(snapped / 60);
+  const mins = snapped % 60;
+  const start = new Date(date);
+  start.setHours(hours, mins, 0, 0);
+  return {
+    startAt: start.toISOString(),
+    due: start.toISOString(),
+    allDay: 0,
+    timezone: getUserTimezone(),
+  };
+}
+
+export function buildDayPreFill(date: Date): QuickCreatePreFill {
+  const noon = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+    0,
+    0,
+  );
+  return {
+    due: noon.toISOString(),
+    allDay: 1,
+    timezone: getUserTimezone(),
+  };
+}
