@@ -224,6 +224,23 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
+        case "v": {
+          e.preventDefault();
+          if (visualMode) setVisualMode(false);
+          if (kbActive) {
+            const colTasks = getColTasks(colIdx);
+            if (colTasks.length > 0 && rowIdx < colTasks.length) {
+              const id = colTasks[rowIdx].id;
+              setSelectedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              });
+            }
+          }
+          break;
+        }
         case "V": {
           e.preventDefault();
           if (visualMode) {

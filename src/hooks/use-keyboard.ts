@@ -154,6 +154,16 @@ export function useKeyboard(actions: KeyboardActions) {
           }
           break;
         }
+        case "v": {
+          e.preventDefault();
+          if (visualMode) {
+            setVisualMode(false);
+          }
+          if (cursor >= 0 && cursor < tasks.length) {
+            toggleSelect(tasks[cursor].id);
+          }
+          break;
+        }
         case "V": {
           e.preventDefault();
           if (visualMode) {
