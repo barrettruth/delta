@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/tasks";
 
 import { TaskDetail } from "@/components/task-detail";
+import { Input } from "@/components/ui/input";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
@@ -48,8 +49,22 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [columns, setColumns] = useState(defaultColumns);
   const [visualMode, setVisualMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchActive, setSearchActive] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const visualAnchor = useRef(-1);
-  const grouped = useMemo(() => groupByStatus(tasks), [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    if (!searchQuery) return tasks;
+    const q = searchQuery.toLowerCase();
+    return tasks.filter(
+      (t) =>
+        t.description.toLowerCase().includes(q) ||
+        (t.category && t.category.toLowerCase().includes(q)),
+    );
+  }, [tasks, searchQuery]);
+
+  const grouped = useMemo(() => groupByStatus(filteredTasks), [filteredTasks]);
 
   const getColTasks = useCallback(
     (ci: number) => grouped[columns[ci].status] ?? [],
@@ -249,8 +264,17 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
+        case "/": {
+          e.preventDefault();
+          setSearchActive(true);
+          requestAnimationFrame(() => searchRef.current?.focus());
+          break;
+        }
         case "Escape": {
-          if (visualMode) {
+          if (searchActive) {
+            setSearchQuery("");
+            setSearchActive(false);
+          } else if (visualMode) {
             setVisualMode(false);
             setSelectedIds(new Set());
           } else {
@@ -271,6 +295,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       kbActive,
       visualMode,
       selectedIds,
+      searchActive,
     ],
   );
 
@@ -300,7 +325,34 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           : "grid-cols-4";
 
   return (
-    <div className={`grid ${gridCols} gap-0 h-full w-full`}>
+    <div className="flex flex-col h-full w-full">
+      {searchActive && (
+        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/60 shrink-0">
+          <span className="text-xs text-muted-foreground">/</span>
+          <Input
+            ref={searchRef}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setSearchQuery("");
+                setSearchActive(false);
+              }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                searchRef.current?.blur();
+              }
+            }}
+            placeholder="filter tasks..."
+            className="h-6 border-0 bg-transparent px-0 text-sm focus-visible:ring-0"
+          />
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {filteredTasks.length}/{tasks.length}
+          </span>
+        </div>
+      )}
+      <div className={`grid ${gridCols} gap-0 flex-1 min-h-0`}>
       {visibleColumns.map((col) => {
         const ci = columns.indexOf(col);
         const colTasks = grouped[col.status] ?? [];
@@ -391,6 +443,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           </section>
         );
       })}
+      </div>
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
