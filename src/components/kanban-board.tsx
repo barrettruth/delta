@@ -171,16 +171,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           const newColH = Math.max(colIdx - 1, 0);
           if (newColH === colIdx) break;
-          if (visualMode) {
-            const colTasks = getColTasks(colIdx);
-            const ids =
-              selectedIds.size > 0
-                ? [...selectedIds]
-                : colTasks.length > 0 && rowIdx < colTasks.length
-                  ? [colTasks[rowIdx].id]
-                  : [];
+          if (selectedIds.size > 0) {
             const newStatus = columns[newColH].status;
-            for (const id of ids) {
+            for (const id of selectedIds) {
               if (newStatus === "done") completeTaskAction(id);
               else updateTaskAction(id, { status: newStatus });
             }
@@ -202,16 +195,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           const newColL = Math.min(colIdx + 1, columns.length - 1);
           if (newColL === colIdx) break;
-          if (visualMode) {
-            const colTasks = getColTasks(colIdx);
-            const ids =
-              selectedIds.size > 0
-                ? [...selectedIds]
-                : colTasks.length > 0 && rowIdx < colTasks.length
-                  ? [colTasks[rowIdx].id]
-                  : [];
+          if (selectedIds.size > 0) {
             const newStatus = columns[newColL].status;
-            for (const id of ids) {
+            for (const id of selectedIds) {
               if (newStatus === "done") completeTaskAction(id);
               else updateTaskAction(id, { status: newStatus });
             }
