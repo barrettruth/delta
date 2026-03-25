@@ -21,6 +21,15 @@ function isValidIsoDate(value: string): boolean {
   return !Number.isNaN(d.getTime()) && d.toISOString() === value;
 }
 
+function isValidTimezone(value: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function sanitize(str: string): string {
   return str.replace(/<[^>]*>/g, "");
 }
@@ -78,6 +87,50 @@ export function validateCreateTask(
     }
   }
 
+  if (b.startAt !== undefined && b.startAt !== null) {
+    if (typeof b.startAt !== "string" || !isValidIsoDate(b.startAt)) {
+      errors.push({
+        field: "startAt",
+        message: "startAt must be a valid ISO 8601 date string",
+      });
+    }
+  }
+  if (b.endAt !== undefined && b.endAt !== null) {
+    if (typeof b.endAt !== "string" || !isValidIsoDate(b.endAt)) {
+      errors.push({
+        field: "endAt",
+        message: "endAt must be a valid ISO 8601 date string",
+      });
+    }
+  }
+  if (
+    typeof b.startAt === "string" &&
+    isValidIsoDate(b.startAt) &&
+    typeof b.endAt === "string" &&
+    isValidIsoDate(b.endAt) &&
+    new Date(b.endAt).getTime() <= new Date(b.startAt).getTime()
+  ) {
+    errors.push({ field: "endAt", message: "endAt must be after startAt" });
+  }
+  if (
+    b.allDay !== undefined &&
+    b.allDay !== null &&
+    b.allDay !== 0 &&
+    b.allDay !== 1
+  ) {
+    errors.push({ field: "allDay", message: "allDay must be 0 or 1" });
+  }
+  if (
+    b.timezone !== undefined &&
+    b.timezone !== null &&
+    (typeof b.timezone !== "string" || !isValidTimezone(b.timezone))
+  ) {
+    errors.push({
+      field: "timezone",
+      message: "timezone must be a valid IANA timezone string",
+    });
+  }
+
   if (errors.length > 0) {
     return { success: false, errors };
   }
@@ -99,6 +152,13 @@ export function validateCreateTask(
   if (b.recurMode !== undefined)
     data.recurMode = b.recurMode as CreateTaskInput["recurMode"];
   if (b.order !== undefined) data.order = b.order as number;
+  if (b.startAt !== undefined && b.startAt !== null)
+    data.startAt = b.startAt as string;
+  if (b.endAt !== undefined && b.endAt !== null) data.endAt = b.endAt as string;
+  if (b.allDay !== undefined && b.allDay !== null)
+    data.allDay = b.allDay as number;
+  if (b.timezone !== undefined && b.timezone !== null)
+    data.timezone = b.timezone as string;
 
   return { success: true, data };
 }
@@ -161,6 +221,50 @@ export function validateUpdateTask(
     }
   }
 
+  if (b.startAt !== undefined && b.startAt !== null) {
+    if (typeof b.startAt !== "string" || !isValidIsoDate(b.startAt)) {
+      errors.push({
+        field: "startAt",
+        message: "startAt must be a valid ISO 8601 date string",
+      });
+    }
+  }
+  if (b.endAt !== undefined && b.endAt !== null) {
+    if (typeof b.endAt !== "string" || !isValidIsoDate(b.endAt)) {
+      errors.push({
+        field: "endAt",
+        message: "endAt must be a valid ISO 8601 date string",
+      });
+    }
+  }
+  if (
+    typeof b.startAt === "string" &&
+    isValidIsoDate(b.startAt) &&
+    typeof b.endAt === "string" &&
+    isValidIsoDate(b.endAt) &&
+    new Date(b.endAt).getTime() <= new Date(b.startAt).getTime()
+  ) {
+    errors.push({ field: "endAt", message: "endAt must be after startAt" });
+  }
+  if (
+    b.allDay !== undefined &&
+    b.allDay !== null &&
+    b.allDay !== 0 &&
+    b.allDay !== 1
+  ) {
+    errors.push({ field: "allDay", message: "allDay must be 0 or 1" });
+  }
+  if (
+    b.timezone !== undefined &&
+    b.timezone !== null &&
+    (typeof b.timezone !== "string" || !isValidTimezone(b.timezone))
+  ) {
+    errors.push({
+      field: "timezone",
+      message: "timezone must be a valid IANA timezone string",
+    });
+  }
+
   if (errors.length > 0) {
     return { success: false, errors };
   }
@@ -184,6 +288,10 @@ export function validateUpdateTask(
   if (b.recurMode !== undefined)
     data.recurMode = b.recurMode as UpdateTaskInput["recurMode"];
   if (b.order !== undefined) data.order = b.order as number;
+  if (b.startAt !== undefined) data.startAt = b.startAt as string | null;
+  if (b.endAt !== undefined) data.endAt = b.endAt as string | null;
+  if (b.allDay !== undefined) data.allDay = b.allDay as number | null;
+  if (b.timezone !== undefined) data.timezone = b.timezone as string | null;
 
   return { success: true, data };
 }

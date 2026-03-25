@@ -38,11 +38,32 @@ export function getNextTaskData(task: Task): CreateTaskInput | null {
 
   if (!nextDue) return null;
 
+  const dueDelta = task.due
+    ? nextDue.getTime() - new Date(task.due).getTime()
+    : 0;
+
+  let startAt: string | undefined;
+  if (task.startAt) {
+    startAt = new Date(
+      new Date(task.startAt).getTime() + dueDelta,
+    ).toISOString();
+  }
+
+  let endAt: string | undefined;
+  if (task.endAt) {
+    endAt = new Date(new Date(task.endAt).getTime() + dueDelta).toISOString();
+  }
+
   return {
     description: task.description,
     category: task.category ?? undefined,
+    label: task.label ?? undefined,
     priority: task.priority ?? undefined,
     due: nextDue.toISOString(),
+    startAt,
+    endAt,
+    allDay: task.allDay ?? undefined,
+    timezone: task.timezone ?? undefined,
     recurrence: task.recurrence,
     recurMode: mode,
     notes: task.notes ?? undefined,

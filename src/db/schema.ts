@@ -48,6 +48,10 @@ export const tasks = sqliteTable("tasks", {
   order: integer("order").default(0),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
+  startAt: text("start_at"),
+  endAt: text("end_at"),
+  allDay: integer("all_day").default(0),
+  timezone: text("timezone"),
   completedAt: text("completed_at"),
 });
 

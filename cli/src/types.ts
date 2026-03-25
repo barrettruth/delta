@@ -12,8 +12,13 @@ export interface Task {
   description: string;
   status: TaskStatus;
   category: string | null;
+  label: string | null;
   priority: number | null;
   due: string | null;
+  startAt: string | null;
+  endAt: string | null;
+  allDay: number | null;
+  timezone: string | null;
   recurrence: string | null;
   recurMode: string | null;
   notes: string | null;
@@ -27,16 +32,26 @@ export interface CreateTaskInput {
   description: string;
   status?: TaskStatus;
   category?: string;
+  label?: string;
   priority?: number;
   due?: string;
+  startAt?: string;
+  endAt?: string;
+  allDay?: number;
+  timezone?: string;
 }
 
 export interface UpdateTaskInput {
   description?: string;
   status?: TaskStatus;
   category?: string | null;
+  label?: string | null;
   priority?: number;
   due?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  allDay?: number | null;
+  timezone?: string | null;
 }
 
 export interface TaskFilters {
