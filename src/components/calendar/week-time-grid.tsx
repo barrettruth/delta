@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { EventBlock } from "@/components/calendar/event-block";
 import type { Task } from "@/core/types";
 import {
@@ -85,6 +85,7 @@ export function WeekTimeGrid({
 }) {
   const internalRef = useRef<HTMLDivElement>(null);
   const scrollRef = externalScrollRef || internalRef;
+  const cursorRef = useRef<HTMLDivElement>(null);
   const totalHeight = 24 * HOUR_HEIGHT;
 
   const days = useMemo(() => {
@@ -101,6 +102,34 @@ export function WeekTimeGrid({
     const scrollTo = Math.max(0, (now.getHours() - 1) * HOUR_HEIGHT);
     scrollRef.current.scrollTop = scrollTo;
   }, [scrollRef.current]);
+
+  const selectedDayIndex = useMemo(() => {
+    if (!selectedDate) return -1;
+    return days.findIndex((d) => isSameDay(d, selectedDate));
+  }, [selectedDate, days]);
+
+  const selectedHour = useMemo(() => {
+    if (!selectedDate || selectedDayIndex < 0) return -1;
+    return selectedDate.getHours();
+  }, [selectedDate, selectedDayIndex]);
+
+  const scrollCursorIntoView = useCallback(() => {
+    if (!cursorRef.current || !scrollRef.current) return;
+    const container = scrollRef.current;
+    const cursorTop = selectedHour * HOUR_HEIGHT;
+    const cursorBottom = cursorTop + HOUR_HEIGHT;
+    const viewTop = container.scrollTop;
+    const viewBottom = viewTop + container.clientHeight;
+    if (cursorTop < viewTop) {
+      container.scrollTop = cursorTop;
+    } else if (cursorBottom > viewBottom) {
+      container.scrollTop = cursorBottom - container.clientHeight;
+    }
+  }, [selectedHour, scrollRef]);
+
+  useEffect(() => {
+    scrollCursorIntoView();
+  }, [scrollCursorIntoView]);
 
   const nowMinutes = useMemo(() => {
     const now = new Date();
@@ -158,11 +187,12 @@ export function WeekTimeGrid({
             ))}
           </div>
 
-          {days.map((date) => {
+          {days.map((date, dayIdx) => {
             const key = formatDateKey(date);
             const tasks = timedTasksByDate.get(key) ?? [];
             const layout = computeOverlapLayout(tasks);
             const isToday = key === todayKey;
+            const isCursorDay = dayIdx === selectedDayIndex;
 
             return (
               <div
@@ -188,6 +218,17 @@ export function WeekTimeGrid({
                     style={{ top: `${h * HOUR_HEIGHT}px` }}
                   />
                 ))}
+
+                {isCursorDay && selectedHour >= 0 && (
+                  <div
+                    ref={cursorRef}
+                    className="absolute left-0 right-0 bg-accent border border-primary/30 pointer-events-none z-[5]"
+                    style={{
+                      top: `${selectedHour * HOUR_HEIGHT}px`,
+                      height: `${HOUR_HEIGHT}px`,
+                    }}
+                  />
+                )}
 
                 {isToday && (
                   <div

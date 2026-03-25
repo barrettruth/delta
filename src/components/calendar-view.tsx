@@ -37,9 +37,11 @@ export function CalendarView({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
+  const pendingG = useRef<number | null | false>(false);
   const weekScrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -144,6 +146,17 @@ export function CalendarView({
     });
   }, []);
 
+  const setSelectedHour = useCallback((hour: number) => {
+    const clamped = Math.max(0, Math.min(23, hour));
+    setSelectedDate((prev) => {
+      const base = prev ?? new Date();
+      const next = new Date(base);
+      next.setHours(clamped, 0, 0, 0);
+      setAnchor(next);
+      return next;
+    });
+  }, []);
+
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
@@ -199,6 +212,24 @@ export function CalendarView({
         return;
       }
 
+      if (pendingG.current !== false && !isModifier) {
+        const gCount = pendingG.current;
+        pendingG.current = false;
+        if (gTimer.current) {
+          clearTimeout(gTimer.current);
+          gTimer.current = null;
+        }
+        if (e.key === "g") {
+          e.preventDefault();
+          if (viewMode === "week") {
+            setSelectedHour(gCount !== null ? gCount : 0);
+          }
+          return;
+        }
+        countBuf.current = "";
+        return;
+      }
+
       if (e.key >= "1" && e.key <= "9" && !e.shiftKey) {
         e.preventDefault();
         countBuf.current += e.key;
@@ -210,10 +241,11 @@ export function CalendarView({
         return;
       }
 
-      const count = countBuf.current
+      const rawCount = countBuf.current
         ? Number.parseInt(countBuf.current, 10)
-        : 1;
+        : null;
       countBuf.current = "";
+      const count = rawCount ?? 1;
 
       if (e.key === "h") {
         e.preventDefault();
@@ -279,10 +311,27 @@ export function CalendarView({
         goToday();
         return;
       }
+      if (e.key === "g" && !e.shiftKey) {
+        e.preventDefault();
+        pendingG.current = rawCount;
+        gTimer.current = setTimeout(() => {
+          pendingG.current = false;
+          gTimer.current = null;
+        }, 500);
+        return;
+      }
+      if (e.key === "G") {
+        e.preventDefault();
+        if (viewMode === "week") {
+          setSelectedHour(rawCount !== null ? rawCount : 23);
+        }
+        return;
+      }
     },
     [
       moveSelectionDays,
       moveSelectionHours,
+      setSelectedHour,
       selectedDate,
       router,
       viewMode,
@@ -302,6 +351,7 @@ export function CalendarView({
   useEffect(() => {
     return () => {
       if (bracketTimer.current) clearTimeout(bracketTimer.current);
+      if (gTimer.current) clearTimeout(gTimer.current);
     };
   }, []);
 
