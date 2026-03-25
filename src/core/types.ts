@@ -24,6 +24,10 @@ export interface CreateTaskInput {
   label?: string;
   priority?: number;
   due?: string;
+  startAt?: string;
+  endAt?: string;
+  allDay?: number;
+  timezone?: string;
   recurrence?: string;
   recurMode?: RecurMode;
   notes?: string;
@@ -37,6 +41,10 @@ export interface UpdateTaskInput {
   label?: string | null;
   priority?: number;
   due?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  allDay?: number | null;
+  timezone?: string | null;
   recurrence?: string | null;
   recurMode?: RecurMode | null;
   notes?: string | null;
