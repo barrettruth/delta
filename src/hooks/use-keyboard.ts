@@ -45,7 +45,6 @@ export function useKeyboard(actions: KeyboardActions) {
   const [cursor, setCursor] = useState(-1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [visualMode, setVisualMode] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<number[] | null>(null);
   const visualAnchor = useRef(-1);
   const countBuf = useRef("");
   const pendingG = useRef<number | null | false>(false);
@@ -78,7 +77,7 @@ export function useKeyboard(actions: KeyboardActions) {
   const applyOp = useCallback((op: string, ids: number[]) => {
     if (ids.length === 0) return;
     if (op === "d") {
-      setPendingDelete(ids);
+      actionsRef.current.onDelete(ids);
     } else {
       const status = STATUS_OPS[op];
       if (status) actionsRef.current.onStatusChange(ids, status);
@@ -97,17 +96,6 @@ export function useKeyboard(actions: KeyboardActions) {
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
-
-      if (pendingDelete) {
-        e.preventDefault();
-        if (e.key === "y") {
-          actionsRef.current.onDelete(pendingDelete);
-          setSelectedIds(new Set());
-          setVisualMode(false);
-        }
-        setPendingDelete(null);
-        return;
-      }
 
       const { tasks, onComplete, onSelect, onDeselect } = actionsRef.current;
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
@@ -292,15 +280,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [
-      cursor,
-      selectedIds,
-      visualMode,
-      pendingDelete,
-      toggleSelect,
-      applyOp,
-      consumeCount,
-    ],
+    [cursor, selectedIds, visualMode, toggleSelect, applyOp, consumeCount],
   );
 
   useEffect(() => {
@@ -321,6 +301,5 @@ export function useKeyboard(actions: KeyboardActions) {
     selectedIds,
     toggleSelect,
     visualMode,
-    pendingDelete,
   };
 }
