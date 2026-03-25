@@ -32,7 +32,10 @@ export function GlobalKeyboard({
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const calendarDate = pathname === "/calendar" ? undefined : undefined;
+  const [createPreFill, setCreatePreFill] = useState<{
+    description?: string;
+    due?: string;
+  } | null>(null);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
@@ -75,7 +78,11 @@ export function GlobalKeyboard({
         } else if (key === "?") {
           setHelpOpen(true);
         } else if (key === "c") {
-          setCreateOpen(true);
+          if (pathname === "/calendar") {
+            window.dispatchEvent(new CustomEvent("open-calendar-quick-create"));
+          } else {
+            setCreateOpen(true);
+          }
         } else if (key === ".") {
           const params = new URLSearchParams(searchParams.toString());
           if (params.has("showDone")) {
@@ -171,6 +178,20 @@ export function GlobalKeyboard({
   }, []);
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setCreatePreFill({
+        description: detail?.description,
+        due: detail?.due,
+      });
+      setCreateOpen(true);
+    };
+    window.addEventListener("open-create-task-with-data", handler);
+    return () =>
+      window.removeEventListener("open-create-task-with-data", handler);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
     };
@@ -181,10 +202,14 @@ export function GlobalKeyboard({
       <KeymapHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <CreateTaskDrawer
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) setCreatePreFill(null);
+        }}
         categories={categories}
         defaultCategory={defaultCategory}
-        defaultDue={calendarDate}
+        defaultDue={createPreFill?.due}
+        defaultDescription={createPreFill?.description}
       />
     </>
   );
