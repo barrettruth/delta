@@ -46,6 +46,15 @@ export function useKeyboard(actions: KeyboardActions) {
     setSelectedIds(rangeSet(tasks, visualAnchor.current, cursor));
   }, [cursor, visualMode]);
 
+  const toggleSelect = useCallback((taskId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
+
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
@@ -154,6 +163,16 @@ export function useKeyboard(actions: KeyboardActions) {
           }
           break;
         }
+        case "v": {
+          e.preventDefault();
+          if (visualMode) {
+            setVisualMode(false);
+          }
+          if (cursor >= 0 && cursor < tasks.length) {
+            toggleSelect(tasks[cursor].id);
+          }
+          break;
+        }
         case "V": {
           e.preventDefault();
           if (visualMode) {
@@ -180,7 +199,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [cursor, selectedIds, visualMode, pendingDelete],
+    [cursor, selectedIds, visualMode, pendingDelete, toggleSelect],
   );
 
   useEffect(() => {
@@ -193,15 +212,6 @@ export function useKeyboard(actions: KeyboardActions) {
       if (gTimer.current) clearTimeout(gTimer.current);
     };
   }, []);
-
-  function toggleSelect(taskId: number) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(taskId)) next.delete(taskId);
-      else next.add(taskId);
-      return next;
-    });
-  }
 
   return {
     cursor,

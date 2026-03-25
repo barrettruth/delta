@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/tasks";
 import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
+import { useLineNumbers } from "@/contexts/line-numbers";
 import type { TaskStatus } from "@/core/types";
 
 import type { RankedTask } from "@/core/urgency";
@@ -44,6 +45,7 @@ function nextStatus(current: TaskStatus): TaskStatus {
 }
 
 export function QueueView({ tasks }: { tasks: RankedTask[] }) {
+  const { mode: lnMode, getLineNumber } = useLineNumbers();
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -189,6 +191,13 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                   tabIndex={0}
                   role="row"
                 >
+                  {lnMode !== "none" && (
+                    <span
+                      className={`w-8 text-xs text-right tabular-nums shrink-0 ${isCursor ? "text-cursor-line-nr" : "text-line-nr"}`}
+                    >
+                      {getLineNumber(i, cursor)}
+                    </span>
+                  )}
                   <button
                     type="button"
                     className={`w-16 text-xs shrink-0 text-left hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}

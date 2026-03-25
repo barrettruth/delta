@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { GlobalKeyboard } from "@/components/global-keyboard";
 import { KeyboardHints } from "@/components/keyboard-hints";
 import { SidebarInset } from "@/components/ui/sidebar";
+import { LineNumberProvider } from "@/contexts/line-numbers";
 import { validateSession } from "@/core/auth";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
@@ -42,15 +43,19 @@ export default async function DashboardLayout({
 
   return (
     <Suspense>
-      <AppSidebar categories={categories} categoryColors={colors} />
-      <SidebarInset className="flex flex-col h-dvh">
-        <main className="flex-1 overflow-hidden bg-background">{children}</main>
-        <KeyboardHints />
-      </SidebarInset>
-      <GlobalKeyboard
-        categories={categories}
-        defaultCategory={settings.defaultCategory}
-      />
+      <LineNumberProvider>
+        <AppSidebar categories={categories} categoryColors={colors} />
+        <SidebarInset className="flex flex-col h-dvh">
+          <main className="flex-1 overflow-hidden bg-background">
+            {children}
+          </main>
+          <KeyboardHints />
+        </SidebarInset>
+        <GlobalKeyboard
+          categories={categories}
+          defaultCategory={settings.defaultCategory}
+        />
+      </LineNumberProvider>
     </Suspense>
   );
 }

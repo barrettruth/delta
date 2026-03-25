@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CreateTaskDrawer } from "@/components/create-task-drawer";
 import { KeymapHelp } from "@/components/keymap-help";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useLineNumbers } from "@/contexts/line-numbers";
 import { isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
@@ -25,6 +26,7 @@ export function GlobalKeyboard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toggleSidebar } = useSidebar();
+  const { cycleMode } = useLineNumbers();
   const [helpOpen, setHelpOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const pendingG = useRef(false);
@@ -52,6 +54,8 @@ export function GlobalKeyboard({
           setHelpOpen(true);
         } else if (key === "c") {
           setCreateOpen(true);
+        } else if (key === "n") {
+          cycleMode();
         } else if (key === ".") {
           const params = new URLSearchParams(searchParams.toString());
           if (params.has("showDone")) {
@@ -108,7 +112,7 @@ export function GlobalKeyboard({
         router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
       }
     },
-    [router, pathname, searchParams, toggleSidebar, categories],
+    [router, pathname, searchParams, toggleSidebar, cycleMode, categories],
   );
 
   useEffect(() => {

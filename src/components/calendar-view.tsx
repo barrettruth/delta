@@ -115,7 +115,9 @@ export function CalendarView({
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    () => new Date(),
+  );
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const router = useRouter();
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,16 +191,15 @@ export function CalendarView({
           bracketTimer.current = null;
         }
 
-        if (e.key === "w") {
+        if (e.key === bracket) {
           e.preventDefault();
-          if (bracket === "[") prevWeek();
-          else nextWeek();
-          return;
-        }
-        if (e.key === "m") {
-          e.preventDefault();
-          if (bracket === "[") prevMonth();
-          else nextMonth();
+          if (bracket === "[") {
+            if (viewMode === "week") prevWeek();
+            else prevMonth();
+          } else {
+            if (viewMode === "week") nextWeek();
+            else nextMonth();
+          }
           return;
         }
         return;
@@ -245,12 +246,12 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === "w") {
+      if (e.key === "W") {
         e.preventDefault();
         setViewMode("week");
         return;
       }
-      if (e.key === "m") {
+      if (e.key === "M") {
         e.preventDefault();
         setViewMode("month");
         return;
@@ -265,6 +266,7 @@ export function CalendarView({
       moveSelection,
       selectedDate,
       router,
+      viewMode,
       prevWeek,
       nextWeek,
       prevMonth,

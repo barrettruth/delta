@@ -44,6 +44,8 @@
   --color-status-done: var(--status-done);
   --color-status-blocked: var(--status-blocked);
   --color-status-cancelled: var(--status-cancelled);
+  --color-line-nr: var(--line-nr);
+  --color-cursor-line-nr: var(--cursor-line-nr);
   --radius-sm: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
@@ -91,6 +93,8 @@
   --chart-3: #996800;
   --chart-4: #ae3ec9;
   --chart-5: #1098ad;
+  --line-nr: #6b6b6b;
+  --cursor-line-nr: #666666;
 }
 
 .dark {
@@ -130,6 +134,8 @@
   --chart-3: #e5c07b;
   --chart-4: #c678dd;
   --chart-5: #56b6c2;
+  --line-nr: #666666;
+  --cursor-line-nr: #999999;
 }
 
 @layer base {
