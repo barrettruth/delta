@@ -63,19 +63,6 @@ export function CalendarView({
     return map;
   }, [tasks]);
 
-  const allDayTasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>();
-    for (const task of tasks) {
-      const isAllDay = task.allDay === 1 || (!task.startAt && task.due);
-      if (!isAllDay) continue;
-      const key = (task.due || task.startAt || "").slice(0, 10);
-      if (!key) continue;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)?.push(task);
-    }
-    return map;
-  }, [tasks]);
-
   const timedTasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
     for (const task of tasks) {
@@ -120,10 +107,21 @@ export function CalendarView({
     setAnchor(new Date());
   }, []);
 
-  const moveSelection = useCallback((days: number) => {
+  const countBuf = useRef("");
+
+  const moveSelectionDays = useCallback((days: number) => {
     setSelectedDate((prev) => {
       const base = prev ?? new Date();
       const next = addDays(base, days);
+      setAnchor(next);
+      return next;
+    });
+  }, []);
+
+  const moveSelectionHours = useCallback((hours: number) => {
+    setSelectedDate((prev) => {
+      const base = prev ?? new Date();
+      const next = new Date(base.getTime() + hours * 60 * 60 * 1000);
       setAnchor(next);
       return next;
     });
@@ -180,27 +178,52 @@ export function CalendarView({
           }
           return;
         }
+        countBuf.current = "";
         return;
       }
 
+      if (e.key >= "1" && e.key <= "9" && !e.shiftKey) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+      if (e.key === "0" && countBuf.current.length > 0) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+
+      const count = countBuf.current
+        ? Number.parseInt(countBuf.current, 10)
+        : 1;
+      countBuf.current = "";
+
       if (e.key === "h") {
         e.preventDefault();
-        moveSelection(-1);
+        moveSelectionDays(-count);
         return;
       }
       if (e.key === "l") {
         e.preventDefault();
-        moveSelection(1);
+        moveSelectionDays(count);
         return;
       }
       if (e.key === "j") {
         e.preventDefault();
-        moveSelection(7);
+        if (viewMode === "week") {
+          moveSelectionHours(count);
+        } else {
+          moveSelectionDays(7 * count);
+        }
         return;
       }
       if (e.key === "k") {
         e.preventDefault();
-        moveSelection(-7);
+        if (viewMode === "week") {
+          moveSelectionHours(-count);
+        } else {
+          moveSelectionDays(-7 * count);
+        }
         return;
       }
       if (e.key === "Enter" && selectedDate) {
@@ -241,7 +264,8 @@ export function CalendarView({
       }
     },
     [
-      moveSelection,
+      moveSelectionDays,
+      moveSelectionHours,
       selectedDate,
       router,
       viewMode,
@@ -338,7 +362,6 @@ export function CalendarView({
         <WeekTimeGrid
           weekStart={weekAnchor}
           today={today}
-          allDayTasksByDate={allDayTasksByDate}
           timedTasksByDate={timedTasksByDate}
           onSlotClick={handleSlotClick}
           onTaskClick={setSelectedTask}

@@ -11,8 +11,6 @@ import {
   getMinutesFromMidnight,
   HOUR_HEIGHT,
   isSameDay,
-  statusColor,
-  statusDot,
 } from "@/lib/calendar-utils";
 
 interface ColumnLayout {
@@ -69,7 +67,6 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 export function WeekTimeGrid({
   weekStart,
   today,
-  allDayTasksByDate,
   timedTasksByDate,
   onSlotClick,
   onTaskClick,
@@ -79,7 +76,6 @@ export function WeekTimeGrid({
 }: {
   weekStart: Date;
   today: Date;
-  allDayTasksByDate: Map<string, Task[]>;
   timedTasksByDate: Map<string, Task[]>;
   onSlotClick: (date: Date, minuteOfDay: number, anchorEl: HTMLElement) => void;
   onTaskClick: (task: Task) => void;
@@ -141,46 +137,6 @@ export function WeekTimeGrid({
           );
         })}
       </div>
-
-      {hasAllDayTasks(days, allDayTasksByDate) && (
-        <div
-          className="grid shrink-0 border-b border-border/60"
-          style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
-        >
-          <div className="py-1 px-1 text-[10px] text-muted-foreground text-right">
-            all day
-          </div>
-          {days.map((date) => {
-            const key = formatDateKey(date);
-            const tasks = allDayTasksByDate.get(key) ?? [];
-            return (
-              <div
-                key={key}
-                className="flex flex-col gap-0.5 py-1 px-1 border-l border-border/30 min-h-[1.5rem]"
-              >
-                {tasks.slice(0, 2).map((task) => (
-                  <button
-                    type="button"
-                    key={task.id}
-                    className={`flex items-center gap-1 text-[10px] leading-tight truncate hover:bg-accent px-0.5 ${statusColor(task)}`}
-                    onClick={() => onTaskClick(task)}
-                  >
-                    <span
-                      className={`shrink-0 w-1.5 h-1.5 ${statusDot(task)}`}
-                    />
-                    <span className="truncate">{task.description}</span>
-                  </button>
-                ))}
-                {tasks.length > 2 && (
-                  <span className="text-[10px] text-muted-foreground">
-                    +{tasks.length - 2}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       <div ref={scrollRef} className="flex-1 overflow-auto relative">
         <div
@@ -261,12 +217,4 @@ export function WeekTimeGrid({
       </div>
     </div>
   );
-}
-
-function hasAllDayTasks(days: Date[], map: Map<string, Task[]>): boolean {
-  for (const d of days) {
-    const tasks = map.get(formatDateKey(d));
-    if (tasks && tasks.length > 0) return true;
-  }
-  return false;
 }
