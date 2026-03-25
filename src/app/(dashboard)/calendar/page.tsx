@@ -23,5 +23,14 @@ export default async function CalendarPage() {
       .all()
       .map((c) => [c.category, c.color]),
   );
-  return <CalendarView tasks={tasks} categoryColors={colors} />;
+  const categories = [
+    ...new Set(tasks.map((t) => t.category).filter(Boolean)),
+  ] as string[];
+  return (
+    <CalendarView
+      tasks={tasks}
+      categoryColors={colors}
+      categories={categories}
+    />
+  );
 }
