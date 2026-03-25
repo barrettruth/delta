@@ -21,6 +21,7 @@ export interface CreateTaskInput {
   description: string;
   status?: TaskStatus;
   category?: string;
+  label?: string;
   priority?: number;
   due?: string;
   recurrence?: string;
@@ -33,6 +34,7 @@ export interface UpdateTaskInput {
   description?: string;
   status?: TaskStatus;
   category?: string | null;
+  label?: string | null;
   priority?: number;
   due?: string | null;
   recurrence?: string | null;
@@ -44,6 +46,7 @@ export interface UpdateTaskInput {
 export interface TaskFilters {
   status?: TaskStatus | TaskStatus[];
   category?: string;
+  label?: string;
   dueBefore?: string;
   dueAfter?: string;
   minPriority?: number;

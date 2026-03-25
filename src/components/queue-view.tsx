@@ -58,7 +58,8 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
     return tasks.filter(
       (t) =>
         t.description.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q),
+        t.category?.toLowerCase().includes(q) ||
+        t.label?.toLowerCase().includes(q),
     );
   }, [tasks, searchQuery]);
 
@@ -211,6 +212,13 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                   >
                     {task.description}
                   </span>
+                  {task.label && (
+                    <span className="text-xs text-muted-foreground shrink-0 flex gap-1">
+                      {task.label.split(",").map((l) => (
+                        <span key={l.trim()}>[{l.trim()}]</span>
+                      ))}
+                    </span>
+                  )}
                   {task.category && (
                     <span className="w-24 truncate text-xs text-muted-foreground text-right shrink-0">
                       # {task.category}

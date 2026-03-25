@@ -66,6 +66,7 @@ describe("getNextTaskData", () => {
     description: "Weekly review",
     status: "done",
     category: "Work",
+    label: null,
     priority: 2,
     due: "2026-03-22T09:00:00.000Z",
     recurrence: "FREQ=WEEKLY",
