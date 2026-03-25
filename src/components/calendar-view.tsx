@@ -439,7 +439,7 @@ function WeekView({
           return (
             <div
               key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 ${isSelected ? "bg-accent" : ""} ${isToday ? "ring-1 ring-primary/50" : ""}`}
+              className={`flex flex-col items-center py-2 border-r border-border/30 last:border-r-0 ${isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""}`}
             >
               <span className="text-xs text-muted-foreground">
                 {dayNames[idx]}
@@ -467,10 +467,10 @@ function WeekView({
           return (
             <div
               key={key}
-              className={`flex flex-col p-2 border-r border-border/30 ${
-                isSelected ? "bg-accent" : ""
-              } ${isToday ? "ring-1 ring-inset ring-primary/50" : ""}`}
-              style={!isToday ? blend : undefined}
+              className={`flex flex-col p-2 border-r border-b border-border/30 ${
+                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
+              }`}
+              style={!isToday && !isSelected ? blend : undefined}
             >
               <div className="flex flex-col gap-1 w-full">
                 {dayTasks.map((task) => (
@@ -573,9 +573,9 @@ function MonthView({
             <div
               key={cell.key}
               className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${
-                isSelected ? "bg-accent" : ""
-              } ${isToday ? "ring-1 ring-inset ring-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
-              style={blend}
+                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
+              } ${isPast ? "opacity-50" : ""}`}
+              style={!isToday && !isSelected ? blend : undefined}
             >
               <span
                 className={`text-xs font-medium mb-1 ${
