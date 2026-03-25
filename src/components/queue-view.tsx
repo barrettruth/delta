@@ -64,25 +64,23 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
 
   const gutterWidth = String(filtered.length).length;
 
-  const { cursor, setCursor, selectedIds, toggleSelect, pendingDelete } =
-    useKeyboard({
-      tasks: filtered,
-      onComplete: (ids) => {
-        for (const id of ids) completeTaskAction(id);
-      },
-      onDelete: (ids) => {
-        for (const id of ids) deleteTaskAction(id);
-        if (selectedTask && ids.includes(selectedTask.id))
-          setSelectedTask(null);
-      },
-      onStatusChange: (ids, status) => {
-        for (const id of ids) updateTaskAction(id, { status });
-      },
-      onSelect: (task) => setSelectedTask(task as RankedTask),
-      onDeselect: () => setSelectedTask(null),
-      onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
-      scrollRef,
-    });
+  const { cursor, setCursor, selectedIds, toggleSelect } = useKeyboard({
+    tasks: filtered,
+    onComplete: (ids) => {
+      for (const id of ids) completeTaskAction(id);
+    },
+    onDelete: (ids) => {
+      for (const id of ids) deleteTaskAction(id);
+      if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
+    },
+    onStatusChange: (ids, status) => {
+      for (const id of ids) updateTaskAction(id, { status });
+    },
+    onSelect: (task) => setSelectedTask(task as RankedTask),
+    onDeselect: () => setSelectedTask(null),
+    onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
+    scrollRef,
+  });
 
   const openSearch = useCallback(() => {
     setSearchActive(true);
@@ -154,14 +152,6 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
           />
           <span className="text-[10px] text-muted-foreground shrink-0">
             {filtered.length}/{tasks.length}
-          </span>
-        </div>
-      )}
-      {pendingDelete && (
-        <div className="flex items-center gap-2 px-6 py-1.5 bg-destructive/10 text-xs text-destructive border-b border-destructive/20">
-          <span>
-            delete {pendingDelete.length} task
-            {pendingDelete.length > 1 ? "s" : ""}? y/N
           </span>
         </div>
       )}
