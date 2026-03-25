@@ -251,11 +251,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setColIdx((c) => c + 1);
           break;
         }
-        case "Enter": {
+        case "e": {
+          e.preventDefault();
           const colTasks = getColTasks(colIdx);
-          if (colTasks.length > 0 && rowIdx < colTasks.length) {
-            e.preventDefault();
+          if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
             setSelectedTask(colTasks[rowIdx]);
+          } else {
+            window.dispatchEvent(new Event("open-create-task"));
           }
           break;
         }

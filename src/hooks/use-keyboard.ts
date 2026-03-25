@@ -19,6 +19,7 @@ interface KeyboardActions {
   onStatusChange: (ids: number[], status: TaskStatus) => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
+  onCreate?: () => void;
   onHelp?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
@@ -97,7 +98,8 @@ export function useKeyboard(actions: KeyboardActions) {
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
 
-      const { tasks, onComplete, onSelect, onDeselect } = actionsRef.current;
+      const { tasks, onComplete, onSelect, onDeselect, onCreate } =
+        actionsRef.current;
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
 
       if (pendingOp.current && !isModifier) {
@@ -236,11 +238,12 @@ export function useKeyboard(actions: KeyboardActions) {
           }
           break;
         }
-        case "Enter": {
-          if (tasks.length === 0) break;
+        case "e": {
+          e.preventDefault();
           if (cursor >= 0 && cursor < tasks.length) {
-            e.preventDefault();
             onSelect(tasks[cursor]);
+          } else {
+            onCreate?.();
           }
           break;
         }

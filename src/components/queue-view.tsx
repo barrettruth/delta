@@ -77,6 +77,7 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
     onStatusChange: (ids, status) => {
       for (const id of ids) updateTaskAction(id, { status });
     },
+    onCreate: () => window.dispatchEvent(new Event("open-create-task")),
     onSelect: (task) => setSelectedTask(task as RankedTask),
     onDeselect: () => setSelectedTask(null),
     onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
