@@ -47,16 +47,27 @@ export function CalendarView({
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
+    const savedAnchor = nav.getViewState<string>("cal:anchor");
+    const savedSelection = nav.getViewState<string>("cal:selection");
     const now = new Date();
-    setAnchor(now);
-    setSelectedDate(now);
+    setAnchor(savedAnchor ? new Date(savedAnchor) : now);
+    setSelectedDate(savedSelection ? new Date(savedSelection) : now);
     setToday(now);
     const msUntilMidnight =
       new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
       now.getTime();
     const timer = setTimeout(() => setToday(new Date()), msUntilMidnight + 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [nav.getViewState]);
+
+  useEffect(() => {
+    if (anchor) nav.saveViewState("cal:anchor", anchor.toISOString());
+  }, [anchor, nav]);
+
+  useEffect(() => {
+    if (selectedDate)
+      nav.saveViewState("cal:selection", selectedDate.toISOString());
+  }, [selectedDate, nav]);
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -167,22 +178,22 @@ export function CalendarView({
         const el = weekScrollRef.current;
         if (e.key === "e") {
           e.preventDefault();
-          el.scrollBy({ top: 60, behavior: "smooth" });
+          el.scrollBy({ top: 60 });
           return;
         }
         if (e.key === "y") {
           e.preventDefault();
-          el.scrollBy({ top: -60, behavior: "smooth" });
+          el.scrollBy({ top: -60 });
           return;
         }
         if (e.key === "d") {
           e.preventDefault();
-          el.scrollBy({ top: el.clientHeight / 2, behavior: "smooth" });
+          el.scrollBy({ top: el.clientHeight / 2 });
           return;
         }
         if (e.key === "u") {
           e.preventDefault();
-          el.scrollBy({ top: -el.clientHeight / 2, behavior: "smooth" });
+          el.scrollBy({ top: -el.clientHeight / 2 });
           return;
         }
       }
@@ -403,30 +414,7 @@ export function CalendarView({
           </Button>
         </div>
         <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
-        <div className="flex items-center gap-1 border border-border/60 p-0.5">
-          <button
-            type="button"
-            onClick={() => setViewMode("week")}
-            className={`px-3 py-1 text-xs font-medium transition-colors ${
-              viewMode === "week"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Week
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("month")}
-            className={`px-3 py-1 text-xs font-medium transition-colors ${
-              viewMode === "month"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Month
-          </button>
-        </div>
+        <div />
       </div>
 
       {viewMode === "week" ? (

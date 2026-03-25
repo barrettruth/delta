@@ -21,6 +21,8 @@ interface NavigationContextValue {
   jumpForward: () => void;
   goAlternate: () => void;
   setTaskDetailOpen: (taskId: number | null) => void;
+  saveViewState: (key: string, state: unknown) => void;
+  getViewState: <T>(key: string) => T | undefined;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -47,6 +49,7 @@ export function NavigationProvider({
   const alternateRef = useRef<NavLocation | null>(null);
   const currentLocationRef = useRef<NavLocation>({ pathname: "/", search: "" });
   const taskDetailOpenRef = useRef<number | null>(null);
+  const viewStateRef = useRef<Map<string, unknown>>(new Map());
 
   useEffect(() => {
     const search = searchParams.toString();
@@ -151,12 +154,22 @@ export function NavigationProvider({
     navigateTo(alt);
   }, [navigateTo]);
 
+  const saveViewState = useCallback((key: string, state: unknown) => {
+    viewStateRef.current.set(key, state);
+  }, []);
+
+  const getViewState = useCallback(<T,>(key: string): T | undefined => {
+    return viewStateRef.current.get(key) as T | undefined;
+  }, []);
+
   const value: NavigationContextValue = {
     pushJump,
     jumpBack,
     jumpForward,
     goAlternate,
     setTaskDetailOpen,
+    saveViewState,
+    getViewState,
   };
 
   return (
