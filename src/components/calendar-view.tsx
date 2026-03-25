@@ -31,19 +31,20 @@ export function CalendarView({
   categories?: string[];
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [anchor, setAnchor] = useState(() => new Date());
+  const [anchor, setAnchor] = useState<Date | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    () => new Date(),
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const weekScrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [today, setToday] = useState(() => new Date());
+  const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
     const now = new Date();
+    setAnchor(now);
+    setSelectedDate(now);
+    setToday(now);
     const msUntilMidnight =
       new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
       now.getTime();
@@ -74,8 +75,14 @@ export function CalendarView({
     return map;
   }, [tasks]);
 
-  const weekAnchor = useMemo(() => getWeekStart(anchor), [anchor]);
-  const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
+  const weekAnchor = useMemo(
+    () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
+    [anchor],
+  );
+  const monthStart = useMemo(
+    () => (anchor ? startOfMonth(anchor) : startOfMonth(new Date())),
+    [anchor],
+  );
 
   function handleDayClick(date: Date, _anchorEl?: HTMLElement) {
     setSelectedDate(date);
@@ -92,16 +99,22 @@ export function CalendarView({
   }
 
   const prevWeek = useCallback(() => {
-    setAnchor((d) => addDays(d, -7));
+    setAnchor((d) => addDays(d ?? new Date(), -7));
   }, []);
   const nextWeek = useCallback(() => {
-    setAnchor((d) => addDays(d, 7));
+    setAnchor((d) => addDays(d ?? new Date(), 7));
   }, []);
   const prevMonth = useCallback(() => {
-    setAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, d.getDate()));
+    setAnchor((d) => {
+      const b = d ?? new Date();
+      return new Date(b.getFullYear(), b.getMonth() - 1, b.getDate());
+    });
   }, []);
   const nextMonth = useCallback(() => {
-    setAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()));
+    setAnchor((d) => {
+      const b = d ?? new Date();
+      return new Date(b.getFullYear(), b.getMonth() + 1, b.getDate());
+    });
   }, []);
   const goToday = useCallback(() => {
     setAnchor(new Date());
@@ -361,7 +374,7 @@ export function CalendarView({
       {viewMode === "week" ? (
         <WeekTimeGrid
           weekStart={weekAnchor}
-          today={today}
+          today={today ?? new Date()}
           timedTasksByDate={timedTasksByDate}
           onSlotClick={handleSlotClick}
           onTaskClick={setSelectedTask}
@@ -372,7 +385,7 @@ export function CalendarView({
       ) : (
         <MonthGrid
           monthStart={monthStart}
-          today={today}
+          today={today ?? new Date()}
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
           onTaskClick={setSelectedTask}
