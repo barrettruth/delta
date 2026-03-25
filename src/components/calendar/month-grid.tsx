@@ -87,8 +87,8 @@ export function MonthGrid({
               key={cell.key}
               {...(isSelected ? { "data-calendar-cursor": "" } : {})}
               className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 ${
-                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
-              } ${isPast ? "opacity-50" : ""}`}
+                isSelected ? "bg-accent" : ""
+              } ${isToday ? "outline outline-1 -outline-offset-1 outline-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
               style={!isToday && !isSelected ? blend : undefined}
             >
               <span
