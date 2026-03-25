@@ -65,7 +65,13 @@ export function GlobalKeyboard({
         return;
       }
 
-      if (e.key === "g" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (
+        e.key === "g" &&
+        !e.shiftKey &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
         pendingG.current = true;
         if (gTimer.current) clearTimeout(gTimer.current);
         gTimer.current = setTimeout(() => {

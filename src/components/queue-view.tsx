@@ -43,15 +43,7 @@ function nextStatus(current: TaskStatus): TaskStatus {
   return order[(idx + 1) % order.length];
 }
 
-export function QueueView({
-  tasks,
-  categories,
-  defaultCategory,
-}: {
-  tasks: RankedTask[];
-  categories?: string[];
-  defaultCategory?: string;
-}) {
+export function QueueView({ tasks }: { tasks: RankedTask[] }) {
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -65,7 +57,7 @@ export function QueueView({
     return tasks.filter(
       (t) =>
         t.description.toLowerCase().includes(q) ||
-        (t.category && t.category.toLowerCase().includes(q)),
+        t.category?.toLowerCase().includes(q),
     );
   }, [tasks, searchQuery]);
 
@@ -171,7 +163,9 @@ export function QueueView({
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
             <Zap className="size-10 opacity-40" />
-            <p className="text-sm">{searchQuery ? "No matches" : "Nothing urgent"}</p>
+            <p className="text-sm">
+              {searchQuery ? "No matches" : "Nothing urgent"}
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border/60">

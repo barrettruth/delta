@@ -15,9 +15,6 @@ export default async function CalendarPage() {
   if (!user) redirect("/login");
 
   const tasks = listTasks(db, user.id);
-  const categories = [
-    ...new Set(tasks.map((t) => t.category).filter(Boolean)),
-  ] as string[];
   const colors = Object.fromEntries(
     db
       .select()
@@ -26,11 +23,5 @@ export default async function CalendarPage() {
       .all()
       .map((c) => [c.category, c.color]),
   );
-  return (
-    <CalendarView
-      tasks={tasks}
-      categories={categories}
-      categoryColors={colors}
-    />
-  );
+  return <CalendarView tasks={tasks} categoryColors={colors} />;
 }

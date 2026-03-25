@@ -61,8 +61,7 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      const { tasks, onComplete, onSelect, onDeselect } =
-        actionsRef.current;
+      const { tasks, onComplete, onSelect, onDeselect } = actionsRef.current;
 
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
 
@@ -94,9 +93,7 @@ export function useKeyboard(actions: KeyboardActions) {
           ? Math.max(1, Math.floor(container.clientHeight / rowHeight / 2))
           : 10;
         const delta = e.key === "d" ? viewportRows : -viewportRows;
-        setCursor((i) =>
-          Math.max(0, Math.min(i + delta, tasks.length - 1)),
-        );
+        setCursor((i) => Math.max(0, Math.min(i + delta, tasks.length - 1)));
         return;
       }
 

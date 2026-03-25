@@ -19,7 +19,12 @@ const viewRoutes: Record<ViewType, string> = {
 export default async function QueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; status?: string; date?: string; showDone?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    status?: string;
+    date?: string;
+    showDone?: string;
+  }>;
 }) {
   const params = await searchParams;
   const cookieStore = await cookies();
@@ -54,18 +59,7 @@ export default async function QueuePage({
     filters.status = ["pending", "wip", "blocked"];
   }
 
-  const allTasks = listTasks(db, user.id);
   const tasks = listTasks(db, user.id, filters);
   const ranked = rankTasks(db, tasks, settings.urgencyWeights);
-  const categories = [
-    ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
-  ] as string[];
-
-  return (
-    <QueueView
-      tasks={ranked}
-      categories={categories}
-      defaultCategory={settings.defaultCategory}
-    />
-  );
+  return <QueueView tasks={ranked} />;
 }

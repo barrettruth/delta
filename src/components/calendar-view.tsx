@@ -107,13 +107,9 @@ function statusDot(task: Task): string {
 
 export function CalendarView({
   tasks,
-  categories,
-  defaultCategory,
   categoryColors = {},
 }: {
   tasks: Task[];
-  categories?: string[];
-  defaultCategory?: string;
   categoryColors?: Record<string, string>;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");

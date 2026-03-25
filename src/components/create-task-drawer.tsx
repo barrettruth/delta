@@ -77,14 +77,22 @@ export function CreateTaskDrawer({
   }
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={(o) => !o && onOpenChange(false)}>
+    <DialogPrimitive.Root
+      open={open}
+      onOpenChange={(o) => !o && onOpenChange(false)}
+    >
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card duration-150 outline-none data-open:animate-in data-open:slide-in-from-bottom data-closed:animate-out data-closed:slide-out-to-bottom">
-          <form onSubmit={handleSubmit} className="mx-auto max-w-3xl px-6 py-4 flex flex-col gap-3">
+          <form
+            onSubmit={handleSubmit}
+            className="mx-auto max-w-3xl px-6 py-4 flex flex-col gap-3"
+          >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">New Task</span>
-              <kbd className="text-[10px] text-muted-foreground">Escape to close</kbd>
+              <kbd className="text-[10px] text-muted-foreground">
+                Escape to close
+              </kbd>
             </div>
             <Input
               ref={descRef}
@@ -94,7 +102,12 @@ export function CreateTaskDrawer({
             />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="flex flex-col gap-1.5 relative">
-                <Label htmlFor="drawer-category" className="text-xs text-muted-foreground">Category</Label>
+                <Label
+                  htmlFor="drawer-category"
+                  className="text-xs text-muted-foreground"
+                >
+                  Category
+                </Label>
                 <Input
                   id="drawer-category"
                   value={category}
@@ -125,7 +138,9 @@ export function CreateTaskDrawer({
                 )}
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Priority
+                </Label>
                 <div className="flex gap-1">
                   {PRIORITIES.map((p) => (
                     <button
@@ -144,7 +159,12 @@ export function CreateTaskDrawer({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="drawer-due" className="text-xs text-muted-foreground">Due Date</Label>
+                <Label
+                  htmlFor="drawer-due"
+                  className="text-xs text-muted-foreground"
+                >
+                  Due Date
+                </Label>
                 <Input
                   id="drawer-due"
                   type="date"
@@ -153,7 +173,12 @@ export function CreateTaskDrawer({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="drawer-time" className="text-xs text-muted-foreground">Time</Label>
+                <Label
+                  htmlFor="drawer-time"
+                  className="text-xs text-muted-foreground"
+                >
+                  Time
+                </Label>
                 <Input
                   id="drawer-time"
                   type="time"
@@ -162,7 +187,11 @@ export function CreateTaskDrawer({
                 />
               </div>
             </div>
-            <Button type="submit" disabled={!description.trim()} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              type="submit"
+              disabled={!description.trim()}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               Create
             </Button>
           </form>

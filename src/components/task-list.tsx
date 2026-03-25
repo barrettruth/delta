@@ -28,15 +28,7 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
   cancelled: <Trash2 className="size-4 text-status-cancelled" />,
 };
 
-export function TaskList({
-  tasks,
-  categories,
-  defaultCategory,
-}: {
-  tasks: Task[];
-  categories?: string[];
-  defaultCategory?: string;
-}) {
+export function TaskList({ tasks }: { tasks: Task[] }) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
