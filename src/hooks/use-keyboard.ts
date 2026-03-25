@@ -33,14 +33,23 @@ function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
   return ids;
 }
 
+function targetIds(tasks: Task[], cursor: number, count: number): number[] {
+  const ids: number[] = [];
+  for (let i = cursor; i < Math.min(cursor + count, tasks.length); i++) {
+    if (i >= 0) ids.push(tasks[i].id);
+  }
+  return ids;
+}
+
 export function useKeyboard(actions: KeyboardActions) {
   const [cursor, setCursor] = useState(-1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [visualMode, setVisualMode] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number[] | null>(null);
   const visualAnchor = useRef(-1);
-  const pendingG = useRef(false);
-  const pendingOp = useRef<string | null>(null);
+  const countBuf = useRef("");
+  const pendingG = useRef<number | null | false>(false);
+  const pendingOp = useRef<{ key: string; count: number } | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionsRef = useRef(actions);
@@ -78,6 +87,13 @@ export function useKeyboard(actions: KeyboardActions) {
     setVisualMode(false);
   }, []);
 
+  const consumeCount = useCallback((): number | null => {
+    const s = countBuf.current;
+    countBuf.current = "";
+    if (!s) return null;
+    return Number.parseInt(s, 10);
+  }, []);
+
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
@@ -94,11 +110,10 @@ export function useKeyboard(actions: KeyboardActions) {
       }
 
       const { tasks, onComplete, onSelect, onDeselect } = actionsRef.current;
-
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
 
       if (pendingOp.current && !isModifier) {
-        const op = pendingOp.current;
+        const { key: op, count } = pendingOp.current;
         pendingOp.current = null;
         if (opTimer.current) {
           clearTimeout(opTimer.current);
@@ -107,13 +122,15 @@ export function useKeyboard(actions: KeyboardActions) {
         if (e.key === op) {
           e.preventDefault();
           if (cursor >= 0 && cursor < tasks.length) {
-            applyOp(op, [tasks[cursor].id]);
+            applyOp(op, targetIds(tasks, cursor, count));
           }
         }
+        countBuf.current = "";
         return;
       }
 
-      if (pendingG.current && !isModifier) {
+      if (pendingG.current !== false && !isModifier) {
+        const gCount = pendingG.current;
         pendingG.current = false;
         if (gTimer.current) {
           clearTimeout(gTimer.current);
@@ -121,7 +138,13 @@ export function useKeyboard(actions: KeyboardActions) {
         }
         if (e.key === "g") {
           e.preventDefault();
-          if (tasks.length > 0) setCursor(0);
+          if (tasks.length > 0) {
+            setCursor(
+              gCount !== null
+                ? Math.max(0, Math.min(gCount - 1, tasks.length - 1))
+                : 0,
+            );
+          }
           return;
         }
         if (e.key === "?") {
@@ -134,6 +157,7 @@ export function useKeyboard(actions: KeyboardActions) {
 
       if (e.ctrlKey && (e.key === "d" || e.key === "u")) {
         e.preventDefault();
+        countBuf.current = "";
         if (tasks.length === 0) return;
         const container = actionsRef.current.scrollRef?.current;
         const rowHeight = 44;
@@ -145,13 +169,32 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
+      if (e.key >= "1" && e.key <= "9" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+      if (
+        e.key === "0" &&
+        countBuf.current.length > 0 &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        e.preventDefault();
+        countBuf.current += e.key;
+        return;
+      }
+
+      const count = consumeCount();
+      const n = count ?? 1;
+
       if (OP_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         if (tasks.length === 0) return;
         if (selectedIds.size > 0) {
           applyOp(e.key, [...selectedIds]);
         } else {
-          pendingOp.current = e.key;
+          pendingOp.current = { key: e.key, count: n };
           opTimer.current = setTimeout(() => {
             pendingOp.current = null;
             opTimer.current = null;
@@ -163,7 +206,7 @@ export function useKeyboard(actions: KeyboardActions) {
       switch (e.key) {
         case "g": {
           e.preventDefault();
-          pendingG.current = true;
+          pendingG.current = count;
           gTimer.current = setTimeout(() => {
             pendingG.current = false;
             gTimer.current = null;
@@ -172,19 +215,25 @@ export function useKeyboard(actions: KeyboardActions) {
         }
         case "G": {
           e.preventDefault();
-          if (tasks.length > 0) setCursor(tasks.length - 1);
+          if (tasks.length > 0) {
+            setCursor(
+              count !== null
+                ? Math.max(0, Math.min(count - 1, tasks.length - 1))
+                : tasks.length - 1,
+            );
+          }
           break;
         }
         case "j": {
           e.preventDefault();
           if (tasks.length === 0) break;
-          setCursor((i) => Math.min(i + 1, tasks.length - 1));
+          setCursor((i) => Math.min(i + n, tasks.length - 1));
           break;
         }
         case "k": {
           e.preventDefault();
           if (tasks.length === 0) break;
-          setCursor((i) => Math.max(i - 1, 0));
+          setCursor((i) => Math.max(i - n, 0));
           break;
         }
         case "x": {
@@ -195,7 +244,7 @@ export function useKeyboard(actions: KeyboardActions) {
             setSelectedIds(new Set());
             setVisualMode(false);
           } else if (cursor >= 0 && cursor < tasks.length) {
-            onComplete([tasks[cursor].id]);
+            onComplete(targetIds(tasks, cursor, n));
           }
           break;
         }
@@ -243,7 +292,15 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [cursor, selectedIds, visualMode, pendingDelete, toggleSelect, applyOp],
+    [
+      cursor,
+      selectedIds,
+      visualMode,
+      pendingDelete,
+      toggleSelect,
+      applyOp,
+      consumeCount,
+    ],
   );
 
   useEffect(() => {
