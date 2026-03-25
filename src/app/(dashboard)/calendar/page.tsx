@@ -7,7 +7,11 @@ import { listTasks } from "@/core/task";
 import { db } from "@/db";
 import { categoryColors } from "@/db/schema";
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("session")?.value;
   if (!sessionId) redirect("/login");
@@ -23,6 +27,9 @@ export default async function CalendarPage() {
       .all()
       .map((c) => [c.category, c.color]),
   );
+  const params = await searchParams;
+  const defaultViewMode =
+    params.mode === "week" || params.mode === "month" ? params.mode : undefined;
   const categories = [
     ...new Set(tasks.map((t) => t.category).filter(Boolean)),
   ] as string[];
@@ -31,6 +38,7 @@ export default async function CalendarPage() {
       tasks={tasks}
       categoryColors={colors}
       categories={categories}
+      defaultViewMode={defaultViewMode}
     />
   );
 }
