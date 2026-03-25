@@ -45,7 +45,9 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      if (pendingG.current) {
+      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+
+      if (pendingG.current && !isModifier) {
         pendingG.current = false;
         if (gTimer.current) {
           clearTimeout(gTimer.current);

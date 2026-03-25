@@ -64,7 +64,9 @@ export function useKeyboard(actions: KeyboardActions) {
       const { tasks, onComplete, onCreate, onSelect, onDeselect } =
         actionsRef.current;
 
-      if (pendingG.current) {
+      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+
+      if (pendingG.current && !isModifier) {
         pendingG.current = false;
         if (gTimer.current) {
           clearTimeout(gTimer.current);

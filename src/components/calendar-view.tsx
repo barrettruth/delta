@@ -187,7 +187,9 @@ export function CalendarView({
       if (isInputFocused()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-      if (pendingBracket.current) {
+      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+
+      if (pendingBracket.current && !isModifier) {
         const bracket = pendingBracket.current;
         pendingBracket.current = null;
         if (bracketTimer.current) {
