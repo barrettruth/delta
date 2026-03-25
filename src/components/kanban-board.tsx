@@ -9,6 +9,7 @@ import {
 
 import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
+import { useNavigation } from "@/contexts/navigation";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
@@ -43,6 +44,7 @@ function groupByStatus(tasks: Task[]): Record<string, Task[]> {
 }
 
 export function KanbanBoard({ tasks }: { tasks: Task[] }) {
+  const nav = useNavigation();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
@@ -255,6 +257,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           const colTasks = getColTasks(colIdx);
           if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
+            nav.pushJump();
+            nav.setTaskDetailOpen(colTasks[rowIdx].id);
             setSelectedTask(colTasks[rowIdx]);
           } else {
             window.dispatchEvent(new Event("open-create-task"));
@@ -367,6 +371,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       visualMode,
       selectedIds,
       searchActive,
+      nav,
     ],
   );
 
@@ -484,7 +489,11 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                       <button
                         type="button"
                         className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          nav.pushJump();
+                          nav.setTaskDetailOpen(task.id);
+                          setSelectedTask(task);
+                        }}
                       >
                         <p className="text-sm font-medium leading-snug">
                           {task.description}

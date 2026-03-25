@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { GlobalKeyboard } from "@/components/global-keyboard";
 import { KeyboardHints } from "@/components/keyboard-hints";
+import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
 import { getSettings } from "@/core/settings";
@@ -42,15 +43,19 @@ export default async function DashboardLayout({
 
   return (
     <Suspense>
-      <AppSidebar categories={categories} categoryColors={colors} />
-      <SidebarInset className="flex flex-col h-dvh">
-        <main className="flex-1 overflow-hidden bg-background">{children}</main>
-        <KeyboardHints />
-      </SidebarInset>
-      <GlobalKeyboard
-        categories={categories}
-        defaultCategory={settings.defaultCategory}
-      />
+      <NavigationWrapper>
+        <AppSidebar categories={categories} categoryColors={colors} />
+        <SidebarInset className="flex flex-col h-dvh">
+          <main className="flex-1 overflow-hidden bg-background">
+            {children}
+          </main>
+          <KeyboardHints />
+        </SidebarInset>
+        <GlobalKeyboard
+          categories={categories}
+          defaultCategory={settings.defaultCategory}
+        />
+      </NavigationWrapper>
     </Suspense>
   );
 }

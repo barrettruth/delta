@@ -97,6 +97,15 @@ export function TaskDetail({
     onClose();
   }, [handleSave, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onCloseEvent = () => {
+      handleClose();
+    };
+    window.addEventListener("close-task-detail", onCloseEvent);
+    return () => window.removeEventListener("close-task-detail", onCloseEvent);
+  }, [open, handleClose]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {

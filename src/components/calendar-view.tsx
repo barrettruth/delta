@@ -7,6 +7,7 @@ import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
+import { useNavigation } from "@/contexts/navigation";
 import type { Task } from "@/core/types";
 import {
   addDays,
@@ -32,6 +33,7 @@ export function CalendarView({
   categories?: string[];
   defaultViewMode?: ViewMode;
 }) {
+  const nav = useNavigation();
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [anchor, setAnchor] = useState<Date | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -277,6 +279,7 @@ export function CalendarView({
       }
       if (e.key === "e" && selectedDate) {
         e.preventDefault();
+        nav.pushJump();
         router.push(`/?date=${formatDateKey(selectedDate)}`);
         return;
       }
@@ -340,6 +343,7 @@ export function CalendarView({
       prevMonth,
       nextMonth,
       goToday,
+      nav,
     ],
   );
 
@@ -431,7 +435,11 @@ export function CalendarView({
           today={today ?? new Date()}
           timedTasksByDate={timedTasksByDate}
           onSlotClick={handleSlotClick}
-          onTaskClick={setSelectedTask}
+          onTaskClick={(task) => {
+            nav.pushJump();
+            nav.setTaskDetailOpen(task.id);
+            setSelectedTask(task);
+          }}
           categoryColors={categoryColors}
           selectedDate={selectedDate}
           scrollRef={weekScrollRef}
@@ -442,7 +450,11 @@ export function CalendarView({
           today={today ?? new Date()}
           tasksByDate={tasksByDate}
           onDayClick={handleDayClick}
-          onTaskClick={setSelectedTask}
+          onTaskClick={(task) => {
+            nav.pushJump();
+            nav.setTaskDetailOpen(task.id);
+            setSelectedTask(task);
+          }}
           dayNames={DAY_NAMES}
           categoryColors={categoryColors}
           selectedDate={selectedDate}

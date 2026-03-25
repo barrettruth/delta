@@ -21,6 +21,7 @@ interface KeyboardActions {
   onDeselect: () => void;
   onCreate?: () => void;
   onHelp?: () => void;
+  onJump?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -129,6 +130,7 @@ export function useKeyboard(actions: KeyboardActions) {
         if (e.key === "g") {
           e.preventDefault();
           if (tasks.length > 0) {
+            actionsRef.current.onJump?.();
             setCursor(
               gCount !== null
                 ? Math.max(0, Math.min(gCount - 1, tasks.length - 1))
@@ -206,6 +208,7 @@ export function useKeyboard(actions: KeyboardActions) {
         case "G": {
           e.preventDefault();
           if (tasks.length > 0) {
+            actionsRef.current.onJump?.();
             setCursor(
               count !== null
                 ? Math.max(0, Math.min(count - 1, tasks.length - 1))

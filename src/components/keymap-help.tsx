@@ -70,6 +70,14 @@ const sections = [
     ],
   },
   {
+    title: "Navigation",
+    keys: [
+      ["<C-o>", "Jump back"],
+      ["<C-i>", "Jump forward"],
+      ["<C-6>", "Alternate buffer"],
+    ],
+  },
+  {
     title: "Task Detail",
     keys: [
       ["j / k", "Next / previous task"],
