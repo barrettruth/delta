@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CreateTaskDrawer } from "@/components/create-task-drawer";
 import { KeymapHelp } from "@/components/keymap-help";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useNavigation } from "@/contexts/navigation";
 import { isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
@@ -25,6 +26,7 @@ export function GlobalKeyboard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toggleSidebar } = useSidebar();
+  const { pushJump, jumpBack, jumpForward, goAlternate } = useNavigation();
   const [helpOpen, setHelpOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const pendingG = useRef(false);
@@ -35,6 +37,24 @@ export function GlobalKeyboard({
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
+
+      if (e.ctrlKey) {
+        if (e.key === "o") {
+          e.preventDefault();
+          jumpBack();
+          return;
+        }
+        if (e.key === "i") {
+          e.preventDefault();
+          jumpForward();
+          return;
+        }
+        if (e.key === "6") {
+          e.preventDefault();
+          goAlternate();
+          return;
+        }
+      }
 
       if (pendingG.current) {
         const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
@@ -50,6 +70,7 @@ export function GlobalKeyboard({
 
         const catIdx = DIGIT_KEYS.indexOf(key);
         if (catIdx !== -1 && catIdx < categories.length) {
+          pushJump();
           router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
         } else if (key === "?") {
           setHelpOpen(true);
@@ -100,11 +121,13 @@ export function GlobalKeyboard({
 
       if (e.key === "w" && pathname !== "/calendar") {
         e.preventDefault();
+        pushJump();
         router.push("/calendar?mode=week");
         return;
       }
       if (e.key === "m" && pathname !== "/calendar") {
         e.preventDefault();
+        pushJump();
         router.push("/calendar?mode=month");
         return;
       }
@@ -112,11 +135,22 @@ export function GlobalKeyboard({
       const viewRoute = VIEW_KEYS[e.key];
       if (viewRoute) {
         e.preventDefault();
+        pushJump();
         router.push(viewRoute);
         return;
       }
     },
-    [router, pathname, searchParams, toggleSidebar, categories],
+    [
+      router,
+      pathname,
+      searchParams,
+      toggleSidebar,
+      categories,
+      pushJump,
+      jumpBack,
+      jumpForward,
+      goAlternate,
+    ],
   );
 
   useEffect(() => {

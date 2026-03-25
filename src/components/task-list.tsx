@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Circle,
-  CircleCheck,
-  Clock,
-  Inbox,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { Circle, CircleCheck, Clock, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -16,6 +9,7 @@ import {
 } from "@/app/actions/tasks";
 import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigation } from "@/contexts/navigation";
 import type { Task, TaskStatus } from "@/core/types";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { formatDate } from "@/lib/utils";
@@ -29,6 +23,7 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
 };
 
 export function TaskList({ tasks }: { tasks: Task[] }) {
+  const nav = useNavigation();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -44,8 +39,13 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
     onStatusChange: (ids, status) => {
       for (const id of ids) updateTaskAction(id, { status });
     },
-    onSelect: (task) => setSelectedTask(task),
+    onSelect: (task) => {
+      nav.pushJump();
+      nav.setTaskDetailOpen(task.id);
+      setSelectedTask(task);
+    },
     onDeselect: () => setSelectedTask(null),
+    onJump: () => nav.pushJump(),
   });
 
   useEffect(() => {
@@ -67,10 +67,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
-            <Inbox className="size-10 opacity-40" />
-            <p className="text-sm">No tasks yet</p>
-          </div>
+          <div className="h-full" />
         ) : (
           <div className="divide-y divide-border/60">
             {tasks.map((task, i) => (
@@ -82,7 +79,11 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
                 className={`flex w-full items-center gap-3 px-6 py-3 cursor-pointer transition-colors text-left ${
                   i === cursor ? "bg-accent" : "hover:bg-accent/50"
                 }`}
-                onClick={() => setSelectedTask(task)}
+                onClick={() => {
+                  nav.pushJump();
+                  nav.setTaskDetailOpen(task.id);
+                  setSelectedTask(task);
+                }}
                 onKeyDown={() => {}}
                 tabIndex={0}
                 role="row"

@@ -1,6 +1,5 @@
 "use client";
 
-import { Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -10,8 +9,8 @@ import {
 import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
 import { getLineNumber } from "@/contexts/line-numbers";
+import { useNavigation } from "@/contexts/navigation";
 import type { TaskStatus } from "@/core/types";
-
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { formatDate, isInputFocused } from "@/lib/utils";
@@ -45,6 +44,7 @@ function nextStatus(current: TaskStatus): TaskStatus {
 }
 
 export function QueueView({ tasks }: { tasks: RankedTask[] }) {
+  const nav = useNavigation();
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -78,9 +78,14 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
       for (const id of ids) updateTaskAction(id, { status });
     },
     onCreate: () => window.dispatchEvent(new Event("open-create-task")),
-    onSelect: (task) => setSelectedTask(task as RankedTask),
+    onSelect: (task) => {
+      nav.pushJump();
+      nav.setTaskDetailOpen(task.id);
+      setSelectedTask(task as RankedTask);
+    },
     onDeselect: () => setSelectedTask(null),
     onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
+    onJump: () => nav.pushJump(),
     scrollRef,
   });
 
@@ -130,6 +135,8 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
       toggleSelect(task.id);
       return;
     }
+    nav.pushJump();
+    nav.setTaskDetailOpen(task.id);
     setCursor(idx);
     setSelectedTask(task);
   }
@@ -163,12 +170,7 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
       )}
       <div ref={scrollRef} className="flex-1 overflow-auto">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-16">
-            <Zap className="size-10 opacity-40" />
-            <p className="text-sm">
-              {searchQuery ? "No matches" : "Nothing urgent"}
-            </p>
-          </div>
+          <div className="h-full" />
         ) : (
           <div className="divide-y divide-border/60">
             {filtered.map((task, i) => {

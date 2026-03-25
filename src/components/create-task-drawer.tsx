@@ -94,7 +94,7 @@ export function CreateTaskDrawer({
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">New Task</span>
               <kbd className="text-[10px] text-muted-foreground">
-                Escape to close
+                {"<Esc>"} to close
               </kbd>
             </div>
             <Input

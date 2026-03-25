@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useNavigation } from "@/contexts/navigation";
 
 const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
   [
@@ -40,6 +41,7 @@ export function AppSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
+  const nav = useNavigation();
   const [editingColor, setEditingColor] = useState<string | null>(null);
 
   return (
@@ -63,6 +65,7 @@ export function AppSidebar({
                   <SidebarMenuButton
                     render={<Link href={view.href} />}
                     isActive={pathname === view.href}
+                    onClick={() => nav.pushJump()}
                   >
                     <view.icon className="size-4" />
                     <span className="flex-1">{view.label}</span>
@@ -92,6 +95,7 @@ export function AppSidebar({
                           />
                         }
                         isActive={activeCategory === cat}
+                        onClick={() => nav.pushJump()}
                       >
                         <span
                           className="text-xs font-bold shrink-0"
