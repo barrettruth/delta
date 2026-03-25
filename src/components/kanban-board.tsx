@@ -386,9 +386,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             >
               <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
                 <span className="text-xs font-medium">{col.label}</span>
-                <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums">
+                <kbd className="text-[10px] text-muted-foreground">
                   {COLUMN_HINTS[ci]}
-                </span>
+                </kbd>
               </div>
               <div className="flex-1 overflow-y-auto">
                 {colTasks.map((task, ri) => {
