@@ -89,6 +89,17 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
     scrollRef,
   });
 
+  useEffect(() => {
+    const saved = nav.getViewState<number>("queue:cursor");
+    if (saved !== undefined && saved >= 0 && saved < filtered.length) {
+      setCursor(saved);
+    }
+  }, [filtered.length, nav.getViewState, setCursor]);
+
+  useEffect(() => {
+    if (cursor >= 0) nav.saveViewState("queue:cursor", cursor);
+  }, [cursor, nav]);
+
   const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSearchActive(false);
