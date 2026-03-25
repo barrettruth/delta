@@ -98,6 +98,17 @@ export function GlobalKeyboard({
         return;
       }
 
+      if (e.key === "w" && pathname !== "/calendar") {
+        e.preventDefault();
+        router.push("/calendar?mode=week");
+        return;
+      }
+      if (e.key === "m" && pathname !== "/calendar") {
+        e.preventDefault();
+        router.push("/calendar?mode=month");
+        return;
+      }
+
       const viewRoute = VIEW_KEYS[e.key];
       if (viewRoute) {
         e.preventDefault();

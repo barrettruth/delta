@@ -9,6 +9,8 @@ const sections = [
       ["Q", "Queue view"],
       ["K", "Kanban view"],
       ["C", "Calendar view"],
+      ["w", "Calendar week view"],
+      ["m", "Calendar month view"],
       ["-", "Toggle sidebar"],
       ["q", "Logout"],
       ["g1-9", "Jump to category"],

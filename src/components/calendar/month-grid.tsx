@@ -128,7 +128,7 @@ export function MonthGrid({
               </div>
               <button
                 type="button"
-                className="flex-1 min-h-[1rem] w-full hover:bg-accent/50 transition-colors cursor-pointer"
+                className="flex-1 min-h-[1rem] w-full cursor-pointer"
                 onClick={(e) => onDayClick(cellDate, e.currentTarget)}
               />
             </div>

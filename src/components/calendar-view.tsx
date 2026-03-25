@@ -25,12 +25,14 @@ export function CalendarView({
   tasks,
   categoryColors = {},
   categories: _categories = [],
+  defaultViewMode = "week",
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
   categories?: string[];
+  defaultViewMode?: ViewMode;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [anchor, setAnchor] = useState<Date | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -117,7 +119,9 @@ export function CalendarView({
     });
   }, []);
   const goToday = useCallback(() => {
-    setAnchor(new Date());
+    const now = new Date();
+    setAnchor(now);
+    setSelectedDate(now);
   }, []);
 
   const countBuf = useRef("");
@@ -239,7 +243,7 @@ export function CalendarView({
         }
         return;
       }
-      if (e.key === "Enter" && selectedDate) {
+      if (e.key === "e" && selectedDate) {
         e.preventDefault();
         router.push(`/?date=${formatDateKey(selectedDate)}`);
         return;
