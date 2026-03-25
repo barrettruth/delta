@@ -93,6 +93,8 @@ export function validateCreateTask(
     data.notes = sanitize(String(b.notes));
   }
   if (b.category !== undefined) data.category = b.category as string;
+  if (b.label !== undefined && b.label !== null)
+    data.label = sanitize(String(b.label).trim());
   if (b.recurrence !== undefined) data.recurrence = b.recurrence as string;
   if (b.recurMode !== undefined)
     data.recurMode = b.recurMode as CreateTaskInput["recurMode"];
@@ -175,6 +177,8 @@ export function validateUpdateTask(
     data.notes = b.notes === null ? null : sanitize(String(b.notes));
   }
   if (b.category !== undefined) data.category = b.category as string | null;
+  if (b.label !== undefined)
+    data.label = b.label === null ? null : sanitize(String(b.label).trim());
   if (b.recurrence !== undefined)
     data.recurrence = b.recurrence as string | null;
   if (b.recurMode !== undefined)

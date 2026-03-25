@@ -30,6 +30,7 @@ export function CreateTaskDrawer({
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(defaultCategory);
+  const [label, setLabel] = useState("");
   const [priority, setPriority] = useState("0");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -57,6 +58,7 @@ export function CreateTaskDrawer({
     const result = await createTaskAction({
       description: description.trim(),
       category,
+      label: label.trim() || undefined,
       priority: Number(priority),
       due: dueDate
         ? new Date(`${dueDate}T${dueTime || "12:00"}:00`).toISOString()
@@ -70,6 +72,7 @@ export function CreateTaskDrawer({
 
     setDescription("");
     setCategory(defaultCategory);
+    setLabel("");
     setPriority("0");
     setDueDate("");
     setDueTime("");
@@ -100,7 +103,7 @@ export function CreateTaskDrawer({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What needs to be done?"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="flex flex-col gap-1.5 relative">
                 <Label
                   htmlFor="drawer-category"
@@ -136,6 +139,20 @@ export function CreateTaskDrawer({
                     ))}
                   </div>
                 )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="drawer-label"
+                  className="text-xs text-muted-foreground"
+                >
+                  Label
+                </Label>
+                <Input
+                  id="drawer-label"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="e.g. RUTR 2730"
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-muted-foreground">

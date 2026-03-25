@@ -39,6 +39,7 @@ export const tasks = sqliteTable("tasks", {
     .notNull()
     .default("pending"),
   category: text("category").default("Todo"),
+  label: text("label"),
   priority: integer("priority").default(0),
   due: text("due"),
   recurrence: text("recurrence"),

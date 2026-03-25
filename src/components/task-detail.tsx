@@ -46,6 +46,7 @@ export function TaskDetail({
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [label, setLabel] = useState("");
   const [priority, setPriority] = useState("0");
   const [due, setDue] = useState("");
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
@@ -72,6 +73,7 @@ export function TaskDetail({
     if (task) {
       setDescription(task.description);
       setCategory(task.category ?? "");
+      setLabel(task.label ?? "");
       setPriority(String(task.priority ?? 0));
       setDue(task.due ? task.due.slice(0, 16) : "");
       notesRef.current = task.notes ?? null;
@@ -83,11 +85,12 @@ export function TaskDetail({
     await updateTaskAction(task.id, {
       description,
       category: category || null,
+      label: label || null,
       priority: Number(priority),
       due: due ? new Date(due).toISOString() : null,
       notes: notesRef.current || null,
     });
-  }, [task, description, category, priority, due]);
+  }, [task, description, category, label, priority, due]);
 
   const handleClose = useCallback(async () => {
     await handleSave();
