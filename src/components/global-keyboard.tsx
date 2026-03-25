@@ -126,13 +126,13 @@ export function GlobalKeyboard({
         return;
       }
 
-      if (e.key === "w" && pathname !== "/calendar") {
+      if (e.key === "w" && pathname !== "/calendar" && pathname !== "/kanban") {
         e.preventDefault();
         pushJump();
         router.push("/calendar?mode=week");
         return;
       }
-      if (e.key === "m" && pathname !== "/calendar") {
+      if (e.key === "m" && pathname !== "/calendar" && pathname !== "/kanban") {
         e.preventDefault();
         pushJump();
         router.push("/calendar?mode=month");
