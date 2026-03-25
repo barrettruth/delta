@@ -14,7 +14,6 @@ import {
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Task, TaskStatus } from "@/core/types";
@@ -39,7 +38,6 @@ export function TaskList({
   defaultCategory?: string;
 }) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const { cursor } = useKeyboard({
@@ -51,7 +49,6 @@ export function TaskList({
       for (const id of ids) deleteTaskAction(id);
       if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
     },
-    onCreate: () => setCreateOpen(true),
     onSelect: (task) => setSelectedTask(task),
     onDeselect: () => setSelectedTask(null),
   });
@@ -122,12 +119,6 @@ export function TaskList({
           </div>
         )}
       </div>
-      <CreateTaskDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        categories={categories}
-        defaultCategory={defaultCategory}
-      />
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}

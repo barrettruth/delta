@@ -65,7 +65,6 @@ export function QueueView({
         if (selectedTask && ids.includes(selectedTask.id))
           setSelectedTask(null);
       },
-      onCreate: () => {},
       onSelect: (task) => setSelectedTask(task as RankedTask),
       onDeselect: () => setSelectedTask(null),
       onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),

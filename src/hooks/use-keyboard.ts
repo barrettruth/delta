@@ -8,7 +8,6 @@ interface KeyboardActions {
   tasks: Task[];
   onComplete: (ids: number[]) => void;
   onDelete: (ids: number[]) => void;
-  onCreate: () => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
   onHelp?: () => void;
@@ -61,7 +60,7 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      const { tasks, onComplete, onCreate, onSelect, onDeselect } =
+      const { tasks, onComplete, onSelect, onDeselect } =
         actionsRef.current;
 
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
@@ -132,11 +131,6 @@ export function useKeyboard(actions: KeyboardActions) {
           } else if (cursor >= 0 && cursor < tasks.length) {
             setPendingDelete([tasks[cursor].id]);
           }
-          break;
-        }
-        case "o": {
-          e.preventDefault();
-          onCreate();
           break;
         }
         case "Enter": {

@@ -3,7 +3,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/core/types";
@@ -120,8 +119,6 @@ export function CalendarView({
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createDate, setCreateDate] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const router = useRouter();
@@ -152,9 +149,8 @@ export function CalendarView({
   const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
 
   function handleDayClick(date: Date) {
-    const iso = `${formatDateKey(date)}T12:00`;
-    setCreateDate(iso);
-    setCreateOpen(true);
+    setSelectedDate(date);
+    setAnchor(date);
   }
 
   const prevWeek = useCallback(() => {
@@ -386,13 +382,6 @@ export function CalendarView({
         />
       )}
 
-      <CreateTaskDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        defaultDue={createDate}
-        categories={categories}
-        defaultCategory={defaultCategory}
-      />
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
