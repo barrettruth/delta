@@ -214,8 +214,11 @@ export function WeekTimeGrid({
                 {HOURS.map((h) => (
                   <div
                     key={`line-${h}`}
-                    className="absolute left-0 right-0 border-t border-border/20"
-                    style={{ top: `${h * HOUR_HEIGHT}px` }}
+                    className="absolute left-0 right-0 border-t border-border/20 hover:bg-accent/50 transition-colors"
+                    style={{
+                      top: `${h * HOUR_HEIGHT}px`,
+                      height: `${HOUR_HEIGHT}px`,
+                    }}
                   />
                 ))}
 
