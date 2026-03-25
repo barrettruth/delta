@@ -3,7 +3,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetail } from "@/components/task-detail";
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/core/types";
@@ -108,20 +107,14 @@ function statusDot(task: Task): string {
 
 export function CalendarView({
   tasks,
-  categories,
-  defaultCategory,
   categoryColors = {},
 }: {
   tasks: Task[];
-  categories?: string[];
-  defaultCategory?: string;
   categoryColors?: Record<string, string>;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createDate, setCreateDate] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const router = useRouter();
@@ -152,9 +145,8 @@ export function CalendarView({
   const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
 
   function handleDayClick(date: Date) {
-    const iso = `${formatDateKey(date)}T12:00`;
-    setCreateDate(iso);
-    setCreateOpen(true);
+    setSelectedDate(date);
+    setAnchor(date);
   }
 
   const prevWeek = useCallback(() => {
@@ -187,7 +179,9 @@ export function CalendarView({
       if (isInputFocused()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-      if (pendingBracket.current) {
+      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+
+      if (pendingBracket.current && !isModifier) {
         const bracket = pendingBracket.current;
         pendingBracket.current = null;
         if (bracketTimer.current) {
@@ -384,13 +378,6 @@ export function CalendarView({
         />
       )}
 
-      <CreateTaskDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        defaultDue={createDate}
-        categories={categories}
-        defaultCategory={defaultCategory}
-      />
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
@@ -437,7 +424,7 @@ function WeekView({
           return (
             <div
               key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 ${isSelected ? "bg-accent" : ""} ${isToday ? "ring-1 ring-primary/50" : ""}`}
+              className={`flex flex-col items-center py-2 border-r border-border/30 last:border-r-0 ${isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""}`}
             >
               <span className="text-xs text-muted-foreground">
                 {dayNames[idx]}
@@ -465,10 +452,10 @@ function WeekView({
           return (
             <div
               key={key}
-              className={`flex flex-col p-2 border-r border-border/30 ${
-                isSelected ? "bg-accent" : ""
-              } ${isToday ? "ring-1 ring-inset ring-primary/50" : ""}`}
-              style={!isToday ? blend : undefined}
+              className={`flex flex-col p-2 border-r border-b border-border/30 ${
+                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
+              }`}
+              style={!isToday && !isSelected ? blend : undefined}
             >
               <div className="flex flex-col gap-1 w-full">
                 {dayTasks.map((task) => (
@@ -571,9 +558,9 @@ function MonthView({
             <div
               key={cell.key}
               className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 ${
-                isSelected ? "bg-accent" : ""
-              } ${isToday ? "ring-1 ring-inset ring-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
-              style={blend}
+                isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""
+              } ${isPast ? "opacity-50" : ""}`}
+              style={!isToday && !isSelected ? blend : undefined}
             >
               <span
                 className={`text-xs font-medium mb-1 ${

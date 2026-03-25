@@ -8,10 +8,10 @@ interface KeyboardActions {
   tasks: Task[];
   onComplete: (ids: number[]) => void;
   onDelete: (ids: number[]) => void;
-  onCreate: () => void;
   onSelect: (task: Task) => void;
   onDeselect: () => void;
   onHelp?: () => void;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
@@ -61,10 +61,11 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      const { tasks, onComplete, onCreate, onSelect, onDeselect } =
-        actionsRef.current;
+      const { tasks, onComplete, onSelect, onDeselect } = actionsRef.current;
 
-      if (pendingG.current) {
+      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+
+      if (pendingG.current && !isModifier) {
         pendingG.current = false;
         if (gTimer.current) {
           clearTimeout(gTimer.current);
@@ -80,6 +81,19 @@ export function useKeyboard(actions: KeyboardActions) {
           actionsRef.current.onHelp?.();
           return;
         }
+        return;
+      }
+
+      if (e.ctrlKey && (e.key === "d" || e.key === "u")) {
+        e.preventDefault();
+        if (tasks.length === 0) return;
+        const container = actionsRef.current.scrollRef?.current;
+        const rowHeight = 44;
+        const viewportRows = container
+          ? Math.max(1, Math.floor(container.clientHeight / rowHeight / 2))
+          : 10;
+        const delta = e.key === "d" ? viewportRows : -viewportRows;
+        setCursor((i) => Math.max(0, Math.min(i + delta, tasks.length - 1)));
         return;
       }
 
@@ -130,11 +144,6 @@ export function useKeyboard(actions: KeyboardActions) {
           } else if (cursor >= 0 && cursor < tasks.length) {
             setPendingDelete([tasks[cursor].id]);
           }
-          break;
-        }
-        case "o": {
-          e.preventDefault();
-          onCreate();
           break;
         }
         case "Enter": {

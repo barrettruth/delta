@@ -138,5 +138,8 @@
   }
   body {
     @apply bg-background text-foreground min-h-dvh font-mono text-[13.5px] leading-relaxed tracking-tight antialiased;
+    font-feature-settings:
+      "liga" 0,
+      "calt" 0;
   }
 }

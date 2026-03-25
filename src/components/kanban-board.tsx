@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/tasks";
 
 import { TaskDetail } from "@/components/task-detail";
+import { Input } from "@/components/ui/input";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
@@ -48,8 +49,22 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [columns, setColumns] = useState(defaultColumns);
   const [visualMode, setVisualMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchActive, setSearchActive] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const visualAnchor = useRef(-1);
-  const grouped = useMemo(() => groupByStatus(tasks), [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    if (!searchQuery) return tasks;
+    const q = searchQuery.toLowerCase();
+    return tasks.filter(
+      (t) =>
+        t.description.toLowerCase().includes(q) ||
+        t.category?.toLowerCase().includes(q),
+    );
+  }, [tasks, searchQuery]);
+
+  const grouped = useMemo(() => groupByStatus(filteredTasks), [filteredTasks]);
 
   const getColTasks = useCallback(
     (ci: number) => grouped[columns[ci].status] ?? [],
@@ -249,8 +264,17 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
+        case "/": {
+          e.preventDefault();
+          setSearchActive(true);
+          requestAnimationFrame(() => searchRef.current?.focus());
+          break;
+        }
         case "Escape": {
-          if (visualMode) {
+          if (searchActive) {
+            setSearchQuery("");
+            setSearchActive(false);
+          } else if (visualMode) {
             setVisualMode(false);
             setSelectedIds(new Set());
           } else {
@@ -271,6 +295,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       kbActive,
       visualMode,
       selectedIds,
+      searchActive,
     ],
   );
 
@@ -300,97 +325,125 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           : "grid-cols-4";
 
   return (
-    <div className={`grid ${gridCols} gap-0 h-full w-full`}>
-      {visibleColumns.map((col) => {
-        const ci = columns.indexOf(col);
-        const colTasks = grouped[col.status] ?? [];
-        const isActiveCol = kbActive && ci === colIdx;
-        return (
-          <section
-            key={col.status}
-            className={`flex flex-col min-w-0 border-r border-border/40 last:border-r-0 transition-colors ${
-              dragOver === col.status
-                ? "bg-primary/5"
-                : isActiveCol
-                  ? "bg-accent/30"
-                  : ""
-            }`}
-            aria-label={`${col.label} column`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(col.status);
+    <div className="flex flex-col h-full w-full">
+      {searchActive && (
+        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/60 shrink-0">
+          <span className="text-xs text-muted-foreground">/</span>
+          <Input
+            ref={searchRef}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setSearchQuery("");
+                setSearchActive(false);
+              }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                searchRef.current?.blur();
+              }
             }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={(e) => {
-              e.preventDefault();
-              const id = Number(e.dataTransfer.getData("text/plain"));
-              if (id) handleDrop(id, col.status);
-              setDragId(null);
-              setDragOver(null);
-            }}
-          >
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
-              <span className="text-xs font-medium">{col.label}</span>
-              <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums">
-                {ci + 1}
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {colTasks.map((task, ri) => {
-                const isCursor = isActiveCol && ri === rowIdx;
-                const isSelected = selectedIds.has(task.id);
-                let bg = "hover:bg-accent/50";
-                if (isSelected) bg = "bg-primary/10";
-                else if (isCursor) bg = "bg-accent";
-                return (
-                  <article
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("text/plain", String(task.id));
-                      setDragId(task.id);
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null);
-                      setDragOver(null);
-                    }}
-                    className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors ${bg} ${
-                      dragId === task.id ? "opacity-40" : ""
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      onClick={() => setSelectedTask(task)}
+            placeholder="filter tasks..."
+            className="h-6 border-0 bg-transparent px-0 text-sm focus-visible:ring-0"
+          />
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {filteredTasks.length}/{tasks.length}
+          </span>
+        </div>
+      )}
+      <div className={`grid ${gridCols} gap-0 flex-1 min-h-0`}>
+        {visibleColumns.map((col) => {
+          const ci = columns.indexOf(col);
+          const colTasks = grouped[col.status] ?? [];
+          const isActiveCol = kbActive && ci === colIdx;
+          return (
+            <section
+              key={col.status}
+              className={`flex flex-col min-w-0 border-r border-border/40 last:border-r-0 transition-colors ${
+                dragOver === col.status
+                  ? "bg-primary/5"
+                  : isActiveCol
+                    ? "bg-accent/30"
+                    : ""
+              }`}
+              aria-label={`${col.label} column`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(col.status);
+              }}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                const id = Number(e.dataTransfer.getData("text/plain"));
+                if (id) handleDrop(id, col.status);
+                setDragId(null);
+                setDragOver(null);
+              }}
+            >
+              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
+                <span className="text-xs font-medium">{col.label}</span>
+                <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums">
+                  {ci + 1}
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {colTasks.map((task, ri) => {
+                  const isCursor = isActiveCol && ri === rowIdx;
+                  const isSelected = selectedIds.has(task.id);
+                  let bg = "hover:bg-accent/50";
+                  if (isSelected) bg = "bg-primary/10";
+                  else if (isCursor) bg = "bg-accent";
+                  return (
+                    <article
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", String(task.id));
+                        setDragId(task.id);
+                      }}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setDragOver(null);
+                      }}
+                      className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors ${bg} ${
+                        dragId === task.id ? "opacity-40" : ""
+                      }`}
                     >
-                      <p className="text-sm font-medium leading-snug">
-                        {task.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        {task.priority !== null && task.priority > 0 && (
-                          <span className="text-xs font-semibold text-primary">
-                            {"!".repeat(Math.min(task.priority, 3))}
-                          </span>
-                        )}
-                        {task.category && task.category !== "Todo" && (
-                          <span className="text-xs text-muted-foreground">
-                            # {task.category}
-                          </span>
-                        )}
-                        {task.due && (
-                          <span className="text-xs text-muted-foreground ml-auto tabular-nums">
-                            {formatDate(new Date(task.due))}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+                      <button
+                        type="button"
+                        className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <p className="text-sm font-medium leading-snug">
+                          {task.description}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          {task.priority !== null && task.priority > 0 && (
+                            <span className="text-xs font-semibold text-primary">
+                              {"!".repeat(Math.min(task.priority, 3))}
+                            </span>
+                          )}
+                          {task.category && task.category !== "Todo" && (
+                            <span className="text-xs text-muted-foreground">
+                              # {task.category}
+                            </span>
+                          )}
+                          {task.due && (
+                            <span className="text-xs text-muted-foreground ml-auto tabular-nums">
+                              {formatDate(new Date(task.due))}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}

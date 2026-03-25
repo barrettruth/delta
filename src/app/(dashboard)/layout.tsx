@@ -7,6 +7,7 @@ import { GlobalKeyboard } from "@/components/global-keyboard";
 import { KeyboardHints } from "@/components/keyboard-hints";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
+import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
 import { db } from "@/db";
 import { categoryColors } from "@/db/schema";
@@ -24,6 +25,7 @@ export default async function DashboardLayout({
   const user = validateSession(db, sessionId);
   if (!user) redirect("/login");
 
+  const settings = getSettings(db, user.id);
   const allTasks = listTasks(db, user.id);
   const categories = [
     ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
@@ -45,7 +47,10 @@ export default async function DashboardLayout({
         <main className="flex-1 overflow-hidden bg-background">{children}</main>
         <KeyboardHints />
       </SidebarInset>
-      <GlobalKeyboard categories={categories} />
+      <GlobalKeyboard
+        categories={categories}
+        defaultCategory={settings.defaultCategory}
+      />
     </Suspense>
   );
 }

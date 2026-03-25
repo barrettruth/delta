@@ -57,19 +57,13 @@ export function LoginForm({
           autoFocus
           autoComplete="username"
         />
-        <div className="relative">
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="password"
-            autoComplete="current-password"
-            className="text-transparent caret-foreground"
-          />
-          <span className="absolute inset-y-0 left-0 flex items-center px-2.5 pointer-events-none text-sm">
-            {"*".repeat(password.length)}
-          </span>
-        </div>
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="password"
+          autoComplete="current-password"
+        />
         <Button type="submit" disabled={loading}>
           {loading ? "..." : "login"}
         </Button>
