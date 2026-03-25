@@ -40,7 +40,7 @@ const sections = [
       ["j / k", "Move within column"],
       ["H / L", "Move task left / right"],
       ["< / >", "Swap column left / right"],
-      ["1-4", "Jump to column"],
+      ["p / i / b / w", "Jump to column"],
       ["/", "Search filter"],
       ["Enter", "Open task detail"],
       ["V", "Visual select mode"],

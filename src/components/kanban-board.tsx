@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
+const COLUMN_KEYS = ["p", "i", "b", "w"];
+const COLUMN_HINTS = ["P", "I", "B", "W"];
+
 const defaultColumns: { status: TaskStatus; label: string }[] = [
   { status: "pending", label: "Pending" },
   { status: "wip", label: "In Progress" },
@@ -208,13 +211,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
-        case "1":
-        case "2":
-        case "3":
-        case "4": {
+        case "p":
+        case "i":
+        case "b":
+        case "w": {
           e.preventDefault();
-          const ci = Number(e.key) - 1;
-          if (ci < columns.length) {
+          const ci = COLUMN_KEYS.indexOf(e.key);
+          if (ci !== -1 && ci < columns.length) {
             setKbActive(true);
             setColIdx(ci);
             setRowIdx(0);
@@ -384,7 +387,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
                 <span className="text-xs font-medium">{col.label}</span>
                 <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums">
-                  {ci + 1}
+                  {COLUMN_HINTS[ci]}
                 </span>
               </div>
               <div className="flex-1 overflow-y-auto">
