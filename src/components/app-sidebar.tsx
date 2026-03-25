@@ -105,7 +105,7 @@ export function AppSidebar({
                         <span className="flex-1">{cat}</span>
                         {shortcutKey && (
                           <kbd className="text-[10px] text-muted-foreground">
-                            {shortcutKey}
+                            g{shortcutKey}
                           </kbd>
                         )}
                       </SidebarMenuButton>

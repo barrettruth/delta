@@ -41,6 +41,9 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
       for (const id of ids) deleteTaskAction(id);
       if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
     },
+    onStatusChange: (ids, status) => {
+      for (const id of ids) updateTaskAction(id, { status });
+    },
     onSelect: (task) => setSelectedTask(task),
     onDeselect: () => setSelectedTask(null),
   });

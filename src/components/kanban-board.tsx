@@ -56,6 +56,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [searchActive, setSearchActive] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const visualAnchor = useRef(-1);
+  const pendingOp = useRef(false);
+  const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filteredTasks = useMemo(() => {
     if (!searchQuery) return tasks;
@@ -84,6 +86,30 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
       if (selectedTask) return;
+
+      if (pendingOp.current) {
+        const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
+        if (isModifier) return;
+        pendingOp.current = false;
+        if (opTimer.current) {
+          clearTimeout(opTimer.current);
+          opTimer.current = null;
+        }
+        if (e.key === "d") {
+          e.preventDefault();
+          if (selectedIds.size > 0) {
+            for (const id of selectedIds) deleteTaskAction(id);
+            setSelectedIds(new Set());
+            setVisualMode(false);
+          } else if (kbActive) {
+            const colTasks = getColTasks(colIdx);
+            if (colTasks.length > 0 && rowIdx < colTasks.length) {
+              deleteTaskAction(colTasks[rowIdx].id);
+            }
+          }
+        }
+        return;
+      }
 
       switch (e.key) {
         case "h": {
@@ -276,11 +302,12 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             for (const id of selectedIds) deleteTaskAction(id);
             setSelectedIds(new Set());
             setVisualMode(false);
-          } else if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              deleteTaskAction(colTasks[rowIdx].id);
-            }
+          } else {
+            pendingOp.current = true;
+            opTimer.current = setTimeout(() => {
+              pendingOp.current = false;
+              opTimer.current = null;
+            }, 500);
           }
           break;
         }
