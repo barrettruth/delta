@@ -1,12 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { TaskDetail } from "@/components/task-detail";
-import { Button } from "@/components/ui/button";
 import { useNavigation } from "@/contexts/navigation";
 import type { Task } from "@/core/types";
 import {
@@ -375,46 +373,10 @@ export function CalendarView({
       ? formatWeekRange(weekAnchor)
       : formatMonthTitle(monthStart);
 
-  function handlePrev() {
-    if (viewMode === "week") prevWeek();
-    else prevMonth();
-  }
-  function handleNext() {
-    if (viewMode === "week") nextWeek();
-    else nextMonth();
-  }
-
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/60 shrink-0">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrev}
-            className="hover:bg-accent"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={goToday}
-            className="hover:bg-accent text-xs font-medium"
-          >
-            Today
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNext}
-            className="hover:bg-accent"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
+      <div className="flex items-center justify-center px-6 py-3 border-b border-border/60 shrink-0">
         <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
-        <div />
       </div>
 
       {viewMode === "week" ? (
