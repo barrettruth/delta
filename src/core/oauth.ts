@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import type { SafeUser } from "@/core/auth";
 import { accounts, users } from "@/db/schema";
 import type { Db } from "./types";
 
@@ -70,6 +71,23 @@ export function getLinkedProviders(db: Db, userId: number): OAuthProvider[] {
     .where(eq(accounts.userId, userId))
     .all()
     .map((a) => a.provider as OAuthProvider);
+}
+
+export function findUserFromOAuth(
+  db: Db,
+  provider: OAuthProvider,
+  providerAccountId: string,
+): SafeUser | null {
+  const account = findAccountByProvider(db, provider, providerAccountId);
+  if (!account) return null;
+  const user = db
+    .select()
+    .from(users)
+    .where(eq(users.id, account.userId))
+    .get();
+  if (!user) return null;
+  const { passwordHash: _, ...safe } = user;
+  return safe;
 }
 
 export function findOrCreateUserFromOAuth(

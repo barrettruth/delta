@@ -6,10 +6,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { OAuthProvider } from "@/core/oauth";
 
-const providerLabels: Record<OAuthProvider, string> = {
-  github: "GitHub",
-  google: "Google",
-  gitlab: "GitLab",
+const errorMessages: Record<string, string> = {
+  invite_required: "invite code required for new accounts",
+  invalid_invite: "invalid or already used invite code",
+  invalid_state: "authentication failed, please try again",
+  token_exchange_failed: "authentication failed, please try again",
+  oauth_failed: "authentication failed, please try again",
+};
+
+const providerButtons: Record<
+  OAuthProvider,
+  { label: string; icon: React.ReactNode }
+> = {
+  github: {
+    label: "github",
+    icon: (
+      <svg
+        viewBox="0 0 16 16"
+        className="h-4 w-4 fill-current"
+        aria-hidden="true"
+      >
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+      </svg>
+    ),
+  },
+  google: {
+    label: "google",
+    icon: (
+      <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
+        <path
+          d="M15.545 6.558a9.42 9.42 0 01.139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 118 0a7.689 7.689 0 015.352 2.082l-2.284 2.284A4.347 4.347 0 008 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 000 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 001.599-2.431H8v-3.08h7.545z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+  },
+  gitlab: {
+    label: "gitlab",
+    icon: null,
+  },
 };
 
 export function LoginForm({
@@ -22,7 +57,10 @@ export function LoginForm({
   const oauthError = searchParams.get("error");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(oauthError ?? "");
+  const [inviteCode, setInviteCode] = useState("");
+  const [error, setError] = useState(
+    oauthError ? (errorMessages[oauthError] ?? oauthError) : "",
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -48,38 +86,78 @@ export function LoginForm({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-64">
-        {error && <div className="text-sm text-destructive">{error}</div>}
-        <Input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="username"
-          autoFocus
-          autoComplete="username"
-        />
-        <Input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="password"
-          autoComplete="current-password"
-        />
-        <Button type="submit" disabled={loading}>
-          {loading ? "..." : "login"}
-        </Button>
-        {availableProviders.map((provider) => (
-          <Button
-            key={provider}
-            variant="ghost"
-            className="text-muted-foreground"
-            onClick={() => {
-              window.location.href = `/api/auth/${provider}`;
+      <div className="flex flex-col items-center">
+        <span className="font-serif text-6xl text-foreground select-none mb-8">
+          Δ
+        </span>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-64">
+          {error && <div className="text-sm text-destructive">{error}</div>}
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="username"
+            autoFocus
+            autoComplete="username"
+          />
+          <Input
+            type="text"
+            value={"*".repeat(password.length)}
+            onChange={() => {}}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace") {
+                e.preventDefault();
+                setPassword((p) => p.slice(0, -1));
+              } else if (e.key === "Enter") {
+              } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                setPassword((p) => p + e.key);
+              }
             }}
-          >
-            {providerLabels[provider]}
+            onPaste={(e) => {
+              e.preventDefault();
+              const pasted = e.clipboardData.getData("text");
+              setPassword((p) => p + pasted);
+            }}
+            placeholder="password"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <Input
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            placeholder="invite code"
+            autoComplete="off"
+          />
+          <Button type="submit" disabled={loading}>
+            {loading ? "..." : "login"}
           </Button>
-        ))}
-      </form>
+          {availableProviders.length > 0 && (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              {availableProviders.map((provider) => (
+                <button
+                  key={provider}
+                  type="button"
+                  className="flex items-center justify-center gap-2 h-9 w-full border border-border text-sm text-foreground hover:bg-accent"
+                  onClick={() => {
+                    const params = inviteCode
+                      ? `?invite=${encodeURIComponent(inviteCode)}`
+                      : "";
+                    window.location.href = `/api/auth/${provider}${params}`;
+                  }}
+                >
+                  {providerButtons[provider].icon}
+                  {providerButtons[provider].label}
+                </button>
+              ))}
+            </>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

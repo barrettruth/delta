@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { compareSync, hashSync } from "bcryptjs";
-import { and, eq, gt } from "drizzle-orm";
-import { sessions, users } from "@/db/schema";
+import { and, eq, gt, isNull } from "drizzle-orm";
+import { inviteCodes, sessions, users } from "@/db/schema";
 import type { Db } from "./types";
 
 const BCRYPT_ROUNDS = 12;
@@ -113,4 +113,47 @@ export function regenerateApiKey(db: Db, userId: number): string {
   const newKey = generateId();
   db.update(users).set({ apiKey: newKey }).where(eq(users.id, userId)).run();
   return newKey;
+}
+
+export function generateInviteCode(db: Db, userId: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = randomBytes(8);
+  let suffix = "";
+  for (let i = 0; i < 8; i++) {
+    suffix += chars[bytes[i] % chars.length];
+  }
+  const code = `delta-${suffix}`;
+
+  db.insert(inviteCodes)
+    .values({
+      code,
+      createdBy: userId,
+      createdAt: new Date().toISOString(),
+    })
+    .run();
+
+  return code;
+}
+
+export function validateInviteCode(db: Db, code: string) {
+  return (
+    db
+      .select()
+      .from(inviteCodes)
+      .where(and(eq(inviteCodes.code, code), isNull(inviteCodes.usedBy)))
+      .get() ?? null
+  );
+}
+
+export function consumeInviteCode(
+  db: Db,
+  code: string,
+  userId: number,
+): boolean {
+  const result = db
+    .update(inviteCodes)
+    .set({ usedBy: userId, usedAt: new Date().toISOString() })
+    .where(and(eq(inviteCodes.code, code), isNull(inviteCodes.usedBy)))
+    .run();
+  return result.changes > 0;
 }

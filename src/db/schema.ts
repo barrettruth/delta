@@ -98,6 +98,17 @@ export const userSettings = sqliteTable("user_settings", {
   settings: text("settings").notNull(),
 });
 
+export const inviteCodes = sqliteTable("invite_codes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  code: text("code").notNull().unique(),
+  createdBy: integer("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  usedBy: integer("used_by").references(() => users.id),
+  usedAt: text("used_at"),
+  createdAt: text("created_at").notNull(),
+});
+
 export const automations = sqliteTable("automations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id")

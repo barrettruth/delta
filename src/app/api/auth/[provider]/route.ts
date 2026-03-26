@@ -28,7 +28,7 @@ function getEnvVar(provider: OAuthProvider, key: string): string | undefined {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ provider: string }> },
 ) {
   const { provider: providerParam } = await params;
@@ -47,9 +47,13 @@ export async function GET(
     );
   }
 
+  const url = new URL(request.url);
+  const invite = url.searchParams.get("invite");
+
   const state = randomBytes(32).toString("hex");
+  const statePayload = JSON.stringify({ state, invite: invite || undefined });
   const cookieStore = await cookies();
-  cookieStore.set("oauth_state", state, {
+  cookieStore.set("oauth_state", statePayload, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
@@ -61,12 +65,12 @@ export async function GET(
     process.env.OAUTH_REDIRECT_BASE_URL ?? "http://localhost:3000";
   const redirectUri = `${redirectBase}/api/auth/callback/${provider}`;
 
-  const url = new URL(config.authorizeUrl);
-  url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("state", state);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", config.scopes);
+  const authorizeUrl = new URL(config.authorizeUrl);
+  authorizeUrl.searchParams.set("client_id", clientId);
+  authorizeUrl.searchParams.set("redirect_uri", redirectUri);
+  authorizeUrl.searchParams.set("state", state);
+  authorizeUrl.searchParams.set("response_type", "code");
+  authorizeUrl.searchParams.set("scope", config.scopes);
 
-  return NextResponse.redirect(url.toString());
+  return NextResponse.redirect(authorizeUrl.toString());
 }

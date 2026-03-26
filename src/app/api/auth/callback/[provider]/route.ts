@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createSession } from "@/core/auth";
+import { consumeInviteCode, createSession, validateInviteCode } from "@/core/auth";
 import {
   findOrCreateUserFromOAuth,
+  findUserFromOAuth,
   type OAuthProfile,
   type OAuthProvider,
 } from "@/core/oauth";
@@ -81,8 +82,20 @@ export async function GET(
   }
 
   const cookieStore = await cookies();
-  const storedState = cookieStore.get("oauth_state")?.value;
+  const rawCookie = cookieStore.get("oauth_state")?.value;
   cookieStore.delete("oauth_state");
+
+  let storedState: string | undefined;
+  let invite: string | undefined;
+  if (rawCookie) {
+    try {
+      const parsed = JSON.parse(rawCookie);
+      storedState = parsed.state;
+      invite = parsed.invite;
+    } catch {
+      storedState = rawCookie;
+    }
+  }
 
   if (!storedState || storedState !== state) {
     return NextResponse.redirect(
@@ -151,12 +164,40 @@ export async function GET(
     const providerAccountId = String(userData.id ?? userData.sub);
     const profile = config.extractProfile(userData);
 
+    const existingUser = findUserFromOAuth(db, provider, providerAccountId);
+
+    if (existingUser) {
+      const sessionId = createSession(db, existingUser.id);
+      cookieStore.set("session", sessionId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    if (!invite) {
+      return NextResponse.redirect(
+        new URL("/login?error=invite_required", request.url),
+      );
+    }
+
+    if (!validateInviteCode(db, invite)) {
+      return NextResponse.redirect(
+        new URL("/login?error=invalid_invite", request.url),
+      );
+    }
+
     const user = findOrCreateUserFromOAuth(
       db,
       provider,
       providerAccountId,
       profile,
     );
+
+    consumeInviteCode(db, invite, user.id);
 
     const sessionId = createSession(db, user.id);
     cookieStore.set("session", sessionId, {
