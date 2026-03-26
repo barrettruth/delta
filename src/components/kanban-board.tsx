@@ -13,11 +13,18 @@ import { useNavigation } from "@/contexts/navigation";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
-const COLUMN_KEYS = ["p", "i", "b", "w"];
-const COLUMN_HINTS = ["P", "I", "B", "W"];
+const COLUMN_KEYS = ["w", "i", "b", "x"];
+const COLUMN_HINTS = ["W", "I", "B", "X"];
+
+const STATUS_FOR_KEY: Record<string, TaskStatus> = {
+  w: "pending",
+  i: "wip",
+  b: "blocked",
+  x: "done",
+};
 
 const defaultColumns: { status: TaskStatus; label: string }[] = [
-  { status: "pending", label: "Pending" },
+  { status: "pending", label: "Waiting" },
   { status: "wip", label: "In Progress" },
   { status: "blocked", label: "Blocked" },
   { status: "done", label: "Done" },
@@ -251,15 +258,44 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           }
           break;
         }
-        case "p":
+        case "w":
         case "i":
         case "b":
-        case "w": {
+        case "x": {
           e.preventDefault();
-          const ci = COLUMN_KEYS.indexOf(e.key);
-          if (ci !== -1 && ci < columns.length) {
+          if (!kbActive && selectedIds.size === 0) break;
+          const newStatus = STATUS_FOR_KEY[e.key];
+          if (!newStatus) break;
+          if (selectedIds.size > 0) {
+            for (const id of selectedIds) {
+              if (newStatus === "done") completeTaskAction(id);
+              else updateTaskAction(id, { status: newStatus });
+            }
+            setSelectedIds(new Set());
+            setVisualMode(false);
+          } else {
+            const colTasks = getColTasks(colIdx);
+            if (colTasks.length === 0 || rowIdx >= colTasks.length) break;
+            const task = colTasks[rowIdx];
+            if (newStatus === "done") completeTaskAction(task.id);
+            else updateTaskAction(task.id, { status: newStatus });
+          }
+          const targetCol = columns.findIndex((c) => c.status === newStatus);
+          if (targetCol !== -1) {
+            setColIdx(targetCol);
+            setRowIdx(0);
+          }
+          break;
+        }
+        case "W":
+        case "I":
+        case "B":
+        case "X": {
+          e.preventDefault();
+          const jumpIdx = COLUMN_HINTS.indexOf(e.key);
+          if (jumpIdx !== -1 && jumpIdx < columns.length) {
             setKbActive(true);
-            setColIdx(ci);
+            setColIdx(jumpIdx);
             setRowIdx(0);
           }
           break;
@@ -292,20 +328,6 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               setVisualMode(true);
               visualAnchor.current = rowIdx;
               setSelectedIds(new Set([colTasks[rowIdx].id]));
-            }
-          }
-          break;
-        }
-        case "x": {
-          e.preventDefault();
-          if (selectedIds.size > 0) {
-            for (const id of selectedIds) completeTaskAction(id);
-            setSelectedIds(new Set());
-            setVisualMode(false);
-          } else if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              completeTaskAction(colTasks[rowIdx].id);
             }
           }
           break;
