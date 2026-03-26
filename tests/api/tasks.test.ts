@@ -43,7 +43,7 @@ describe("task lifecycle", () => {
     expect(updated.priority).toBe(3);
     expect(updated.updatedAt).not.toBe(task.updatedAt);
 
-    const completed = completeTask(db, userId, task.id);
+    const { task: completed } = completeTask(db, userId, task.id);
     expect(completed.status).toBe("done");
     expect(completed.completedAt).toBeTruthy();
 

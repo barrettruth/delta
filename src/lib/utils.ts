@@ -59,3 +59,44 @@ export function isInputFocused(): boolean {
     (el as HTMLElement).isContentEditable
   );
 }
+
+const MEETING_PATTERNS = [
+  { name: "Zoom", pattern: /https?:\/\/[\w.-]*zoom\.us\/(j|my)\/[\w.-]+/i },
+  { name: "Meet", pattern: /https?:\/\/meet\.google\.com\/[\w-]+/i },
+  {
+    name: "Teams",
+    pattern: /https?:\/\/teams\.microsoft\.com\/l\/meetup-join\/[\w%.-]+/i,
+  },
+  {
+    name: "Webex",
+    pattern: /https?:\/\/[\w.-]*\.webex\.com\/(meet|join)\/[\w.-]+/i,
+  },
+];
+
+export function detectMeetingPlatform(url: string): string | null {
+  for (const { name, pattern } of MEETING_PATTERNS) {
+    if (pattern.test(url)) return name;
+  }
+  return null;
+}
+
+export function formatRelativeDate(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (diffDays < 0) return `!${Math.abs(diffDays)}d`;
+  if (diffDays === 0) return "tdy";
+  if (diffDays === 1) return "tmr";
+  if (diffDays <= 7) return `${diffDays}d`;
+  if (diffDays <= 28) return `${Math.ceil(diffDays / 7)}w`;
+  if (diffDays <= 365) return `${Math.ceil(diffDays / 30)}mo`;
+  return `${Math.ceil(diffDays / 365)}y`;
+}
+
+export function isOverdue(due: string): boolean {
+  return new Date(due) < new Date(new Date().toDateString());
+}

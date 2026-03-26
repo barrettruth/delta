@@ -1,12 +1,13 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createTaskAction } from "@/app/actions/tasks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Task } from "@/core/types";
 
 const PRIORITIES = [
   { value: "0", indicator: "\u2014" },
@@ -22,6 +23,7 @@ export function CreateTaskDrawer({
   defaultDescription,
   categories,
   defaultCategory = "Todo",
+  tasks,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,6 +31,7 @@ export function CreateTaskDrawer({
   defaultDescription?: string;
   categories?: string[];
   defaultCategory?: string;
+  tasks?: Task[];
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(defaultCategory);
@@ -36,8 +39,27 @@ export function CreateTaskDrawer({
   const [priority, setPriority] = useState("0");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
+  const [location, setLocation] = useState("");
   const [showCategories, setShowCategories] = useState(false);
+  const [showLocations, setShowLocations] = useState(false);
   const descRef = useRef<HTMLInputElement>(null);
+
+  const allLocations = useMemo(() => {
+    if (!tasks) return [];
+    const locs = new Set<string>();
+    for (const t of tasks) {
+      if (t.location) locs.add(t.location);
+    }
+    return [...locs].sort();
+  }, [tasks]);
+
+  const filteredLocations = useMemo(() => {
+    if (!location) return allLocations;
+    const lower = location.toLowerCase();
+    return allLocations.filter(
+      (l) => l.toLowerCase().includes(lower) && l !== location,
+    );
+  }, [allLocations, location]);
 
   useEffect(() => {
     if (open) {
@@ -66,6 +88,7 @@ export function CreateTaskDrawer({
       due: dueDate
         ? new Date(`${dueDate}T${dueTime || "12:00"}:00`).toISOString()
         : undefined,
+      location: location.trim() || undefined,
     });
 
     if ("error" in result) {
@@ -79,6 +102,7 @@ export function CreateTaskDrawer({
     setPriority("0");
     setDueDate("");
     setDueTime("");
+    setLocation("");
     onOpenChange(false);
   }
 
@@ -106,7 +130,7 @@ export function CreateTaskDrawer({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What needs to be done?"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
               <div className="flex flex-col gap-1.5 relative">
                 <Label
                   htmlFor="drawer-category"
@@ -205,6 +229,43 @@ export function CreateTaskDrawer({
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
                 />
+              </div>
+              <div className="flex flex-col gap-1.5 relative">
+                <Label
+                  htmlFor="drawer-location"
+                  className="text-xs text-muted-foreground"
+                >
+                  Location
+                </Label>
+                <Input
+                  id="drawer-location"
+                  value={location}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setShowLocations(true);
+                  }}
+                  onFocus={() => setShowLocations(true)}
+                  onBlur={() => setTimeout(() => setShowLocations(false), 150)}
+                  placeholder="e.g. Room 204"
+                />
+                {showLocations && filteredLocations.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                    {filteredLocations.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-accent transition-colors"
+                        onMouseDown={(ev) => {
+                          ev.preventDefault();
+                          setLocation(l);
+                          setShowLocations(false);
+                        }}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <Button

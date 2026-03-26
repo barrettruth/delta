@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
-import { formatDate, isInputFocused } from "@/lib/utils";
+import { detectMeetingPlatform, formatDate, isInputFocused } from "@/lib/utils";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   pending: "Pending",
@@ -49,7 +49,10 @@ export function TaskDetail({
   const [label, setLabel] = useState("");
   const [priority, setPriority] = useState("0");
   const [due, setDue] = useState("");
+  const [location, setLocation] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const notesRef = useRef<string | null>(null);
 
   const allCategories = useMemo(() => {
@@ -69,6 +72,28 @@ export function TaskDetail({
     );
   }, [allCategories, category]);
 
+  const allLocations = useMemo(() => {
+    if (!tasks) return [];
+    const locs = new Set<string>();
+    for (const t of tasks) {
+      if (t.location) locs.add(t.location);
+    }
+    return [...locs].sort();
+  }, [tasks]);
+
+  const filteredLocations = useMemo(() => {
+    if (!location) return allLocations;
+    const lower = location.toLowerCase();
+    return allLocations.filter(
+      (l) => l.toLowerCase().includes(lower) && l !== location,
+    );
+  }, [allLocations, location]);
+
+  const detectedPlatform = useMemo(
+    () => (meetingUrl ? detectMeetingPlatform(meetingUrl) : null),
+    [meetingUrl],
+  );
+
   useEffect(() => {
     if (task) {
       setDescription(task.description);
@@ -76,6 +101,8 @@ export function TaskDetail({
       setLabel(task.label ?? "");
       setPriority(String(task.priority ?? 0));
       setDue(task.due ? task.due.slice(0, 16) : "");
+      setLocation(task.location ?? "");
+      setMeetingUrl(task.meetingUrl ?? "");
       notesRef.current = task.notes ?? null;
     }
   }, [task]);
@@ -89,8 +116,10 @@ export function TaskDetail({
       priority: Number(priority),
       due: due ? new Date(due).toISOString() : null,
       notes: notesRef.current || null,
+      location: location || null,
+      meetingUrl: meetingUrl || null,
     });
-  }, [task, description, category, label, priority, due]);
+  }, [task, description, category, label, priority, due, location, meetingUrl]);
 
   const handleClose = useCallback(async () => {
     await handleSave();
@@ -230,6 +259,65 @@ export function TaskDetail({
               onChange={(e) => setDue(e.target.value)}
               className="h-8 w-auto text-xs"
             />
+
+            <div className="relative">
+              <Input
+                value={location}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (detectMeetingPlatform(val)) {
+                    setMeetingUrl(val);
+                    setLocation("");
+                  } else {
+                    setLocation(val);
+                  }
+                  setShowLocationSuggestions(true);
+                }}
+                onFocus={() => setShowLocationSuggestions(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowLocationSuggestions(false), 150)
+                }
+                placeholder="location"
+                className="h-8 w-36 text-xs"
+              />
+              {showLocationSuggestions && filteredLocations.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                  {filteredLocations.map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setLocation(l);
+                        setShowLocationSuggestions(false);
+                      }}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Input
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="meeting link"
+                className="h-8 w-44 text-xs"
+              />
+              {detectedPlatform && (
+                <a
+                  href={meetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center h-8 px-2 text-xs hover:bg-accent transition-colors border border-transparent"
+                >
+                  Join
+                </a>
+              )}
+            </div>
 
             <div className="flex-1" />
 

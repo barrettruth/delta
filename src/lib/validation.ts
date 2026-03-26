@@ -131,6 +131,36 @@ export function validateCreateTask(
     });
   }
 
+  if (b.location !== undefined && b.location !== null) {
+    if (typeof b.location !== "string" || b.location.trim().length > 500) {
+      errors.push({
+        field: "location",
+        message: "location must be a string of at most 500 characters",
+      });
+    }
+  }
+
+  if (b.meetingUrl !== undefined && b.meetingUrl !== null) {
+    if (typeof b.meetingUrl !== "string") {
+      errors.push({
+        field: "meetingUrl",
+        message: "meetingUrl must be a string",
+      });
+    } else if (b.meetingUrl.trim().length > 2000) {
+      errors.push({
+        field: "meetingUrl",
+        message: "meetingUrl must be at most 2000 characters",
+      });
+    } else if (
+      !/^https?:\/\//i.test(b.meetingUrl.trim())
+    ) {
+      errors.push({
+        field: "meetingUrl",
+        message: "meetingUrl must be a valid URL starting with http:// or https://",
+      });
+    }
+  }
+
   if (errors.length > 0) {
     return { success: false, errors };
   }
@@ -159,6 +189,10 @@ export function validateCreateTask(
     data.allDay = b.allDay as number;
   if (b.timezone !== undefined && b.timezone !== null)
     data.timezone = b.timezone as string;
+  if (b.location !== undefined && b.location !== null)
+    data.location = sanitize(String(b.location).trim());
+  if (b.meetingUrl !== undefined && b.meetingUrl !== null)
+    data.meetingUrl = String(b.meetingUrl).trim();
 
   return { success: true, data };
 }
@@ -265,6 +299,36 @@ export function validateUpdateTask(
     });
   }
 
+  if (b.location !== undefined && b.location !== null) {
+    if (typeof b.location !== "string" || b.location.trim().length > 500) {
+      errors.push({
+        field: "location",
+        message: "location must be a string of at most 500 characters",
+      });
+    }
+  }
+
+  if (b.meetingUrl !== undefined && b.meetingUrl !== null) {
+    if (typeof b.meetingUrl !== "string") {
+      errors.push({
+        field: "meetingUrl",
+        message: "meetingUrl must be a string",
+      });
+    } else if (b.meetingUrl.trim().length > 2000) {
+      errors.push({
+        field: "meetingUrl",
+        message: "meetingUrl must be at most 2000 characters",
+      });
+    } else if (
+      !/^https?:\/\//i.test(b.meetingUrl.trim())
+    ) {
+      errors.push({
+        field: "meetingUrl",
+        message: "meetingUrl must be a valid URL starting with http:// or https://",
+      });
+    }
+  }
+
   if (errors.length > 0) {
     return { success: false, errors };
   }
@@ -292,6 +356,10 @@ export function validateUpdateTask(
   if (b.endAt !== undefined) data.endAt = b.endAt as string | null;
   if (b.allDay !== undefined) data.allDay = b.allDay as number | null;
   if (b.timezone !== undefined) data.timezone = b.timezone as string | null;
+  if (b.location !== undefined)
+    data.location = b.location === null ? null : sanitize(String(b.location).trim());
+  if (b.meetingUrl !== undefined)
+    data.meetingUrl = b.meetingUrl === null ? null : String(b.meetingUrl).trim();
 
   return { success: true, data };
 }

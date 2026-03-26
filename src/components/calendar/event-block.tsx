@@ -14,12 +14,14 @@ export function EventBlock({
   totalColumns,
   categoryColor,
   onClick,
+  isDragging,
 }: {
   task: Task;
   column: number;
   totalColumns: number;
   categoryColor?: string;
   onClick: (task: Task) => void;
+  isDragging?: boolean;
 }) {
   const start = task.startAt ? new Date(task.startAt) : null;
   const end = task.endAt ? new Date(task.endAt) : null;
@@ -39,7 +41,12 @@ export function EventBlock({
   return (
     <button
       type="button"
-      className={`absolute overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer ${statusColor(task)}`}
+      data-event-id={task.id}
+      data-event-start={task.startAt}
+      data-event-end={task.endAt ?? ""}
+      data-event-start-min={startMin}
+      data-event-end-min={endMin}
+      className={`absolute overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -55,6 +62,27 @@ export function EventBlock({
         {end ? `\u2013${formatTime(end)}` : ""}
       </span>
       <span className="truncate block">{task.description}</span>
+      {task.location && height >= 30 && (
+        <span className="truncate block text-[9px] text-muted-foreground">
+          {task.location}
+        </span>
+      )}
+      {task.meetingUrl && height >= 45 && (
+        <a
+          href={task.meetingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block text-[9px] text-muted-foreground underline hover:text-foreground"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {"↗"}
+        </a>
+      )}
+      <div
+        data-resize-handle=""
+        className="absolute bottom-0 left-0 right-0 cursor-ns-resize"
+        style={{ height: "8px" }}
+      />
     </button>
   );
 }

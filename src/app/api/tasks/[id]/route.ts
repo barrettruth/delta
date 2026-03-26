@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   try {
     if (validated.status === "done") {
-      const task = completeTask(db, user.id, Number(id));
+      const { task } = completeTask(db, user.id, Number(id));
       return NextResponse.json(task);
     }
 

@@ -10,17 +10,18 @@ import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
+import { useUndo } from "@/contexts/undo";
 import type { TaskStatus } from "@/core/types";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
-import { formatDate, isInputFocused } from "@/lib/utils";
+import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
 
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  pending: "todo",
-  wip: "wip",
-  done: "done",
-  blocked: "blocked",
-  cancelled: "cancelled",
+const STATUS_SIGIL: Record<TaskStatus, string> = {
+  pending: "\u00b7",
+  wip: "~",
+  done: "\u2713",
+  blocked: "\u00d7",
+  cancelled: "\u2013",
 };
 
 const STATUS_COLOR: Record<TaskStatus, string> = {
@@ -43,8 +44,29 @@ function nextStatus(current: TaskStatus): TaskStatus {
   return order[(idx + 1) % order.length];
 }
 
-export function QueueView({ tasks }: { tasks: RankedTask[] }) {
+function getRowClasses(isCursor: boolean, isSelected: boolean): string {
+  if (isSelected && isCursor) return "border-primary bg-primary/15";
+  if (isSelected) return "border-primary/60 bg-primary/10";
+  if (isCursor) return "border-primary bg-accent/60";
+  return "border-transparent hover:bg-accent/30";
+}
+
+function getTaskDimming(status: string): string {
+  if (status === "blocked") return "opacity-50";
+  if (status === "done") return "opacity-40";
+  if (status === "cancelled") return "opacity-30";
+  return "";
+}
+
+export function QueueView({
+  tasks,
+  categoryColors,
+}: {
+  tasks: RankedTask[];
+  categoryColors: Record<string, string>;
+}) {
   const nav = useNavigation();
+  const undo = useUndo();
   const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
@@ -67,14 +89,67 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
 
   const { cursor, setCursor, selectedIds, toggleSelect } = useKeyboard({
     tasks: filtered,
-    onComplete: (ids) => {
-      for (const id of ids) completeTaskAction(id);
+    onComplete: async (ids) => {
+      const mutations = [];
+      for (const id of ids) {
+        const task = filtered.find((t) => t.id === id);
+        const result = await completeTaskAction(id);
+        mutations.push({
+          taskId: id,
+          restore: {
+            status: (task?.status as TaskStatus) ?? "pending",
+            completedAt: task?.completedAt ?? null,
+          },
+          spawnedTaskId:
+            result && "data" in result
+              ? (result.data?.spawnedTaskId ?? undefined)
+              : undefined,
+        });
+      }
+      undo.push({
+        op: "complete",
+        label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
+        mutations,
+        timestamp: Date.now(),
+      });
     },
     onDelete: (ids) => {
+      const mutations = ids.map((id) => {
+        const task = filtered.find((t) => t.id === id);
+        return {
+          taskId: id,
+          restore: {
+            status: (task?.status as TaskStatus) ?? "pending",
+            completedAt: task?.completedAt ?? null,
+          },
+        };
+      });
+      undo.push({
+        op: "delete",
+        label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
+        mutations,
+        timestamp: Date.now(),
+      });
       for (const id of ids) deleteTaskAction(id);
       if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
     },
     onStatusChange: (ids, status) => {
+      const mutations = ids.map((id) => {
+        const task = filtered.find((t) => t.id === id);
+        return {
+          taskId: id,
+          restore: {
+            status: (task?.status as TaskStatus) ?? "pending",
+            completedAt: task?.completedAt ?? null,
+          },
+        };
+      });
+      undo.push({
+        op: "status-change",
+        label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
+        mutations,
+        timestamp: Date.now(),
+      });
       for (const id of ids) updateTaskAction(id, { status });
     },
     onCreate: () => window.dispatchEvent(new Event("open-create-task")),
@@ -99,6 +174,31 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
   useEffect(() => {
     if (cursor >= 0) nav.saveViewState("queue:cursor", cursor);
   }, [cursor, nav]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const taskId = (e as CustomEvent).detail?.taskId;
+      if (taskId != null) {
+        const task = filtered.find((t) => t.id === taskId) ?? null;
+        if (task) setSelectedTask(task);
+      }
+    };
+    window.addEventListener("open-task-detail", handler);
+    return () => window.removeEventListener("open-task-detail", handler);
+  }, [filtered]);
+
+  useEffect(() => {
+    const pendingId = nav.consumePendingTaskDetail();
+    if (pendingId != null) {
+      const task = filtered.find((t) => t.id === pendingId);
+      if (task) setSelectedTask(task);
+    }
+  }, [nav.consumePendingTaskDetail, filtered]);
+
+  useEffect(() => {
+    nav.registerScrollContainer(scrollRef.current);
+    return () => nav.registerScrollContainer(null);
+  }, [nav.registerScrollContainer]);
 
   const clearSearch = useCallback(() => {
     setSearchQuery("");
@@ -155,8 +255,8 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
   return (
     <div className="flex flex-col h-full">
       {searchActive && (
-        <div className="flex items-center gap-2 px-6 py-1.5 border-b border-border/60">
-          <span className="text-xs text-muted-foreground">/</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border">
+          <span className="text-xs text-primary font-bold">/</span>
           <Input
             ref={searchRef}
             value={searchQuery}
@@ -183,14 +283,10 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
         {filtered.length === 0 ? (
           <div className="h-full" />
         ) : (
-          <div className="divide-y divide-border/60">
+          <div>
             {filtered.map((task, i) => {
               const isCursor = i === cursor;
               const isSelected = selectedIds.has(task.id);
-
-              let bg = "hover:bg-accent/50";
-              if (isSelected) bg = "bg-primary/10";
-              else if (isCursor) bg = "bg-accent";
 
               return (
                 <div
@@ -198,21 +294,37 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                   ref={(el) => {
                     if (el) rowRefs.current.set(task.id, el);
                   }}
-                  className={`flex w-full items-center gap-3 pl-3 pr-6 py-2.5 cursor-pointer transition-colors text-left select-none ${bg}`}
+                  className={cn(
+                    "flex w-full items-center gap-2 pl-2 pr-4 py-1.5 cursor-pointer text-left select-none border-l-2",
+                    getRowClasses(isCursor, isSelected),
+                    getTaskDimming(task.status),
+                  )}
+                  style={{
+                    borderLeftColor:
+                      isCursor || isSelected
+                        ? undefined
+                        : (categoryColors[task.category ?? ""] ??
+                          "transparent"),
+                  }}
                   onClick={(e) => handleRowClick(task, i, e)}
                   onKeyDown={() => {}}
                   tabIndex={0}
                   role="row"
                 >
                   <span
-                    className={`text-xs text-right tabular-nums shrink-0 ${isCursor ? "text-cursor-line-nr" : "text-line-nr"}`}
+                    className={cn(
+                      "text-xs text-right tabular-nums shrink-0",
+                      isCursor
+                        ? "text-cursor-line-nr font-bold"
+                        : "text-line-nr",
+                    )}
                     style={{ minWidth: `${gutterWidth}ch` }}
                   >
                     {getLineNumber(i, cursor)}
                   </span>
                   <button
                     type="button"
-                    className={`w-16 text-xs shrink-0 text-left hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
+                    className={`w-4 text-xs shrink-0 text-center hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       const next = nextStatus(task.status as TaskStatus);
@@ -223,10 +335,16 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                       }
                     }}
                   >
-                    {STATUS_LABEL[task.status as TaskStatus]}
+                    {STATUS_SIGIL[task.status as TaskStatus]}
                   </button>
                   <span
-                    className={`flex-1 truncate text-sm ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}
+                    className={cn(
+                      "flex-1 truncate text-sm",
+                      task.status === "done" &&
+                        "line-through text-muted-foreground",
+                      task.status === "cancelled" &&
+                        "line-through text-muted-foreground",
+                    )}
                   >
                     {task.description}
                   </span>
@@ -238,13 +356,35 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
                     </span>
                   )}
                   {task.category && (
-                    <span className="w-24 truncate text-xs text-muted-foreground text-right shrink-0">
-                      # {task.category}
+                    <span className="max-w-[16ch] truncate text-xs text-right shrink-0">
+                      <span
+                        style={{
+                          color: categoryColors[task.category] ?? undefined,
+                        }}
+                        className="font-bold"
+                      >
+                        #
+                      </span>
+                      <span className="text-muted-foreground">
+                        {task.category}
+                      </span>
                     </span>
                   )}
                   {task.due && (
-                    <span className="w-20 text-xs text-muted-foreground text-right tabular-nums shrink-0">
-                      {formatDate(new Date(task.due))}
+                    <span
+                      className={cn(
+                        "w-[5ch] text-xs text-right tabular-nums shrink-0",
+                        isOverdue(task.due)
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {formatRelativeDate(new Date(task.due))}
+                    </span>
+                  )}
+                  {(task.priority ?? 0) > 0 && (
+                    <span className="w-[3ch] text-xs font-semibold text-primary text-right shrink-0">
+                      {"!".repeat(Math.min(task.priority ?? 0, 3))}
                     </span>
                   )}
                 </div>
@@ -256,7 +396,10 @@ export function QueueView({ tasks }: { tasks: RankedTask[] }) {
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
-        onClose={() => setSelectedTask(null)}
+        onClose={() => {
+          setSelectedTask(null);
+          nav.setTaskDetailOpen(null);
+        }}
         tasks={filtered}
         onSelectTask={(t) => setSelectedTask(t as RankedTask)}
       />

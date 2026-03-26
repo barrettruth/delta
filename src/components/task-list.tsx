@@ -26,6 +26,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { cursor } = useKeyboard({
     tasks,
@@ -55,6 +56,31 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
     }
   }, [cursor, tasks]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const taskId = (e as CustomEvent).detail?.taskId;
+      if (taskId != null) {
+        const task = tasks.find((t) => t.id === taskId) ?? null;
+        if (task) setSelectedTask(task);
+      }
+    };
+    window.addEventListener("open-task-detail", handler);
+    return () => window.removeEventListener("open-task-detail", handler);
+  }, [tasks]);
+
+  useEffect(() => {
+    const pendingId = nav.consumePendingTaskDetail();
+    if (pendingId != null) {
+      const task = tasks.find((t) => t.id === pendingId);
+      if (task) setSelectedTask(task);
+    }
+  }, [nav.consumePendingTaskDetail, tasks]);
+
+  useEffect(() => {
+    nav.registerScrollContainer(scrollRef.current);
+    return () => nav.registerScrollContainer(null);
+  }, [nav.registerScrollContainer]);
+
   async function handleToggle(task: Task) {
     if (task.status === "done") {
       await updateTaskAction(task.id, { status: "pending" });
@@ -65,7 +91,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollRef} className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
           <div className="h-full" />
         ) : (
@@ -118,7 +144,10 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
-        onClose={() => setSelectedTask(null)}
+        onClose={() => {
+          setSelectedTask(null);
+          nav.setTaskDetailOpen(null);
+        }}
       />
     </div>
   );

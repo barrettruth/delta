@@ -10,7 +10,7 @@ const STATUS_OPS: Record<string, TaskStatus> = {
   b: "blocked",
 };
 
-const OP_KEYS = new Set(["d", "p", "w", "b"]);
+const OP_KEYS = new Set(["d", "p", "w", "b", "x"]);
 
 interface KeyboardActions {
   tasks: Task[];
@@ -43,6 +43,34 @@ function targetIds(tasks: Task[], cursor: number, count: number): number[] {
   return ids;
 }
 
+function resolveMotion(
+  key: string,
+  cursor: number,
+  taskCount: number,
+  motionCount: number | null,
+  preCount: number,
+): [number, number] | null {
+  switch (key) {
+    case "j": {
+      const n = preCount * (motionCount ?? 1);
+      return [cursor, Math.min(cursor + n, taskCount - 1)];
+    }
+    case "k": {
+      const n = preCount * (motionCount ?? 1);
+      return [Math.max(cursor - n, 0), cursor];
+    }
+    case "G": {
+      const target =
+        motionCount != null
+          ? Math.min(motionCount - 1, taskCount - 1)
+          : taskCount - 1;
+      return [Math.min(cursor, target), Math.max(cursor, target)];
+    }
+    default:
+      return null;
+  }
+}
+
 export function useKeyboard(actions: KeyboardActions) {
   const [cursor, setCursor] = useState(-1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -50,9 +78,17 @@ export function useKeyboard(actions: KeyboardActions) {
   const visualAnchor = useRef(-1);
   const countBuf = useRef("");
   const pendingG = useRef<number | null | false>(false);
-  const pendingOp = useRef<{ key: string; count: number } | null>(null);
+  const pendingOp = useRef<{ key: string; preCount: number | null } | null>(
+    null,
+  );
+  const pendingOpMotionG = useRef<{
+    op: string;
+    preCount: number;
+    motionCount: number | null;
+  } | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opMotionGTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
 
@@ -80,6 +116,8 @@ export function useKeyboard(actions: KeyboardActions) {
     if (ids.length === 0) return;
     if (op === "d") {
       actionsRef.current.onDelete(ids);
+    } else if (op === "x") {
+      actionsRef.current.onComplete(ids);
     } else {
       const status = STATUS_OPS[op];
       if (status) actionsRef.current.onStatusChange(ids, status);
@@ -95,28 +133,111 @@ export function useKeyboard(actions: KeyboardActions) {
     return Number.parseInt(s, 10);
   }, []);
 
+  const consumeCountRaw = useCallback((): number | null => {
+    const s = countBuf.current;
+    countBuf.current = "";
+    if (!s) return null;
+    return Number.parseInt(s, 10);
+  }, []);
+
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
 
-      const { tasks, onComplete, onSelect, onDeselect, onCreate } =
-        actionsRef.current;
+      const { tasks, onSelect, onDeselect, onCreate } = actionsRef.current;
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
 
+      if (pendingOpMotionG.current && !isModifier) {
+        const { op, preCount, motionCount } = pendingOpMotionG.current;
+        pendingOpMotionG.current = null;
+        if (opMotionGTimer.current) {
+          clearTimeout(opMotionGTimer.current);
+          opMotionGTimer.current = null;
+        }
+        if (e.key === "g") {
+          e.preventDefault();
+          const target =
+            motionCount != null
+              ? Math.min(motionCount - 1, tasks.length - 1)
+              : 0;
+          const lo = Math.min(target, cursor);
+          const hi = Math.max(target, cursor);
+          const ids: number[] = [];
+          for (let i = lo; i <= hi && i < tasks.length; i++) {
+            if (i >= 0) ids.push(tasks[i].id);
+          }
+          if (ids.length > 0) applyOp(op, ids);
+        }
+        countBuf.current = "";
+        return;
+      }
+
       if (pendingOp.current && !isModifier) {
-        const { key: op, count } = pendingOp.current;
+        const { key: op, preCount } = pendingOp.current;
+
+        if (
+          (e.key >= "1" && e.key <= "9") ||
+          (e.key === "0" && countBuf.current.length > 0)
+        ) {
+          e.preventDefault();
+          countBuf.current += e.key;
+          if (opTimer.current) {
+            clearTimeout(opTimer.current);
+          }
+          opTimer.current = setTimeout(() => {
+            pendingOp.current = null;
+            opTimer.current = null;
+            countBuf.current = "";
+          }, 500);
+          return;
+        }
+
+        const motionCount = consumeCountRaw();
         pendingOp.current = null;
         if (opTimer.current) {
           clearTimeout(opTimer.current);
           opTimer.current = null;
         }
+
+        const pre = preCount ?? 1;
+
         if (e.key === op) {
           e.preventDefault();
           if (cursor >= 0 && cursor < tasks.length) {
-            applyOp(op, targetIds(tasks, cursor, count));
+            applyOp(op, targetIds(tasks, cursor, pre));
           }
+          return;
         }
-        countBuf.current = "";
+
+        if (e.key === "g") {
+          e.preventDefault();
+          pendingOpMotionG.current = { op, preCount: pre, motionCount };
+          opMotionGTimer.current = setTimeout(() => {
+            pendingOpMotionG.current = null;
+            opMotionGTimer.current = null;
+          }, 500);
+          return;
+        }
+
+        if (e.key === "G" || e.key === "j" || e.key === "k") {
+          e.preventDefault();
+          const range = resolveMotion(e.key, cursor, tasks.length, motionCount, pre);
+          if (range && cursor >= 0) {
+            const [lo, hi] = range;
+            const ids: number[] = [];
+            for (let i = lo; i <= hi && i < tasks.length; i++) {
+              if (i >= 0) ids.push(tasks[i].id);
+            }
+            if (ids.length > 0) applyOp(op, ids);
+          }
+          return;
+        }
+
+        if (e.key === "Escape") {
+          e.preventDefault();
+          return;
+        }
+
         return;
       }
 
@@ -186,7 +307,7 @@ export function useKeyboard(actions: KeyboardActions) {
         if (selectedIds.size > 0) {
           applyOp(e.key, [...selectedIds]);
         } else {
-          pendingOp.current = { key: e.key, count: n };
+          pendingOp.current = { key: e.key, preCount: count };
           opTimer.current = setTimeout(() => {
             pendingOp.current = null;
             opTimer.current = null;
@@ -227,18 +348,6 @@ export function useKeyboard(actions: KeyboardActions) {
           e.preventDefault();
           if (tasks.length === 0) break;
           setCursor((i) => Math.max(i - n, 0));
-          break;
-        }
-        case "x": {
-          e.preventDefault();
-          if (tasks.length === 0) break;
-          if (selectedIds.size > 0) {
-            onComplete([...selectedIds]);
-            setSelectedIds(new Set());
-            setVisualMode(false);
-          } else if (cursor >= 0 && cursor < tasks.length) {
-            onComplete(targetIds(tasks, cursor, n));
-          }
           break;
         }
         case "e": {
@@ -286,7 +395,7 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [cursor, selectedIds, visualMode, toggleSelect, applyOp, consumeCount],
+    [cursor, selectedIds, visualMode, toggleSelect, applyOp, consumeCount, consumeCountRaw],
   );
 
   useEffect(() => {
@@ -298,6 +407,7 @@ export function useKeyboard(actions: KeyboardActions) {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
       if (opTimer.current) clearTimeout(opTimer.current);
+      if (opMotionGTimer.current) clearTimeout(opMotionGTimer.current);
     };
   }, []);
 

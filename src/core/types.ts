@@ -32,6 +32,8 @@ export interface CreateTaskInput {
   recurMode?: RecurMode;
   notes?: string;
   order?: number;
+  location?: string;
+  meetingUrl?: string;
 }
 
 export interface UpdateTaskInput {
@@ -49,6 +51,8 @@ export interface UpdateTaskInput {
   recurMode?: RecurMode | null;
   notes?: string | null;
   order?: number;
+  location?: string | null;
+  meetingUrl?: string | null;
 }
 
 export interface TaskFilters {

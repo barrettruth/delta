@@ -57,6 +57,13 @@
       "when": 1774466138547,
       "tag": "0007_unknown_ulik",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1774555881868,
+      "tag": "0008_cute_george_stacy",
+      "breakpoints": true
     }
   ]
 }

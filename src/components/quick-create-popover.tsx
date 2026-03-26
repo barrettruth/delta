@@ -70,7 +70,10 @@ export function QuickCreatePopover({
             {preFill && (preFill.startAt || preFill.due) && (
               <div className="flex gap-2 text-[10px] text-muted-foreground">
                 {preFill.startAt && (
-                  <span>{formatTime(new Date(preFill.startAt))}</span>
+                  <span>
+                    {formatTime(new Date(preFill.startAt))}
+                    {preFill.endAt && `\u2013${formatTime(new Date(preFill.endAt))}`}
+                  </span>
                 )}
                 {preFill.allDay === 1 && <span>all day</span>}
               </div>

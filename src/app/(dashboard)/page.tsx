@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { QueueView } from "@/components/queue-view";
@@ -8,6 +9,7 @@ import { listTasks } from "@/core/task";
 import type { TaskFilters, TaskStatus } from "@/core/types";
 import { rankTasks } from "@/core/urgency";
 import { db } from "@/db";
+import { categoryColors } from "@/db/schema";
 
 const viewRoutes: Record<ViewType, string> = {
   queue: "/",
@@ -64,5 +66,13 @@ export default async function QueuePage({
 
   const tasks = listTasks(db, user.id, filters);
   const ranked = rankTasks(db, tasks, settings.urgencyWeights);
-  return <QueueView tasks={ranked} />;
+  const colors = Object.fromEntries(
+    db
+      .select()
+      .from(categoryColors)
+      .where(eq(categoryColors.userId, user.id))
+      .all()
+      .map((c) => [c.category, c.color]),
+  );
+  return <QueueView tasks={ranked} categoryColors={colors} />;
 }

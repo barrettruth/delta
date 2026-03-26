@@ -10,9 +10,9 @@ import {
   getTask,
   updateTask,
 } from "@/core/task";
-import type { CreateTaskInput, UpdateTaskInput } from "@/core/types";
+import type { CreateTaskInput, TaskStatus, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
-import { categoryColors } from "@/db/schema";
+import { categoryColors, tasks } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
 
 type ActionResult<T> = { data: T } | { error: string };
@@ -63,9 +63,9 @@ export async function completeTaskAction(
 ): Promise<ActionResult<ReturnType<typeof completeTask>>> {
   try {
     const { user } = await requireOwnedTask(id);
-    const task = completeTask(db, user.id, id);
+    const result = completeTask(db, user.id, id);
     revalidatePath("/");
-    return { data: task };
+    return { data: result };
   } catch (e) {
     return {
       error: e instanceof Error ? e.message : "Failed to complete task",
@@ -160,5 +160,61 @@ export async function removeDependencyAction(
     return {
       error: e instanceof Error ? e.message : "Failed to remove dependency",
     };
+  }
+}
+
+export async function undoTaskAction(
+  mutations: Array<{
+    taskId: number;
+    status: string;
+    completedAt: string | null;
+  }>,
+): Promise<ActionResult<null>> {
+  try {
+    await requireUser();
+    for (const m of mutations) {
+      db.update(tasks)
+        .set({
+          status: m.status as TaskStatus,
+          completedAt: m.completedAt,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(tasks.id, m.taskId))
+        .run();
+    }
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to undo" };
+  }
+}
+
+export async function undoCompleteTaskAction(
+  mutations: Array<{
+    taskId: number;
+    status: string;
+    completedAt: string | null;
+    spawnedTaskId?: number;
+  }>,
+): Promise<ActionResult<null>> {
+  try {
+    await requireUser();
+    for (const m of mutations) {
+      db.update(tasks)
+        .set({
+          status: m.status as TaskStatus,
+          completedAt: m.completedAt,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(tasks.id, m.taskId))
+        .run();
+      if (m.spawnedTaskId) {
+        db.delete(tasks).where(eq(tasks.id, m.spawnedTaskId)).run();
+      }
+    }
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to undo" };
   }
 }

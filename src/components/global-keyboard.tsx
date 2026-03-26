@@ -6,6 +6,8 @@ import { CreateTaskDrawer } from "@/components/create-task-drawer";
 import { KeymapHelp } from "@/components/keymap-help";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useNavigation } from "@/contexts/navigation";
+import { useUndo } from "@/contexts/undo";
+import type { Task } from "@/core/types";
 import { isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
@@ -18,15 +20,18 @@ const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 export function GlobalKeyboard({
   categories = [],
   defaultCategory,
+  tasks,
 }: {
   categories?: string[];
   defaultCategory?: string;
+  tasks?: Task[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toggleSidebar } = useSidebar();
   const { pushJump, jumpBack, jumpForward, goAlternate } = useNavigation();
+  const { undo: performUndo } = useUndo();
   const [helpOpen, setHelpOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const pendingG = useRef(false);
@@ -139,6 +144,12 @@ export function GlobalKeyboard({
         return;
       }
 
+      if (e.key === "u" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        performUndo();
+        return;
+      }
+
       const viewRoute = VIEW_KEYS[e.key];
       if (viewRoute) {
         e.preventDefault();
@@ -157,6 +168,7 @@ export function GlobalKeyboard({
       jumpBack,
       jumpForward,
       goAlternate,
+      performUndo,
     ],
   );
 
@@ -210,6 +222,7 @@ export function GlobalKeyboard({
         defaultCategory={defaultCategory}
         defaultDue={createPreFill?.due}
         defaultDescription={createPreFill?.description}
+        tasks={tasks}
       />
     </>
   );

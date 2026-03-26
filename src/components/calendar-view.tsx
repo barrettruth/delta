@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { updateTaskAction } from "@/app/actions/tasks";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { QuickCreatePopover } from "@/components/quick-create-popover";
@@ -11,12 +12,14 @@ import type { Task } from "@/core/types";
 import {
   addDays,
   buildDayPreFill,
+  buildRangePreFill,
   buildSlotPreFill,
   DAY_NAMES,
   formatDateKey,
   formatMonthTitle,
   formatWeekRange,
   getWeekStart,
+  minuteToISOString,
   type QuickCreatePreFill,
   startOfMonth,
 } from "@/lib/calendar-utils";
@@ -51,6 +54,9 @@ export function CalendarView({
     anchor: Element | { getBoundingClientRect: () => DOMRect };
     preFill: QuickCreatePreFill;
   } | null>(null);
+  const [optimisticUpdates, setOptimisticUpdates] = useState<
+    Map<number, { startAt?: string; endAt?: string }>
+  >(new Map());
 
   useEffect(() => {
     const savedAnchor = nav.getViewState<string>("cal:anchor");
@@ -91,12 +97,14 @@ export function CalendarView({
     const map = new Map<string, Task[]>();
     for (const task of tasks) {
       if (!task.startAt || task.allDay === 1) continue;
-      const key = task.startAt.slice(0, 10);
+      const update = optimisticUpdates.get(task.id);
+      const merged = update ? { ...task, ...update } : task;
+      const key = (merged.startAt as string).slice(0, 10);
       if (!map.has(key)) map.set(key, []);
-      map.get(key)?.push(task);
+      map.get(key)?.push(merged);
     }
     return map;
-  }, [tasks]);
+  }, [tasks, optimisticUpdates]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
@@ -130,6 +138,87 @@ export function CalendarView({
       preFill: buildSlotPreFill(date, minuteOfDay),
     });
   }
+
+  const weekDays = useMemo(() => {
+    const result: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      result.push(addDays(weekAnchor, i));
+    }
+    return result;
+  }, [weekAnchor]);
+
+  const handleEventMove = useCallback(
+    (taskId: number, newStartMinStr: string, newEndMinStr: string | null) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !task.startAt) return;
+      const baseDate = new Date(task.startAt);
+      const newStartMin = Number.parseInt(newStartMinStr, 10);
+      const newStartAt = minuteToISOString(baseDate, newStartMin);
+      const newEndAt =
+        newEndMinStr !== null
+          ? minuteToISOString(baseDate, Number.parseInt(newEndMinStr, 10))
+          : null;
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(taskId, {
+          startAt: newStartAt,
+          ...(newEndAt !== null ? { endAt: newEndAt } : {}),
+        });
+        return next;
+      });
+      updateTaskAction(taskId, {
+        startAt: newStartAt,
+        endAt: newEndAt,
+      }).then(() => {
+        setOptimisticUpdates((prev) => {
+          const next = new Map(prev);
+          next.delete(taskId);
+          return next;
+        });
+      });
+    },
+    [tasks],
+  );
+
+  const handleEventResize = useCallback(
+    (taskId: number, newEndMinStr: string) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !task.startAt) return;
+      const baseDate = new Date(task.startAt);
+      const newEndMin = Number.parseInt(newEndMinStr, 10);
+      const newEndAt = minuteToISOString(baseDate, newEndMin);
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(taskId, { endAt: newEndAt });
+        return next;
+      });
+      updateTaskAction(taskId, { endAt: newEndAt }).then(() => {
+        setOptimisticUpdates((prev) => {
+          const next = new Map(prev);
+          next.delete(taskId);
+          return next;
+        });
+      });
+    },
+    [tasks],
+  );
+
+  const handleRangeCreate = useCallback(
+    (
+      dayIndex: number,
+      startMinute: number,
+      endMinute: number,
+      anchorRect: DOMRect,
+    ) => {
+      const date = weekDays[dayIndex];
+      if (!date) return;
+      setQuickCreate({
+        anchor: { getBoundingClientRect: () => anchorRect },
+        preFill: buildRangePreFill(date, startMinute, endMinute),
+      });
+    },
+    [weekDays],
+  );
 
   const prevWeek = useCallback(() => {
     setAnchor((d) => addDays(d ?? new Date(), -7));
@@ -404,6 +493,31 @@ export function CalendarView({
       );
   }, [selectedDate, viewMode]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const taskId = (e as CustomEvent).detail?.taskId;
+      if (taskId != null) {
+        const task = tasks.find((t) => t.id === taskId) ?? null;
+        if (task) setSelectedTask(task);
+      }
+    };
+    window.addEventListener("open-task-detail", handler);
+    return () => window.removeEventListener("open-task-detail", handler);
+  }, [tasks]);
+
+  useEffect(() => {
+    const pendingId = nav.consumePendingTaskDetail();
+    if (pendingId != null) {
+      const task = tasks.find((t) => t.id === pendingId);
+      if (task) setSelectedTask(task);
+    }
+  }, [nav.consumePendingTaskDetail, tasks]);
+
+  useEffect(() => {
+    nav.registerScrollContainer(weekScrollRef.current);
+    return () => nav.registerScrollContainer(null);
+  }, [nav.registerScrollContainer]);
+
   const headerTitle =
     viewMode === "week"
       ? formatWeekRange(weekAnchor)
@@ -429,6 +543,9 @@ export function CalendarView({
           categoryColors={categoryColors}
           selectedDate={selectedDate}
           scrollRef={weekScrollRef}
+          onEventMove={handleEventMove}
+          onEventResize={handleEventResize}
+          onRangeCreate={handleRangeCreate}
         />
       ) : (
         <MonthGrid
@@ -464,7 +581,10 @@ export function CalendarView({
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
-        onClose={() => setSelectedTask(null)}
+        onClose={() => {
+          setSelectedTask(null);
+          nav.setTaskDetailOpen(null);
+        }}
       />
     </div>
   );

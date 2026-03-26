@@ -10,6 +10,7 @@ import {
 import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
+import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
@@ -52,6 +53,7 @@ function groupByStatus(tasks: Task[]): Record<string, Task[]> {
 
 export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
+  const undo = useUndo();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
@@ -68,6 +70,88 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const pendingOp = useRef(false);
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countBuf = useRef("");
+
+  const kbDelete = useCallback(
+    (ids: number[]) => {
+      const mutations = ids.map((id) => {
+        const task = tasks.find((t) => t.id === id);
+        return {
+          taskId: id,
+          restore: {
+            status: (task?.status as TaskStatus) ?? "pending",
+            completedAt: task?.completedAt ?? null,
+          },
+        };
+      });
+      undo.push({
+        op: "delete",
+        label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
+        mutations,
+        timestamp: Date.now(),
+      });
+      for (const id of ids) deleteTaskAction(id);
+    },
+    [tasks, undo],
+  );
+
+  const kbComplete = useCallback(
+    async (ids: number[]) => {
+      const mutations = [];
+      for (const id of ids) {
+        const task = tasks.find((t) => t.id === id);
+        const result = await completeTaskAction(id);
+        mutations.push({
+          taskId: id,
+          restore: {
+            status: (task?.status as TaskStatus) ?? "pending",
+            completedAt: task?.completedAt ?? null,
+          },
+          spawnedTaskId:
+            result && "data" in result
+              ? (result.data?.spawnedTaskId ?? undefined)
+              : undefined,
+        });
+      }
+      undo.push({
+        op: "complete",
+        label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
+        mutations,
+        timestamp: Date.now(),
+      });
+    },
+    [tasks, undo],
+  );
+
+  const kbStatusChange = useCallback(
+    (ids: number[], status: TaskStatus) => {
+      const mutations = ids.map((id) => {
+        const task = tasks.find((t) => t.id === id);
+        return {
+          taskId: id,
+          restore: {
+            status: (task?.status as TaskStatus) ?? "pending",
+            completedAt: task?.completedAt ?? null,
+          },
+        };
+      });
+      undo.push({
+        op: "status-change",
+        label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
+        mutations,
+        timestamp: Date.now(),
+      });
+      for (const id of ids) updateTaskAction(id, { status });
+    },
+    [tasks, undo],
+  );
+
+  const kbMoveToStatus = useCallback(
+    (ids: number[], newStatus: TaskStatus) => {
+      if (newStatus === "done") kbComplete(ids);
+      else kbStatusChange(ids, newStatus);
+    },
+    [kbComplete, kbStatusChange],
+  );
 
   const filteredTasks = useMemo(() => {
     if (!searchQuery) return tasks;
@@ -109,13 +193,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         if (e.key === "d") {
           e.preventDefault();
           if (selectedIds.size > 0) {
-            for (const id of selectedIds) deleteTaskAction(id);
+            kbDelete([...selectedIds]);
             setSelectedIds(new Set());
             setVisualMode(false);
           } else if (kbActive) {
             const colTasks = getColTasks(colIdx);
             if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              deleteTaskAction(colTasks[rowIdx].id);
+              kbDelete([colTasks[rowIdx].id]);
             }
           }
         }
@@ -178,21 +262,15 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           const newColH = Math.max(colIdx - 1, 0);
           if (newColH === colIdx) break;
+          const newStatusH = columns[newColH].status;
           if (selectedIds.size > 0) {
-            const newStatus = columns[newColH].status;
-            for (const id of selectedIds) {
-              if (newStatus === "done") completeTaskAction(id);
-              else updateTaskAction(id, { status: newStatus });
-            }
+            kbMoveToStatus([...selectedIds], newStatusH);
             setSelectedIds(new Set());
             setVisualMode(false);
           } else {
             const colTasksH = getColTasks(colIdx);
             if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
-            const taskH = colTasksH[rowIdx];
-            const newStatus = columns[newColH].status;
-            if (newStatus === "done") completeTaskAction(taskH.id);
-            else updateTaskAction(taskH.id, { status: newStatus });
+            kbMoveToStatus([colTasksH[rowIdx].id], newStatusH);
           }
           setColIdx(newColH);
           setRowIdx(0);
@@ -202,21 +280,15 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           const newColL = Math.min(colIdx + 1, columns.length - 1);
           if (newColL === colIdx) break;
+          const newStatusL = columns[newColL].status;
           if (selectedIds.size > 0) {
-            const newStatus = columns[newColL].status;
-            for (const id of selectedIds) {
-              if (newStatus === "done") completeTaskAction(id);
-              else updateTaskAction(id, { status: newStatus });
-            }
+            kbMoveToStatus([...selectedIds], newStatusL);
             setSelectedIds(new Set());
             setVisualMode(false);
           } else {
             const colTasksL = getColTasks(colIdx);
             if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
-            const taskL = colTasksL[rowIdx];
-            const newStatus = columns[newColL].status;
-            if (newStatus === "done") completeTaskAction(taskL.id);
-            else updateTaskAction(taskL.id, { status: newStatus });
+            kbMoveToStatus([colTasksL[rowIdx].id], newStatusL);
           }
           setColIdx(newColL);
           setRowIdx(0);
@@ -267,18 +339,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           const newStatus = STATUS_FOR_KEY[e.key];
           if (!newStatus) break;
           if (selectedIds.size > 0) {
-            for (const id of selectedIds) {
-              if (newStatus === "done") completeTaskAction(id);
-              else updateTaskAction(id, { status: newStatus });
-            }
+            kbMoveToStatus([...selectedIds], newStatus);
             setSelectedIds(new Set());
             setVisualMode(false);
           } else {
             const colTasks = getColTasks(colIdx);
             if (colTasks.length === 0 || rowIdx >= colTasks.length) break;
-            const task = colTasks[rowIdx];
-            if (newStatus === "done") completeTaskAction(task.id);
-            else updateTaskAction(task.id, { status: newStatus });
+            kbMoveToStatus([colTasks[rowIdx].id], newStatus);
           }
           const targetCol = columns.findIndex((c) => c.status === newStatus);
           if (targetCol !== -1) {
@@ -335,7 +402,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         case "d": {
           e.preventDefault();
           if (selectedIds.size > 0) {
-            for (const id of selectedIds) deleteTaskAction(id);
+            kbDelete([...selectedIds]);
             setSelectedIds(new Set());
             setVisualMode(false);
           } else {
@@ -380,6 +447,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       selectedIds,
       searchActive,
       nav,
+      kbDelete,
+      kbMoveToStatus,
     ],
   );
 
@@ -387,6 +456,57 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handler]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const taskId = (e as CustomEvent).detail?.taskId;
+      if (taskId != null) {
+        const task = tasks.find((t) => t.id === taskId) ?? null;
+        if (task) setSelectedTask(task);
+      }
+    };
+    window.addEventListener("open-task-detail", handler);
+    return () => window.removeEventListener("open-task-detail", handler);
+  }, [tasks]);
+
+  useEffect(() => {
+    const pendingId = nav.consumePendingTaskDetail();
+    if (pendingId != null) {
+      const task = tasks.find((t) => t.id === pendingId);
+      if (task) setSelectedTask(task);
+    }
+  }, [nav.consumePendingTaskDetail, tasks]);
+
+  useEffect(() => {
+    const saved = nav.getViewState<{
+      colIdx: number;
+      rowIdx: number;
+      kbActive: boolean;
+    }>("kanban:cursor");
+    if (saved && typeof saved === "object") {
+      setColIdx(saved.colIdx);
+      setRowIdx(saved.rowIdx);
+      setKbActive(saved.kbActive);
+    }
+  }, [nav.getViewState]);
+
+  useEffect(() => {
+    if (kbActive) {
+      nav.saveViewState("kanban:cursor", { colIdx, rowIdx, kbActive });
+    }
+  }, [colIdx, rowIdx, kbActive, nav]);
+
+  useEffect(() => {
+    const saved = nav.getViewState<string>("kanban:search");
+    if (typeof saved === "string") {
+      setSearchQuery(saved);
+      setSearchActive(true);
+    }
+  }, [nav.getViewState]);
+
+  useEffect(() => {
+    nav.saveViewState("kanban:search", searchQuery || undefined);
+  }, [searchQuery, nav]);
 
   async function handleDrop(taskId: number, newStatus: TaskStatus) {
     if (newStatus === "done") {
@@ -543,7 +663,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       <TaskDetail
         task={selectedTask}
         open={selectedTask !== null}
-        onClose={() => setSelectedTask(null)}
+        onClose={() => {
+          setSelectedTask(null);
+          nav.setTaskDetailOpen(null);
+        }}
       />
     </div>
   );

@@ -53,6 +53,8 @@ export const tasks = sqliteTable("tasks", {
   allDay: integer("all_day").default(0),
   timezone: text("timezone"),
   completedAt: text("completed_at"),
+  location: text("location"),
+  meetingUrl: text("meeting_url"),
 });
 
 export const taskDependencies = sqliteTable(

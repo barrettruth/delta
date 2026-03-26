@@ -146,6 +146,34 @@ export function buildSlotPreFill(
   };
 }
 
+export function snapMinuteTo15(minute: number): number {
+  return Math.max(0, Math.min(1425, Math.round(minute / 15) * 15));
+}
+
+export function minuteToISOString(baseDate: Date, minuteOfDay: number): string {
+  const d = new Date(baseDate);
+  d.setHours(Math.floor(minuteOfDay / 60), minuteOfDay % 60, 0, 0);
+  return d.toISOString();
+}
+
+export function buildRangePreFill(
+  date: Date,
+  startMinute: number,
+  endMinute: number,
+): QuickCreatePreFill {
+  const start = new Date(date);
+  start.setHours(Math.floor(startMinute / 60), startMinute % 60, 0, 0);
+  const end = new Date(date);
+  end.setHours(Math.floor(endMinute / 60), endMinute % 60, 0, 0);
+  return {
+    startAt: start.toISOString(),
+    endAt: end.toISOString(),
+    due: start.toISOString(),
+    allDay: 0,
+    timezone: getUserTimezone(),
+  };
+}
+
 export function buildDayPreFill(date: Date): QuickCreatePreFill {
   const noon = new Date(
     date.getFullYear(),

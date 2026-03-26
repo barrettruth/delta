@@ -38,6 +38,8 @@ export function createTask(
       recurMode: input.recurMode ?? null,
       notes: input.notes ?? null,
       order: input.order ?? 0,
+      location: input.location ?? null,
+      meetingUrl: input.meetingUrl ?? null,
       createdAt: ts,
       updatedAt: ts,
     })
@@ -130,15 +132,23 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
     .get();
 }
 
-export function completeTask(db: Db, userId: number, id: number): Task {
+export function completeTask(
+  db: Db,
+  userId: number,
+  id: number,
+): { task: Task; spawnedTaskId: number | null } {
   const task = updateTask(db, id, { status: "done" });
 
+  let spawnedTaskId: number | null = null;
   const nextData = getNextTaskData(task);
-  if (nextData) createTask(db, userId, nextData);
+  if (nextData) {
+    const spawned = createTask(db, userId, nextData);
+    spawnedTaskId = spawned.id;
+  }
 
   updateBlockedStatus(db, id);
 
-  return task;
+  return { task, spawnedTaskId };
 }
 
 export function deleteTask(db: Db, id: number): Task {

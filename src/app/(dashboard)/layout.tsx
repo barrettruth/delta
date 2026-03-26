@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { GlobalKeyboard } from "@/components/global-keyboard";
-import { KeyboardHints } from "@/components/keyboard-hints";
+import { MessageBar } from "@/components/keyboard-hints";
 import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
@@ -49,11 +49,12 @@ export default async function DashboardLayout({
           <main className="flex-1 overflow-hidden bg-background">
             {children}
           </main>
-          <KeyboardHints />
+          <MessageBar />
         </SidebarInset>
         <GlobalKeyboard
           categories={categories}
           defaultCategory={settings.defaultCategory}
+          tasks={allTasks}
         />
       </NavigationWrapper>
     </Suspense>

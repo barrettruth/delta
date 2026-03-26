@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { EventBlock } from "@/components/calendar/event-block";
 import type { Task } from "@/core/types";
+import { useTimeGridInteraction } from "@/hooks/use-time-grid-interaction";
 import {
   addDays,
   DAY_NAMES,
@@ -73,6 +74,9 @@ export function WeekTimeGrid({
   categoryColors,
   selectedDate,
   scrollRef: externalScrollRef,
+  onEventMove,
+  onEventResize,
+  onRangeCreate,
 }: {
   weekStart: Date;
   today: Date;
@@ -86,6 +90,9 @@ export function WeekTimeGrid({
   categoryColors: Record<string, string>;
   selectedDate: Date | null;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  onEventMove?: (taskId: number, newStartAt: string, newEndAt: string | null) => void;
+  onEventResize?: (taskId: number, newEndAt: string) => void;
+  onRangeCreate?: (dayIndex: number, startMinute: number, endMinute: number, anchor: DOMRect) => void;
 }) {
   const internalRef = useRef<HTMLDivElement>(null);
   const scrollRef = externalScrollRef || internalRef;
@@ -142,6 +149,43 @@ export function WeekTimeGrid({
 
   const todayKey = formatDateKey(today);
 
+  const tasksRef = useRef(timedTasksByDate);
+  tasksRef.current = timedTasksByDate;
+
+  const interaction = useTimeGridInteraction({
+    onSlotClick: (dayIndex, minuteOfDay) => {
+      const date = days[dayIndex];
+      if (!date) return;
+      const pxPerMin = HOUR_HEIGHT / 60;
+      const columnEls = document.querySelectorAll("[data-day-column]");
+      const columnEl = columnEls[dayIndex];
+      const rect = columnEl?.getBoundingClientRect();
+      const cx = rect ? rect.left + rect.width / 2 : 0;
+      const cy = rect ? rect.top + minuteOfDay * pxPerMin - (scrollRef.current?.scrollTop ?? 0) : 0;
+      onSlotClick(date, minuteOfDay, {
+        getBoundingClientRect: () => new DOMRect(cx, cy, 0, 0),
+      });
+    },
+    onEventClick: (taskId) => {
+      for (const [, taskList] of tasksRef.current) {
+        const task = taskList.find((t) => t.id === taskId);
+        if (task) {
+          onTaskClick(task);
+          return;
+        }
+      }
+    },
+    onEventMove: (taskId, newStartAt, newEndAt) => {
+      onEventMove?.(taskId, newStartAt, newEndAt);
+    },
+    onEventResize: (taskId, newEndAt) => {
+      onEventResize?.(taskId, newEndAt);
+    },
+    onRangeCreate: (dayIndex, startMinute, endMinute, anchor) => {
+      onRangeCreate?.(dayIndex, startMinute, endMinute, anchor);
+    },
+  });
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <div
@@ -171,7 +215,7 @@ export function WeekTimeGrid({
         })}
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-auto relative">
+      <div ref={scrollRef} data-time-grid-scroll="" className="flex-1 overflow-auto relative">
         <div
           className="grid"
           style={{
@@ -201,23 +245,13 @@ export function WeekTimeGrid({
             return (
               <div
                 key={key}
-                className="relative border-l border-border/30 cursor-pointer"
+                data-day-column={dayIdx}
+                className="relative border-l border-border/30 cursor-pointer touch-none"
                 style={{ height: `${totalHeight}px` }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={() => {}}
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const y =
-                    e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
-                  const minutes = Math.floor((y / HOUR_HEIGHT) * 60);
-                  const snapped = Math.round(minutes / 15) * 15;
-                  const cx = e.clientX;
-                  const cy = e.clientY;
-                  onSlotClick(date, snapped, {
-                    getBoundingClientRect: () => new DOMRect(cx, cy, 0, 0),
-                  });
-                }}
+                {...interaction.gridProps}
               >
                 {HOURS.map((h) => (
                   <div
@@ -229,6 +263,18 @@ export function WeekTimeGrid({
                     }}
                   />
                 ))}
+
+                {HOURS.map((h) =>
+                  [1, 2, 3].map((q) => (
+                    <div
+                      key={`sub-${h}-${q}`}
+                      className="absolute left-0 right-0 border-t border-border/10 pointer-events-none"
+                      style={{
+                        top: `${h * HOUR_HEIGHT + q * (HOUR_HEIGHT / 4)}px`,
+                      }}
+                    />
+                  )),
+                )}
 
                 {isCursorDay && selectedHour >= 0 && (
                   <div
@@ -261,8 +307,22 @@ export function WeekTimeGrid({
                     onClick={(t) => {
                       onTaskClick(t);
                     }}
+                    isDragging={interaction.draggingTaskId === task.id}
                   />
                 ))}
+
+                {interaction.previewStyle && interaction.previewStyle.dayIndex === dayIdx && (
+                  <div
+                    className="absolute left-1 right-1 border border-dashed border-primary z-20 pointer-events-none"
+                    style={{
+                      top: `${interaction.previewStyle.top}px`,
+                      height: `${interaction.previewStyle.height}px`,
+                      backgroundColor: interaction.mode === "creating"
+                        ? "hsl(var(--primary) / 0.1)"
+                        : "hsl(var(--primary) / 0.4)",
+                    }}
+                  />
+                )}
               </div>
             );
           })}

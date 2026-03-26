@@ -236,7 +236,7 @@ describe("updateTask", () => {
 describe("completeTask", () => {
   it("sets status to done with completedAt", () => {
     const task = createTask(db, userId, { description: "Test" });
-    const completed = completeTask(db, userId, task.id);
+    const { task: completed } = completeTask(db, userId, task.id);
     expect(completed.status).toBe("done");
     expect(completed.completedAt).toBeTruthy();
   });

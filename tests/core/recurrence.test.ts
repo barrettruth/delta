@@ -80,6 +80,8 @@ describe("getNextTaskData", () => {
     createdAt: "2026-03-22T08:00:00.000Z",
     updatedAt: "2026-03-22T15:00:00.000Z",
     completedAt: "2026-03-22T15:00:00.000Z",
+    location: null,
+    meetingUrl: null,
   };
 
   it("returns null for non-recurring task", () => {
