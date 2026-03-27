@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EventBlock } from "@/components/calendar/event-block";
 import type { Task } from "@/core/types";
 import { useTimeGridInteraction } from "@/hooks/use-time-grid-interaction";
@@ -112,7 +112,7 @@ export function WeekTimeGrid({
     const now = new Date();
     const scrollTo = Math.max(0, (now.getHours() - 1) * HOUR_HEIGHT);
     scrollRef.current.scrollTop = scrollTo;
-  }, [scrollRef.current]);
+  }, []);
 
   const selectedDayIndex = useMemo(() => {
     if (!selectedDate) return -1;
@@ -136,18 +136,34 @@ export function WeekTimeGrid({
     } else if (cursorBottom > viewBottom) {
       container.scrollTop = cursorBottom - container.clientHeight;
     }
-  }, [selectedHour, scrollRef]);
+  }, [selectedHour]);
 
   useEffect(() => {
     scrollCursorIntoView();
   }, [scrollCursorIntoView]);
 
-  const nowMinutes = useMemo(() => {
-    const now = new Date();
-    return getMinutesFromMidnight(now);
+  const [nowMinutes, setNowMinutes] = useState(() =>
+    getMinutesFromMidnight(new Date()),
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNowMinutes(getMinutesFromMidnight(new Date()));
+    }, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   const todayKey = formatDateKey(today);
+
+  const layoutsByDate = useMemo(() => {
+    const map = new Map<string, ColumnLayout[]>();
+    for (const day of days) {
+      const key = formatDateKey(day);
+      const tasks = timedTasksByDate.get(key) ?? [];
+      map.set(key, computeOverlapLayout(tasks));
+    }
+    return map;
+  }, [timedTasksByDate, days]);
 
   const tasksRef = useRef(timedTasksByDate);
   tasksRef.current = timedTasksByDate;
@@ -237,8 +253,7 @@ export function WeekTimeGrid({
 
           {days.map((date, dayIdx) => {
             const key = formatDateKey(date);
-            const tasks = timedTasksByDate.get(key) ?? [];
-            const layout = computeOverlapLayout(tasks);
+            const layout = layoutsByDate.get(key) ?? [];
             const isToday = key === todayKey;
             const isCursorDay = dayIdx === selectedDayIndex;
 
