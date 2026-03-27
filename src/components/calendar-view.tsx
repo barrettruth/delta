@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { updateTaskAction } from "@/app/actions/tasks";
+import { AllDayBar } from "@/components/calendar/all-day-bar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { useNavigation } from "@/contexts/navigation";
@@ -38,6 +39,7 @@ export function CalendarView({
 }) {
   const nav = useNavigation();
   const panel = useTaskPanel();
+  const { pendingEdits } = panel;
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [anchor, setAnchor] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -48,6 +50,7 @@ export function CalendarView({
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
+  const [allDayExpanded, setAllDayExpanded] = useState(false);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, { startAt?: string; endAt?: string }>
   >(new Map());
@@ -92,13 +95,19 @@ export function CalendarView({
     for (const task of tasks) {
       if (!task.startAt || task.allDay === 1) continue;
       const update = optimisticUpdates.get(task.id);
-      const merged = update ? { ...task, ...update } : task;
+      const pending = pendingEdits.get(task.id);
+      const merged =
+        update || pending ? { ...task, ...pending, ...update } : task;
       const key = (merged.startAt as string).slice(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(merged);
     }
     return map;
-  }, [tasks, optimisticUpdates]);
+  }, [tasks, optimisticUpdates, pendingEdits]);
+
+  const allDayTasks = useMemo(() => {
+    return tasks.filter((t) => t.allDay === 1 && t.startAt);
+  }, [tasks]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
@@ -134,10 +143,17 @@ export function CalendarView({
   }, [weekAnchor]);
 
   const handleEventMove = useCallback(
-    (taskId: number, newStartMinStr: string, newEndMinStr: string | null) => {
+    (
+      taskId: number,
+      newStartMinStr: string,
+      newEndMinStr: string | null,
+      dayIndex?: number,
+    ) => {
       const task = tasks.find((t) => t.id === taskId);
       if (!task || !task.startAt) return;
-      const baseDate = new Date(task.startAt);
+      const baseDate =
+        dayIndex !== undefined ? weekDays[dayIndex] : new Date(task.startAt);
+      if (!baseDate) return;
       const newStartMin = Number.parseInt(newStartMinStr, 10);
       const newStartAt = minuteToISOString(baseDate, newStartMin);
       const newEndAt =
@@ -163,7 +179,7 @@ export function CalendarView({
         });
       });
     },
-    [tasks],
+    [tasks, weekDays],
   );
 
   const handleEventResize = useCallback(
@@ -384,6 +400,11 @@ export function CalendarView({
         }
         return;
       }
+      if (e.key === "E" && viewMode === "week") {
+        e.preventDefault();
+        setAllDayExpanded((prev) => !prev);
+        return;
+      }
       if (e.key === "e" && selectedDate) {
         e.preventDefault();
         nav.pushJump();
@@ -509,6 +530,19 @@ export function CalendarView({
         <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
       </div>
 
+      {viewMode === "week" && allDayTasks.length > 0 && (
+        <AllDayBar
+          weekStart={weekAnchor}
+          allDayTasks={allDayTasks}
+          expanded={allDayExpanded}
+          categoryColors={categoryColors}
+          onTaskClick={(task) => {
+            nav.pushJump();
+            panel.toggle(task.id);
+          }}
+        />
+      )}
+
       {viewMode === "week" ? (
         <WeekTimeGrid
           weekStart={weekAnchor}
@@ -517,7 +551,7 @@ export function CalendarView({
           onSlotClick={handleSlotClick}
           onTaskClick={(task) => {
             nav.pushJump();
-            panel.open(task.id);
+            panel.toggle(task.id);
           }}
           categoryColors={categoryColors}
           selectedDate={selectedDate}
@@ -534,7 +568,7 @@ export function CalendarView({
           onDayClick={handleDayClick}
           onTaskClick={(task) => {
             nav.pushJump();
-            panel.open(task.id);
+            panel.toggle(task.id);
           }}
           dayNames={DAY_NAMES}
           categoryColors={categoryColors}

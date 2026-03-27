@@ -20,6 +20,7 @@ import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
+import { usePhotonSearch } from "@/hooks/use-photon-search";
 import { formatTime } from "@/lib/calendar-utils";
 import { detectMeetingPlatform, formatDate } from "@/lib/utils";
 
@@ -31,17 +32,18 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   cancelled: "Cancelled",
 };
 
-const PRIORITY_LABELS: Record<string, string> = {
-  "0": "\u2014",
-  "1": "!",
-  "2": "!!",
-  "3": "!!!",
-};
-
 export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const nav = useNavigation();
-  const { isOpen, mode, taskId, preFill, width } = panel;
+  const {
+    isOpen,
+    mode,
+    taskId,
+    preFill,
+    width,
+    setPendingEdit,
+    clearPendingEdit,
+  } = panel;
 
   const task = useMemo(
     () => (taskId ? (tasks.find((t) => t.id === taskId) ?? null) : null),
@@ -53,7 +55,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [label, setLabel] = useState("");
-  const [priority, setPriority] = useState("0");
   const [due, setDue] = useState("");
   const [location, setLocation] = useState("");
   const [meetingUrl, setMeetingUrl] = useState("");
@@ -67,7 +68,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     description: "",
     category: "",
     label: "",
-    priority: "0",
     due: "",
     location: "",
     meetingUrl: "",
@@ -78,12 +78,38 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     description,
     category,
     label,
-    priority,
     due,
     location,
     meetingUrl,
     notes: notesRef.current,
   };
+
+  useEffect(() => {
+    if (mode === "edit" && taskId) {
+      setPendingEdit(taskId, {
+        description,
+        category: category || null,
+        label: label || null,
+        location: location || null,
+        meetingUrl: meetingUrl || null,
+      } as Partial<Task>);
+    }
+  }, [
+    mode,
+    taskId,
+    description,
+    category,
+    label,
+    location,
+    meetingUrl,
+    setPendingEdit,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (taskId) clearPendingEdit(taskId);
+    };
+  }, [taskId, clearPendingEdit]);
 
   const allCategories = useMemo(() => {
     const cats = new Set<string>();
@@ -122,13 +148,14 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     [meetingUrl],
   );
 
+  const { results: photonResults } = usePhotonSearch(location);
+
   const saveTask = useCallback(async (id: number) => {
     const f = formDataRef.current;
     await updateTaskAction(id, {
       description: f.description,
       category: f.category || null,
       label: f.label || null,
-      priority: Number(f.priority),
       due: f.due ? new Date(f.due).toISOString() : null,
       notes: f.notes || null,
       location: f.location || null,
@@ -148,7 +175,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setDescription(t.description);
       setCategory(t.category ?? "");
       setLabel(t.label ?? "");
-      setPriority(String(t.priority ?? 0));
       setDue(t.due ? t.due.slice(0, 16) : "");
       setLocation(t.location ?? "");
       setMeetingUrl(t.meetingUrl ?? "");
@@ -157,7 +183,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setDescription("");
       setCategory(preFill?.category ?? "");
       setLabel("");
-      setPriority("0");
       setDue(preFill?.startAt ? preFill.startAt.slice(0, 16) : "");
       setLocation("");
       setMeetingUrl("");
@@ -196,7 +221,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     const result = await createTaskAction({
       description: trimmed,
       category: category || undefined,
-      priority: Number(priority) || undefined,
       due: due ? new Date(due).toISOString() : undefined,
       notes: notesRef.current || undefined,
       location: location || undefined,
@@ -210,16 +234,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     if ("data" in result && result.data) {
       panel.open(result.data.id);
     }
-  }, [
-    description,
-    category,
-    priority,
-    due,
-    location,
-    meetingUrl,
-    preFill,
-    panel,
-  ]);
+  }, [description, category, due, location, meetingUrl, preFill, panel]);
 
   async function handleStatusChange(status: string) {
     if (!task) return;
@@ -303,95 +318,103 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         )}
 
         <div className="flex flex-col gap-2 px-4 pb-3 border-b border-border/40">
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-            <span className="text-xs text-muted-foreground">status</span>
-            {mode === "edit" && task ? (
-              <Select
-                value={task.status}
-                onValueChange={(v) => v && handleStatusChange(v)}
-              >
-                <SelectTrigger size="sm" className="h-7 w-full">
-                  <SelectValue>
-                    {STATUS_LABELS[task.status as TaskStatus]}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false}>
-                  {TASK_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_LABELS[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <span className="text-xs text-muted-foreground/50">pending</span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-            <span className="text-xs text-muted-foreground">category</span>
-            <div className="relative">
-              <Input
-                value={category}
-                onChange={(e) => {
-                  setCategory(e.target.value);
-                  setShowCategorySuggestions(true);
-                }}
-                onFocus={() => setShowCategorySuggestions(true)}
-                onBlur={() =>
-                  setTimeout(() => setShowCategorySuggestions(false), 150)
-                }
-                placeholder="#"
-                className="h-7 text-xs"
-              />
-              {showCategorySuggestions && filteredCategories.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
-                  {filteredCategories.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setCategory(c);
-                        setShowCategorySuggestions(false);
-                      }}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
+          <div className="flex gap-3">
+            <div className="flex-[2] min-w-0">
+              <span className="text-xs text-muted-foreground block mb-1">
+                status
+              </span>
+              {mode === "edit" && task ? (
+                <Select
+                  value={task.status}
+                  onValueChange={(v) => v && handleStatusChange(v)}
+                >
+                  <SelectTrigger size="sm" className="h-7 w-full">
+                    <SelectValue>
+                      {STATUS_LABELS[task.status as TaskStatus]}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    {TASK_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <span className="text-xs text-muted-foreground/50 leading-7">
+                  pending
+                </span>
               )}
+            </div>
+            <div className="flex-[3] min-w-0">
+              <span className="text-xs text-muted-foreground block mb-1">
+                category
+              </span>
+              <div className="relative">
+                <Input
+                  value={category}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    setShowCategorySuggestions(true);
+                  }}
+                  onFocus={() => setShowCategorySuggestions(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowCategorySuggestions(false), 150)
+                  }
+                  placeholder="#"
+                  className="h-7 text-xs"
+                />
+                {showCategorySuggestions && filteredCategories.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                    {filteredCategories.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setCategory(c);
+                          setShowCategorySuggestions(false);
+                        }}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-            <span className="text-xs text-muted-foreground">priority</span>
-            <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
-              <SelectTrigger size="sm" className="h-7 w-full">
-                <SelectValue>{PRIORITY_LABELS[priority]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectItem value="0">{"\u2014"} None</SelectItem>
-                <SelectItem value="1">! Low</SelectItem>
-                <SelectItem value="2">!! Medium</SelectItem>
-                <SelectItem value="3">!!! High</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              <span className="text-xs text-muted-foreground block mb-1">
+                due
+              </span>
+              <Input
+                type="datetime-local"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                className="h-7 text-xs"
+              />
+            </div>
+            {mode === "edit" && task?.createdAt && (
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-muted-foreground block mb-1">
+                  created
+                </span>
+                <span className="text-xs text-muted-foreground/60 tabular-nums leading-7 block">
+                  {formatDate(new Date(task.createdAt))}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-            <span className="text-xs text-muted-foreground">due</span>
-            <Input
-              type="datetime-local"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              className="h-7 text-xs"
-            />
-          </div>
-
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-            <span className="text-xs text-muted-foreground">location</span>
+          <div>
+            <span className="text-xs text-muted-foreground block mb-1">
+              location
+            </span>
             <div className="relative">
               <Input
                 value={location}
@@ -411,29 +434,50 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 }
                 className="h-7 text-xs"
               />
-              {showLocationSuggestions && filteredLocations.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
-                  {filteredLocations.map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setLocation(l);
-                        setShowLocationSuggestions(false);
-                      }}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {showLocationSuggestions &&
+                (filteredLocations.length > 0 || photonResults.length > 0) && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                    {filteredLocations.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setLocation(l);
+                          setShowLocationSuggestions(false);
+                        }}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                    {filteredLocations.length > 0 &&
+                      photonResults.length > 0 && (
+                        <div className="border-t border-border/40 my-1" />
+                      )}
+                    {photonResults.map((r) => (
+                      <button
+                        key={`${r.lat}-${r.lon}`}
+                        type="button"
+                        className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setLocation(r.displayName);
+                          setShowLocationSuggestions(false);
+                        }}
+                      >
+                        {r.displayName}
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
 
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-            <span className="text-xs text-muted-foreground">meeting</span>
+          <div>
+            <span className="text-xs text-muted-foreground block mb-1">
+              meeting
+            </span>
             <div className="flex items-center gap-1">
               <Input
                 value={meetingUrl}
@@ -453,15 +497,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
               )}
             </div>
           </div>
-
-          {mode === "edit" && task?.createdAt && (
-            <div className="grid grid-cols-[5rem_1fr] items-center gap-x-2">
-              <span className="text-xs text-muted-foreground">created</span>
-              <span className="text-xs text-muted-foreground/60 tabular-nums">
-                {formatDate(new Date(task.createdAt))}
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto px-4 pt-3 pb-4">

@@ -45,10 +45,9 @@ describe("updateSettings", () => {
 
   it("updates urgency weights partially", () => {
     const updated = updateSettings(db, userId, {
-      urgencyWeights: { ...DEFAULT_SETTINGS.urgencyWeights, priority: 10 },
+      urgencyWeights: { ...DEFAULT_SETTINGS.urgencyWeights, due: 10 },
     });
-    expect(updated.urgencyWeights.priority).toBe(10);
-    expect(updated.urgencyWeights.due).toBe(12);
+    expect(updated.urgencyWeights.due).toBe(10);
     expect(updated.urgencyWeights.age).toBe(2);
     expect(updated.urgencyWeights.wip).toBe(4);
     expect(updated.urgencyWeights.blocking).toBe(8);
@@ -73,7 +72,6 @@ describe("updateSettings", () => {
 
   it("replaces all urgency weights at once", () => {
     const customWeights = {
-      priority: 1,
       due: 2,
       age: 3,
       wip: 5,
@@ -87,12 +85,12 @@ describe("updateSettings", () => {
 
   it("preserves defaults for missing urgency weight keys in stored JSON", () => {
     updateSettings(db, userId, {
-      urgencyWeights: { ...DEFAULT_SETTINGS.urgencyWeights, priority: 99 },
+      urgencyWeights: { ...DEFAULT_SETTINGS.urgencyWeights, due: 99 },
     });
     const fetched = getSettings(db, userId);
-    expect(fetched.urgencyWeights.priority).toBe(99);
-    expect(fetched.urgencyWeights.due).toBe(
-      DEFAULT_SETTINGS.urgencyWeights.due,
+    expect(fetched.urgencyWeights.due).toBe(99);
+    expect(fetched.urgencyWeights.age).toBe(
+      DEFAULT_SETTINGS.urgencyWeights.age,
     );
   });
 });

@@ -28,7 +28,6 @@ export function createTask(
       status: input.status ?? "pending",
       category: input.category ?? "Todo",
       label: input.label ?? null,
-      priority: input.priority ?? 0,
       startAt: input.startAt ?? null,
       endAt: input.endAt ?? null,
       allDay: input.allDay ?? 0,
@@ -53,8 +52,6 @@ export function getTask(db: Db, id: number): Task | undefined {
 
 function getSortColumn(sortBy: string | undefined) {
   switch (sortBy) {
-    case "priority":
-      return tasks.priority;
     case "due":
       return tasks.due;
     case "order":
@@ -93,10 +90,6 @@ export function listTasks(
 
   if (filters?.dueAfter) {
     conditions.push(gte(tasks.due, filters.dueAfter));
-  }
-
-  if (filters?.minPriority !== undefined) {
-    conditions.push(gte(tasks.priority, filters.minPriority));
   }
 
   const where = and(...conditions);

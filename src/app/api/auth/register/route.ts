@@ -32,6 +32,26 @@ export async function POST(request: Request) {
     );
   }
 
+  if (
+    typeof username !== "string" ||
+    typeof password !== "string" ||
+    username.length < 1 ||
+    username.length > 50 ||
+    password.length > 128
+  ) {
+    return NextResponse.json(
+      { error: "Invalid input length" },
+      { status: 400 },
+    );
+  }
+
+  if (password.length < 8) {
+    return NextResponse.json(
+      { error: "Password must be at least 8 characters" },
+      { status: 400 },
+    );
+  }
+
   if (!inviteCode) {
     return NextResponse.json(
       { error: "Invite code required" },

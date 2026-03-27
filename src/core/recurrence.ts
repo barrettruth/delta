@@ -58,7 +58,6 @@ export function getNextTaskData(task: Task): CreateTaskInput | null {
     description: task.description,
     category: task.category ?? undefined,
     label: task.label ?? undefined,
-    priority: task.priority ?? undefined,
     due: nextDue.toISOString(),
     startAt,
     endAt,

@@ -21,7 +21,7 @@ export default async function KanbanPage({
   const settings = getSettings(db, user.id);
 
   const filters: TaskFilters = {
-    sortBy: "priority",
+    sortBy: "order",
     sortOrder: "desc",
   };
 

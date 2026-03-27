@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { Task } from "@/core/types";
 import type { QuickCreatePreFill } from "@/lib/calendar-utils";
 
 type PanelMode = "edit" | "create";
@@ -17,11 +18,14 @@ interface TaskPanelContextValue {
   taskId: number | null;
   preFill: QuickCreatePreFill | null;
   width: number;
+  pendingEdits: Map<number, Partial<Task>>;
   open: (taskId: number) => void;
   create: (preFill?: QuickCreatePreFill) => void;
   close: () => void;
   toggle: (taskId: number) => void;
   setWidth: (w: number) => void;
+  setPendingEdit: (taskId: number, fields: Partial<Task>) => void;
+  clearPendingEdit: (taskId: number) => void;
 }
 
 const TaskPanelContext = createContext<TaskPanelContextValue | null>(null);
@@ -36,6 +40,10 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<PanelMode>("edit");
   const [taskId, setTaskId] = useState<number | null>(null);
   const [preFill, setPreFill] = useState<QuickCreatePreFill | null>(null);
+  const [pendingEdits, setPendingEdits] = useState<Map<number, Partial<Task>>>(
+    () => new Map(),
+  );
+
   const [width, setWidthState] = useState(() => {
     if (typeof window === "undefined") return DEFAULT_WIDTH;
     try {
@@ -68,6 +76,14 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const close = useCallback(() => {
+    const id = taskIdRef.current;
+    if (id !== null) {
+      setPendingEdits((prev) => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+    }
     setIsOpen(false);
     setTaskId(null);
     setPreFill(null);
@@ -92,6 +108,22 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  const setPendingEdit = useCallback((id: number, fields: Partial<Task>) => {
+    setPendingEdits((prev) => {
+      const next = new Map(prev);
+      next.set(id, { ...(prev.get(id) ?? {}), ...fields });
+      return next;
+    });
+  }, []);
+
+  const clearPendingEdit = useCallback((id: number) => {
+    setPendingEdits((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   return (
     <TaskPanelContext.Provider
       value={{
@@ -100,11 +132,14 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
         taskId,
         preFill,
         width,
+        pendingEdits,
         open,
         create,
         close,
         toggle,
         setWidth,
+        setPendingEdit,
+        clearPendingEdit,
       }}
     >
       {children}

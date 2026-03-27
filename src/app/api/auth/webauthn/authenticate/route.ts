@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createSession } from "@/core/auth";
 import { generateAuthentication, verifyAndAuthenticate } from "@/core/webauthn";
 import { db } from "@/db";
+import { isRateLimited, recordAttempt } from "@/lib/rate-limit";
 
 export async function GET() {
   const options = await generateAuthentication(db);
@@ -20,6 +21,20 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many attempts. Try again later." },
+      { status: 429 },
+    );
+  }
+
+  recordAttempt(ip);
+
   const cookieStore = await cookies();
   const challenge = cookieStore.get("webauthn_challenge")?.value;
   cookieStore.delete("webauthn_challenge");

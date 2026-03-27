@@ -67,7 +67,6 @@ describe("getNextTaskData", () => {
     status: "done",
     category: "Work",
     label: null,
-    priority: 2,
     startAt: null,
     endAt: null,
     allDay: 0,
@@ -97,7 +96,6 @@ describe("getNextTaskData", () => {
     expect(data).not.toBeNull();
     expect(data?.description).toBe("Weekly review");
     expect(data?.category).toBe("Work");
-    expect(data?.priority).toBe(2);
     expect(data?.recurrence).toBe("FREQ=WEEKLY");
     expect(data?.recurMode).toBe("scheduled");
     expect(data?.notes).toBe("Check PRs");

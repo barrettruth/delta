@@ -24,7 +24,6 @@ describe("task lifecycle", () => {
     const task = createTask(db, userId, {
       description: "Write tests",
       category: "Dev",
-      priority: 2,
       due: "2026-04-01T09:00:00.000Z",
     });
 
@@ -37,10 +36,8 @@ describe("task lifecycle", () => {
 
     const updated = updateTask(db, task.id, {
       description: "Write integration tests",
-      priority: 3,
     });
     expect(updated.description).toBe("Write integration tests");
-    expect(updated.priority).toBe(3);
     expect(updated.updatedAt).not.toBe(task.updatedAt);
 
     const { task: completed } = completeTask(db, userId, task.id);
@@ -125,28 +122,24 @@ describe("listing filters", () => {
       description: "Work task",
       status: "pending",
       category: "Work",
-      priority: 3,
       due: "2026-04-01T00:00:00.000Z",
     });
     createTask(db, userId, {
       description: "Personal task",
       status: "done",
       category: "Personal",
-      priority: 1,
       due: "2026-03-15T00:00:00.000Z",
     });
     createTask(db, userId, {
       description: "Urgent work",
       status: "wip",
       category: "Work",
-      priority: 5,
       due: "2026-03-20T00:00:00.000Z",
     });
     createTask(db, userId, {
       description: "Low prio",
       status: "pending",
       category: "Personal",
-      priority: 0,
     });
   });
 
@@ -179,12 +172,6 @@ describe("listing filters", () => {
     expect(range[0].description).toBe("Urgent work");
   });
 
-  it("filters by minimum priority", () => {
-    const highPrio = listTasks(db, userId, { minPriority: 3 });
-    expect(highPrio).toHaveLength(2);
-    expect(highPrio.every((t) => (t.priority ?? 0) >= 3)).toBe(true);
-  });
-
   it("combines status and category filters", () => {
     const result = listTasks(db, userId, {
       status: "pending",
@@ -192,15 +179,6 @@ describe("listing filters", () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].description).toBe("Low prio");
-  });
-
-  it("sorts by priority descending", () => {
-    const sorted = listTasks(db, userId, {
-      sortBy: "priority",
-      sortOrder: "desc",
-    });
-    expect(sorted[0].priority).toBe(5);
-    expect(sorted[sorted.length - 1].priority).toBe(0);
   });
 
   it("sorts by due ascending", () => {
@@ -225,7 +203,6 @@ describe("recurring task completion", () => {
       recurrence: "FREQ=WEEKLY",
       recurMode: "scheduled",
       category: "Work",
-      priority: 2,
     });
 
     completeTask(db, userId, 1);
@@ -242,7 +219,6 @@ describe("recurring task completion", () => {
     expect(spawned?.recurrence).toBe("FREQ=WEEKLY");
     expect(spawned?.recurMode).toBe("scheduled");
     expect(spawned?.category).toBe("Work");
-    expect(spawned?.priority).toBe(2);
     expect(new Date(spawned?.due ?? "").getTime()).toBeGreaterThan(
       new Date("2026-03-22T09:00:00.000Z").getTime(),
     );

@@ -22,7 +22,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: "pending",
     category: "Todo",
     label: null,
-    priority: 0,
     startAt: null,
     endAt: null,
     allDay: 0,
@@ -48,14 +47,6 @@ describe("computeUrgency", () => {
 
   it("returns 0 for cancelled tasks", () => {
     expect(computeUrgency(makeTask({ status: "cancelled" }), 0, false)).toBe(0);
-  });
-
-  it("increases with priority", () => {
-    const low = computeUrgency(makeTask({ priority: 1 }), 0, false);
-    const mid = computeUrgency(makeTask({ priority: 2 }), 0, false);
-    const high = computeUrgency(makeTask({ priority: 3 }), 0, false);
-    expect(high).toBeGreaterThan(mid);
-    expect(mid).toBeGreaterThan(low);
   });
 
   it("overdue tasks score higher than future tasks", () => {
@@ -87,10 +78,9 @@ describe("computeUrgency", () => {
     expect(normal).toBeGreaterThan(blocked);
   });
 
-  it("returns a near-zero score for a brand-new task with no due date and no priority", () => {
+  it("returns a near-zero score for a brand-new task with no due date", () => {
     const score = computeUrgency(
       makeTask({
-        priority: 0,
         due: null,
         createdAt: new Date().toISOString(),
       }),
@@ -106,7 +96,6 @@ describe("computeUrgency", () => {
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 2);
     const score = computeUrgency(
       makeTask({
-        priority: 0,
         due: null,
         createdAt: oneYearAgo.toISOString(),
       }),
@@ -114,11 +103,6 @@ describe("computeUrgency", () => {
       false,
     );
     expect(score).toBeCloseTo(2.0, 1);
-  });
-
-  it("blocked penalty dominates even with high priority", () => {
-    const score = computeUrgency(makeTask({ priority: 3 }), 0, true);
-    expect(score).toBeLessThan(0);
   });
 });
 
@@ -129,14 +113,13 @@ describe("rankTasks", () => {
   });
 
   it("sorts tasks by urgency descending", () => {
-    createTask(db, userId, { description: "Low", priority: 0 });
+    createTask(db, userId, { description: "Low" });
     createTask(db, userId, {
       description: "Urgent",
-      priority: 3,
       due: daysFromNow(1),
       status: "wip",
     });
-    createTask(db, userId, { description: "Medium", priority: 2 });
+    createTask(db, userId, { description: "Medium", due: daysFromNow(5) });
 
     const tasks = listTasks(db, userId);
     const ranked = rankTasks(db, tasks);
@@ -148,7 +131,7 @@ describe("rankTasks", () => {
   });
 
   it("excludes done and cancelled tasks", () => {
-    createTask(db, userId, { description: "Active", priority: 1 });
+    createTask(db, userId, { description: "Active" });
     const done = createTask(db, userId, { description: "Done" });
     updateTask(db, done.id, { status: "done" });
 
@@ -161,11 +144,9 @@ describe("rankTasks", () => {
   it("accounts for blocking relationships", () => {
     const blocker = createTask(db, userId, {
       description: "Blocker",
-      priority: 1,
     });
     const dependent = createTask(db, userId, {
       description: "Dependent",
-      priority: 1,
     });
     addDependency(db, dependent.id, blocker.id);
 

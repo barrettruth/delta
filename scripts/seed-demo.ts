@@ -31,7 +31,7 @@ function daysFromNow(n: number): string {
 const taxes = createTask(db, userId, {
   description: "File 2025 federal tax return",
   category: "Life Admin",
-  priority: 3,
+
   due: daysFromNow(14),
   status: "wip",
 });
@@ -39,7 +39,7 @@ const taxes = createTask(db, userId, {
 const stateReturn = createTask(db, userId, {
   description: "File TX + NY state tax returns",
   category: "Life Admin",
-  priority: 2,
+
   due: daysFromNow(14),
 });
 addDependency(db, stateReturn.id, taxes.id);
@@ -47,35 +47,35 @@ addDependency(db, stateReturn.id, taxes.id);
 createTask(db, userId, {
   description: "Submit Roth IRA contribution for 2025",
   category: "Life Admin",
-  priority: 2,
+
   due: daysFromNow(21),
 });
 
 createTask(db, userId, {
   description: "Review health insurance options for IMC",
   category: "Life Admin",
-  priority: 1,
+
   due: daysFromNow(60),
 });
 
 const canolaRefactor = createTask(db, userId, {
   description: "Refactor canola.nvim highlight module",
   category: "Open Source",
-  priority: 2,
+
   status: "wip",
 });
 
 createTask(db, userId, {
   description: "Fix diagnostic range off-by-one in canola.nvim",
   category: "Open Source",
-  priority: 3,
+
   due: daysFromNow(3),
 });
 
 const canolaDocs = createTask(db, userId, {
   description: "Write canola.nvim migration guide from oil.nvim",
   category: "Open Source",
-  priority: 1,
+
   due: daysFromNow(10),
 });
 addDependency(db, canolaDocs.id, canolaRefactor.id);
@@ -83,7 +83,7 @@ addDependency(db, canolaDocs.id, canolaRefactor.id);
 createTask(db, userId, {
   description: "Triage pending.nvim issues",
   category: "Open Source",
-  priority: 1,
+
   due: daysFromNow(7),
   recurrence: "FREQ=WEEKLY;BYDAY=SU",
   recurMode: "scheduled",
@@ -92,7 +92,7 @@ createTask(db, userId, {
 createTask(db, userId, {
   description: "Review open PRs on GitHub repos",
   category: "Open Source",
-  priority: 2,
+
   due: daysFromNow(1),
   recurrence: "FREQ=DAILY",
   recurMode: "completion",
@@ -101,7 +101,7 @@ createTask(db, userId, {
 const _cs3120hw = createTask(db, userId, {
   description: "CS 3120: Homework 6 — NP-completeness proofs",
   category: "School",
-  priority: 3,
+
   due: daysFromNow(5),
   status: "wip",
 });
@@ -109,56 +109,56 @@ const _cs3120hw = createTask(db, userId, {
 createTask(db, userId, {
   description: "CS 3120: Study for midterm 2",
   category: "School",
-  priority: 2,
+
   due: daysFromNow(12),
 });
 
 createTask(db, userId, {
   description: "MATH 3354: Problem set 8 — ring homomorphisms",
   category: "School",
-  priority: 2,
+
   due: daysFromNow(4),
 });
 
 createTask(db, userId, {
   description: "PSYC 2410: Read Chapter 12 — Social Cognition",
   category: "School",
-  priority: 1,
+
   due: daysFromNow(6),
 });
 
 createTask(db, userId, {
   description: "Prepare IMC onboarding documents",
   category: "Career",
-  priority: 1,
+
   due: daysFromNow(90),
 });
 
 createTask(db, userId, {
   description: "Set up Chicago apartment search alerts",
   category: "Career",
-  priority: 2,
+
   due: daysFromNow(30),
 });
 
 createTask(db, userId, {
   description: "Send thank-you note to Ramp manager",
   category: "Career",
-  priority: 1,
+
   due: daysFromNow(2),
 });
 
 const lektraBuild = createTask(db, userId, {
   description: "Fix lektra build on NixOS 24.11",
   category: "Open Source",
-  priority: 2,
+
   status: "wip",
 });
 
 const lektraRelease = createTask(db, userId, {
   description: "Tag lektra v2.0 release",
   category: "Open Source",
-  priority: 1,
+
   due: daysFromNow(14),
 });
 addDependency(db, lektraRelease.id, lektraBuild.id);
@@ -166,7 +166,7 @@ addDependency(db, lektraRelease.id, lektraBuild.id);
 createTask(db, userId, {
   description: "Weekly grocery run",
   category: "Todo",
-  priority: 0,
+
   due: daysFromNow(2),
   recurrence: "FREQ=WEEKLY;BYDAY=SA",
   recurMode: "scheduled",
@@ -175,7 +175,7 @@ createTask(db, userId, {
 createTask(db, userId, {
   description: "Clean apartment",
   category: "Todo",
-  priority: 0,
+
   due: daysFromNow(3),
   recurrence: "FREQ=WEEKLY;BYDAY=SU",
   recurMode: "completion",
@@ -184,7 +184,7 @@ createTask(db, userId, {
 createTask(db, userId, {
   description: "Back up NixOS config to Forgejo",
   category: "Todo",
-  priority: 1,
+
   due: daysFromNow(1),
   recurrence: "FREQ=MONTHLY;BYMONTHDAY=1",
   recurMode: "scheduled",
@@ -193,28 +193,25 @@ createTask(db, userId, {
 const completedOld = createTask(db, userId, {
   description: "Set up delta deploy pipeline",
   category: "Open Source",
-  priority: 2,
 });
 updateTask(db, completedOld.id, { status: "done" });
 
 const completedOld2 = createTask(db, userId, {
   description: "Write delta Drizzle schema",
   category: "Open Source",
-  priority: 2,
 });
 updateTask(db, completedOld2.id, { status: "done" });
 
 const completedOld3 = createTask(db, userId, {
   description: "Submit DRW expense report",
   category: "Career",
-  priority: 1,
 });
 updateTask(db, completedOld3.id, { status: "done" });
 
 createTask(db, userId, {
   description: "Update barrettruth.com portfolio with delta",
   category: "Career",
-  priority: 1,
+
   due: daysFromNow(20),
   notes: JSON.stringify({
     type: "doc",
@@ -271,7 +268,7 @@ createTask(db, userId, {
 createTask(db, userId, {
   description: "Investigate vikunja as delta alternative",
   category: "Todo",
-  priority: 0,
+
   status: "cancelled",
 });
 

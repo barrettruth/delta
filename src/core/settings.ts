@@ -3,7 +3,6 @@ import { userSettings } from "@/db/schema";
 import type { Db } from "./types";
 
 export interface UrgencyWeights {
-  priority: number;
   due: number;
   age: number;
   wip: number;
@@ -23,7 +22,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   defaultView: "list",
   showCompletedTasks: true,
   urgencyWeights: {
-    priority: 6,
     due: 12,
     age: 2,
     wip: 4,

@@ -26,7 +26,6 @@ describe("createTask", () => {
     expect(task.description).toBe("Buy groceries");
     expect(task.status).toBe("pending");
     expect(task.category).toBe("Todo");
-    expect(task.priority).toBe(0);
     expect(task.due).toBeNull();
     expect(task.recurrence).toBeNull();
     expect(task.notes).toBeNull();
@@ -41,7 +40,6 @@ describe("createTask", () => {
       description: "Review PR",
       status: "wip",
       category: "Open Source",
-      priority: 3,
       due: "2026-04-01T09:00:00.000Z",
       recurrence: "FREQ=WEEKLY;BYDAY=MO",
       recurMode: "scheduled",
@@ -51,7 +49,6 @@ describe("createTask", () => {
     expect(task.description).toBe("Review PR");
     expect(task.status).toBe("wip");
     expect(task.category).toBe("Open Source");
-    expect(task.priority).toBe(3);
     expect(task.due).toBe("2026-04-01T09:00:00.000Z");
     expect(task.recurrence).toBe("FREQ=WEEKLY;BYDAY=MO");
     expect(task.recurMode).toBe("scheduled");
@@ -84,21 +81,18 @@ describe("listTasks", () => {
       description: "A",
       status: "pending",
       category: "Work",
-      priority: 1,
       due: "2026-04-01T00:00:00.000Z",
     });
     createTask(db, userId, {
       description: "B",
       status: "done",
       category: "Personal",
-      priority: 3,
       due: "2026-03-15T00:00:00.000Z",
     });
     createTask(db, userId, {
       description: "C",
       status: "pending",
       category: "Work",
-      priority: 2,
       due: "2026-05-01T00:00:00.000Z",
     });
   });
@@ -137,21 +131,6 @@ describe("listTasks", () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].description).toBe("A");
-  });
-
-  it("filters by minimum priority", () => {
-    const result = listTasks(db, userId, { minPriority: 2 });
-    expect(result).toHaveLength(2);
-  });
-
-  it("sorts by priority descending", () => {
-    const result = listTasks(db, userId, {
-      sortBy: "priority",
-      sortOrder: "desc",
-    });
-    expect(result[0].priority).toBe(3);
-    expect(result[1].priority).toBe(2);
-    expect(result[2].priority).toBe(1);
   });
 
   it("sorts by due date ascending", () => {
@@ -224,12 +203,6 @@ describe("updateTask", () => {
     const task = createTask(db, userId, { description: "Original" });
     const updated = updateTask(db, task.id, { description: "" });
     expect(updated.description).toBe("");
-  });
-
-  it("accepts negative priority via updateTask", () => {
-    const task = createTask(db, userId, { description: "Test" });
-    const updated = updateTask(db, task.id, { priority: -1 });
-    expect(updated.priority).toBe(-1);
   });
 });
 
