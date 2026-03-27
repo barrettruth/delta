@@ -66,6 +66,13 @@ function resolveMotion(
           : taskCount - 1;
       return [Math.min(cursor, target), Math.max(cursor, target)];
     }
+    case "gg": {
+      const target =
+        motionCount != null
+          ? Math.min(motionCount - 1, taskCount - 1)
+          : 0;
+      return [Math.min(cursor, target), Math.max(cursor, target)];
+    }
     default:
       return null;
   }
