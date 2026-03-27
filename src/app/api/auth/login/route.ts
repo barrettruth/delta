@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createSession, verifyPassword } from "@/core/auth";
+import { createSession, userExists, verifyPassword } from "@/core/auth";
 import { db } from "@/db";
 import { isRateLimited, recordAttempt } from "@/lib/rate-limit";
 
@@ -28,6 +28,10 @@ export async function POST(request: Request) {
   }
 
   recordAttempt(ip);
+
+  if (!userExists(db, username)) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const user = verifyPassword(db, username, password);
   if (!user) {

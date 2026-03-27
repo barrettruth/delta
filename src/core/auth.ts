@@ -45,6 +45,10 @@ export function createUser(
   return toSafeUser(user);
 }
 
+export function userExists(db: Db, username: string): boolean {
+  return !!db.select().from(users).where(eq(users.username, username)).get();
+}
+
 export function verifyPassword(
   db: Db,
   username: string,
