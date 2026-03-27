@@ -280,7 +280,10 @@ export function QueueView({
       )}
       <div ref={scrollRef} className="flex-1 overflow-auto">
         {filtered.length === 0 ? (
-          <div className="h-full" />
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <span className="text-4xl font-light mb-2">&delta;</span>
+            <span className="text-sm">no tasks in queue</span>
+          </div>
         ) : (
           <div>
             {filtered.map((task, i) => {
@@ -356,14 +359,7 @@ export function QueueView({
                   )}
                   {task.category && (
                     <span className="max-w-[16ch] truncate text-xs text-right shrink-0">
-                      <span
-                        style={{
-                          color: categoryColors[task.category] ?? undefined,
-                        }}
-                        className="font-bold"
-                      >
-                        #
-                      </span>
+                      <span className="font-bold text-foreground">#</span>
                       <span className="text-muted-foreground">
                         {task.category}
                       </span>
@@ -379,11 +375,6 @@ export function QueueView({
                       )}
                     >
                       {formatRelativeDate(new Date(task.due))}
-                    </span>
-                  )}
-                  {(task.priority ?? 0) > 0 && (
-                    <span className="w-[3ch] text-xs font-semibold text-primary text-right shrink-0">
-                      {"!".repeat(Math.min(task.priority ?? 0, 3))}
                     </span>
                   )}
                 </div>

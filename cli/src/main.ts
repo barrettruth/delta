@@ -13,11 +13,11 @@ function printHelp(): void {
   const text = `delta - task manager CLI
 
 Usage:
-  delta add "description" [--category Cat] [--priority N] [--due "${new Date().getFullYear()}-04-01"]
+  delta add "description" [--category Cat] [--due "${new Date().getFullYear()}-04-01"]
   delta list [--status pending,wip] [--category Work]
   delta done <id>
   delta delete <id>
-  delta update <id> [--description "..."] [--status wip] [--priority N]
+  delta update <id> [--description "..."] [--status wip]
   delta me
 
 Environment:
@@ -49,7 +49,6 @@ async function handleAdd(args: string[]): Promise<void> {
   const flags = parseFlags(args.slice(args.indexOf(description) + 1));
   const input: CreateTaskInput = { description };
   if (flags.category) input.category = flags.category;
-  if (flags.priority) input.priority = Number(flags.priority);
   if (flags.due) input.due = flags.due;
 
   const task = await createTask(input);
@@ -96,7 +95,6 @@ async function handleUpdate(args: string[]): Promise<void> {
   const input: UpdateTaskInput = {};
   if (flags.description) input.description = flags.description;
   if (flags.status) input.status = flags.status as UpdateTaskInput["status"];
-  if (flags.priority) input.priority = Number(flags.priority);
   if (flags.due) input.due = flags.due;
   if (flags.category) input.category = flags.category;
 

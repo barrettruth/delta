@@ -28,9 +28,6 @@ export async function GET(request: Request) {
   const dueAfter = searchParams.get("due_after");
   if (dueAfter) filters.dueAfter = dueAfter;
 
-  const minPriority = searchParams.get("min_priority");
-  if (minPriority) filters.minPriority = Number(minPriority);
-
   const sortBy = searchParams.get("sort_by");
   if (sortBy) filters.sortBy = sortBy as TaskFilters["sortBy"];
 

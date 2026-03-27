@@ -64,20 +64,6 @@ export function validateCreateTask(
     }
   }
 
-  if (b.priority !== undefined) {
-    if (
-      typeof b.priority !== "number" ||
-      !Number.isInteger(b.priority) ||
-      b.priority < 0 ||
-      b.priority > 3
-    ) {
-      errors.push({
-        field: "priority",
-        message: "priority must be an integer between 0 and 3",
-      });
-    }
-  }
-
   if (b.due !== undefined && b.due !== null) {
     if (typeof b.due !== "string" || !isValidIsoDate(b.due)) {
       errors.push({
@@ -169,7 +155,6 @@ export function validateCreateTask(
   };
 
   if (b.status !== undefined) data.status = b.status as TaskStatus;
-  if (b.priority !== undefined) data.priority = b.priority as number;
   if (b.due !== undefined && b.due !== null) data.due = b.due as string;
   if (b.notes !== undefined && b.notes !== null) {
     data.notes = sanitize(String(b.notes));
@@ -227,20 +212,6 @@ export function validateUpdateTask(
       errors.push({
         field: "status",
         message: `status must be one of: ${TASK_STATUSES.join(", ")}`,
-      });
-    }
-  }
-
-  if (b.priority !== undefined) {
-    if (
-      typeof b.priority !== "number" ||
-      !Number.isInteger(b.priority) ||
-      b.priority < 0 ||
-      b.priority > 3
-    ) {
-      errors.push({
-        field: "priority",
-        message: "priority must be an integer between 0 and 3",
       });
     }
   }
@@ -337,7 +308,6 @@ export function validateUpdateTask(
     data.description = sanitize((b.description as string).trim());
   }
   if (b.status !== undefined) data.status = b.status as TaskStatus;
-  if (b.priority !== undefined) data.priority = b.priority as number;
   if (b.due !== undefined) data.due = b.due as string | null;
   if (b.notes !== undefined) {
     data.notes = b.notes === null ? null : sanitize(String(b.notes));

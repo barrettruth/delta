@@ -9,13 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Task } from "@/core/types";
 
-const PRIORITIES = [
-  { value: "0", indicator: "\u2014" },
-  { value: "1", indicator: "!" },
-  { value: "2", indicator: "!!" },
-  { value: "3", indicator: "!!!" },
-];
-
 export function CreateTaskDrawer({
   open,
   onOpenChange,
@@ -36,7 +29,6 @@ export function CreateTaskDrawer({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(defaultCategory);
   const [label, setLabel] = useState("");
-  const [priority, setPriority] = useState("0");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
   const [location, setLocation] = useState("");
@@ -84,7 +76,6 @@ export function CreateTaskDrawer({
       description: description.trim(),
       category,
       label: label.trim() || undefined,
-      priority: Number(priority),
       due: dueDate
         ? new Date(`${dueDate}T${dueTime || "12:00"}:00`).toISOString()
         : undefined,
@@ -99,7 +90,6 @@ export function CreateTaskDrawer({
     setDescription("");
     setCategory(defaultCategory);
     setLabel("");
-    setPriority("0");
     setDueDate("");
     setDueTime("");
     setLocation("");
@@ -130,7 +120,7 @@ export function CreateTaskDrawer({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What needs to be done?"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="flex flex-col gap-1.5 relative">
                 <Label
                   htmlFor="drawer-category"
@@ -180,27 +170,6 @@ export function CreateTaskDrawer({
                   onChange={(e) => setLabel(e.target.value)}
                   placeholder="e.g. RUTR 2730"
                 />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Priority
-                </Label>
-                <div className="flex gap-1">
-                  {PRIORITIES.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      className={`flex-1 h-8 text-xs font-medium transition-colors border ${
-                        priority === p.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-transparent text-muted-foreground border-border hover:bg-accent"
-                      }`}
-                      onClick={() => setPriority(p.value)}
-                    >
-                      {p.indicator}
-                    </button>
-                  ))}
-                </div>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label

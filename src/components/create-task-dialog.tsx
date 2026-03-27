@@ -13,13 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const PRIORITIES = [
-  { value: "0", label: "None", indicator: "" },
-  { value: "1", label: "Low", indicator: "!" },
-  { value: "2", label: "Medium", indicator: "!!" },
-  { value: "3", label: "High", indicator: "!!!" },
-];
-
 export function CreateTaskDialog({
   open,
   onOpenChange,
@@ -35,7 +28,6 @@ export function CreateTaskDialog({
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(defaultCategory);
-  const [priority, setPriority] = useState("0");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
   const [showCategories, setShowCategories] = useState(false);
@@ -62,7 +54,6 @@ export function CreateTaskDialog({
     const result = await createTaskAction({
       description: description.trim(),
       category,
-      priority: Number(priority),
       due: dueDate
         ? new Date(`${dueDate}T${dueTime || "12:00"}:00`).toISOString()
         : undefined,
@@ -75,7 +66,6 @@ export function CreateTaskDialog({
 
     setDescription("");
     setCategory(defaultCategory);
-    setPriority("0");
     setDueDate("");
     setDueTime("");
     onOpenChange(false);
@@ -130,25 +120,6 @@ export function CreateTaskDialog({
                   ))}
                 </div>
               )}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Priority</Label>
-              <div className="flex gap-1">
-                {PRIORITIES.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    className={`flex-1 h-9 text-xs font-medium transition-colors border ${
-                      priority === p.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-transparent text-muted-foreground border-border hover:bg-accent"
-                    }`}
-                    onClick={() => setPriority(p.value)}
-                  >
-                    {p.indicator || "—"}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

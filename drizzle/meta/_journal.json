@@ -85,6 +85,13 @@
       "when": 1774632776156,
       "tag": "0011_sparkling_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1774651406107,
+      "tag": "0012_dusty_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

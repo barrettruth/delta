@@ -54,12 +54,10 @@ describe("validateCreateTask", () => {
     const result = validateCreateTask({
       description: "Buy groceries",
       status: "pending",
-      priority: 2,
       due: "2026-04-01T09:00:00.000Z",
     });
     expect(result.success).toBe(true);
     expect(result.data?.description).toBe("Buy groceries");
-    expect(result.data?.priority).toBe(2);
   });
 
   it("accepts minimal valid task", () => {
@@ -69,7 +67,7 @@ describe("validateCreateTask", () => {
   });
 
   it("rejects missing description", () => {
-    const result = validateCreateTask({ priority: 1 });
+    const result = validateCreateTask({ status: "pending" });
     expect(result.success).toBe(false);
     expect(result.errors?.some((e) => e.field === "description")).toBe(true);
   });
@@ -93,33 +91,6 @@ describe("validateCreateTask", () => {
     });
     expect(result.success).toBe(false);
     expect(result.errors?.some((e) => e.field === "status")).toBe(true);
-  });
-
-  it("rejects priority out of range", () => {
-    const result = validateCreateTask({
-      description: "Test",
-      priority: 5,
-    });
-    expect(result.success).toBe(false);
-    expect(result.errors?.some((e) => e.field === "priority")).toBe(true);
-  });
-
-  it("rejects negative priority", () => {
-    const result = validateCreateTask({
-      description: "Test",
-      priority: -1,
-    });
-    expect(result.success).toBe(false);
-    expect(result.errors?.some((e) => e.field === "priority")).toBe(true);
-  });
-
-  it("rejects non-integer priority", () => {
-    const result = validateCreateTask({
-      description: "Test",
-      priority: 1.5,
-    });
-    expect(result.success).toBe(false);
-    expect(result.errors?.some((e) => e.field === "priority")).toBe(true);
   });
 
   it("rejects invalid due date", () => {
@@ -171,10 +142,9 @@ describe("validateCreateTask", () => {
     const result = validateCreateTask({
       description: "",
       status: "invalid",
-      priority: 10,
     });
     expect(result.success).toBe(false);
-    expect(result.errors?.length).toBeGreaterThanOrEqual(3);
+    expect(result.errors?.length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -182,11 +152,9 @@ describe("validateUpdateTask", () => {
   it("accepts a valid partial update", () => {
     const result = validateUpdateTask({
       description: "Updated",
-      priority: 1,
     });
     expect(result.success).toBe(true);
     expect(result.data?.description).toBe("Updated");
-    expect(result.data?.priority).toBe(1);
   });
 
   it("accepts empty object", () => {
@@ -198,11 +166,6 @@ describe("validateUpdateTask", () => {
     const result = validateUpdateTask({ status: "bad" });
     expect(result.success).toBe(false);
     expect(result.errors?.some((e) => e.field === "status")).toBe(true);
-  });
-
-  it("rejects priority out of range", () => {
-    const result = validateUpdateTask({ priority: 4 });
-    expect(result.success).toBe(false);
   });
 
   it("accepts null due date", () => {

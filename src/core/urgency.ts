@@ -3,7 +3,6 @@ import type { UrgencyWeights } from "./settings";
 import type { Db, Task } from "./types";
 
 const DEFAULT_WEIGHTS = {
-  priority: 6.0,
   due: 12.0,
   age: 2.0,
   wip: 4.0,
@@ -39,7 +38,6 @@ export function computeUrgency(
   const now = new Date();
   let score = 0;
 
-  score += weights.priority * ((task.priority ?? 0) / 3);
   score += weights.due * dueCoefficient(task.due, now);
   score += weights.age * ageCoefficient(task.createdAt, now);
 

@@ -13,7 +13,6 @@ export interface Task {
   status: TaskStatus;
   category: string | null;
   label: string | null;
-  priority: number | null;
   due: string | null;
   startAt: string | null;
   endAt: string | null;
@@ -33,7 +32,6 @@ export interface CreateTaskInput {
   status?: TaskStatus;
   category?: string;
   label?: string;
-  priority?: number;
   due?: string;
   startAt?: string;
   endAt?: string;
@@ -46,7 +44,6 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   category?: string | null;
   label?: string | null;
-  priority?: number;
   due?: string | null;
   startAt?: string | null;
   endAt?: string | null;
