@@ -4,5 +4,5 @@
     @media (prefers-color-scheme: light) { text { fill: #121212; } }
     @media (prefers-color-scheme: dark) { text { fill: #e0e0e0; } }
   </style>
-  <text x="50%" y="78%" text-anchor="middle" font-size="28">Δ</text>
+  <text x="50%" y="78%" text-anchor="middle" font-size="28">δ</text>
 </svg>

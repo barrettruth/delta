@@ -88,7 +88,7 @@ export function LoginForm({
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="flex flex-col items-center">
         <span className="font-serif text-6xl text-foreground select-none mb-8">
-          Δ
+          δ
         </span>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-64">
           {error && <div className="text-sm text-destructive">{error}</div>}
