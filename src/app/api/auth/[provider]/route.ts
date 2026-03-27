@@ -13,10 +13,6 @@ const providers: Record<OAuthProvider, ProviderConfig> = {
     authorizeUrl: "https://github.com/login/oauth/authorize",
     scopes: "read:user user:email",
   },
-  google: {
-    authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-    scopes: "openid email profile",
-  },
   gitlab: {
     authorizeUrl: "https://gitlab.com/oauth/authorize",
     scopes: "read_user",

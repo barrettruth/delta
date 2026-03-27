@@ -4,7 +4,7 @@ import type { SafeUser } from "@/core/auth";
 import { accounts, users } from "@/db/schema";
 import type { Db } from "./types";
 
-export type OAuthProvider = "github" | "google" | "gitlab";
+export type OAuthProvider = "github" | "gitlab";
 
 export interface OAuthProfile {
   username: string;

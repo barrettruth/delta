@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { LoginForm } from "@/components/login-form";
 import type { OAuthProvider } from "@/core/oauth";
 
-const allProviders: OAuthProvider[] = ["github", "google", "gitlab"];
+const allProviders: OAuthProvider[] = ["github", "gitlab"];
 
 function getAvailableProviders(): OAuthProvider[] {
   return allProviders.filter(

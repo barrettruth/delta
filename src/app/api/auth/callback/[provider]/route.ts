@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { consumeInviteCode, createSession, validateInviteCode } from "@/core/auth";
+import {
+  consumeInviteCode,
+  createSession,
+  validateInviteCode,
+} from "@/core/auth";
 import {
   findOrCreateUserFromOAuth,
   findUserFromOAuth,
@@ -23,15 +27,6 @@ const providers: Record<OAuthProvider, TokenConfig> = {
     tokenInHeader: true,
     extractProfile: (data) => ({
       username: data.login as string,
-      email: (data.email as string) || undefined,
-    }),
-  },
-  google: {
-    tokenUrl: "https://oauth2.googleapis.com/token",
-    userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
-    tokenInHeader: true,
-    extractProfile: (data) => ({
-      username: (data.name as string) || (data.email as string),
       email: (data.email as string) || undefined,
     }),
   },
