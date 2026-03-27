@@ -5,6 +5,7 @@ import {
   Columns3,
   type LucideIcon,
   Palette,
+  Settings,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,7 @@ import { CategoryColorPicker } from "@/components/category-color-picker";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -32,9 +34,11 @@ const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
   ];
 
 export function AppSidebar({
+  username,
   categories,
   categoryColors,
 }: {
+  username: string;
   categories: string[];
   categoryColors: Record<string, string>;
 }) {
@@ -140,6 +144,21 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t border-border/60 p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link href="/settings" />}
+              isActive={pathname === "/settings"}
+              onClick={() => nav.pushJump()}
+            >
+              <Settings className="size-4" />
+              <span className="flex-1">{username}</span>
+              <kbd className="text-[10px] text-muted-foreground">S</kbd>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

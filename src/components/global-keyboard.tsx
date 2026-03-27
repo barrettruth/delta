@@ -14,6 +14,7 @@ const VIEW_KEYS: Record<string, string> = {
   Q: "/",
   K: "/kanban",
   C: "/calendar",
+  S: "/settings",
 };
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 

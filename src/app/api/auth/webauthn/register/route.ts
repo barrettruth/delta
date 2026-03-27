@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { validateSession } from "@/core/auth";
 import {
   generateRegistration,
+  removeCredential,
   verifyAndSaveRegistration,
 } from "@/core/webauthn";
 import { db } from "@/db";
@@ -67,6 +68,38 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Registration verification failed" },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("session")?.value;
+  if (!sessionId) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const user = validateSession(db, sessionId);
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id");
+  if (!id) {
+    return NextResponse.json(
+      { error: "Credential ID required" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    removeCredential(db, user.id, Number.parseInt(id, 10));
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Failed to remove" },
       { status: 400 },
     );
   }

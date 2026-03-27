@@ -48,7 +48,11 @@ export default async function DashboardLayout({
   return (
     <Suspense>
       <NavigationWrapper>
-        <AppSidebar categories={categories} categoryColors={colors} />
+        <AppSidebar
+          username={user.username}
+          categories={categories}
+          categoryColors={colors}
+        />
         <SidebarInset className="flex flex-col h-dvh">
           <DashboardContent tasks={allTasks}>{children}</DashboardContent>
           <MessageBar />
