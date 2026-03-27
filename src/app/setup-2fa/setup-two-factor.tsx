@@ -112,10 +112,6 @@ export function SetupTwoFactor({ username }: { username: string }) {
         <span className="font-serif text-6xl text-foreground select-none mb-4">
           δ
         </span>
-        <p className="text-sm text-muted-foreground mb-6">
-          set up two-factor authentication
-        </p>
-
         {error && <div className="text-sm text-destructive mb-4">{error}</div>}
 
         {step === "choose" && (
@@ -198,30 +194,13 @@ export function SetupTwoFactor({ username }: { username: string }) {
 
         {step === "recovery" && (
           <div className="flex flex-col gap-3 w-full">
-            <p className="text-sm text-muted-foreground">
-              save these recovery codes somewhere safe. they will not be shown
-              again.
-            </p>
-            <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all">
+            <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all text-center">
               {recoveryCodes.map((code) => (
                 <div key={code}>{code}</div>
               ))}
             </div>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={codesConfirmed}
-                onChange={(e) => setCodesConfirmed(e.target.checked)}
-                className="accent-foreground"
-              />
-              i have saved these codes
-            </label>
-            <Button
-              onClick={handleFinish}
-              disabled={!codesConfirmed}
-              className="w-full"
-            >
-              continue to delta
+            <Button onClick={handleFinish} className="w-full">
+              continue
             </Button>
           </div>
         )}

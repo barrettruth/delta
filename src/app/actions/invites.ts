@@ -22,8 +22,7 @@ export async function generateInviteAction(): Promise<ActionResult<string>> {
     return { data: code };
   } catch (e) {
     return {
-      error:
-        e instanceof Error ? e.message : "Failed to generate invite code",
+      error: e instanceof Error ? e.message : "Failed to generate invite code",
     };
   }
 }

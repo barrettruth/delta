@@ -68,9 +68,7 @@ function resolveMotion(
     }
     case "gg": {
       const target =
-        motionCount != null
-          ? Math.min(motionCount - 1, taskCount - 1)
-          : 0;
+        motionCount != null ? Math.min(motionCount - 1, taskCount - 1) : 0;
       return [Math.min(cursor, target), Math.max(cursor, target)];
     }
     default:
@@ -155,7 +153,7 @@ export function useKeyboard(actions: KeyboardActions) {
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
 
       if (pendingOpMotionG.current && !isModifier) {
-        const { op, preCount, motionCount } = pendingOpMotionG.current;
+        const { op, motionCount } = pendingOpMotionG.current;
         pendingOpMotionG.current = null;
         if (opMotionGTimer.current) {
           clearTimeout(opMotionGTimer.current);
@@ -228,7 +226,13 @@ export function useKeyboard(actions: KeyboardActions) {
 
         if (e.key === "G" || e.key === "j" || e.key === "k") {
           e.preventDefault();
-          const range = resolveMotion(e.key, cursor, tasks.length, motionCount, pre);
+          const range = resolveMotion(
+            e.key,
+            cursor,
+            tasks.length,
+            motionCount,
+            pre,
+          );
           if (range && cursor >= 0) {
             const [lo, hi] = range;
             const ids: number[] = [];
@@ -402,7 +406,15 @@ export function useKeyboard(actions: KeyboardActions) {
         }
       }
     },
-    [cursor, selectedIds, visualMode, toggleSelect, applyOp, consumeCount, consumeCountRaw],
+    [
+      cursor,
+      selectedIds,
+      visualMode,
+      toggleSelect,
+      applyOp,
+      consumeCount,
+      consumeCountRaw,
+    ],
   );
 
   useEffect(() => {

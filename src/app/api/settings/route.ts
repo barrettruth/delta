@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { validateSession } from "@/core/auth";
 import {
   getSettings,
-  updateSettings,
   type UserSettings,
+  updateSettings,
 } from "@/core/settings";
 import { db } from "@/db";
 

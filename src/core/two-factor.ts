@@ -1,5 +1,5 @@
-import type { Db } from "./types";
 import { userHasTotp } from "./totp";
+import type { Db } from "./types";
 import { userHasWebAuthn } from "./webauthn";
 
 export function userHas2FA(db: Db, userId: number): boolean {

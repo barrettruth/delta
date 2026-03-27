@@ -2,15 +2,15 @@
 
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
+import { undoCompleteTaskAction, undoTaskAction } from "@/app/actions/tasks";
 import type { UndoEntry } from "@/core/undo";
-import { undoTaskAction, undoCompleteTaskAction } from "@/app/actions/tasks";
 
 interface PendingOp {
   action: () => Promise<void>;
@@ -57,13 +57,10 @@ export function UndoProvider({ children }: { children: ReactNode }) {
       if (existing) {
         clearTimeout(existing.timeout);
       }
-      const timeout = setTimeout(
-        () => {
-          pendingOps.current.delete(id);
-          action();
-        },
-        delayMs ?? DEFAULT_DELAY_MS,
-      );
+      const timeout = setTimeout(() => {
+        pendingOps.current.delete(id);
+        action();
+      }, delayMs ?? DEFAULT_DELAY_MS);
       pendingOps.current.set(id, { action, timeout });
     },
     [],
@@ -82,29 +79,26 @@ export function UndoProvider({ children }: { children: ReactNode }) {
     [showMessage],
   );
 
-  const executeUndo = useCallback(
-    async (entry: UndoEntry) => {
-      if (entry.op === "complete") {
-        await undoCompleteTaskAction(
-          entry.mutations.map((m) => ({
-            taskId: m.taskId,
-            status: m.restore.status,
-            completedAt: m.restore.completedAt,
-            spawnedTaskId: m.spawnedTaskId,
-          })),
-        );
-      } else {
-        await undoTaskAction(
-          entry.mutations.map((m) => ({
-            taskId: m.taskId,
-            status: m.restore.status,
-            completedAt: m.restore.completedAt,
-          })),
-        );
-      }
-    },
-    [],
-  );
+  const executeUndo = useCallback(async (entry: UndoEntry) => {
+    if (entry.op === "complete") {
+      await undoCompleteTaskAction(
+        entry.mutations.map((m) => ({
+          taskId: m.taskId,
+          status: m.restore.status,
+          completedAt: m.restore.completedAt,
+          spawnedTaskId: m.spawnedTaskId,
+        })),
+      );
+    } else {
+      await undoTaskAction(
+        entry.mutations.map((m) => ({
+          taskId: m.taskId,
+          status: m.restore.status,
+          completedAt: m.restore.completedAt,
+        })),
+      );
+    }
+  }, []);
 
   const undo = useCallback(async () => {
     const stack = stackRef.current;

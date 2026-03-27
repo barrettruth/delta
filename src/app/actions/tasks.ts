@@ -10,7 +10,11 @@ import {
   getTask,
   updateTask,
 } from "@/core/task";
-import type { CreateTaskInput, TaskStatus, UpdateTaskInput } from "@/core/types";
+import type {
+  CreateTaskInput,
+  TaskStatus,
+  UpdateTaskInput,
+} from "@/core/types";
 import { db } from "@/db";
 import { categoryColors, tasks } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";

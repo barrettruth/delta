@@ -90,9 +90,18 @@ export function WeekTimeGrid({
   categoryColors: Record<string, string>;
   selectedDate: Date | null;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
-  onEventMove?: (taskId: number, newStartAt: string, newEndAt: string | null) => void;
+  onEventMove?: (
+    taskId: number,
+    newStartAt: string,
+    newEndAt: string | null,
+  ) => void;
   onEventResize?: (taskId: number, newEndAt: string) => void;
-  onRangeCreate?: (dayIndex: number, startMinute: number, endMinute: number, anchor: DOMRect) => void;
+  onRangeCreate?: (
+    dayIndex: number,
+    startMinute: number,
+    endMinute: number,
+    anchor: DOMRect,
+  ) => void;
 }) {
   const internalRef = useRef<HTMLDivElement>(null);
   const scrollRef = externalScrollRef || internalRef;
@@ -112,7 +121,7 @@ export function WeekTimeGrid({
     const now = new Date();
     const scrollTo = Math.max(0, (now.getHours() - 1) * HOUR_HEIGHT);
     scrollRef.current.scrollTop = scrollTo;
-  }, []);
+  }, [scrollRef.current]);
 
   const selectedDayIndex = useMemo(() => {
     if (!selectedDate) return -1;
@@ -136,7 +145,7 @@ export function WeekTimeGrid({
     } else if (cursorBottom > viewBottom) {
       container.scrollTop = cursorBottom - container.clientHeight;
     }
-  }, [selectedHour]);
+  }, [selectedHour, scrollRef.current]);
 
   useEffect(() => {
     scrollCursorIntoView();
@@ -177,7 +186,11 @@ export function WeekTimeGrid({
       const columnEl = columnEls[dayIndex];
       const rect = columnEl?.getBoundingClientRect();
       const cx = rect ? rect.left + rect.width / 2 : 0;
-      const cy = rect ? rect.top + minuteOfDay * pxPerMin - (scrollRef.current?.scrollTop ?? 0) : 0;
+      const cy = rect
+        ? rect.top +
+          minuteOfDay * pxPerMin -
+          (scrollRef.current?.scrollTop ?? 0)
+        : 0;
       onSlotClick(date, minuteOfDay, {
         getBoundingClientRect: () => new DOMRect(cx, cy, 0, 0),
       });
@@ -231,7 +244,11 @@ export function WeekTimeGrid({
         })}
       </div>
 
-      <div ref={scrollRef} data-time-grid-scroll="" className="flex-1 overflow-auto relative">
+      <div
+        ref={scrollRef}
+        data-time-grid-scroll=""
+        className="flex-1 overflow-auto relative"
+      >
         <div
           className="grid"
           style={{
@@ -326,18 +343,20 @@ export function WeekTimeGrid({
                   />
                 ))}
 
-                {interaction.previewStyle && interaction.previewStyle.dayIndex === dayIdx && (
-                  <div
-                    className="absolute left-1 right-1 border border-dashed border-primary z-20 pointer-events-none"
-                    style={{
-                      top: `${interaction.previewStyle.top}px`,
-                      height: `${interaction.previewStyle.height}px`,
-                      backgroundColor: interaction.mode === "creating"
-                        ? "hsl(var(--primary) / 0.1)"
-                        : "hsl(var(--primary) / 0.4)",
-                    }}
-                  />
-                )}
+                {interaction.previewStyle &&
+                  interaction.previewStyle.dayIndex === dayIdx && (
+                    <div
+                      className="absolute left-1 right-1 border border-dashed border-primary z-20 pointer-events-none"
+                      style={{
+                        top: `${interaction.previewStyle.top}px`,
+                        height: `${interaction.previewStyle.height}px`,
+                        backgroundColor:
+                          interaction.mode === "creating"
+                            ? "hsl(var(--primary) / 0.1)"
+                            : "hsl(var(--primary) / 0.4)",
+                      }}
+                    />
+                  )}
               </div>
             );
           })}

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { hashSync, compareSync } from "bcryptjs";
+import { compareSync, hashSync } from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { recoveryCodes } from "@/db/schema";
 import type { Db } from "./types";

@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSession } from "@/core/auth";
-import { getTotpSecret, verifyTotpToken } from "@/core/totp";
 import { verifyRecoveryCode } from "@/core/recovery";
+import { getTotpSecret, verifyTotpToken } from "@/core/totp";
 import { db } from "@/db";
 
 export async function POST(request: Request) {
