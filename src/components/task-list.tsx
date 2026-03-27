@@ -1,15 +1,15 @@
 "use client";
 
 import { Circle, CircleCheck, Clock, Loader2, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-import { TaskDetail } from "@/components/task-detail";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigation } from "@/contexts/navigation";
+import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task, TaskStatus } from "@/core/types";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { formatDate } from "@/lib/utils";
@@ -24,7 +24,7 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
 
 export function TaskList({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const panel = useTaskPanel();
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -35,17 +35,16 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
     },
     onDelete: (ids) => {
       for (const id of ids) deleteTaskAction(id);
-      if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
+      if (panel.taskId && ids.includes(panel.taskId)) panel.close();
     },
     onStatusChange: (ids, status) => {
       for (const id of ids) updateTaskAction(id, { status });
     },
     onSelect: (task) => {
       nav.pushJump();
-      nav.setTaskDetailOpen(task.id);
-      setSelectedTask(task);
+      panel.toggle(task.id);
     },
-    onDeselect: () => setSelectedTask(null),
+    onDeselect: () => panel.close(),
     onJump: () => nav.pushJump(),
   });
 
@@ -57,24 +56,11 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
   }, [cursor, tasks]);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const taskId = (e as CustomEvent).detail?.taskId;
-      if (taskId != null) {
-        const task = tasks.find((t) => t.id === taskId) ?? null;
-        if (task) setSelectedTask(task);
-      }
-    };
-    window.addEventListener("open-task-detail", handler);
-    return () => window.removeEventListener("open-task-detail", handler);
-  }, [tasks]);
-
-  useEffect(() => {
     const pendingId = nav.consumePendingTaskDetail();
     if (pendingId != null) {
-      const task = tasks.find((t) => t.id === pendingId);
-      if (task) setSelectedTask(task);
+      panel.open(pendingId);
     }
-  }, [nav.consumePendingTaskDetail, tasks]);
+  }, [nav.consumePendingTaskDetail, panel]);
 
   useEffect(() => {
     nav.registerScrollContainer(scrollRef.current);
@@ -107,8 +93,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
                 }`}
                 onClick={() => {
                   nav.pushJump();
-                  nav.setTaskDetailOpen(task.id);
-                  setSelectedTask(task);
+                  panel.open(task.id);
                 }}
                 onKeyDown={() => {}}
                 tabIndex={0}
@@ -141,14 +126,6 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
           </div>
         )}
       </div>
-      <TaskDetail
-        task={selectedTask}
-        open={selectedTask !== null}
-        onClose={() => {
-          setSelectedTask(null);
-          nav.setTaskDetailOpen(null);
-        }}
-      />
     </div>
   );
 }

@@ -7,15 +7,14 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 
-import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
+import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
-const COLUMN_KEYS = ["w", "i", "b", "x"];
 const COLUMN_HINTS = ["W", "I", "B", "X"];
 
 const STATUS_FOR_KEY: Record<string, TaskStatus> = {
@@ -55,7 +54,7 @@ function groupByStatus(tasks: Task[]): Record<string, Task[]> {
 export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
   const undo = useUndo();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const panel = useTaskPanel();
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
   const [colIdx, setColIdx] = useState(0);
@@ -68,7 +67,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [searchActive, setSearchActive] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const visualAnchor = useRef(-1);
-  const pendingOp = useRef<{ key: string; preCount: number | null } | null>(null);
+  const pendingOp = useRef<{ key: string; preCount: number | null } | null>(
+    null,
+  );
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countBuf = useRef("");
 
@@ -194,7 +195,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
-      if (selectedTask) return;
+      if (panel.isOpen) return;
 
       if (pendingOp.current) {
         const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
@@ -216,7 +217,11 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             const colTasks = getColTasks(colIdx);
             if (colTasks.length > 0 && rowIdx < colTasks.length) {
               const ids: number[] = [];
-              for (let i = rowIdx; i < Math.min(rowIdx + pre, colTasks.length); i++) {
+              for (
+                let i = rowIdx;
+                i < Math.min(rowIdx + pre, colTasks.length);
+                i++
+              ) {
                 ids.push(colTasks[i].id);
               }
               if (ids.length > 0) kbDelete(ids);
@@ -252,7 +257,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             const colTasks = getColTasks(colIdx);
             if (colTasks.length > 0 && rowIdx < colTasks.length) {
               const ids: number[] = [];
-              for (let i = rowIdx; i < colTasks.length; i++) ids.push(colTasks[i].id);
+              for (let i = rowIdx; i < colTasks.length; i++)
+                ids.push(colTasks[i].id);
               if (ids.length > 0) kbDelete(ids);
             }
           }
@@ -377,8 +383,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           const colTasks = getColTasks(colIdx);
           if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
             nav.pushJump();
-            nav.setTaskDetailOpen(colTasks[rowIdx].id);
-            setSelectedTask(colTasks[rowIdx]);
+            panel.toggle(colTasks[rowIdx].id);
           } else {
             window.dispatchEvent(new Event("open-create-task"));
           }
@@ -495,7 +500,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       colIdx,
       rowIdx,
       getColTasks,
-      selectedTask,
+      panel,
       columns,
       kbActive,
       visualMode,
@@ -513,24 +518,11 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   }, [handler]);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const taskId = (e as CustomEvent).detail?.taskId;
-      if (taskId != null) {
-        const task = tasks.find((t) => t.id === taskId) ?? null;
-        if (task) setSelectedTask(task);
-      }
-    };
-    window.addEventListener("open-task-detail", handler);
-    return () => window.removeEventListener("open-task-detail", handler);
-  }, [tasks]);
-
-  useEffect(() => {
     const pendingId = nav.consumePendingTaskDetail();
     if (pendingId != null) {
-      const task = tasks.find((t) => t.id === pendingId);
-      if (task) setSelectedTask(task);
+      panel.open(pendingId);
     }
-  }, [nav.consumePendingTaskDetail, tasks]);
+  }, [nav.consumePendingTaskDetail, panel]);
 
   useEffect(() => {
     const saved = nav.getViewState<{
@@ -674,8 +666,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                         className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         onClick={() => {
                           nav.pushJump();
-                          nav.setTaskDetailOpen(task.id);
-                          setSelectedTask(task);
+                          panel.open(task.id);
                         }}
                       >
                         <p className="text-sm font-medium leading-snug">
@@ -715,14 +706,6 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           );
         })}
       </div>
-      <TaskDetail
-        task={selectedTask}
-        open={selectedTask !== null}
-        onClose={() => {
-          setSelectedTask(null);
-          nav.setTaskDetailOpen(null);
-        }}
-      />
     </div>
   );
 }

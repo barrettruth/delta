@@ -127,15 +127,9 @@ export function NavigationProvider({
       if (loc.taskId != null) {
         taskDetailOpenRef.current = loc.taskId;
         pendingTaskDetailRef.current = loc.taskId;
-        window.dispatchEvent(
-          new CustomEvent("open-task-detail", {
-            detail: { taskId: loc.taskId },
-          }),
-        );
       } else {
         if (taskDetailOpenRef.current != null) {
           taskDetailOpenRef.current = null;
-          window.dispatchEvent(new Event("close-task-detail"));
         }
       }
       if (loc.scrollTop != null) {

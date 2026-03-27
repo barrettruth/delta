@@ -5,9 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { updateTaskAction } from "@/app/actions/tasks";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
-import { QuickCreatePopover } from "@/components/quick-create-popover";
-import { TaskDetail } from "@/components/task-detail";
 import { useNavigation } from "@/contexts/navigation";
+import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
 import {
   addDays,
@@ -20,7 +19,6 @@ import {
   formatWeekRange,
   getWeekStart,
   minuteToISOString,
-  type QuickCreatePreFill,
   startOfMonth,
 } from "@/lib/calendar-utils";
 import { isInputFocused } from "@/lib/utils";
@@ -39,9 +37,9 @@ export function CalendarView({
   defaultViewMode?: ViewMode;
 }) {
   const nav = useNavigation();
+  const panel = useTaskPanel();
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [anchor, setAnchor] = useState<Date | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const pendingBracket = useRef<"[" | "]" | null>(null);
   const pendingG = useRef<number | null | false>(false);
@@ -50,10 +48,6 @@ export function CalendarView({
   const bracketTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
-  const [quickCreate, setQuickCreate] = useState<{
-    anchor: Element | { getBoundingClientRect: () => DOMRect };
-    preFill: QuickCreatePreFill;
-  } | null>(null);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, { startAt?: string; endAt?: string }>
   >(new Map());
@@ -115,28 +109,20 @@ export function CalendarView({
     [anchor],
   );
 
-  function handleDayClick(date: Date, anchorEl?: HTMLElement) {
+  function handleDayClick(date: Date, _anchorEl?: HTMLElement) {
     setSelectedDate(date);
     setAnchor(date);
-    if (anchorEl) {
-      setQuickCreate({
-        anchor: anchorEl,
-        preFill: buildDayPreFill(date),
-      });
-    }
+    panel.create(buildDayPreFill(date));
   }
 
   function handleSlotClick(
     date: Date,
     minuteOfDay: number,
-    anchor: Element | { getBoundingClientRect: () => DOMRect },
+    _anchor: Element | { getBoundingClientRect: () => DOMRect },
   ) {
     setSelectedDate(date);
     setAnchor(date);
-    setQuickCreate({
-      anchor,
-      preFill: buildSlotPreFill(date, minuteOfDay),
-    });
+    panel.create(buildSlotPreFill(date, minuteOfDay));
   }
 
   const weekDays = useMemo(() => {
@@ -208,16 +194,13 @@ export function CalendarView({
       dayIndex: number,
       startMinute: number,
       endMinute: number,
-      anchorRect: DOMRect,
+      _anchorRect: DOMRect,
     ) => {
       const date = weekDays[dayIndex];
       if (!date) return;
-      setQuickCreate({
-        anchor: { getBoundingClientRect: () => anchorRect },
-        preFill: buildRangePreFill(date, startMinute, endMinute),
-      });
+      panel.create(buildRangePreFill(date, startMinute, endMinute));
     },
-    [weekDays],
+    [weekDays, panel],
   );
 
   const prevWeek = useCallback(() => {
@@ -488,13 +471,12 @@ export function CalendarView({
 
   useEffect(() => {
     const handleQuickCreate = () => {
-      const cursorEl = document.querySelector("[data-calendar-cursor]");
-      if (!cursorEl || !selectedDate) return;
+      if (!selectedDate) return;
       const preFill =
         viewMode === "week"
           ? buildSlotPreFill(selectedDate, selectedDate.getHours() * 60)
           : buildDayPreFill(selectedDate);
-      setQuickCreate({ anchor: cursorEl, preFill });
+      panel.create(preFill);
     };
     window.addEventListener("open-calendar-quick-create", handleQuickCreate);
     return () =>
@@ -502,27 +484,14 @@ export function CalendarView({
         "open-calendar-quick-create",
         handleQuickCreate,
       );
-  }, [selectedDate, viewMode]);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const taskId = (e as CustomEvent).detail?.taskId;
-      if (taskId != null) {
-        const task = tasks.find((t) => t.id === taskId) ?? null;
-        if (task) setSelectedTask(task);
-      }
-    };
-    window.addEventListener("open-task-detail", handler);
-    return () => window.removeEventListener("open-task-detail", handler);
-  }, [tasks]);
+  }, [selectedDate, viewMode, panel]);
 
   useEffect(() => {
     const pendingId = nav.consumePendingTaskDetail();
     if (pendingId != null) {
-      const task = tasks.find((t) => t.id === pendingId);
-      if (task) setSelectedTask(task);
+      panel.open(pendingId);
     }
-  }, [nav.consumePendingTaskDetail, tasks]);
+  }, [nav.consumePendingTaskDetail, panel]);
 
   useEffect(() => {
     nav.registerScrollContainer(weekScrollRef.current);
@@ -548,8 +517,7 @@ export function CalendarView({
           onSlotClick={handleSlotClick}
           onTaskClick={(task) => {
             nav.pushJump();
-            nav.setTaskDetailOpen(task.id);
-            setSelectedTask(task);
+            panel.open(task.id);
           }}
           categoryColors={categoryColors}
           selectedDate={selectedDate}
@@ -566,37 +534,13 @@ export function CalendarView({
           onDayClick={handleDayClick}
           onTaskClick={(task) => {
             nav.pushJump();
-            nav.setTaskDetailOpen(task.id);
-            setSelectedTask(task);
+            panel.open(task.id);
           }}
           dayNames={DAY_NAMES}
           categoryColors={categoryColors}
           selectedDate={selectedDate}
         />
       )}
-
-      <QuickCreatePopover
-        open={quickCreate !== null}
-        onOpenChange={(open) => {
-          if (!open) setQuickCreate(null);
-        }}
-        anchor={quickCreate?.anchor ?? null}
-        preFill={quickCreate?.preFill}
-        onExpandToFull={(data) => {
-          window.dispatchEvent(
-            new CustomEvent("open-create-task-with-data", { detail: data }),
-          );
-        }}
-      />
-
-      <TaskDetail
-        task={selectedTask}
-        open={selectedTask !== null}
-        onClose={() => {
-          setSelectedTask(null);
-          nav.setTaskDetailOpen(null);
-        }}
-      />
     </div>
   );
 }

@@ -6,10 +6,10 @@ import {
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-import { TaskDetail } from "@/components/task-detail";
 import { Input } from "@/components/ui/input";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
+import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
@@ -68,7 +68,7 @@ export function QueueView({
 }) {
   const nav = useNavigation();
   const undo = useUndo();
-  const [selectedTask, setSelectedTask] = useState<RankedTask | null>(null);
+  const panel = useTaskPanel();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -141,7 +141,7 @@ export function QueueView({
       undo.scheduleExecution(entryId, async () => {
         for (const id of ids) await deleteTaskAction(id);
       });
-      if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
+      if (panel.taskId && ids.includes(panel.taskId)) panel.close();
     },
     onStatusChange: (ids, status) => {
       const entryId = `status-${Date.now()}-${ids.join(",")}`;
@@ -169,10 +169,9 @@ export function QueueView({
     onCreate: () => window.dispatchEvent(new Event("open-create-task")),
     onSelect: (task) => {
       nav.pushJump();
-      nav.setTaskDetailOpen(task.id);
-      setSelectedTask(task as RankedTask);
+      panel.toggle(task.id);
     },
-    onDeselect: () => setSelectedTask(null),
+    onDeselect: () => panel.close(),
     onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
     onJump: () => nav.pushJump(),
     scrollRef,
@@ -190,24 +189,11 @@ export function QueueView({
   }, [cursor, nav]);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const taskId = (e as CustomEvent).detail?.taskId;
-      if (taskId != null) {
-        const task = filtered.find((t) => t.id === taskId) ?? null;
-        if (task) setSelectedTask(task);
-      }
-    };
-    window.addEventListener("open-task-detail", handler);
-    return () => window.removeEventListener("open-task-detail", handler);
-  }, [filtered]);
-
-  useEffect(() => {
     const pendingId = nav.consumePendingTaskDetail();
     if (pendingId != null) {
-      const task = filtered.find((t) => t.id === pendingId);
-      if (task) setSelectedTask(task);
+      panel.open(pendingId);
     }
-  }, [nav.consumePendingTaskDetail, filtered]);
+  }, [nav.consumePendingTaskDetail, panel]);
 
   useEffect(() => {
     nav.registerScrollContainer(scrollRef.current);
@@ -261,9 +247,8 @@ export function QueueView({
       return;
     }
     nav.pushJump();
-    nav.setTaskDetailOpen(task.id);
     setCursor(idx);
-    setSelectedTask(task);
+    panel.open(task.id);
   }
 
   return (
@@ -407,16 +392,6 @@ export function QueueView({
           </div>
         )}
       </div>
-      <TaskDetail
-        task={selectedTask}
-        open={selectedTask !== null}
-        onClose={() => {
-          setSelectedTask(null);
-          nav.setTaskDetailOpen(null);
-        }}
-        tasks={filtered}
-        onSelectTask={(t) => setSelectedTask(t as RankedTask)}
-      />
     </div>
   );
 }

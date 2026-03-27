@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
+import { DashboardContent } from "@/components/dashboard-content";
 import { GlobalKeyboard } from "@/components/global-keyboard";
 import { MessageBar } from "@/components/keyboard-hints";
 import { NavigationWrapper } from "@/components/navigation-wrapper";
@@ -46,9 +47,7 @@ export default async function DashboardLayout({
       <NavigationWrapper>
         <AppSidebar categories={categories} categoryColors={colors} />
         <SidebarInset className="flex flex-col h-dvh">
-          <main className="flex-1 overflow-hidden bg-background">
-            {children}
-          </main>
+          <DashboardContent tasks={allTasks}>{children}</DashboardContent>
           <MessageBar />
         </SidebarInset>
         <GlobalKeyboard
