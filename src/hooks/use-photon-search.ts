@@ -57,7 +57,7 @@ export function usePhotonSearch(query: string): {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=5`,
+          `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=10`,
           { signal: controller.signal },
         );
         if (!res.ok) {

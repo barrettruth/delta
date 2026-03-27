@@ -317,7 +317,6 @@ export function WeekTimeGrid({
                     style={{
                       top: `${selectedHour * HOUR_HEIGHT}px`,
                       height: `${HOUR_HEIGHT}px`,
-                      animation: "cursor-blink 1.2s ease-in-out infinite",
                     }}
                   />
                 )}

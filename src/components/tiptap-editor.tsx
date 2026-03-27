@@ -112,7 +112,7 @@ export function TiptapEditor({
 }) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({ codeBlock: false, link: false }),
       CodeBlockShiki.configure({
         themes: { light: "daylight", dark: "midnight" } as never,
         defaultLanguage: null,

@@ -359,9 +359,8 @@ export function QueueView({
                   )}
                   {task.category && (
                     <span className="max-w-[16ch] truncate text-xs text-right shrink-0">
-                      <span className="font-bold text-foreground">#</span>
-                      <span className="text-muted-foreground">
-                        {task.category}
+                      <span className="font-bold text-muted-foreground">
+                        # {task.category}
                       </span>
                     </span>
                   )}

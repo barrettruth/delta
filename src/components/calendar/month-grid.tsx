@@ -51,7 +51,7 @@ export function MonthGrid({
         {dayNames.map((d) => (
           <div
             key={d}
-            className="text-xs font-medium text-muted-foreground text-center py-2"
+            className="text-xs font-medium text-muted-foreground text-center py-2 border-r border-border/30 last:border-r-0"
           >
             {d}
           </div>
@@ -75,7 +75,9 @@ export function MonthGrid({
             day,
           );
           const dateKey = formatDateKey(cellDate);
-          const dayTasks = tasksByDate.get(dateKey) ?? [];
+          const dayTasks = (tasksByDate.get(dateKey) ?? []).slice().sort(
+            (a, b) => (b.allDay ?? 0) - (a.allDay ?? 0),
+          );
           const isToday = isSameDay(cellDate, today);
           const isSelected =
             selectedDate !== null && isSameDay(cellDate, selectedDate);

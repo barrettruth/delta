@@ -101,13 +101,7 @@ export function AppSidebar({
                         isActive={activeCategory === cat}
                         onClick={() => nav.pushJump()}
                       >
-                        <span
-                          className="text-xs font-bold shrink-0"
-                          style={{
-                            color:
-                              categoryColors[cat] ?? "var(--muted-foreground)",
-                          }}
-                        >
+                        <span className="text-xs font-bold shrink-0 text-muted-foreground">
                           #
                         </span>
                         <span className="flex-1">{cat}</span>

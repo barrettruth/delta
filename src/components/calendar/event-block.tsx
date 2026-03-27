@@ -46,7 +46,7 @@ export function EventBlock({
       data-event-end={task.endAt ?? ""}
       data-event-start-min={startMin}
       data-event-end-min={endMin}
-      className={`absolute z-10 overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
+      className={`absolute z-10 overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left flex flex-col justify-start ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -61,11 +61,11 @@ export function EventBlock({
       }}
     >
       <span className="font-medium truncate block">{task.description}</span>
-      <span className="truncate block">
+      <span className="truncate block text-muted-foreground">
         {formatTime(start)}
         {end ? `\u2013${formatTime(end)}` : ""}
       </span>
-      {task.location && height >= 30 && (
+      {task.location && (
         <span className="truncate block text-[9px] text-muted-foreground">
           {task.location}
         </span>

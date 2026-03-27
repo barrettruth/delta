@@ -60,6 +60,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [meetingUrl, setMeetingUrl] = useState("");
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [locationIdx, setLocationIdx] = useState(-1);
   const notesRef = useRef<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const prevTaskIdRef = useRef<number | null>(null);
@@ -427,25 +428,59 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                     setLocation(val);
                   }
                   setShowLocationSuggestions(true);
+                  setLocationIdx(-1);
                 }}
                 onFocus={() => setShowLocationSuggestions(true)}
                 onBlur={() =>
                   setTimeout(() => setShowLocationSuggestions(false), 150)
                 }
+                onKeyDown={(e) => {
+                  const allItems = [
+                    ...filteredLocations,
+                    ...photonResults.map((r) => r.displayName),
+                  ];
+                  if (!showLocationSuggestions || allItems.length === 0) return;
+                  if (
+                    (e.ctrlKey && e.key === "n") ||
+                    e.key === "ArrowDown"
+                  ) {
+                    e.preventDefault();
+                    setLocationIdx((prev) =>
+                      prev < allItems.length - 1 ? prev + 1 : 0,
+                    );
+                  } else if (
+                    (e.ctrlKey && e.key === "p") ||
+                    e.key === "ArrowUp"
+                  ) {
+                    e.preventDefault();
+                    setLocationIdx((prev) =>
+                      prev > 0 ? prev - 1 : allItems.length - 1,
+                    );
+                  } else if (e.key === "Enter" && locationIdx >= 0) {
+                    e.preventDefault();
+                    setLocation(allItems[locationIdx]);
+                    setShowLocationSuggestions(false);
+                    setLocationIdx(-1);
+                  } else if (e.key === "Escape") {
+                    setShowLocationSuggestions(false);
+                    setLocationIdx(-1);
+                  }
+                }}
                 className="h-7 text-xs"
               />
               {showLocationSuggestions &&
                 (filteredLocations.length > 0 || photonResults.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
-                    {filteredLocations.map((l) => (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
+                    {filteredLocations.map((l, i) => (
                       <button
                         key={l}
                         type="button"
-                        className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setLocation(l);
                           setShowLocationSuggestions(false);
+                          setLocationIdx(-1);
                         }}
                       >
                         {l}
@@ -455,20 +490,24 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                       photonResults.length > 0 && (
                         <div className="border-t border-border/40 my-1" />
                       )}
-                    {photonResults.map((r) => (
-                      <button
-                        key={`${r.lat}-${r.lon}`}
-                        type="button"
-                        className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setLocation(r.displayName);
-                          setShowLocationSuggestions(false);
-                        }}
-                      >
-                        {r.displayName}
-                      </button>
-                    ))}
+                    {photonResults.map((r, i) => {
+                      const idx = filteredLocations.length + i;
+                      return (
+                        <button
+                          key={`photon-${i}`}
+                          type="button"
+                          className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocation(r.displayName);
+                            setShowLocationSuggestions(false);
+                            setLocationIdx(-1);
+                          }}
+                        >
+                          {r.displayName}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
             </div>
