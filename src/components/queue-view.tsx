@@ -12,6 +12,7 @@ import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
 import { useUndo } from "@/contexts/undo";
 import type { TaskStatus } from "@/core/types";
+import type { UndoMutation } from "@/core/undo";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
@@ -89,31 +90,37 @@ export function QueueView({
 
   const { cursor, setCursor, selectedIds, toggleSelect } = useKeyboard({
     tasks: filtered,
-    onComplete: async (ids) => {
-      const mutations = [];
-      for (const id of ids) {
+    onComplete: (ids) => {
+      const entryId = `complete-${Date.now()}-${ids.join(",")}`;
+      const mutations: UndoMutation[] = ids.map((id) => {
         const task = filtered.find((t) => t.id === id);
-        const result = await completeTaskAction(id);
-        mutations.push({
+        return {
           taskId: id,
           restore: {
             status: (task?.status as TaskStatus) ?? "pending",
             completedAt: task?.completedAt ?? null,
           },
-          spawnedTaskId:
-            result && "data" in result
-              ? (result.data?.spawnedTaskId ?? undefined)
-              : undefined,
-        });
-      }
+        };
+      });
       undo.push({
+        id: entryId,
         op: "complete",
         label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
         mutations,
         timestamp: Date.now(),
       });
+      undo.scheduleExecution(entryId, async () => {
+        for (const id of ids) {
+          const result = await completeTaskAction(id);
+          const m = mutations.find((mut) => mut.taskId === id);
+          if (m && result && "data" in result) {
+            m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
+          }
+        }
+      });
     },
     onDelete: (ids) => {
+      const entryId = `delete-${Date.now()}-${ids.join(",")}`;
       const mutations = ids.map((id) => {
         const task = filtered.find((t) => t.id === id);
         return {
@@ -125,15 +132,19 @@ export function QueueView({
         };
       });
       undo.push({
+        id: entryId,
         op: "delete",
         label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
         mutations,
         timestamp: Date.now(),
       });
-      for (const id of ids) deleteTaskAction(id);
+      undo.scheduleExecution(entryId, async () => {
+        for (const id of ids) await deleteTaskAction(id);
+      });
       if (selectedTask && ids.includes(selectedTask.id)) setSelectedTask(null);
     },
     onStatusChange: (ids, status) => {
+      const entryId = `status-${Date.now()}-${ids.join(",")}`;
       const mutations = ids.map((id) => {
         const task = filtered.find((t) => t.id === id);
         return {
@@ -145,12 +156,15 @@ export function QueueView({
         };
       });
       undo.push({
+        id: entryId,
         op: "status-change",
         label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
         mutations,
         timestamp: Date.now(),
       });
-      for (const id of ids) updateTaskAction(id, { status });
+      undo.scheduleExecution(entryId, async () => {
+        for (const id of ids) await updateTaskAction(id, { status });
+      });
     },
     onCreate: () => window.dispatchEvent(new Event("open-create-task")),
     onSelect: (task) => {

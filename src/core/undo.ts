@@ -12,6 +12,7 @@ export interface UndoMutation {
 }
 
 export interface UndoEntry {
+  id: string;
   op: UndoOperationType;
   label: string;
   mutations: UndoMutation[];

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
 import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
+import type { UndoMutation } from "@/core/undo";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
 const COLUMN_KEYS = ["w", "i", "b", "x"];
@@ -73,6 +74,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   const kbDelete = useCallback(
     (ids: number[]) => {
+      const entryId = `delete-${Date.now()}-${ids.join(",")}`;
       const mutations = ids.map((id) => {
         const task = tasks.find((t) => t.id === id);
         return {
@@ -84,39 +86,47 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         };
       });
       undo.push({
+        id: entryId,
         op: "delete",
         label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
         mutations,
         timestamp: Date.now(),
       });
-      for (const id of ids) deleteTaskAction(id);
+      undo.scheduleExecution(entryId, async () => {
+        for (const id of ids) await deleteTaskAction(id);
+      });
     },
     [tasks, undo],
   );
 
   const kbComplete = useCallback(
-    async (ids: number[]) => {
-      const mutations = [];
-      for (const id of ids) {
+    (ids: number[]) => {
+      const entryId = `complete-${Date.now()}-${ids.join(",")}`;
+      const mutations: UndoMutation[] = ids.map((id) => {
         const task = tasks.find((t) => t.id === id);
-        const result = await completeTaskAction(id);
-        mutations.push({
+        return {
           taskId: id,
           restore: {
             status: (task?.status as TaskStatus) ?? "pending",
             completedAt: task?.completedAt ?? null,
           },
-          spawnedTaskId:
-            result && "data" in result
-              ? (result.data?.spawnedTaskId ?? undefined)
-              : undefined,
-        });
-      }
+        };
+      });
       undo.push({
+        id: entryId,
         op: "complete",
         label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
         mutations,
         timestamp: Date.now(),
+      });
+      undo.scheduleExecution(entryId, async () => {
+        for (const id of ids) {
+          const result = await completeTaskAction(id);
+          const m = mutations.find((mut) => mut.taskId === id);
+          if (m && result && "data" in result) {
+            m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
+          }
+        }
       });
     },
     [tasks, undo],
@@ -124,6 +134,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   const kbStatusChange = useCallback(
     (ids: number[], status: TaskStatus) => {
+      const entryId = `status-${Date.now()}-${ids.join(",")}`;
       const mutations = ids.map((id) => {
         const task = tasks.find((t) => t.id === id);
         return {
@@ -135,12 +146,15 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         };
       });
       undo.push({
+        id: entryId,
         op: "status-change",
         label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
         mutations,
         timestamp: Date.now(),
       });
-      for (const id of ids) updateTaskAction(id, { status });
+      undo.scheduleExecution(entryId, async () => {
+        for (const id of ids) await updateTaskAction(id, { status });
+      });
     },
     [tasks, undo],
   );
