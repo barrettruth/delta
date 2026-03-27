@@ -215,14 +215,16 @@ export function LoginForm() {
 
           {step === "credentials" && (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePasskeyOnly}
-                disabled={loading}
-              >
-                sign in with passkey
-              </Button>
+              {!isSignUp && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePasskeyOnly}
+                  disabled={loading}
+                >
+                  sign in with passkey
+                </Button>
+              )}
               <button
                 type="button"
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
