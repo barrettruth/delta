@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSession, userExists, verifyPassword } from "@/core/auth";
+import { getUserTwoFactorMethods } from "@/core/two-factor";
 import { db } from "@/db";
 import { isRateLimited, recordAttempt } from "@/lib/rate-limit";
 
@@ -36,6 +37,24 @@ export async function POST(request: Request) {
   const user = verifyPassword(db, username, password);
   if (!user) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  const twoFactorMethods = getUserTwoFactorMethods(db, user.id);
+
+  if (twoFactorMethods.length > 0) {
+    const cookieStore = await cookies();
+    cookieStore.set("pending_2fa_user", String(user.id), {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      path: "/",
+      maxAge: 300,
+    });
+
+    return NextResponse.json({
+      requires2FA: true,
+      methods: twoFactorMethods,
+    });
   }
 
   const sessionId = createSession(db, user.id);

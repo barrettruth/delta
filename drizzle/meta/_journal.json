@@ -78,6 +78,13 @@
       "when": 1774632604294,
       "tag": "0010_clear_secret_warriors",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1774632776156,
+      "tag": "0011_sparkling_red_wolf",
+      "breakpoints": true
     }
   ]
 }
