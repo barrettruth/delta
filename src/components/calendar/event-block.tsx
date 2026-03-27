@@ -55,7 +55,10 @@ export function EventBlock({
         backgroundColor: categoryColor ? `${categoryColor}20` : "var(--accent)",
         borderLeftColor: categoryColor || "var(--primary)",
       }}
-      onClick={() => onClick(task)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick(task);
+      }}
     >
       <span className="font-medium truncate block">
         {formatTime(start)}

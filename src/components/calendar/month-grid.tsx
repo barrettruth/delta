@@ -109,7 +109,10 @@ export function MonthGrid({
                       type="button"
                       key={task.id}
                       className={`flex items-start gap-1 text-[10px] leading-tight max-w-full px-1 py-0.5 transition-colors hover:bg-accent w-full text-left ${statusColor(task)}`}
-                      onClick={() => onTaskClick(task)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTaskClick(task);
+                      }}
                     >
                       <span
                         className={`shrink-0 mt-[3px] w-1.5 h-1.5 ${statusDot(task)}`}

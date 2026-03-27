@@ -219,6 +219,10 @@ export function useTimeGridInteraction(
     (e: React.PointerEvent) => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
       const currentMode = modeRef.current;
       const wasDrag = didDragRef.current;
 
