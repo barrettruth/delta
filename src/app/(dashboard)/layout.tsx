@@ -11,6 +11,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
+import { userHas2FA } from "@/core/two-factor";
 import { db } from "@/db";
 import { categoryColors } from "@/db/schema";
 
@@ -26,6 +27,8 @@ export default async function DashboardLayout({
 
   const user = validateSession(db, sessionId);
   if (!user) redirect("/login");
+
+  if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
 
   const settings = getSettings(db, user.id);
   const allTasks = listTasks(db, user.id);
