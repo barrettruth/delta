@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { validateSession } from "@/core/auth";
 import { remainingRecoveryCodeCount } from "@/core/recovery";
-import { getSettings } from "@/core/settings";
 import { userHasTotp } from "@/core/totp";
 import { getCredentialsForUser } from "@/core/webauthn";
 import { db } from "@/db";
@@ -16,7 +15,6 @@ export default async function SettingsPage() {
   const user = validateSession(db, sessionId);
   if (!user) redirect("/login");
 
-  const settings = getSettings(db, user.id);
   const passkeys = getCredentialsForUser(db, user.id).map((c) => ({
     id: c.id,
     name: c.name,
@@ -31,7 +29,6 @@ export default async function SettingsPage() {
       passkeys={passkeys}
       totpEnabled={totpEnabled}
       recoveryCodesRemaining={recoveryCodesRemaining}
-      settings={settings}
     />
   );
 }

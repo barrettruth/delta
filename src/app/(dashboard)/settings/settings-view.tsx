@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { UserSettings } from "@/core/settings";
 
 interface Passkey {
   id: number;
@@ -13,20 +12,16 @@ interface Passkey {
   createdAt: string;
 }
 
-const VIEW_OPTIONS = ["queue", "kanban", "calendar"] as const;
-
 export function SettingsView({
   username,
   passkeys: initialPasskeys,
   totpEnabled: initialTotpEnabled,
   recoveryCodesRemaining: initialRecoveryRemaining,
-  settings: initialSettings,
 }: {
   username: string;
   passkeys: Passkey[];
   totpEnabled: boolean;
   recoveryCodesRemaining: number;
-  settings: UserSettings;
 }) {
   const router = useRouter();
   const [passkeys, setPasskeys] = useState(initialPasskeys);
@@ -34,7 +29,6 @@ export function SettingsView({
   const [recoveryRemaining, setRecoveryRemaining] = useState(
     initialRecoveryRemaining,
   );
-  const [settings, setSettings] = useState(initialSettings);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -44,7 +38,8 @@ export function SettingsView({
   const [qrCode, setQrCode] = useState("");
   const [totpSecret, setTotpSecret] = useState("");
   const [totpToken, setTotpToken] = useState("");
-  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
 
   const flash = useCallback((msg: string) => {
     setMessage(msg);
@@ -108,11 +103,11 @@ export function SettingsView({
     if (totpEnabled) {
       const res = await fetch("/api/auth/totp/setup", { method: "DELETE" });
       if (!res.ok) {
-        flashError("Failed to disable TOTP");
+        flashError("Failed to disable authenticator");
         return;
       }
       setTotpEnabled(false);
-      flash("totp disabled");
+      flash("authenticator disabled");
     } else {
       const res = await fetch("/api/auth/totp/setup");
       const data = await res.json();
@@ -136,7 +131,7 @@ export function SettingsView({
     setTotpEnabled(true);
     setShowTotpSetup(false);
     setTotpToken("");
-    flash("totp enabled");
+    flash("authenticator enabled");
   }
 
   async function handleRegenerateRecovery() {
@@ -144,26 +139,7 @@ export function SettingsView({
     const data = await res.json();
     setRecoveryCodes(data.codes);
     setRecoveryRemaining(data.codes.length);
-  }
-
-  async function updateSetting(partial: Partial<UserSettings>) {
-    const updated = { ...settings, ...partial };
-    setSettings(updated);
-    await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(partial),
-    });
-    flash("saved");
-    router.refresh();
-  }
-
-  function cycleView() {
-    const idx = VIEW_OPTIONS.indexOf(
-      settings.defaultView as (typeof VIEW_OPTIONS)[number],
-    );
-    const next = VIEW_OPTIONS[(idx + 1) % VIEW_OPTIONS.length];
-    updateSetting({ defaultView: next });
+    setShowRecoveryCodes(true);
   }
 
   useEffect(() => {
@@ -187,14 +163,6 @@ export function SettingsView({
           e.preventDefault();
           handleRegenerateRecovery();
           break;
-        case "v":
-          e.preventDefault();
-          cycleView();
-          break;
-        case "d":
-          e.preventDefault();
-          updateSetting({ showCompletedTasks: !settings.showCompletedTasks });
-          break;
       }
     }
 
@@ -203,143 +171,127 @@ export function SettingsView({
   });
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 max-w-2xl">
-      {(error || message) && (
-        <div
-          className={`text-sm mb-4 ${error ? "text-destructive" : "text-muted-foreground"}`}
-        >
-          {error || message}
-        </div>
-      )}
-
-      <Section title="account">
-        <Row label="username" value={username} />
-        <Row label="logout" hint="l" action onClick={handleLogout} />
-      </Section>
-
-      <Section title="security">
-        <div className="mb-2">
-          <span className="text-xs text-muted-foreground">passkeys</span>
-        </div>
-        {passkeys.map((pk) => (
-          <Row
-            key={pk.id}
-            label={`  ${pk.name}`}
-            value={pk.createdAt.slice(0, 10)}
-            hint="x"
-            action
-            onClick={() => handleRemovePasskey(pk.id)}
-          />
-        ))}
-        {showAddPasskey ? (
-          <div className="flex gap-2 ml-4 mb-2">
-            <Input
-              value={passkeyName}
-              onChange={(e) => setPasskeyName(e.target.value)}
-              placeholder="key name"
-              autoFocus
-              className="h-7 text-sm flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddPasskey();
-                if (e.key === "Escape") setShowAddPasskey(false);
-              }}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddPasskey}
-              className="h-7 text-xs"
-            >
-              add
-            </Button>
+    <div className="flex-1 overflow-y-auto flex justify-center">
+      <div className="w-full max-w-md p-6">
+        {(error || message) && (
+          <div
+            className={`text-sm mb-4 ${error ? "text-destructive" : "text-muted-foreground"}`}
+          >
+            {error || message}
           </div>
-        ) : (
-          <Row
-            label="  + add passkey"
-            hint="a"
-            action
-            onClick={() => setShowAddPasskey(true)}
-          />
         )}
 
-        {showTotpSetup ? (
-          <div className="border-t border-border pt-2 mt-2">
-            <div className="flex flex-col items-center gap-2 mb-2">
-              {qrCode && (
-                <img src={qrCode} alt="TOTP QR" className="w-36 h-36" />
-              )}
-              <code className="text-xs text-muted-foreground break-all select-all">
-                {totpSecret}
-              </code>
-            </div>
+        <Section title="account">
+          <Row label="username" value={username} />
+          <Row label="logout" hint="l" action onClick={handleLogout} />
+        </Section>
+
+        <Section title="security">
+          <div className="mb-1">
+            <span className="text-xs text-muted-foreground">passkeys</span>
+          </div>
+          {passkeys.map((pk) => (
+            <Row
+              key={pk.id}
+              label={`  ${pk.name}`}
+              value={pk.createdAt.slice(0, 10)}
+              hint="x"
+              action
+              onClick={() => handleRemovePasskey(pk.id)}
+            />
+          ))}
+          {showAddPasskey ? (
             <div className="flex gap-2 ml-4 mb-2">
               <Input
-                value={totpToken}
-                onChange={(e) => setTotpToken(e.target.value)}
-                placeholder="6-digit code"
+                value={passkeyName}
+                onChange={(e) => setPasskeyName(e.target.value)}
+                placeholder="key name"
                 autoFocus
-                maxLength={6}
                 className="h-7 text-sm flex-1"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleTotpVerify();
-                  if (e.key === "Escape") setShowTotpSetup(false);
+                  if (e.key === "Enter") handleAddPasskey();
+                  if (e.key === "Escape") setShowAddPasskey(false);
                 }}
               />
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleTotpVerify}
+                onClick={handleAddPasskey}
                 className="h-7 text-xs"
               >
-                verify
+                add
               </Button>
             </div>
-          </div>
-        ) : (
-          <Row
-            label="totp"
-            value={totpEnabled ? "enabled" : "disabled"}
-            hint="t"
-            action
-            onClick={handleTotpToggle}
-          />
-        )}
+          ) : (
+            <Row
+              label="  + add passkey"
+              hint="a"
+              action
+              muted
+              onClick={() => setShowAddPasskey(true)}
+            />
+          )}
 
-        {recoveryCodes ? (
-          <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all mt-2 mb-2">
-            {recoveryCodes.map((code) => (
-              <div key={code}>{code}</div>
-            ))}
-          </div>
-        ) : (
-          <Row
-            label="recovery codes"
-            value={`${recoveryRemaining} remaining`}
-            hint="r"
-            action
-            onClick={handleRegenerateRecovery}
-          />
-        )}
-      </Section>
+          {showTotpSetup ? (
+            <div className="pt-2 mt-2">
+              <div className="flex flex-col items-center gap-2 mb-2">
+                {qrCode && (
+                  <img src={qrCode} alt="TOTP QR" className="w-36 h-36" />
+                )}
+                <code className="text-xs text-muted-foreground break-all select-all">
+                  {totpSecret}
+                </code>
+              </div>
+              <div className="flex gap-2 ml-4 mb-2">
+                <Input
+                  value={totpToken}
+                  onChange={(e) => setTotpToken(e.target.value)}
+                  placeholder="6-digit code"
+                  autoFocus
+                  maxLength={6}
+                  className="h-7 text-sm flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleTotpVerify();
+                    if (e.key === "Escape") setShowTotpSetup(false);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTotpVerify}
+                  className="h-7 text-xs"
+                >
+                  verify
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Row
+              label="authenticator"
+              value={totpEnabled ? "enabled" : "disabled"}
+              hint="t"
+              action
+              onClick={handleTotpToggle}
+            />
+          )}
 
-      <Section title="preferences">
-        <Row
-          label="default view"
-          value={settings.defaultView}
-          hint="v"
-          action
-          onClick={cycleView}
-        />
-        <Row
-          label="show completed"
-          value={settings.showCompletedTasks ? "true" : "false"}
-          hint="d"
-          action
-          onClick={() =>
-            updateSetting({ showCompletedTasks: !settings.showCompletedTasks })
-          }
-        />
-      </Section>
+          {showRecoveryCodes ? (
+            <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all text-center mt-2 mb-2">
+              {recoveryCodes.map((code) => (
+                <div key={code}>{code}</div>
+              ))}
+            </div>
+          ) : (
+            <Row
+              label="recovery codes"
+              value={`${recoveryRemaining} remaining`}
+              hint="r"
+              action
+              onClick={handleRegenerateRecovery}
+            />
+          )}
+        </Section>
+      </div>
     </div>
   );
 }
@@ -352,7 +304,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-b border-border pb-4 mb-4">
+    <div className="pb-4 mb-4">
       <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
         {title}
       </h2>
@@ -366,12 +318,14 @@ function Row({
   value,
   hint,
   action,
+  muted,
   onClick,
 }: {
   label: string;
   value?: string;
   hint?: string;
   action?: boolean;
+  muted?: boolean;
   onClick?: () => void;
 }) {
   const Tag = action ? "button" : "div";
@@ -381,12 +335,14 @@ function Row({
       onClick={onClick}
       type={action ? "button" : undefined}
     >
-      <span className="text-foreground flex-1 text-left">{label}</span>
-      {value && <span className="text-muted-foreground mr-4">{value}</span>}
+      <span
+        className={`flex-1 text-left ${muted ? "text-muted-foreground" : "text-foreground"}`}
+      >
+        {label}
+      </span>
+      {value && <span className="text-muted-foreground">{value}</span>}
       {hint && (
-        <kbd className="text-[10px] text-muted-foreground w-4 text-right">
-          {hint}
-        </kbd>
+        <kbd className="text-[10px] text-muted-foreground ml-4">{hint}</kbd>
       )}
     </Tag>
   );
