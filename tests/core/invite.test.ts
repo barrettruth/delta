@@ -5,10 +5,6 @@ import {
   generateInviteCode,
   validateInviteCode,
 } from "@/core/auth";
-import {
-  findOrCreateUserFromOAuth,
-  findUserFromOAuth,
-} from "@/core/oauth";
 import type { Db } from "@/core/types";
 import { createTestDb } from "../helpers";
 
@@ -85,41 +81,5 @@ describe("consumeInviteCode", () => {
   it("returns false for nonexistent code", () => {
     const user = createUser(db, "barrett", "password123");
     expect(consumeInviteCode(db, "delta-nonexist", user.id)).toBe(false);
-  });
-});
-
-describe("findUserFromOAuth", () => {
-  it("returns null for unknown account", () => {
-    const result = findUserFromOAuth(db, "github", "unknown-id");
-    expect(result).toBeNull();
-  });
-
-  it("returns SafeUser for known account", () => {
-    const created = findOrCreateUserFromOAuth(db, "github", "gh-123", {
-      username: "barrett",
-      email: "b@example.com",
-    });
-
-    const found = findUserFromOAuth(db, "github", "gh-123");
-    expect(found).not.toBeNull();
-    expect(found?.id).toBe(created.id);
-    expect(found?.username).toBe("barrett");
-    expect("passwordHash" in (found ?? {})).toBe(false);
-  });
-
-  it("returns null for wrong provider", () => {
-    findOrCreateUserFromOAuth(db, "github", "gh-123", {
-      username: "barrett",
-    });
-
-    expect(findUserFromOAuth(db, "google", "gh-123")).toBeNull();
-  });
-
-  it("returns null for wrong providerAccountId", () => {
-    findOrCreateUserFromOAuth(db, "github", "gh-123", {
-      username: "barrett",
-    });
-
-    expect(findUserFromOAuth(db, "github", "gh-999")).toBeNull();
   });
 });

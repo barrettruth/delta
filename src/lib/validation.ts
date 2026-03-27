@@ -151,12 +151,11 @@ export function validateCreateTask(
         field: "meetingUrl",
         message: "meetingUrl must be at most 2000 characters",
       });
-    } else if (
-      !/^https?:\/\//i.test(b.meetingUrl.trim())
-    ) {
+    } else if (!/^https?:\/\//i.test(b.meetingUrl.trim())) {
       errors.push({
         field: "meetingUrl",
-        message: "meetingUrl must be a valid URL starting with http:// or https://",
+        message:
+          "meetingUrl must be a valid URL starting with http:// or https://",
       });
     }
   }
@@ -319,12 +318,11 @@ export function validateUpdateTask(
         field: "meetingUrl",
         message: "meetingUrl must be at most 2000 characters",
       });
-    } else if (
-      !/^https?:\/\//i.test(b.meetingUrl.trim())
-    ) {
+    } else if (!/^https?:\/\//i.test(b.meetingUrl.trim())) {
       errors.push({
         field: "meetingUrl",
-        message: "meetingUrl must be a valid URL starting with http:// or https://",
+        message:
+          "meetingUrl must be a valid URL starting with http:// or https://",
       });
     }
   }
@@ -357,9 +355,11 @@ export function validateUpdateTask(
   if (b.allDay !== undefined) data.allDay = b.allDay as number | null;
   if (b.timezone !== undefined) data.timezone = b.timezone as string | null;
   if (b.location !== undefined)
-    data.location = b.location === null ? null : sanitize(String(b.location).trim());
+    data.location =
+      b.location === null ? null : sanitize(String(b.location).trim());
   if (b.meetingUrl !== undefined)
-    data.meetingUrl = b.meetingUrl === null ? null : String(b.meetingUrl).trim();
+    data.meetingUrl =
+      b.meetingUrl === null ? null : String(b.meetingUrl).trim();
 
   return { success: true, data };
 }

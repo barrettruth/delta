@@ -3,7 +3,6 @@ import {
   primaryKey,
   sqliteTable,
   text,
-  unique,
 } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
@@ -11,21 +10,32 @@ export const users = sqliteTable("users", {
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash"),
   apiKey: text("api_key").unique(),
+  totpSecret: text("totp_secret"),
+  totpEnabled: integer("totp_enabled").default(0),
   createdAt: text("created_at").notNull(),
 });
 
-export const accounts = sqliteTable(
-  "accounts",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
-  },
-  (t) => [unique().on(t.provider, t.providerAccountId)],
-);
+export const webauthnCredentials = sqliteTable("webauthn_credentials", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  credentialId: text("credential_id").notNull().unique(),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull().default(0),
+  transports: text("transports"),
+  name: text("name").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const recoveryCodes = sqliteTable("recovery_codes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  codeHash: text("code_hash").notNull(),
+  used: integer("used").default(0),
+});
 
 export const tasks = sqliteTable("tasks", {
   id: integer("id").primaryKey({ autoIncrement: true }),

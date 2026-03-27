@@ -27,9 +27,7 @@ interface PreviewStyle {
   dayIndex: number;
 }
 
-export function useTimeGridInteraction(
-  options: UseTimeGridInteractionOptions,
-) {
+export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
   const {
     hourHeight = HOUR_HEIGHT,
     onSlotClick,
@@ -93,7 +91,9 @@ export function useTimeGridInteraction(
       startYRef.current = e.clientY;
       didDragRef.current = false;
 
-      const scrollParent = columnEl.closest("[data-time-grid-scroll]") as HTMLElement | null;
+      const scrollParent = columnEl.closest(
+        "[data-time-grid-scroll]",
+      ) as HTMLElement | null;
       scrollContainerRef.current = scrollParent;
 
       const resizeHandle = target.closest("[data-resize-handle]");
@@ -106,7 +106,10 @@ export function useTimeGridInteraction(
         if (!startAt) return;
 
         taskIdRef.current = taskId;
-        eventStartMinRef.current = Number.parseInt(eventEl.dataset.eventStartMin || "0", 10);
+        eventStartMinRef.current = Number.parseInt(
+          eventEl.dataset.eventStartMin || "0",
+          10,
+        );
         eventEndMinRef.current = endAt
           ? Number.parseInt(eventEl.dataset.eventEndMin || "0", 10)
           : eventStartMinRef.current + 15;
@@ -122,16 +125,25 @@ export function useTimeGridInteraction(
       if (eventEl) {
         const taskId = Number(eventEl.dataset.eventId);
         taskIdRef.current = taskId;
-        eventStartMinRef.current = Number.parseInt(eventEl.dataset.eventStartMin || "0", 10);
+        eventStartMinRef.current = Number.parseInt(
+          eventEl.dataset.eventStartMin || "0",
+          10,
+        );
         eventEndMinRef.current = eventEl.dataset.eventEndMin
           ? Number.parseInt(eventEl.dataset.eventEndMin, 10)
           : null;
-        eventDurationRef.current = (eventEndMinRef.current ?? eventStartMinRef.current + 15) - eventStartMinRef.current;
+        eventDurationRef.current =
+          (eventEndMinRef.current ?? eventStartMinRef.current + 15) -
+          eventStartMinRef.current;
 
         const eventRect = eventEl.getBoundingClientRect();
-        const scrollTop = scrollContainerRef.current ? scrollContainerRef.current.scrollTop : 0;
-        const eventTopPx = eventRect.top - columnEl.getBoundingClientRect().top + scrollTop;
-        const pointerPx = e.clientY - columnEl.getBoundingClientRect().top + scrollTop;
+        const scrollTop = scrollContainerRef.current
+          ? scrollContainerRef.current.scrollTop
+          : 0;
+        const eventTopPx =
+          eventRect.top - columnEl.getBoundingClientRect().top + scrollTop;
+        const pointerPx =
+          e.clientY - columnEl.getBoundingClientRect().top + scrollTop;
         offsetRef.current = pointerPx - eventTopPx;
 
         modeRef.current = "moving";
@@ -164,7 +176,9 @@ export function useTimeGridInteraction(
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         const target = e.target as HTMLElement;
-        const columnEl = findColumnEl(target) || target.closest("[data-day-column]") as HTMLElement;
+        const columnEl =
+          findColumnEl(target) ||
+          (target.closest("[data-day-column]") as HTMLElement);
         if (!columnEl) return;
 
         if (modeRef.current === "creating") {
@@ -206,7 +220,8 @@ export function useTimeGridInteraction(
           currentMinuteRef.current = snapMinuteTo15(newEnd);
           setPreviewStyle({
             top: eventStartMinRef.current * pxPerMin,
-            height: (currentMinuteRef.current - eventStartMinRef.current) * pxPerMin,
+            height:
+              (currentMinuteRef.current - eventStartMinRef.current) * pxPerMin,
             dayIndex: dayIndexRef.current,
           });
         }
@@ -236,10 +251,18 @@ export function useTimeGridInteraction(
         if (!wasDrag) {
           onSlotClick(dayIndexRef.current, startMinuteRef.current);
         } else {
-          const minStart = Math.min(startMinuteRef.current, currentMinuteRef.current);
-          const maxEnd = Math.max(startMinuteRef.current, currentMinuteRef.current);
+          const minStart = Math.min(
+            startMinuteRef.current,
+            currentMinuteRef.current,
+          );
+          const maxEnd = Math.max(
+            startMinuteRef.current,
+            currentMinuteRef.current,
+          );
           if (maxEnd - minStart >= 15) {
-            const rect = (e.target as HTMLElement).closest("[data-day-column]")?.getBoundingClientRect();
+            const rect = (e.target as HTMLElement)
+              .closest("[data-day-column]")
+              ?.getBoundingClientRect();
             if (rect) {
               const anchorRect = new DOMRect(
                 rect.left + rect.width / 2,
@@ -277,7 +300,14 @@ export function useTimeGridInteraction(
 
       taskIdRef.current = null;
     },
-    [onSlotClick, onEventClick, onRangeCreate, onEventMove, onEventResize, pxPerMin],
+    [
+      onSlotClick,
+      onEventClick,
+      onRangeCreate,
+      onEventMove,
+      onEventResize,
+      pxPerMin,
+    ],
   );
 
   const gridProps = {
