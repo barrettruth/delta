@@ -229,13 +229,21 @@ export function CalendarView({
   const prevMonth = useCallback(() => {
     setAnchor((d) => {
       const b = d ?? new Date();
-      return new Date(b.getFullYear(), b.getMonth() - 1, b.getDate());
+      const targetMonth = b.getMonth() - 1;
+      const targetYear = b.getFullYear();
+      const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+      const day = Math.min(b.getDate(), lastDay);
+      return new Date(targetYear, targetMonth, day);
     });
   }, []);
   const nextMonth = useCallback(() => {
     setAnchor((d) => {
       const b = d ?? new Date();
-      return new Date(b.getFullYear(), b.getMonth() + 1, b.getDate());
+      const targetMonth = b.getMonth() + 1;
+      const targetYear = b.getFullYear();
+      const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+      const day = Math.min(b.getDate(), lastDay);
+      return new Date(targetYear, targetMonth, day);
     });
   }, []);
   const goToday = useCallback(() => {
@@ -472,6 +480,9 @@ export function CalendarView({
     return () => {
       if (bracketTimer.current) clearTimeout(bracketTimer.current);
       if (gTimer.current) clearTimeout(gTimer.current);
+      pendingBracket.current = null;
+      pendingG.current = false;
+      countBuf.current = "";
     };
   }, []);
 
