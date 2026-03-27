@@ -11,6 +11,7 @@ interface UseTimeGridInteractionOptions {
     taskId: number,
     newStartAt: string,
     newEndAt: string | null,
+    dayIndex: number,
   ) => void;
   onEventResize: (taskId: number, newEndAt: string) => void;
   onRangeCreate: (
@@ -163,6 +164,17 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
     [findColumnEl, getMinuteFromY],
   );
 
+  const findColumnFromPoint = useCallback(
+    (clientX: number, clientY: number): HTMLElement | null => {
+      const el = document.elementFromPoint(clientX, clientY);
+      if (!el) return null;
+      return (el as HTMLElement).closest?.(
+        "[data-day-column]",
+      ) as HTMLElement | null;
+    },
+    [],
+  );
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (modeRef.current === "idle") return;
@@ -174,16 +186,28 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
       didDragRef.current = true;
 
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      const clientX = e.clientX;
+      const clientY = e.clientY;
       rafRef.current = requestAnimationFrame(() => {
         const target = e.target as HTMLElement;
-        const columnEl =
+        let columnEl =
           findColumnEl(target) ||
           (target.closest("[data-day-column]") as HTMLElement);
+
+        if (modeRef.current === "moving") {
+          const pointCol = findColumnFromPoint(clientX, clientY);
+          if (pointCol) {
+            columnEl = pointCol;
+            const newDayIndex = Number(pointCol.dataset.dayColumn);
+            dayIndexRef.current = newDayIndex;
+          }
+        }
+
         if (!columnEl) return;
 
         if (modeRef.current === "creating") {
           if (mode !== "creating") setMode("creating");
-          const minute = getMinuteFromY(e.clientY, columnEl);
+          const minute = getMinuteFromY(clientY, columnEl);
           currentMinuteRef.current = minute;
           const minStart = Math.min(startMinuteRef.current, minute);
           const maxEnd = Math.max(startMinuteRef.current, minute);
@@ -199,7 +223,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
             setMode("moving");
             setDraggingTaskId(taskIdRef.current);
           }
-          const pointerMinute = getMinuteFromY(e.clientY, columnEl);
+          const pointerMinute = getMinuteFromY(clientY, columnEl);
           const offsetMinutes = offsetRef.current / pxPerMin;
           const newStart = snapMinuteTo15(pointerMinute - offsetMinutes);
           currentMinuteRef.current = newStart;
@@ -215,7 +239,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
             setMode("resizing");
             setDraggingTaskId(taskIdRef.current);
           }
-          const minute = getMinuteFromY(e.clientY, columnEl);
+          const minute = getMinuteFromY(clientY, columnEl);
           const newEnd = Math.max(eventStartMinRef.current + 15, minute);
           currentMinuteRef.current = snapMinuteTo15(newEnd);
           setPreviewStyle({
@@ -227,7 +251,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         }
       });
     },
-    [findColumnEl, getMinuteFromY, mode, pxPerMin],
+    [findColumnEl, findColumnFromPoint, getMinuteFromY, mode, pxPerMin],
   );
 
   const handlePointerUp = useCallback(
@@ -284,6 +308,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
             taskIdRef.current,
             String(newStart),
             eventEndMinRef.current !== null ? String(newEnd) : null,
+            dayIndexRef.current,
           );
         } else {
           onEventClick(taskIdRef.current);

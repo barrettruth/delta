@@ -94,6 +94,7 @@ export function WeekTimeGrid({
     taskId: number,
     newStartAt: string,
     newEndAt: string | null,
+    dayIndex: number,
   ) => void;
   onEventResize?: (taskId: number, newEndAt: string) => void;
   onRangeCreate?: (
@@ -204,8 +205,8 @@ export function WeekTimeGrid({
         }
       }
     },
-    onEventMove: (taskId, newStartAt, newEndAt) => {
-      onEventMove?.(taskId, newStartAt, newEndAt);
+    onEventMove: (taskId, newStartAt, newEndAt, dayIndex) => {
+      onEventMove?.(taskId, newStartAt, newEndAt, dayIndex);
     },
     onEventResize: (taskId, newEndAt) => {
       onEventResize?.(taskId, newEndAt);
@@ -316,6 +317,7 @@ export function WeekTimeGrid({
                     style={{
                       top: `${selectedHour * HOUR_HEIGHT}px`,
                       height: `${HOUR_HEIGHT}px`,
+                      animation: "cursor-blink 1.2s ease-in-out infinite",
                     }}
                   />
                 )}
@@ -346,7 +348,7 @@ export function WeekTimeGrid({
                 {interaction.previewStyle &&
                   interaction.previewStyle.dayIndex === dayIdx && (
                     <div
-                      className="absolute left-1 right-1 border border-dashed border-primary z-20 pointer-events-none"
+                      className="absolute left-0 right-0 border border-dashed border-primary z-20 pointer-events-none"
                       style={{
                         top: `${interaction.previewStyle.top}px`,
                         height: `${interaction.previewStyle.height}px`,
