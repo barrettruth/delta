@@ -4,8 +4,21 @@ import { createSession } from "@/core/auth";
 import { verifyRecoveryCode } from "@/core/recovery";
 import { getTotpSecret, verifyTotpToken } from "@/core/totp";
 import { db } from "@/db";
+import { isRateLimited, recordAttempt } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many attempts. Try again later." },
+      { status: 429 },
+    );
+  }
+
   const cookieStore = await cookies();
   const pendingUserId = cookieStore.get("pending_2fa_user")?.value;
 
@@ -17,31 +30,29 @@ export async function POST(request: Request) {
   }
 
   const userId = Number.parseInt(pendingUserId, 10);
-  const { token, isRecoveryCode } = await request.json();
+  const { token } = await request.json();
 
   if (!token) {
     return NextResponse.json({ error: "Token required" }, { status: 400 });
   }
 
-  if (isRecoveryCode) {
-    if (!verifyRecoveryCode(db, userId, token)) {
-      return NextResponse.json(
-        { error: "Invalid recovery code" },
-        { status: 401 },
-      );
-    }
-  } else {
-    const secret = getTotpSecret(db, userId);
-    if (!secret) {
-      return NextResponse.json(
-        { error: "TOTP not configured" },
-        { status: 400 },
-      );
-    }
+  recordAttempt(ip);
 
-    if (!verifyTotpToken(secret, token)) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  let verified = false;
+
+  const secret = getTotpSecret(db, userId);
+  if (secret && verifyTotpToken(secret, token)) {
+    verified = true;
+  }
+
+  if (!verified && token.includes("-")) {
+    if (verifyRecoveryCode(db, userId, token)) {
+      verified = true;
     }
+  }
+
+  if (!verified) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
   cookieStore.delete("pending_2fa_user");

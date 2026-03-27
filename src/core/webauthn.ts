@@ -16,10 +16,16 @@ import type { Db } from "./types";
 const RP_NAME = "delta";
 
 function getRpId(): string {
+  if (process.env.NODE_ENV === "production" && !process.env.WEBAUTHN_RP_ID) {
+    throw new Error("WEBAUTHN_RP_ID must be set in production");
+  }
   return process.env.WEBAUTHN_RP_ID ?? "localhost";
 }
 
 function getOrigin(): string {
+  if (process.env.NODE_ENV === "production" && !process.env.WEBAUTHN_ORIGIN) {
+    throw new Error("WEBAUTHN_ORIGIN must be set in production");
+  }
   return process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3000";
 }
 

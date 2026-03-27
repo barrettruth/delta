@@ -57,12 +57,7 @@ export function LoginForm() {
         router.refresh();
       }
     } else {
-      if (data.error === "User not found") {
-        setIsSignUp(true);
-        setError("");
-      } else {
-        setError(data.error ?? "Login failed");
-      }
+      setError(data.error ?? "Login failed");
     }
     setLoading(false);
   }
@@ -71,10 +66,7 @@ export function LoginForm() {
     const res = await fetch("/api/auth/totp/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token: totpToken,
-        isRecoveryCode: totpToken.includes("-"),
-      }),
+      body: JSON.stringify({ token: totpToken }),
     });
 
     if (res.ok) {
@@ -222,14 +214,28 @@ export function LoginForm() {
           )}
 
           {step === "credentials" && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePasskeyOnly}
-              disabled={loading}
-            >
-              sign in with passkey
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePasskeyOnly}
+                disabled={loading}
+              >
+                sign in with passkey
+              </Button>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => {
+                  setIsSignUp((v) => !v);
+                  setError("");
+                }}
+              >
+                {isSignUp
+                  ? "already have an account? login"
+                  : "don't have an account? sign up"}
+              </button>
+            </>
           )}
         </form>
       </div>
