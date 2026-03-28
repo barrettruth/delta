@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRRule,
   getNextOccurrence,
   getNextTaskData,
   parseRRule,
+  rruleToText,
 } from "@/core/recurrence";
 import type { Task } from "@/core/types";
 
@@ -15,6 +17,68 @@ describe("parseRRule", () => {
   it("strips RRULE: prefix", () => {
     const rule = parseRRule("RRULE:FREQ=DAILY");
     expect(rule).toBeDefined();
+  });
+});
+
+describe("rruleToText", () => {
+  it("converts daily rule to text", () => {
+    expect(rruleToText("FREQ=DAILY")).toBe("every day");
+  });
+
+  it("converts weekly with days to text", () => {
+    expect(rruleToText("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE")).toBe(
+      "every 2 weeks on Monday, Wednesday",
+    );
+  });
+
+  it("strips RRULE: prefix", () => {
+    expect(rruleToText("RRULE:FREQ=MONTHLY")).toBe("every month");
+  });
+});
+
+describe("buildRRule", () => {
+  it("builds a daily rule", () => {
+    const str = buildRRule({ freq: "daily" });
+    expect(str).toContain("FREQ=DAILY");
+  });
+
+  it("builds a weekly rule with interval", () => {
+    const str = buildRRule({ freq: "weekly", interval: 2 });
+    expect(str).toContain("FREQ=WEEKLY");
+    expect(str).toContain("INTERVAL=2");
+  });
+
+  it("builds weekdays rule", () => {
+    const str = buildRRule({ freq: "weekdays" });
+    expect(str).toContain("FREQ=WEEKLY");
+    expect(str).toContain("MO");
+    expect(str).toContain("FR");
+    expect(str).not.toContain("SA");
+    expect(str).not.toContain("SU");
+  });
+
+  it("builds weekly with specific days", () => {
+    const str = buildRRule({ freq: "weekly", byweekday: [0, 2] });
+    expect(str).toContain("BYDAY=MO,WE");
+  });
+
+  it("builds monthly with bymonthday", () => {
+    const str = buildRRule({ freq: "monthly", bymonthday: [1, 15] });
+    expect(str).toContain("FREQ=MONTHLY");
+    expect(str).toContain("BYMONTHDAY=1,15");
+  });
+
+  it("builds with count", () => {
+    const str = buildRRule({ freq: "daily", count: 10 });
+    expect(str).toContain("COUNT=10");
+  });
+
+  it("builds with until", () => {
+    const str = buildRRule({
+      freq: "weekly",
+      until: new Date("2026-12-31T00:00:00Z"),
+    });
+    expect(str).toContain("UNTIL=");
   });
 });
 
