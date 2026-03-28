@@ -115,12 +115,15 @@ export const userSettings = sqliteTable("user_settings", {
   settings: text("settings").notNull(),
 });
 
-export const inviteCodes = sqliteTable("invite_codes", {
+export const inviteLinks = sqliteTable("invite_links", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  code: text("code").notNull().unique(),
+  token: text("token").notNull().unique(),
   createdBy: integer("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: text("expires_at").notNull(),
+  maxUses: integer("max_uses").notNull().default(1),
+  useCount: integer("use_count").notNull().default(0),
   usedBy: integer("used_by").references(() => users.id),
   usedAt: text("used_at"),
   createdAt: text("created_at").notNull(),

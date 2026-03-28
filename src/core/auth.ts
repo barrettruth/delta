@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, gt, isNull } from "drizzle-orm";
-import { inviteCodes, sessions, users } from "@/db/schema";
+import { and, eq, gt, lt } from "drizzle-orm";
+import { inviteLinks, sessions, users } from "@/db/schema";
 import type { Db } from "./types";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -70,45 +70,76 @@ export function regenerateApiKey(db: Db, userId: number): string {
   return newKey;
 }
 
-export function generateInviteCode(db: Db, userId: number): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const bytes = randomBytes(8);
-  let suffix = "";
-  for (let i = 0; i < 8; i++) {
-    suffix += chars[bytes[i] % chars.length];
-  }
-  const code = `delta-${suffix}`;
+const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
-  db.insert(inviteCodes)
+export function generateInviteLink(
+  db: Db,
+  userId: number,
+  maxUses = 1,
+): string {
+  const token = randomBytes(32).toString("base64url");
+  const now = new Date();
+
+  db.insert(inviteLinks)
     .values({
-      code,
+      token,
       createdBy: userId,
-      createdAt: new Date().toISOString(),
+      expiresAt: new Date(now.getTime() + INVITE_EXPIRY_MS).toISOString(),
+      maxUses,
+      useCount: 0,
+      createdAt: now.toISOString(),
     })
     .run();
 
-  return code;
+  return token;
 }
 
-export function validateInviteCode(db: Db, code: string) {
-  return (
-    db
-      .select()
-      .from(inviteCodes)
-      .where(and(eq(inviteCodes.code, code), isNull(inviteCodes.usedBy)))
-      .get() ?? null
-  );
+export function validateInviteToken(db: Db, token: string) {
+  const row = db
+    .select()
+    .from(inviteLinks)
+    .where(
+      and(
+        eq(inviteLinks.token, token),
+        gt(inviteLinks.expiresAt, new Date().toISOString()),
+      ),
+    )
+    .get();
+
+  if (!row) return null;
+  if (row.useCount >= row.maxUses) return null;
+  return row;
 }
 
-export function consumeInviteCode(
+export function consumeInviteToken(
   db: Db,
-  code: string,
+  token: string,
   userId: number,
 ): boolean {
+  const row = validateInviteToken(db, token);
+  if (!row) return false;
+
   const result = db
-    .update(inviteCodes)
-    .set({ usedBy: userId, usedAt: new Date().toISOString() })
-    .where(and(eq(inviteCodes.code, code), isNull(inviteCodes.usedBy)))
+    .update(inviteLinks)
+    .set({
+      useCount: row.useCount + 1,
+      usedBy: userId,
+      usedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(inviteLinks.token, token),
+        lt(inviteLinks.useCount, inviteLinks.maxUses),
+      ),
+    )
     .run();
   return result.changes > 0;
+}
+
+export function listInviteLinks(db: Db, userId: number) {
+  return db
+    .select()
+    .from(inviteLinks)
+    .where(eq(inviteLinks.createdBy, userId))
+    .all();
 }

@@ -1,9 +1,14 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createSession } from "@/core/auth";
+import {
+  consumeInviteToken,
+  createSession,
+  validateInviteToken,
+} from "@/core/auth";
 import {
   exchangeCodeForToken,
   fetchProviderUser,
+  findAccountByProvider,
   findOrCreateUserFromOAuth,
   getEnabledProviders,
   linkAccount,
@@ -80,12 +85,41 @@ export async function GET(
       }
     }
 
-    const { user } = findOrCreateUserFromOAuth(
+    const existing = findAccountByProvider(
+      db,
+      provider as OAuthProvider,
+      providerUser.id,
+    );
+
+    const inviteToken = cookieStore.get("invite_token")?.value;
+
+    if (!existing && !inviteToken) {
+      return NextResponse.redirect(
+        `${OAUTH_REDIRECT_BASE}/login?error=no_invite`,
+      );
+    }
+
+    if (!existing && inviteToken) {
+      const invite = validateInviteToken(db, inviteToken);
+      if (!invite) {
+        cookieStore.delete("invite_token");
+        return NextResponse.redirect(
+          `${OAUTH_REDIRECT_BASE}/login?error=invalid_invite`,
+        );
+      }
+    }
+
+    const { user, isNew } = findOrCreateUserFromOAuth(
       db,
       provider as OAuthProvider,
       providerUser,
       tokens,
     );
+
+    if (isNew && inviteToken) {
+      consumeInviteToken(db, inviteToken, user.id);
+      cookieStore.delete("invite_token");
+    }
 
     const twoFactorMethods = getUserTwoFactorMethods(db, user.id);
 

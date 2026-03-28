@@ -3,6 +3,11 @@
 import { startRegistration } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import {
+  generateInviteAction,
+  type InviteLinkRow,
+  listInvitesAction,
+} from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -59,6 +64,8 @@ export function SettingsView({
   const [totpToken, setTotpToken] = useState("");
   const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [invites, setInvites] = useState<InviteLinkRow[]>([]);
+  const [invitesLoaded, setInvitesLoaded] = useState(false);
 
   const flash = useCallback((msg: string) => {
     setMessage(msg);
@@ -197,6 +204,36 @@ export function SettingsView({
     flash(`${provider} unlinked`);
   }
 
+  function getInviteUrl(token: string): string {
+    return `${window.location.origin}/invite/${token}`;
+  }
+
+  async function handleGenerateInvite() {
+    const result = await generateInviteAction();
+    if ("error" in result) {
+      flashError(result.error);
+      return;
+    }
+    flash("invite link generated");
+    await loadInvites();
+  }
+
+  const loadInvites = useCallback(async () => {
+    const result = await listInvitesAction();
+    if ("data" in result) {
+      setInvites(result.data);
+      setInvitesLoaded(true);
+    }
+  }, []);
+
+  async function handleCopyInviteUrl(token: string) {
+    await navigator.clipboard.writeText(getInviteUrl(token));
+    flash("copied to clipboard");
+  }
+
+  useEffect(() => {
+    loadInvites();
+  }, [loadInvites]);
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
@@ -225,6 +262,10 @@ export function SettingsView({
           } else {
             handleGenerateFeed();
           }
+          break;
+        case "i":
+          e.preventDefault();
+          handleGenerateInvite();
           break;
       }
     }
@@ -444,6 +485,48 @@ export function SettingsView({
               onClick={handleGenerateFeed}
             />
           )}
+        </Section>
+
+        <Section title="invites">
+          <Row
+            label="+ generate invite link"
+            hint="i"
+            action
+            muted
+            onClick={handleGenerateInvite}
+          />
+          {invitesLoaded &&
+            invites.map((inv) => {
+              const expired = new Date(inv.expiresAt) < new Date();
+              const exhausted = inv.useCount >= inv.maxUses;
+              const status = expired
+                ? "expired"
+                : exhausted
+                  ? "used"
+                  : "active";
+              return (
+                <div key={inv.id} className="mb-2">
+                  <div className="text-xs text-muted-foreground break-all select-all px-2 py-1 border border-border font-mono">
+                    {getInviteUrl(inv.token)}
+                  </div>
+                  <div className="flex items-center px-2 py-1 text-xs text-muted-foreground">
+                    <span className="flex-1">
+                      {status} · {inv.useCount}/{inv.maxUses} uses · expires{" "}
+                      {inv.expiresAt.slice(0, 10)}
+                    </span>
+                    {status === "active" && (
+                      <button
+                        type="button"
+                        className="hover:text-foreground"
+                        onClick={() => handleCopyInviteUrl(inv.token)}
+                      >
+                        copy
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
         </Section>
       </div>
     </div>
