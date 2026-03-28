@@ -99,41 +99,6 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
       ) as HTMLElement | null;
       scrollContainerRef.current = scrollParent;
 
-      const dragHandleSide =
-        target.closest("[data-drag-handle-left]") ||
-        target.closest("[data-drag-handle-right]");
-      if (dragHandleSide) {
-        const eventEl = target.closest("[data-event-id]") as HTMLElement | null;
-        if (!eventEl) return;
-        const taskId = Number(eventEl.dataset.eventId);
-        taskIdRef.current = taskId;
-        eventStartMinRef.current = Number.parseInt(
-          eventEl.dataset.eventStartMin || "0",
-          10,
-        );
-        eventEndMinRef.current = eventEl.dataset.eventEndMin
-          ? Number.parseInt(eventEl.dataset.eventEndMin, 10)
-          : null;
-        eventDurationRef.current =
-          (eventEndMinRef.current ?? eventStartMinRef.current + 15) -
-          eventStartMinRef.current;
-
-        const eventRect = eventEl.getBoundingClientRect();
-        const scrollTop = scrollContainerRef.current
-          ? scrollContainerRef.current.scrollTop
-          : 0;
-        const eventTopPx =
-          eventRect.top - columnEl.getBoundingClientRect().top + scrollTop;
-        const pointerPx =
-          e.clientY - columnEl.getBoundingClientRect().top + scrollTop;
-        offsetRef.current = pointerPx - eventTopPx;
-
-        modeRef.current = "moving";
-        e.preventDefault();
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-        return;
-      }
-
       const resizeHandleTop = target.closest("[data-resize-handle-top]");
       const resizeHandle = target.closest("[data-resize-handle]");
       if (resizeHandleTop || resizeHandle) {

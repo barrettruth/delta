@@ -21,7 +21,6 @@ export function MonthGrid({
   onTaskClick,
   dayNames,
   categoryColors,
-  selectedDate,
 }: {
   monthStart: Date;
   today: Date;
@@ -30,7 +29,6 @@ export function MonthGrid({
   onTaskClick: (task: Task) => void;
   dayNames: string[];
   categoryColors: Record<string, string>;
-  selectedDate: Date | null;
 }) {
   const totalDays = daysInMonth(monthStart);
   const offset = weekOffset(monthStart);
@@ -79,19 +77,14 @@ export function MonthGrid({
             (a, b) => (b.allDay ?? 0) - (a.allDay ?? 0),
           );
           const isToday = isSameDay(cellDate, today);
-          const isSelected =
-            selectedDate !== null && isSameDay(cellDate, selectedDate);
           const isPast = cellDate < today && !isToday;
           const blend = dayBlendStyle(dayTasks, categoryColors);
 
           return (
             <div
               key={cell.key}
-              {...(isSelected ? { "data-calendar-cursor": "" } : {})}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 ${
-                isSelected ? "bg-accent" : ""
-              } ${isToday ? "outline outline-1 -outline-offset-1 outline-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
-              style={!isToday && !isSelected ? blend : undefined}
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 ${isToday ? "outline outline-1 -outline-offset-1 outline-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
+              style={!isToday ? blend : undefined}
             >
               <span
                 className={`text-xs font-medium mb-1 ${

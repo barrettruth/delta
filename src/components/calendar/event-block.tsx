@@ -75,16 +75,18 @@ export function EventBlock({
       }}
     >
       <span className="font-medium truncate block">{task.description}</span>
-      <span className="truncate block text-muted-foreground">
-        {formatTime(start)}
-        {end ? `\u2013${formatTime(end)}` : ""}
-      </span>
-      {task.location && (
+      {height >= 30 && (
+        <span className="truncate block text-muted-foreground">
+          {formatTime(start)}
+          {end ? `\u2013${formatTime(end)}` : ""}
+        </span>
+      )}
+      {height >= 40 && task.location && (
         <span className="truncate block text-[9px] text-muted-foreground">
           {task.location}
         </span>
       )}
-      {task.meetingUrl && height >= 45 && (
+      {height >= 45 && task.meetingUrl && (
         <a
           href={task.meetingUrl}
           target="_blank"
@@ -104,16 +106,6 @@ export function EventBlock({
         data-resize-handle=""
         className="absolute bottom-0 left-0 right-0 cursor-ns-resize"
         style={{ height: "8px" }}
-      />
-      <div
-        data-drag-handle-left=""
-        className="absolute top-0 bottom-0 left-0 cursor-ew-resize"
-        style={{ width: "6px" }}
-      />
-      <div
-        data-drag-handle-right=""
-        className="absolute top-0 bottom-0 right-0 cursor-ew-resize"
-        style={{ width: "6px" }}
       />
     </button>
   );

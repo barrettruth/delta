@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EventBlock } from "@/components/calendar/event-block";
 import type { Task } from "@/core/types";
 import { useTimeGridInteraction } from "@/hooks/use-time-grid-interaction";
@@ -72,12 +72,12 @@ export function WeekTimeGrid({
   onSlotClick,
   onTaskClick,
   categoryColors,
-  selectedDate,
   scrollRef: externalScrollRef,
   onEventMove,
   onEventResize,
   onEventResizeStart,
   onRangeCreate,
+  createPreview,
 }: {
   weekStart: Date;
   today: Date;
@@ -89,7 +89,6 @@ export function WeekTimeGrid({
   ) => void;
   onTaskClick: (task: Task) => void;
   categoryColors: Record<string, string>;
-  selectedDate: Date | null;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
   onEventMove?: (
     taskId: number,
@@ -105,10 +104,10 @@ export function WeekTimeGrid({
     endMinute: number,
     anchor: DOMRect,
   ) => void;
+  createPreview?: { dayIndex: number; startMin: number; endMin: number } | null;
 }) {
   const internalRef = useRef<HTMLDivElement>(null);
   const scrollRef = externalScrollRef || internalRef;
-  const cursorRef = useRef<HTMLDivElement>(null);
   const totalHeight = 24 * HOUR_HEIGHT;
 
   const days = useMemo(() => {
@@ -125,34 +124,6 @@ export function WeekTimeGrid({
     const scrollTo = Math.max(0, (now.getHours() - 1) * HOUR_HEIGHT);
     scrollRef.current.scrollTop = scrollTo;
   }, [scrollRef.current]);
-
-  const selectedDayIndex = useMemo(() => {
-    if (!selectedDate) return -1;
-    return days.findIndex((d) => isSameDay(d, selectedDate));
-  }, [selectedDate, days]);
-
-  const selectedHour = useMemo(() => {
-    if (!selectedDate || selectedDayIndex < 0) return -1;
-    return selectedDate.getHours();
-  }, [selectedDate, selectedDayIndex]);
-
-  const scrollCursorIntoView = useCallback(() => {
-    if (!cursorRef.current || !scrollRef.current) return;
-    const container = scrollRef.current;
-    const cursorTop = selectedHour * HOUR_HEIGHT;
-    const cursorBottom = cursorTop + HOUR_HEIGHT;
-    const viewTop = container.scrollTop;
-    const viewBottom = viewTop + container.clientHeight;
-    if (cursorTop < viewTop) {
-      container.scrollTop = cursorTop;
-    } else if (cursorBottom > viewBottom) {
-      container.scrollTop = cursorBottom - container.clientHeight;
-    }
-  }, [selectedHour, scrollRef.current]);
-
-  useEffect(() => {
-    scrollCursorIntoView();
-  }, [scrollCursorIntoView]);
 
   const [nowMinutes, setNowMinutes] = useState(() =>
     getMinutesFromMidnight(new Date()),
@@ -230,12 +201,10 @@ export function WeekTimeGrid({
         <div className="py-2" />
         {days.map((date, idx) => {
           const isToday = isSameDay(date, today);
-          const isSelected =
-            selectedDate !== null && isSameDay(date, selectedDate);
           return (
             <div
               key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 border-l border-border/30 ${isSelected ? "bg-accent" : isToday ? "bg-primary/10" : ""}`}
+              className={`flex flex-col items-center py-2 border-l border-border/30 ${isToday ? "bg-primary/10" : ""}`}
             >
               <span className="text-xs text-muted-foreground">
                 {DAY_NAMES[idx]}
@@ -278,7 +247,6 @@ export function WeekTimeGrid({
             const key = formatDateKey(date);
             const layout = layoutsByDate.get(key) ?? [];
             const isToday = key === todayKey;
-            const isCursorDay = dayIdx === selectedDayIndex;
 
             return (
               <div
@@ -312,18 +280,6 @@ export function WeekTimeGrid({
                       }}
                     />
                   )),
-                )}
-
-                {isCursorDay && selectedHour >= 0 && (
-                  <div
-                    ref={cursorRef}
-                    data-calendar-cursor=""
-                    className="absolute left-0 right-0 bg-accent border border-primary/30 pointer-events-none z-[5]"
-                    style={{
-                      top: `${selectedHour * HOUR_HEIGHT}px`,
-                      height: `${HOUR_HEIGHT}px`,
-                    }}
-                  />
                 )}
 
                 {isToday && (
@@ -360,6 +316,18 @@ export function WeekTimeGrid({
                           interaction.mode === "creating"
                             ? "hsl(var(--primary) / 0.1)"
                             : "hsl(var(--primary) / 0.4)",
+                      }}
+                    />
+                  )}
+
+                {createPreview &&
+                  createPreview.dayIndex === dayIdx &&
+                  !interaction.previewStyle && (
+                    <div
+                      className="absolute left-0 right-0 border border-dashed border-primary/60 z-10 pointer-events-none"
+                      style={{
+                        top: `${(createPreview.startMin / 60) * HOUR_HEIGHT}px`,
+                        height: `${Math.max(HOUR_HEIGHT / 4, ((createPreview.endMin - createPreview.startMin) / 60) * HOUR_HEIGHT)}px`,
                       }}
                     />
                   )}
