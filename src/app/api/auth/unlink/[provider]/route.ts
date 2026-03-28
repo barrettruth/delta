@@ -24,7 +24,7 @@ export async function DELETE(
   }
 
   const { provider } = await params;
-  const enabled = getEnabledProviders();
+  const enabled = getEnabledProviders(db);
 
   if (!enabled.includes(provider as OAuthProvider)) {
     return NextResponse.json(
