@@ -14,10 +14,18 @@ export function useLocationSearch(query: string): {
   const [results, setResults] = useState<LocationResult[]>([]);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const cacheRef = useRef<Map<string, LocationResult[]>>(new Map());
 
   useEffect(() => {
     if (query.length < 3) {
       setResults([]);
+      setLoading(false);
+      return;
+    }
+
+    const cached = cacheRef.current.get(query);
+    if (cached) {
+      setResults(cached);
       setLoading(false);
       return;
     }
@@ -37,6 +45,7 @@ export function useLocationSearch(query: string): {
           return;
         }
         const data: LocationResult[] = await res.json();
+        cacheRef.current.set(query, data);
         setResults(data);
       } catch {
         if (!controller.signal.aborted) {

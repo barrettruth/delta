@@ -31,6 +31,7 @@ Create a `.env.local` in the project root. All variables are optional depending 
 | `OAUTH_GOOGLE_CLIENT_SECRET` | No | — | Google OAuth client secret |
 | `OAUTH_GITLAB_CLIENT_ID` | No | — | GitLab OAuth app client ID |
 | `OAUTH_GITLAB_CLIENT_SECRET` | No | — | GitLab OAuth app client secret |
+| `MAPBOX_ACCESS_TOKEN` | No | — | Mapbox API token for location geocoding |
 | `NODE_ENV` | No | `development` | Set to `production` for rate limiting |
 | `PORT` | No | `3000` | Port for the standalone server |
 | `HOSTNAME` | No | `localhost` | Hostname to bind to (use `0.0.0.0` for all interfaces) |
