@@ -303,7 +303,7 @@ export function QueueView({
                     if (el) rowRefs.current.set(task.id, el);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-2 pl-2 pr-4 py-1.5 cursor-pointer text-left select-none border-l-2",
+                    "w-full pl-2 pr-4 py-1.5 cursor-pointer text-left select-none border-l-2",
                     getRowClasses(isCursor, isSelected),
                     getTaskDimming(task.status),
                   )}
@@ -319,61 +319,65 @@ export function QueueView({
                   tabIndex={0}
                   role="row"
                 >
-                  <span
-                    className={cn(
-                      "text-xs text-right tabular-nums shrink-0",
-                      isCursor
-                        ? "text-cursor-line-nr font-bold"
-                        : "text-line-nr",
-                    )}
-                    style={{ minWidth: `${gutterWidth}ch` }}
-                  >
-                    {getLineNumber(i, cursor)}
-                  </span>
-                  <button
-                    type="button"
-                    className={`w-4 text-xs shrink-0 text-center hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const next = nextStatus(task.status as TaskStatus);
-                      if (next === "done") {
-                        completeTaskAction(task.id);
-                      } else {
-                        updateTaskAction(task.id, { status: next });
-                      }
-                    }}
-                  >
-                    {STATUS_SIGIL[task.status as TaskStatus]}
-                  </button>
-                  <span
-                    className={cn(
-                      "flex-1 truncate text-sm",
-                      task.status === "done" &&
-                        "line-through text-muted-foreground",
-                      task.status === "cancelled" &&
-                        "line-through text-muted-foreground",
-                    )}
-                  >
-                    {task.description}
-                  </span>
-                  {task.category && (
-                    <span className="max-w-[16ch] truncate text-xs text-right shrink-0">
-                      <span className="font-bold text-muted-foreground">
-                        # {task.category}
-                      </span>
-                    </span>
-                  )}
-                  {task.due && (
+                  <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "w-[5ch] text-xs text-right tabular-nums shrink-0",
-                        isOverdue(task.due)
-                          ? "text-destructive"
-                          : "text-muted-foreground",
+                        "text-xs text-right tabular-nums shrink-0",
+                        isCursor
+                          ? "text-cursor-line-nr font-bold"
+                          : "text-line-nr",
+                      )}
+                      style={{ minWidth: `${gutterWidth}ch` }}
+                    >
+                      {getLineNumber(i, cursor)}
+                    </span>
+                    <button
+                      type="button"
+                      className={`w-4 text-xs shrink-0 text-center hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const next = nextStatus(task.status as TaskStatus);
+                        if (next === "done") {
+                          completeTaskAction(task.id);
+                        } else {
+                          updateTaskAction(task.id, { status: next });
+                        }
+                      }}
+                    >
+                      {STATUS_SIGIL[task.status as TaskStatus]}
+                    </button>
+                    <span
+                      className={cn(
+                        "text-sm",
+                        task.status === "done" &&
+                          "line-through text-muted-foreground",
+                        task.status === "cancelled" &&
+                          "line-through text-muted-foreground",
                       )}
                     >
-                      {formatRelativeDate(new Date(task.due))}
+                      {task.description}
                     </span>
+                  </div>
+                  {(task.category || task.due) && (
+                    <div
+                      className="text-xs text-muted-foreground mt-0.5"
+                      style={{
+                        paddingLeft: `calc(${gutterWidth}ch + 1.5rem)`,
+                      }}
+                    >
+                      {task.category && <span>#{task.category}</span>}
+                      {task.category && task.due && <span> &middot; </span>}
+                      {task.due && (
+                        <span
+                          className={cn(
+                            "tabular-nums",
+                            isOverdue(task.due) && "text-destructive",
+                          )}
+                        >
+                          {formatRelativeDate(new Date(task.due))}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               );
