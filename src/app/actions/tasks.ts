@@ -3,6 +3,10 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { addDependency, removeDependency } from "@/core/dag";
+import { materializeInstance } from "@/core/recurrence-expansion";
+import {
+  editThisInstance,
+} from "@/core/recurrence-editing";
 import {
   completeTask,
   createTask,
@@ -12,6 +16,7 @@ import {
 } from "@/core/task";
 import type {
   CreateTaskInput,
+  Task,
   TaskStatus,
   UpdateTaskInput,
 } from "@/core/types";
@@ -190,6 +195,43 @@ export async function undoTaskAction(
     return { data: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to undo" };
+  }
+}
+
+export async function materializeInstanceAction(
+  masterId: number,
+  instanceDate: string,
+): Promise<ActionResult<Task>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    const task = materializeInstance(db, user.id, masterId, instanceDate);
+    revalidatePath("/");
+    return { data: task };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to materialize instance",
+    };
+  }
+}
+
+export async function editRecurringInstanceAction(
+  masterId: number,
+  instanceDate: string,
+  updates: UpdateTaskInput,
+): Promise<ActionResult<Task>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    const task = editThisInstance(db, user.id, masterId, instanceDate, updates);
+    revalidatePath("/");
+    return { data: task };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to edit instance",
+    };
   }
 }
 
