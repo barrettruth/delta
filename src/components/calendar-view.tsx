@@ -13,16 +13,21 @@ import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { expandInstances } from "@/core/recurrence-expansion";
 import type { Task } from "@/core/types";
+import type { TimedEntry } from "@/lib/calendar-utils";
 import {
   addDays,
   buildDayPreFill,
   buildRangePreFill,
   buildSlotPreFill,
   DAY_NAMES,
+  formatDateKey,
   formatMonthTitle,
+  getDatesBetween,
+  getMinutesFromMidnight,
   HOUR_HEIGHT,
   formatWeekRange,
   getWeekStart,
+  isMultiDay,
   minuteToISOString,
   startOfMonth,
 } from "@/lib/calendar-utils";
@@ -157,10 +162,54 @@ export function CalendarView({
   const weekEnd = useMemo(() => addDays(weekAnchor, 7), [weekAnchor]);
 
   const timedTasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>();
+    const map = new Map<string, TimedEntry[]>();
     const masters: Task[] = [];
     const exceptionsMap = new Map<number, Task[]>();
     const virtualMeta = new Map<number, { masterId: number; instanceDate: string }>();
+
+    const addEntry = (task: Task) => {
+      if (!task.startAt) return;
+      const startDate = new Date(task.startAt);
+      const endDate = task.endAt ? new Date(task.endAt) : null;
+
+      if (endDate && isMultiDay(task.startAt, task.endAt!)) {
+        const dates = getDatesBetween(startDate, endDate);
+        for (let i = 0; i < dates.length; i++) {
+          const key = formatDateKey(dates[i]);
+          let continuation: "start" | "middle" | "end" | undefined;
+          let timeStartMin: number;
+          let timeEndMin: number;
+
+          if (dates.length === 1) {
+            timeStartMin = getMinutesFromMidnight(startDate);
+            timeEndMin = getMinutesFromMidnight(endDate);
+          } else if (i === 0) {
+            continuation = "start";
+            timeStartMin = getMinutesFromMidnight(startDate);
+            timeEndMin = 1440;
+          } else if (i === dates.length - 1) {
+            continuation = "end";
+            timeStartMin = 0;
+            timeEndMin = getMinutesFromMidnight(endDate);
+          } else {
+            continuation = "middle";
+            timeStartMin = 0;
+            timeEndMin = 1440;
+          }
+
+          if (!map.has(key)) map.set(key, []);
+          map.get(key)!.push({ task, continuation, timeStartMin, timeEndMin });
+        }
+      } else {
+        const key = task.startAt.slice(0, 10);
+        const timeStartMin = getMinutesFromMidnight(startDate);
+        const timeEndMin = endDate
+          ? getMinutesFromMidnight(endDate)
+          : timeStartMin + 15;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push({ task, timeStartMin, timeEndMin });
+      }
+    };
 
     for (const task of tasks) {
       if (task.recurringTaskId) {
@@ -188,9 +237,7 @@ export function CalendarView({
       const pending = pendingEdits.get(task.id);
       const merged =
         update || pending ? { ...task, ...pending, ...update } : task;
-      const key = (merged.startAt as string).slice(0, 10);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)?.push(merged);
+      addEntry(merged);
     }
 
     for (const master of masters) {
@@ -206,9 +253,7 @@ export function CalendarView({
             update || pending
               ? { ...inst.exception, ...pending, ...update }
               : inst.exception;
-          const key = (merged.startAt as string).slice(0, 10);
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)?.push(merged);
+          addEntry(merged);
         } else {
           const syntheticId = -(
             master.id * 10000000 +
@@ -226,9 +271,7 @@ export function CalendarView({
           } as Task;
           const update = optimisticUpdates.get(syntheticId);
           const merged = update ? { ...virtual, ...update } : virtual;
-          const key = (merged.startAt as string).slice(0, 10);
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)?.push(merged);
+          addEntry(merged);
         }
       }
     }
@@ -389,6 +432,50 @@ export function CalendarView({
       panel.create(buildRangePreFill(date, startMinute, endMinute));
     },
     [weekDays, panel],
+  );
+
+  const handleEventExtend = useCallback(
+    (taskId: number, startDayIndex: number, endDayIndex: number) => {
+      const meta = virtualMetaRef.current.get(taskId);
+      const task = meta
+        ? tasks.find((t) => t.id === meta.masterId)
+        : tasks.find((t) => t.id === taskId);
+      if (!task || !task.startAt) return;
+
+      const startDate = weekDays[startDayIndex];
+      const endDate = weekDays[endDayIndex];
+      if (!startDate || !endDate) return;
+
+      const origStart = new Date(task.startAt);
+      const origEnd = task.endAt
+        ? new Date(task.endAt)
+        : new Date(origStart.getTime() + 15 * 60000);
+
+      const newStartAt = minuteToISOString(
+        startDate,
+        origStart.getHours() * 60 + origStart.getMinutes(),
+      );
+      const newEndAt = minuteToISOString(
+        endDate,
+        origEnd.getHours() * 60 + origEnd.getMinutes(),
+      );
+
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(taskId, { startAt: newStartAt, endAt: newEndAt });
+        return next;
+      });
+
+      if (meta) {
+        editRecurringInstanceAction(meta.masterId, meta.instanceDate, {
+          startAt: newStartAt,
+          endAt: newEndAt,
+        });
+      } else {
+        updateTaskAction(taskId, { startAt: newStartAt, endAt: newEndAt });
+      }
+    },
+    [tasks, weekDays],
   );
 
   const prevWeek = useCallback(() => {
@@ -640,6 +727,7 @@ export function CalendarView({
           onEventResize={handleEventResize}
           onEventResizeStart={handleEventResizeStart}
           onRangeCreate={handleRangeCreate}
+          onEventExtend={handleEventExtend}
           createPreview={createPreview}
         />
       ) : (
