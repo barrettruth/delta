@@ -1,12 +1,14 @@
+import { randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { createUser, verifyPassword } from "../src/core/auth";
 import { addDependency } from "../src/core/dag";
 import { createTask, updateTask } from "../src/core/task";
 import * as schema from "../src/db/schema";
+import { users } from "../src/db/schema";
 
 const dbPath = process.env.DATABASE_URL ?? "./data/delta.db";
 mkdirSync(dirname(dbPath), { recursive: true });
@@ -17,9 +19,24 @@ const db = drizzle(sqlite, { schema });
 
 migrate(db, { migrationsFolder: "./drizzle" });
 
-let user = verifyPassword(db, "barrett", "demo");
-if (!user) user = createUser(db, "barrett", "demo");
-const userId = user.id;
+let existing = db
+  .select()
+  .from(users)
+  .where(eq(users.username, "barrett"))
+  .get();
+if (!existing) {
+  existing = db
+    .insert(users)
+    .values({
+      username: "barrett",
+      passwordHash: null,
+      apiKey: randomBytes(32).toString("hex"),
+      createdAt: new Date().toISOString(),
+    })
+    .returning()
+    .get();
+}
+const userId = existing.id;
 
 const now = new Date();
 function daysFromNow(n: number): string {

@@ -1,10 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { compareSync, hashSync } from "bcryptjs";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { inviteCodes, sessions, users } from "@/db/schema";
 import type { Db } from "./types";
 
-const BCRYPT_ROUNDS = 12;
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type User = typeof users.$inferSelect;
@@ -19,50 +17,8 @@ function toSafeUser(user: User): SafeUser {
   return safe;
 }
 
-export function createUser(
-  db: Db,
-  username: string,
-  password: string,
-): SafeUser {
-  const existing = db
-    .select()
-    .from(users)
-    .where(eq(users.username, username))
-    .get();
-  if (existing) throw new Error("Username already taken");
-
-  const user = db
-    .insert(users)
-    .values({
-      username,
-      passwordHash: hashSync(password, BCRYPT_ROUNDS),
-      apiKey: generateId(),
-      createdAt: new Date().toISOString(),
-    })
-    .returning()
-    .get();
-
-  return toSafeUser(user);
-}
-
 export function userExists(db: Db, username: string): boolean {
   return !!db.select().from(users).where(eq(users.username, username)).get();
-}
-
-export function verifyPassword(
-  db: Db,
-  username: string,
-  password: string,
-): SafeUser | null {
-  const user = db
-    .select()
-    .from(users)
-    .where(eq(users.username, username))
-    .get();
-  if (!user) return null;
-  if (!user.passwordHash) return null;
-  if (!compareSync(password, user.passwordHash)) return null;
-  return toSafeUser(user);
 }
 
 export function createSession(db: Db, userId: number): string {
@@ -106,11 +62,6 @@ export function validateApiKey(db: Db, apiKey: string): SafeUser | null {
   const user = db.select().from(users).where(eq(users.apiKey, apiKey)).get();
   if (!user) return null;
   return toSafeUser(user);
-}
-
-export function userHasPassword(db: Db, userId: number): boolean {
-  const user = db.select().from(users).where(eq(users.id, userId)).get();
-  return !!user?.passwordHash;
 }
 
 export function regenerateApiKey(db: Db, userId: number): string {

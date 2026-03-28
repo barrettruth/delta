@@ -1,15 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   createSession,
-  createUser,
   deleteSession,
   regenerateApiKey,
   validateApiKey,
   validateSession,
-  verifyPassword,
 } from "@/core/auth";
 import type { Db } from "@/core/types";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
 
@@ -17,83 +15,11 @@ beforeEach(() => {
   db = createTestDb();
 });
 
-describe("full auth flow", () => {
-  it("create user, verify password, create session, validate, delete", () => {
-    const user = createUser(db, "testuser", "s3cure-p4ss!");
-    expect(user.id).toBe(1);
-    expect(user.username).toBe("testuser");
-    expect(user.apiKey).toBeTruthy();
-    expect("passwordHash" in user).toBe(false);
-
-    const verified = verifyPassword(db, "testuser", "s3cure-p4ss!");
-    expect(verified).not.toBeNull();
-    expect(verified?.id).toBe(user.id);
-
-    const sessionId = createSession(db, user.id);
-    expect(typeof sessionId).toBe("string");
-    expect(sessionId.length).toBeGreaterThan(0);
-
-    const sessionUser = validateSession(db, sessionId);
-    expect(sessionUser).not.toBeNull();
-    expect(sessionUser?.username).toBe("testuser");
-    expect("passwordHash" in (sessionUser ?? {})).toBe(false);
-
-    deleteSession(db, sessionId);
-    expect(validateSession(db, sessionId)).toBeNull();
-  });
-});
-
-describe("user creation edge cases", () => {
-  it("rejects duplicate usernames", () => {
-    createUser(db, "alice", "password1");
-    expect(() => createUser(db, "alice", "password2")).toThrow(
-      "Username already taken",
-    );
-  });
-
-  it("creates multiple distinct users", () => {
-    const u1 = createUser(db, "alice", "pass1");
-    const u2 = createUser(db, "bob", "pass2");
-    expect(u1.id).not.toBe(u2.id);
-    expect(u1.apiKey).not.toBe(u2.apiKey);
-  });
-
-  it("does not expose password hash in returned user", () => {
-    const user = createUser(db, "secure", "mypassword");
-    expect(Object.keys(user)).not.toContain("passwordHash");
-  });
-});
-
-describe("password verification", () => {
-  beforeEach(() => {
-    createUser(db, "testuser", "correct-password");
-  });
-
-  it("succeeds with correct password", () => {
-    const user = verifyPassword(db, "testuser", "correct-password");
-    expect(user).not.toBeNull();
-    expect(user?.username).toBe("testuser");
-  });
-
-  it("fails with wrong password", () => {
-    expect(verifyPassword(db, "testuser", "wrong-password")).toBeNull();
-  });
-
-  it("fails with nonexistent username", () => {
-    expect(verifyPassword(db, "ghost", "correct-password")).toBeNull();
-  });
-
-  it("does not expose password hash on successful verification", () => {
-    const user = verifyPassword(db, "testuser", "correct-password");
-    expect(Object.keys(user ?? {})).not.toContain("passwordHash");
-  });
-});
-
 describe("session management", () => {
   let userId: number;
 
   beforeEach(() => {
-    const user = createUser(db, "sessionuser", "password");
+    const user = createTestUser(db, "sessionuser");
     userId = user.id;
   });
 
@@ -140,7 +66,7 @@ describe("API key management", () => {
   let userId: number;
 
   beforeEach(() => {
-    const user = createUser(db, "keyuser", "password");
+    const user = createTestUser(db, "keyuser");
     apiKey = user.apiKey as string;
     userId = user.id;
   });

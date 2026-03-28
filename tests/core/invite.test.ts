@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   consumeInviteCode,
-  createUser,
   generateInviteCode,
   validateInviteCode,
 } from "@/core/auth";
 import type { Db } from "@/core/types";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
 
@@ -16,13 +15,13 @@ beforeEach(() => {
 
 describe("generateInviteCode", () => {
   it("produces code matching delta- plus 8 alphanumeric chars", () => {
-    const user = createUser(db, "barrett", "password123");
+    const user = createTestUser(db, "barrett");
     const code = generateInviteCode(db, user.id);
     expect(code).toMatch(/^delta-[a-z0-9]{8}$/);
   });
 
   it("generates unique codes", () => {
-    const user = createUser(db, "barrett", "password123");
+    const user = createTestUser(db, "barrett");
     const codes = new Set<string>();
     for (let i = 0; i < 20; i++) {
       codes.add(generateInviteCode(db, user.id));
@@ -33,7 +32,7 @@ describe("generateInviteCode", () => {
 
 describe("validateInviteCode", () => {
   it("returns row for unused code", () => {
-    const user = createUser(db, "barrett", "password123");
+    const user = createTestUser(db, "barrett");
     const code = generateInviteCode(db, user.id);
     const row = validateInviteCode(db, code);
     expect(row).not.toBeNull();
@@ -47,8 +46,8 @@ describe("validateInviteCode", () => {
   });
 
   it("returns null for used code", () => {
-    const creator = createUser(db, "barrett", "password123");
-    const consumer = createUser(db, "other", "password456");
+    const creator = createTestUser(db, "barrett");
+    const consumer = createTestUser(db, "other");
     const code = generateInviteCode(db, creator.id);
     consumeInviteCode(db, code, consumer.id);
     expect(validateInviteCode(db, code)).toBeNull();
@@ -57,8 +56,8 @@ describe("validateInviteCode", () => {
 
 describe("consumeInviteCode", () => {
   it("marks code as used", () => {
-    const creator = createUser(db, "barrett", "password123");
-    const consumer = createUser(db, "other", "password456");
+    const creator = createTestUser(db, "barrett");
+    const consumer = createTestUser(db, "other");
     const code = generateInviteCode(db, creator.id);
 
     const result = consumeInviteCode(db, code, consumer.id);
@@ -69,9 +68,9 @@ describe("consumeInviteCode", () => {
   });
 
   it("prevents double consumption", () => {
-    const creator = createUser(db, "barrett", "password123");
-    const consumer1 = createUser(db, "user1", "password123");
-    const consumer2 = createUser(db, "user2", "password456");
+    const creator = createTestUser(db, "barrett");
+    const consumer1 = createTestUser(db, "user1");
+    const consumer2 = createTestUser(db, "user2");
     const code = generateInviteCode(db, creator.id);
 
     expect(consumeInviteCode(db, code, consumer1.id)).toBe(true);
@@ -79,7 +78,7 @@ describe("consumeInviteCode", () => {
   });
 
   it("returns false for nonexistent code", () => {
-    const user = createUser(db, "barrett", "password123");
+    const user = createTestUser(db, "barrett");
     expect(consumeInviteCode(db, "delta-nonexist", user.id)).toBe(false);
   });
 });

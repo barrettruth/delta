@@ -1,15 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   createSession,
-  createUser,
   deleteSession,
   regenerateApiKey,
   validateApiKey,
   validateSession,
-  verifyPassword,
 } from "@/core/auth";
 import type { Db } from "@/core/types";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
 
@@ -17,82 +15,11 @@ beforeEach(() => {
   db = createTestDb();
 });
 
-describe("createUser", () => {
-  it("creates a user with hashed password and API key", () => {
-    const user = createUser(db, "barrett", "password123");
-    expect(user.id).toBe(1);
-    expect(user.username).toBe("barrett");
-    expect(user.apiKey).toBeTruthy();
-    expect(user.createdAt).toBeTruthy();
-    expect("passwordHash" in user).toBe(false);
-  });
-
-  it("rejects duplicate username", () => {
-    createUser(db, "barrett", "password123");
-    expect(() => createUser(db, "barrett", "other")).toThrow(
-      "Username already taken",
-    );
-  });
-
-  it("creates a user with empty password", () => {
-    const user = createUser(db, "emptypass", "");
-    expect(user.username).toBe("emptypass");
-    const verified = verifyPassword(db, "emptypass", "");
-    expect(verified).not.toBeNull();
-  });
-
-  it("creates a user with empty username", () => {
-    const user = createUser(db, "", "password123");
-    expect(user.username).toBe("");
-  });
-
-  it("creates a user with a very long username", () => {
-    const longName = "a".repeat(1000);
-    const user = createUser(db, longName, "password123");
-    expect(user.username).toBe(longName);
-  });
-
-  it("creates a user with a very long password", () => {
-    const longPass = "x".repeat(1000);
-    const user = createUser(db, "longpassuser", longPass);
-    expect(user.username).toBe("longpassuser");
-    const verified = verifyPassword(db, "longpassuser", longPass);
-    expect(verified).not.toBeNull();
-  });
-
-  it("creates a user with unicode characters in username", () => {
-    const user = createUser(db, "用户名テスト", "password123");
-    expect(user.username).toBe("用户名テスト");
-    const verified = verifyPassword(db, "用户名テスト", "password123");
-    expect(verified).not.toBeNull();
-  });
-});
-
-describe("verifyPassword", () => {
-  beforeEach(() => {
-    createUser(db, "barrett", "password123");
-  });
-
-  it("returns user for correct password", () => {
-    const user = verifyPassword(db, "barrett", "password123");
-    expect(user).not.toBeNull();
-    expect(user?.username).toBe("barrett");
-  });
-
-  it("returns null for wrong password", () => {
-    expect(verifyPassword(db, "barrett", "wrong")).toBeNull();
-  });
-
-  it("returns null for nonexistent user", () => {
-    expect(verifyPassword(db, "nobody", "password123")).toBeNull();
-  });
-});
-
 describe("sessions", () => {
   let userId: number;
 
   beforeEach(() => {
-    const user = createUser(db, "barrett", "password123");
+    const user = createTestUser(db, "barrett");
     userId = user.id;
   });
 
@@ -120,7 +47,7 @@ describe("API key auth", () => {
   let apiKey: string;
 
   beforeEach(() => {
-    const user = createUser(db, "barrett", "password123");
+    const user = createTestUser(db, "barrett");
     apiKey = user.apiKey as string;
   });
 

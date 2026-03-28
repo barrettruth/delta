@@ -1,15 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createUser } from "@/core/auth";
 import { DEFAULT_SETTINGS, getSettings, updateSettings } from "@/core/settings";
 import type { Db } from "@/core/types";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 let db: Db;
 let userId: number;
 
 beforeEach(() => {
   db = createTestDb();
-  const user = createUser(db, "testuser", "password123");
+  const user = createTestUser(db, "testuser");
   userId = user.id;
 });
 
