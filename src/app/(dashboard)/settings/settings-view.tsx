@@ -170,6 +170,12 @@ export function SettingsView({
     return () => window.removeEventListener("keydown", handleKeyDown);
   });
 
+  useEffect(() => {
+    if (!showRecoveryCodes) return;
+    const id = setTimeout(() => setShowRecoveryCodes(false), 30_000);
+    return () => clearTimeout(id);
+  }, [showRecoveryCodes]);
+
   return (
     <div className="flex-1 overflow-y-auto flex justify-center">
       <div className="w-full max-w-md p-6">
@@ -277,10 +283,20 @@ export function SettingsView({
           )}
 
           {showRecoveryCodes ? (
-            <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all text-center mt-2 mb-2">
-              {recoveryCodes.map((code) => (
-                <div key={code}>{code}</div>
-              ))}
+            <div className="mt-2 mb-2">
+              <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all text-center">
+                {recoveryCodes.map((code) => (
+                  <div key={code}>{code}</div>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecoveryCodes(false)}
+                className="w-full mt-2 h-7 text-xs"
+              >
+                I've saved these codes
+              </Button>
             </div>
           ) : (
             <Row
