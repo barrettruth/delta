@@ -198,6 +198,8 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         return;
       }
 
+      if ((e.target as HTMLElement).closest("[data-event-id]")) return;
+
       const minute = getMinuteFromY(e.clientY, columnEl);
       startMinuteRef.current = minute;
       currentMinuteRef.current = minute;
