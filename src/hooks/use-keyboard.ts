@@ -284,9 +284,12 @@ export function useKeyboard(actions: KeyboardActions) {
         countBuf.current = "";
         if (tasks.length === 0) return;
         const container = actionsRef.current.scrollRef?.current;
-        const rowHeight = 44;
+        const avgRowHeight =
+          container && tasks.length > 0
+            ? container.scrollHeight / tasks.length
+            : 44;
         const viewportRows = container
-          ? Math.max(1, Math.floor(container.clientHeight / rowHeight / 2))
+          ? Math.max(1, Math.floor(container.clientHeight / avgRowHeight / 2))
           : 10;
         const delta = e.key === "d" ? viewportRows : -viewportRows;
         setCursor((i) => Math.max(0, Math.min(i + delta, tasks.length - 1)));
