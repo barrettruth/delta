@@ -7,16 +7,6 @@ export interface LocationResult {
   lon: number;
 }
 
-interface MapboxFeature {
-  properties: {
-    name?: string;
-    full_address?: string;
-  };
-  geometry: {
-    coordinates: [number, number];
-  };
-}
-
 export function useLocationSearch(query: string): {
   results: LocationResult[];
   loading: boolean;
@@ -32,8 +22,6 @@ export function useLocationSearch(query: string): {
       return;
     }
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-
     const timer = setTimeout(async () => {
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -41,24 +29,15 @@ export function useLocationSearch(query: string): {
 
       setLoading(true);
       try {
-        const res = await fetch(
-          `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(query)}&access_token=${token}&limit=10`,
-          { signal: controller.signal },
-        );
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) {
           setResults([]);
           return;
         }
-        const data = await res.json();
-        const features: MapboxFeature[] = data.features ?? [];
-        setResults(
-          features.map((f) => ({
-            name: f.properties.name ?? "",
-            displayName: f.properties.full_address ?? "",
-            lat: f.geometry.coordinates[1],
-            lon: f.geometry.coordinates[0],
-          })),
-        );
+        const data: LocationResult[] = await res.json();
+        setResults(data);
       } catch {
         if (!controller.signal.aborted) {
           setResults([]);
