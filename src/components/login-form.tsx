@@ -89,7 +89,11 @@ export function LoginForm() {
             disabled={loading}
             className="w-full"
           >
-            {loading ? "..." : "sign in with passkey"}
+            {loading
+              ? "..."
+              : providers.length > 0
+                ? "sign in with passkey"
+                : "sign in"}
           </Button>
         </div>
       </div>
