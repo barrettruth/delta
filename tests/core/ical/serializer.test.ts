@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { tasksToICalendar, taskToVEvent } from "@/core/ical/serializer";
 import type { Task } from "@/core/types";
-import { taskToVEvent, tasksToICalendar } from "@/core/ical/serializer";
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -32,6 +32,12 @@ function makeTask(overrides: Partial<Task> = {}): Task {
   };
 }
 
+function requireEvent(task: Task) {
+  const event = taskToVEvent(task);
+  expect(event).not.toBeNull();
+  return event as NonNullable<typeof event>;
+}
+
 describe("taskToVEvent", () => {
   it("returns null for task without startAt", () => {
     const task = makeTask({ startAt: null });
@@ -39,8 +45,7 @@ describe("taskToVEvent", () => {
   });
 
   it("maps a timed event", () => {
-    const task = makeTask();
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask());
     expect(event.id).toBe("delta-task-1@delta.barrettruth.com");
     expect(event.summary).toBe("Test event");
     expect(event.start).toEqual(new Date("2026-04-01T09:00:00.000Z"));
@@ -50,14 +55,12 @@ describe("taskToVEvent", () => {
   });
 
   it("maps an all-day event", () => {
-    const task = makeTask({ allDay: 1 });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ allDay: 1 }));
     expect(event.allDay).toBe(true);
   });
 
   it("includes timezone when set", () => {
-    const task = makeTask({ timezone: "America/New_York" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ timezone: "America/New_York" }));
     expect(event.timezone).toBe("America/New_York");
   });
 
@@ -71,81 +74,78 @@ describe("taskToVEvent", () => {
         },
       ],
     });
-    const task = makeTask({ notes });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ notes }));
     expect(event.description).toBe("Meeting agenda");
   });
 
   it("maps location", () => {
-    const task = makeTask({ location: "Conference Room A" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ location: "Conference Room A" }));
     expect(event.location).toBe("Conference Room A");
   });
 
   it("maps meetingUrl to url", () => {
-    const task = makeTask({ meetingUrl: "https://meet.example.com/abc" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(
+      makeTask({ meetingUrl: "https://meet.example.com/abc" }),
+    );
     expect(event.url).toBe("https://meet.example.com/abc");
   });
 
   it("maps recurrence to repeating", () => {
-    const task = makeTask({ recurrence: "FREQ=WEEKLY;BYDAY=MO" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(
+      makeTask({ recurrence: "FREQ=WEEKLY;BYDAY=MO" }),
+    );
     expect(event.repeating).toBe("FREQ=WEEKLY;BYDAY=MO");
   });
 
   it("maps exdates as X-EXDATE entries", () => {
-    const task = makeTask({
-      recurrence: "FREQ=WEEKLY;BYDAY=MO",
-      exdates: JSON.stringify(["2026-04-08T09:00:00.000Z"]),
-    });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(
+      makeTask({
+        recurrence: "FREQ=WEEKLY;BYDAY=MO",
+        exdates: JSON.stringify(["2026-04-08T09:00:00.000Z"]),
+      }),
+    );
     const xEntries = event.x as { key: string; value: string }[];
     expect(xEntries).toBeDefined();
     const exdateEntry = xEntries.find((x) => x.key === "EXDATE");
     expect(exdateEntry).toBeDefined();
-    expect(exdateEntry!.value).toBe("20260408T090000Z");
+    expect(exdateEntry?.value).toBe("20260408T090000Z");
   });
 
   it("maps rdates as X-RDATE entries", () => {
-    const task = makeTask({
-      rdates: JSON.stringify(["2026-04-15T09:00:00.000Z"]),
-    });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(
+      makeTask({
+        rdates: JSON.stringify(["2026-04-15T09:00:00.000Z"]),
+      }),
+    );
     const xEntries = event.x as { key: string; value: string }[];
     expect(xEntries).toBeDefined();
     const rdateEntry = xEntries.find((x) => x.key === "RDATE");
     expect(rdateEntry).toBeDefined();
-    expect(rdateEntry!.value).toBe("20260415T090000Z");
+    expect(rdateEntry?.value).toBe("20260415T090000Z");
   });
 
   it("maps done status to CANCELLED", () => {
-    const task = makeTask({ status: "done" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ status: "done" }));
     expect(event.status).toBe("CANCELLED");
   });
 
   it("maps cancelled status to CANCELLED", () => {
-    const task = makeTask({ status: "cancelled" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ status: "cancelled" }));
     expect(event.status).toBe("CANCELLED");
   });
 
   it("maps pending status to CONFIRMED", () => {
-    const task = makeTask({ status: "pending" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ status: "pending" }));
     expect(event.status).toBe("CONFIRMED");
   });
 
   it("maps wip status to CONFIRMED", () => {
-    const task = makeTask({ status: "wip" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ status: "wip" }));
     expect(event.status).toBe("CONFIRMED");
   });
 
   it("maps blocked status to CONFIRMED", () => {
-    const task = makeTask({ status: "blocked" });
-    const event = taskToVEvent(task)!;
+    const event = requireEvent(makeTask({ status: "blocked" }));
     expect(event.status).toBe("CONFIRMED");
   });
 });

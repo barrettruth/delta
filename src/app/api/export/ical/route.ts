@@ -1,5 +1,5 @@
-import { listTasks } from "@/core/task";
 import { tasksToICalendar } from "@/core/ical/serializer";
+import { listTasks } from "@/core/task";
 import type { TaskFilters, TaskStatus } from "@/core/types";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";

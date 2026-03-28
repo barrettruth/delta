@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getTask } from "@/core/task";
 import { tasksToICalendar } from "@/core/ical/serializer";
+import { getTask } from "@/core/task";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 
