@@ -19,6 +19,7 @@ export function EventBlock({
   continuation,
   overrideStartMin,
   overrideEndMin,
+  isRecurring,
 }: {
   task: Task;
   column: number;
@@ -29,6 +30,7 @@ export function EventBlock({
   continuation?: Continuation;
   overrideStartMin?: number;
   overrideEndMin?: number;
+  isRecurring?: boolean;
 }) {
   const start = task.startAt ? new Date(task.startAt) : null;
   const end = task.endAt ? new Date(task.endAt) : null;
@@ -86,7 +88,14 @@ export function EventBlock({
         e.stopPropagation();
       }}
     >
-      <span className="font-medium truncate block">{task.description}</span>
+      <span className="font-medium truncate block">
+        {isRecurring && (
+          <span className="mr-0.5" role="img" aria-label="recurring">
+            &#x21BB;
+          </span>
+        )}
+        {task.description}
+      </span>
       {height >= 30 && (
         <span className="truncate block text-muted-foreground">
           {formatTime(start)}

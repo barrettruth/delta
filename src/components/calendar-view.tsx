@@ -3,17 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteTaskAction,
-  editRecurringInstanceAction,
   materializeInstanceAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { AllDayBar } from "@/components/calendar/all-day-bar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
+import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { expandInstances } from "@/core/recurrence-expansion";
 import type { Task } from "@/core/types";
+import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { useRecurrenceEdit } from "@/hooks/use-recurrence-edit";
 import type { TimedEntry } from "@/lib/calendar-utils";
 import {
   addDays,
@@ -50,6 +52,8 @@ export function CalendarView({
   const nav = useNavigation();
   const panel = useTaskPanel();
   const { pendingEdits } = panel;
+  const recurrenceDelete = useRecurrenceDelete();
+  const recurrenceEdit = useRecurrenceEdit();
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [anchor, setAnchor] = useState<Date | null>(null);
   const weekScrollRef = useRef<HTMLDivElement>(null);
@@ -387,7 +391,7 @@ export function CalendarView({
         return next;
       });
       if (meta) {
-        editRecurringInstanceAction(meta.masterId, meta.instanceDate, {
+        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
           startAt: newStartAt,
           endAt: newEndAt,
         });
@@ -398,7 +402,7 @@ export function CalendarView({
         });
       }
     },
-    [tasks, weekDays],
+    [tasks, weekDays, recurrenceEdit],
   );
 
   const handleEventResize = useCallback(
@@ -419,14 +423,14 @@ export function CalendarView({
         return next;
       });
       if (meta) {
-        editRecurringInstanceAction(meta.masterId, meta.instanceDate, {
+        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
           endAt: newEndAt,
         });
       } else {
         updateTaskAction(taskId, { endAt: newEndAt });
       }
     },
-    [tasks],
+    [tasks, recurrenceEdit],
   );
 
   const handleEventResizeStart = useCallback(
@@ -447,14 +451,14 @@ export function CalendarView({
         return next;
       });
       if (meta) {
-        editRecurringInstanceAction(meta.masterId, meta.instanceDate, {
+        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
           startAt: newStartAt,
         });
       } else {
         updateTaskAction(taskId, { startAt: newStartAt });
       }
     },
-    [tasks],
+    [tasks, recurrenceEdit],
   );
 
   const handleRangeCreate = useCallback(
@@ -544,8 +548,17 @@ export function CalendarView({
         if (e.key === op && op === "d") {
           e.preventDefault();
           if (panel.isOpen && panel.taskId !== null) {
-            deleteTaskAction(panel.taskId);
-            panel.close();
+            const target = tasks.find((t) => t.id === panel.taskId);
+            if (
+              target &&
+              (target.recurrence || target.recurringTaskId) &&
+              recurrenceDelete.requestDelete(target)
+            ) {
+              panel.close();
+            } else {
+              deleteTaskAction(panel.taskId);
+              panel.close();
+            }
           }
         }
         countBuf.current = "";
@@ -664,7 +677,17 @@ export function CalendarView({
 
       countBuf.current = "";
     },
-    [viewMode, prevWeek, nextWeek, prevMonth, nextMonth, goToday, panel],
+    [
+      viewMode,
+      prevWeek,
+      nextWeek,
+      prevMonth,
+      nextMonth,
+      goToday,
+      panel,
+      tasks,
+      recurrenceDelete,
+    ],
   );
 
   useEffect(() => {
@@ -768,6 +791,28 @@ export function CalendarView({
           categoryColors={categoryColors}
         />
       )}
+
+      <RecurrenceStrategyDialog
+        open={!!recurrenceDelete.pending}
+        onOpenChange={(open) => {
+          if (!open) recurrenceDelete.cancel();
+        }}
+        mode="delete"
+        onSelect={(strategy) => {
+          recurrenceDelete.executeStrategy(strategy);
+        }}
+      />
+
+      <RecurrenceStrategyDialog
+        open={!!recurrenceEdit.pending}
+        onOpenChange={(open) => {
+          if (!open) recurrenceEdit.cancel();
+        }}
+        mode="edit"
+        onSelect={(strategy) => {
+          recurrenceEdit.executeStrategy(strategy);
+        }}
+      />
     </div>
   );
 }

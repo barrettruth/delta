@@ -221,6 +221,26 @@ export async function materializeInstanceAction(
   }
 }
 
+export async function completeVirtualInstanceAction(
+  masterId: number,
+  instanceDate: string,
+): Promise<ActionResult<Task>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    const task = materializeInstance(db, user.id, masterId, instanceDate);
+    const result = completeTask(db, user.id, task.id);
+    revalidatePath("/");
+    return { data: result.task };
+  } catch (e) {
+    return {
+      error:
+        e instanceof Error ? e.message : "Failed to complete virtual instance",
+    };
+  }
+}
+
 export async function editRecurringInstanceAction(
   masterId: number,
   instanceDate: string,

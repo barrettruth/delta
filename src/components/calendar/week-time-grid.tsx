@@ -314,6 +314,9 @@ export function WeekTimeGrid({
                     continuation={entry.continuation}
                     overrideStartMin={entry.timeStartMin}
                     overrideEndMin={entry.timeEndMin}
+                    isRecurring={
+                      !!entry.task.recurrence || !!entry.task.recurringTaskId
+                    }
                   />
                 ))}
 

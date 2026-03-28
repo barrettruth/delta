@@ -113,6 +113,15 @@ export function MonthGrid({
                         className={`shrink-0 mt-[3px] w-1.5 h-1.5 ${statusDot(task)}`}
                       />
                       <span className="truncate">
+                        {(task.recurrence || task.recurringTaskId) && (
+                          <span
+                            className="mr-0.5"
+                            role="img"
+                            aria-label="recurring"
+                          >
+                            &#x21BB;
+                          </span>
+                        )}
                         {timePrefix}
                         {task.description}
                       </span>
