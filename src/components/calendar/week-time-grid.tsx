@@ -281,7 +281,18 @@ export function WeekTimeGrid({
                   <div
                     className="absolute left-0 right-0 border-t-2 border-primary z-10 pointer-events-none"
                     style={{ top: `${(nowMinutes / 60) * HOUR_HEIGHT}px` }}
-                  />
+                  >
+                    <div
+                      className="absolute bg-primary"
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        left: "-3px",
+                        top: "-4px",
+                      }}
+                    />
+                  </div>
                 )}
 
                 {layout.map(({ entry, column, totalColumns }) => (
