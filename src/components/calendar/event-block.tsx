@@ -1,6 +1,7 @@
 "use client";
 
 import type { Task } from "@/core/types";
+import type { Continuation } from "@/lib/calendar-utils";
 import {
   formatTime,
   getMinutesFromMidnight,
@@ -16,6 +17,8 @@ export function EventBlock({
   onClick,
   isDragging,
   continuation,
+  overrideStartMin,
+  overrideEndMin,
 }: {
   task: Task;
   column: number;
@@ -23,7 +26,9 @@ export function EventBlock({
   categoryColor?: string;
   onClick: (task: Task) => void;
   isDragging?: boolean;
-  continuation?: "start" | "end";
+  continuation?: Continuation;
+  overrideStartMin?: number;
+  overrideEndMin?: number;
 }) {
   const start = task.startAt ? new Date(task.startAt) : null;
   const end = task.endAt ? new Date(task.endAt) : null;
@@ -32,7 +37,10 @@ export function EventBlock({
   let startMin: number;
   let endMin: number;
 
-  if (continuation === "end") {
+  if (overrideStartMin !== undefined && overrideEndMin !== undefined) {
+    startMin = overrideStartMin;
+    endMin = overrideEndMin;
+  } else if (continuation === "end") {
     startMin = 0;
     endMin = end ? getMinutesFromMidnight(end) : 60;
   } else if (continuation === "start") {
@@ -67,8 +75,12 @@ export function EventBlock({
         width: `${widthPct}%`,
         backgroundColor: categoryColor ? `${categoryColor}20` : "var(--accent)",
         borderLeftColor: categoryColor || "var(--primary)",
-        ...(continuation === "end" ? { borderTop: "none" } : {}),
-        ...(continuation === "start" ? { borderBottom: "none" } : {}),
+        ...(continuation === "end" || continuation === "middle"
+          ? { borderTop: "none" }
+          : {}),
+        ...(continuation === "start" || continuation === "middle"
+          ? { borderBottom: "none" }
+          : {}),
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -107,6 +119,20 @@ export function EventBlock({
         className="absolute bottom-0 left-0 right-0 cursor-ns-resize"
         style={{ height: "8px" }}
       />
+      {(!continuation || continuation === "end") && (
+        <div
+          data-extend-handle-left=""
+          className="absolute left-0 top-0 bottom-0 cursor-ew-resize"
+          style={{ width: "8px" }}
+        />
+      )}
+      {(!continuation || continuation === "start") && (
+        <div
+          data-extend-handle-right=""
+          className="absolute right-0 top-0 bottom-0 cursor-ew-resize"
+          style={{ width: "8px" }}
+        />
+      )}
     </button>
   );
 }

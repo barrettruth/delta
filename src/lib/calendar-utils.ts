@@ -120,6 +120,34 @@ export function dayBlendStyle(
 
 export const HOUR_HEIGHT = 60;
 
+export function isMultiDay(startAt: string, endAt: string): boolean {
+  const s = new Date(startAt);
+  const e = new Date(endAt);
+  return s.toDateString() !== e.toDateString();
+}
+
+export function getDatesBetween(start: Date, end: Date): Date[] {
+  const dates: Date[] = [];
+  const d = new Date(start);
+  d.setHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setHours(0, 0, 0, 0);
+  while (d <= endDay) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+export type Continuation = "start" | "middle" | "end";
+
+export interface TimedEntry {
+  task: Task;
+  continuation?: Continuation;
+  timeStartMin: number;
+  timeEndMin: number;
+}
+
 export interface QuickCreatePreFill {
   due?: string;
   startAt?: string;
