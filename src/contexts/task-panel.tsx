@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { Task } from "@/core/types";
-import type { QuickCreatePreFill } from "@/lib/calendar-utils";
+import type { TaskPreFill } from "@/lib/calendar-utils";
 
 type PanelMode = "edit" | "create";
 
@@ -16,11 +16,11 @@ interface TaskPanelContextValue {
   isOpen: boolean;
   mode: PanelMode;
   taskId: number | null;
-  preFill: QuickCreatePreFill | null;
+  preFill: TaskPreFill | null;
   width: number;
   pendingEdits: Map<number, Partial<Task>>;
   open: (taskId: number) => void;
-  create: (preFill?: QuickCreatePreFill) => void;
+  create: (preFill?: TaskPreFill) => void;
   close: () => void;
   toggle: (taskId: number) => void;
   setWidth: (w: number) => void;
@@ -39,7 +39,7 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<PanelMode>("edit");
   const [taskId, setTaskId] = useState<number | null>(null);
-  const [preFill, setPreFill] = useState<QuickCreatePreFill | null>(null);
+  const [preFill, setPreFill] = useState<TaskPreFill | null>(null);
   const [pendingEdits, setPendingEdits] = useState<Map<number, Partial<Task>>>(
     () => new Map(),
   );
@@ -68,7 +68,7 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(true);
   }, []);
 
-  const create = useCallback((pf?: QuickCreatePreFill) => {
+  const create = useCallback((pf?: TaskPreFill) => {
     setTaskId(null);
     setMode("create");
     setPreFill(pf ?? null);

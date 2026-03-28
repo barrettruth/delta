@@ -148,7 +148,7 @@ export interface TimedEntry {
   timeEndMin: number;
 }
 
-export interface QuickCreatePreFill {
+export interface TaskPreFill {
   due?: string;
   startAt?: string;
   endAt?: string;
@@ -157,10 +157,7 @@ export interface QuickCreatePreFill {
   category?: string;
 }
 
-export function buildSlotPreFill(
-  date: Date,
-  minuteOfDay: number,
-): QuickCreatePreFill {
+export function buildSlotPreFill(date: Date, minuteOfDay: number): TaskPreFill {
   const snapped = Math.round(minuteOfDay / 15) * 15;
   const hours = Math.floor(snapped / 60);
   const mins = snapped % 60;
@@ -188,7 +185,7 @@ export function buildRangePreFill(
   date: Date,
   startMinute: number,
   endMinute: number,
-): QuickCreatePreFill {
+): TaskPreFill {
   const start = new Date(date);
   start.setHours(Math.floor(startMinute / 60), startMinute % 60, 0, 0);
   const end = new Date(date);
@@ -202,7 +199,7 @@ export function buildRangePreFill(
   };
 }
 
-export function buildDayPreFill(date: Date): QuickCreatePreFill {
+export function buildDayPreFill(date: Date): TaskPreFill {
   const noon = new Date(
     date.getFullYear(),
     date.getMonth(),
