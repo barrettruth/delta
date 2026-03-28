@@ -51,9 +51,11 @@ export default async function DashboardLayout({
           categoryColors={colors}
         />
         <SidebarInset className="flex flex-col h-dvh">
-          <DashboardContent tasks={allTasks}>{children}</DashboardContent>
+          <DashboardContent tasks={allTasks}>
+            {children}
+            <GlobalKeyboard categories={categories} />
+          </DashboardContent>
         </SidebarInset>
-        <GlobalKeyboard categories={categories} />
       </NavigationWrapper>
     </Suspense>
   );
