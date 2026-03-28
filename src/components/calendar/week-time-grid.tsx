@@ -270,7 +270,7 @@ export function WeekTimeGrid({
                   [1, 2, 3].map((q) => (
                     <div
                       key={`sub-${h}-${q}`}
-                      className="absolute left-0 right-0 border-t border-border/10 pointer-events-none"
+                      className={`absolute left-0 right-0 border-t pointer-events-none ${q === 2 ? "border-border/20" : "border-border/10"}`}
                       style={{
                         top: `${h * HOUR_HEIGHT + q * (HOUR_HEIGHT / 4)}px`,
                       }}
