@@ -14,6 +14,7 @@ type NavLocation = {
   search: string;
   taskId?: number;
   scrollTop?: number;
+  viewState?: Record<string, unknown>;
 };
 
 interface NavigationContextValue {
@@ -122,6 +123,9 @@ export function NavigationProvider({
 
   const navigateTo = useCallback(
     (loc: NavLocation) => {
+      if (loc.viewState) {
+        viewStateRef.current = new Map(Object.entries(loc.viewState));
+      }
       const url = loc.search ? `${loc.pathname}?${loc.search}` : loc.pathname;
       router.replace(url);
       if (loc.taskId != null) {
@@ -143,6 +147,9 @@ export function NavigationProvider({
     const current = { ...currentLocationRef.current };
     if (scrollContainerRef.current) {
       current.scrollTop = scrollContainerRef.current.scrollTop;
+    }
+    if (viewStateRef.current.size > 0) {
+      current.viewState = Object.fromEntries(viewStateRef.current);
     }
     const list = jumpListRef.current;
     const cursor = jumpCursorRef.current;
@@ -180,6 +187,12 @@ export function NavigationProvider({
 
     if (cursor === list.length - 1) {
       const current = { ...currentLocationRef.current };
+      if (scrollContainerRef.current) {
+        current.scrollTop = scrollContainerRef.current.scrollTop;
+      }
+      if (viewStateRef.current.size > 0) {
+        current.viewState = Object.fromEntries(viewStateRef.current);
+      }
       if (!locationsEqual(list[cursor], current)) {
         list.push(current);
         jumpCursorRef.current = list.length - 1;

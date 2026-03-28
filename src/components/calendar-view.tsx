@@ -75,8 +75,10 @@ export function CalendarView({
 
   useEffect(() => {
     const savedAnchor = nav.getViewState<string>("cal:anchor");
+    const savedMode = nav.getViewState<ViewMode>("cal:viewMode");
     const now = new Date();
     setAnchor(savedAnchor ? new Date(savedAnchor) : now);
+    if (savedMode) setViewMode(savedMode);
     setToday(now);
     const msUntilMidnight =
       new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
@@ -88,6 +90,10 @@ export function CalendarView({
   useEffect(() => {
     if (anchor) nav.saveViewState("cal:anchor", anchor.toISOString());
   }, [anchor, nav]);
+
+  useEffect(() => {
+    nav.saveViewState("cal:viewMode", viewMode);
+  }, [viewMode, nav]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
