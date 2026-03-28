@@ -7,6 +7,7 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { ResizeHandle } from "@/components/resize-handle";
+import { RRulePicker } from "@/components/rrule-picker";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,7 +21,7 @@ import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
-import { usePhotonSearch } from "@/hooks/use-photon-search";
+import { useLocationSearch } from "@/hooks/use-location-search";
 import { formatTime } from "@/lib/calendar-utils";
 import { detectMeetingPlatform } from "@/lib/utils";
 
@@ -71,6 +72,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [due, setDue] = useState("");
   const [location, setLocation] = useState("");
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [recurrence, setRecurrence] = useState<string | null>(null);
+  const [recurMode, setRecurMode] = useState<"scheduled" | "completion">("scheduled");
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [locationIdx, setLocationIdx] = useState(-1);
@@ -85,6 +88,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     due: "",
     location: "",
     meetingUrl: "",
+    recurrence: null as string | null,
+    recurMode: "scheduled" as "scheduled" | "completion",
     notes: null as string | null,
   });
 
@@ -95,6 +100,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     due,
     location,
     meetingUrl,
+    recurrence,
+    recurMode,
     notes: notesRef.current,
   };
 
@@ -162,7 +169,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     [meetingUrl],
   );
 
-  const { results: photonResults } = usePhotonSearch(location);
+  const { results: locationResults } = useLocationSearch(location);
 
   const saveTask = useCallback(async (id: number) => {
     const f = formDataRef.current;
@@ -174,6 +181,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       notes: f.notes || null,
       location: f.location || null,
       meetingUrl: f.meetingUrl || null,
+      recurrence: f.recurrence || null,
+      recurMode: f.recurrence ? f.recurMode : null,
     });
   }, []);
 
@@ -192,6 +201,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setDue(t.due ? t.due.slice(0, 16) : "");
       setLocation(t.location ?? "");
       setMeetingUrl(t.meetingUrl ?? "");
+      setRecurrence(t.recurrence);
+      setRecurMode(t.recurMode ?? "scheduled");
       notesRef.current = t.notes ?? null;
     } else if (mode === "create") {
       setDescription("");
@@ -200,6 +211,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setDue(preFill?.startAt ? preFill.startAt.slice(0, 16) : "");
       setLocation("");
       setMeetingUrl("");
+      setRecurrence(null);
+      setRecurMode("scheduled");
       notesRef.current = null;
     }
   }, [taskId, mode, preFill, saveTask]);
@@ -243,12 +256,14 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       endAt: preFill?.endAt,
       allDay: preFill?.allDay,
       timezone: preFill?.timezone,
+      recurrence: recurrence || undefined,
+      recurMode: recurrence ? recurMode : undefined,
     });
 
     if ("data" in result && result.data) {
       panel.open(result.data.id);
     }
-  }, [description, category, due, location, meetingUrl, preFill, panel]);
+  }, [description, category, due, location, meetingUrl, recurrence, recurMode, preFill, panel]);
 
   async function handleStatusChange(status: string) {
     if (!task) return;
@@ -438,7 +453,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 onKeyDown={(e) => {
                   const allItems = [
                     ...filteredLocations,
-                    ...photonResults.map((r) => r.displayName),
+                    ...locationResults.map((r) => r.displayName),
                   ];
                   if (!showLocationSuggestions || allItems.length === 0) return;
                   if (
@@ -470,7 +485,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 className="h-7 text-xs"
               />
               {showLocationSuggestions &&
-                (filteredLocations.length > 0 || photonResults.length > 0) && (
+                (filteredLocations.length > 0 || locationResults.length > 0) && (
                   <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
                     {filteredLocations.map((l, i) => (
                       <button
@@ -488,10 +503,10 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                       </button>
                     ))}
                     {filteredLocations.length > 0 &&
-                      photonResults.length > 0 && (
+                      locationResults.length > 0 && (
                         <div className="border-t border-border/40 my-1" />
                       )}
-                    {photonResults.map((r, i) => {
+                    {locationResults.map((r, i) => {
                       const idx = filteredLocations.length + i;
                       return (
                         <button
@@ -536,6 +551,23 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 </a>
               )}
             </div>
+          </div>
+          <div>
+            <span className="text-xs text-muted-foreground block mb-1">
+              repeat
+            </span>
+            {mode === "edit" && task?.recurringTaskId ? (
+              <span className="text-xs text-muted-foreground/60">
+                recurring instance
+              </span>
+            ) : (
+              <RRulePicker
+                value={recurrence}
+                recurMode={recurMode}
+                onChange={setRecurrence}
+                onRecurModeChange={setRecurMode}
+              />
+            )}
           </div>
         </div>
 
