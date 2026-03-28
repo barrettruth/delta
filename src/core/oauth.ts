@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { accounts, users, webauthnCredentials } from "@/db/schema";
+import { getOAuthProviderConfig } from "./system-config";
 import type { Db } from "./types";
 
 export type OAuthProvider = "github" | "google";
@@ -28,33 +29,46 @@ type TokenResponse = {
 
 const ALL_PROVIDERS: OAuthProvider[] = ["github", "google"];
 
+function getCredentials(
+  db: Db,
+  provider: OAuthProvider,
+): { clientId: string; clientSecret: string } | null {
+  const dbConfig = getOAuthProviderConfig(db, provider);
+  if (dbConfig) return dbConfig;
+
+  const envPrefix = `OAUTH_${provider.toUpperCase()}`;
+  const clientId = process.env[`${envPrefix}_CLIENT_ID`];
+  const clientSecret = process.env[`${envPrefix}_CLIENT_SECRET`];
+  if (!clientId || !clientSecret) return null;
+
+  return { clientId, clientSecret };
+}
+
 export function getProviderConfig(
+  db: Db,
   provider: OAuthProvider,
 ): ProviderConfig | null {
+  const creds = getCredentials(db, provider);
+  if (!creds) return null;
+
   if (provider === "github") {
-    const clientId = process.env.OAUTH_GITHUB_CLIENT_ID;
-    const clientSecret = process.env.OAUTH_GITHUB_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return null;
     return {
       authorizeUrl: "https://github.com/login/oauth/authorize",
       tokenUrl: "https://github.com/login/oauth/access_token",
       userInfoUrl: "https://api.github.com/user",
-      clientId,
-      clientSecret,
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
       scopes: ["read:user", "user:email"],
     };
   }
 
   if (provider === "google") {
-    const clientId = process.env.OAUTH_GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.OAUTH_GOOGLE_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return null;
     return {
       authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth",
       tokenUrl: "https://oauth2.googleapis.com/token",
       userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
-      clientId,
-      clientSecret,
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
       scopes: ["openid", "email", "profile"],
     };
   }
@@ -62,19 +76,17 @@ export function getProviderConfig(
   return null;
 }
 
-export function getEnabledProviders(): OAuthProvider[] {
-  return ALL_PROVIDERS.filter((p) => {
-    const key = `OAUTH_${p.toUpperCase()}_CLIENT_ID`;
-    return !!process.env[key];
-  });
+export function getEnabledProviders(db: Db): OAuthProvider[] {
+  return ALL_PROVIDERS.filter((p) => getCredentials(db, p) !== null);
 }
 
 export function buildAuthorizationUrl(
+  db: Db,
   provider: OAuthProvider,
   state: string,
   redirectUri: string,
 ): string {
-  const config = getProviderConfig(provider);
+  const config = getProviderConfig(db, provider);
   if (!config) throw new Error(`Provider ${provider} is not configured`);
 
   const params = new URLSearchParams({
@@ -94,11 +106,12 @@ export function buildAuthorizationUrl(
 }
 
 export async function exchangeCodeForToken(
+  db: Db,
   provider: OAuthProvider,
   code: string,
   redirectUri: string,
 ): Promise<TokenResponse> {
-  const config = getProviderConfig(provider);
+  const config = getProviderConfig(db, provider);
   if (!config) throw new Error(`Provider ${provider} is not configured`);
 
   const body = new URLSearchParams({
@@ -140,10 +153,11 @@ export async function exchangeCodeForToken(
 }
 
 export async function fetchProviderUser(
+  db: Db,
   provider: OAuthProvider,
   accessToken: string,
 ): Promise<ProviderUser> {
-  const config = getProviderConfig(provider);
+  const config = getProviderConfig(db, provider);
   if (!config) throw new Error(`Provider ${provider} is not configured`);
 
   const res = await fetch(config.userInfoUrl, {
@@ -188,17 +202,17 @@ export async function fetchProviderUser(
 }
 
 export async function refreshGoogleToken(
+  db: Db,
   refreshToken: string,
 ): Promise<{ accessToken: string; expiresIn: number }> {
-  const clientId = process.env.OAUTH_GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.OAUTH_GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
+  const config = getProviderConfig(db, "google");
+  if (!config) {
     throw new Error("Google OAuth is not configured");
   }
 
   const body = new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
     refresh_token: refreshToken,
     grant_type: "refresh_token",
   });

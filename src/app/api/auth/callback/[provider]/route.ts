@@ -26,7 +26,7 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> },
 ) {
   const { provider } = await params;
-  const enabled = getEnabledProviders();
+  const enabled = getEnabledProviders(db);
 
   if (!enabled.includes(provider as OAuthProvider)) {
     return NextResponse.redirect(
@@ -61,11 +61,13 @@ export async function GET(
   try {
     const redirectUri = `${OAUTH_REDIRECT_BASE}/api/auth/callback/${provider}`;
     const tokens = await exchangeCodeForToken(
+      db,
       provider as OAuthProvider,
       code,
       redirectUri,
     );
     const providerUser = await fetchProviderUser(
+      db,
       provider as OAuthProvider,
       tokens.accessToken,
     );

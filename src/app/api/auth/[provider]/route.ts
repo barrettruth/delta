@@ -6,6 +6,7 @@ import {
   getEnabledProviders,
   type OAuthProvider,
 } from "@/core/oauth";
+import { db } from "@/db";
 import { getAuthUser } from "@/lib/auth-middleware";
 
 const OAUTH_REDIRECT_BASE =
@@ -16,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> },
 ) {
   const { provider } = await params;
-  const enabled = getEnabledProviders();
+  const enabled = getEnabledProviders(db);
 
   if (!enabled.includes(provider as OAuthProvider)) {
     return NextResponse.json(
@@ -50,6 +51,7 @@ export async function GET(
   }
 
   const url = buildAuthorizationUrl(
+    db,
     provider as OAuthProvider,
     state,
     redirectUri,
