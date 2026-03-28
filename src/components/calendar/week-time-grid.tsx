@@ -320,14 +320,16 @@ export function WeekTimeGrid({
                 {interaction.previewStyle &&
                   interaction.previewStyle.dayIndex === dayIdx && (
                     <div
-                      className="absolute left-0 right-0 border border-dashed border-primary z-20 pointer-events-none"
+                      className={`absolute left-0 right-0 border border-primary z-20 pointer-events-none ${interaction.mode === "moving" ? "border-solid" : "border-dashed"}`}
                       style={{
                         top: `${interaction.previewStyle.top}px`,
                         height: `${interaction.previewStyle.height}px`,
                         backgroundColor:
                           interaction.mode === "creating"
                             ? "hsl(var(--primary) / 0.1)"
-                            : "hsl(var(--primary) / 0.4)",
+                            : interaction.mode === "moving"
+                              ? "hsl(var(--primary) / 0.2)"
+                              : "hsl(var(--primary) / 0.4)",
                       }}
                     />
                   )}
