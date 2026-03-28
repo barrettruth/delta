@@ -28,7 +28,15 @@ const PRESETS: { value: RRuleFrequency | "none" | "custom"; label: string }[] =
     { value: "custom", label: "Custom..." },
   ];
 
-const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+const DAYS = [
+  { key: "mo", label: "M" },
+  { key: "tu", label: "T" },
+  { key: "we", label: "W" },
+  { key: "th", label: "T" },
+  { key: "fr", label: "F" },
+  { key: "sa", label: "S" },
+  { key: "su", label: "S" },
+];
 
 export function RRulePicker({
   value,
@@ -196,9 +204,9 @@ export function RRulePicker({
 
           {customFreq === "weekly" && (
             <div className="flex gap-1">
-              {DAY_LABELS.map((label, i) => (
+              {DAYS.map((day, i) => (
                 <button
-                  key={label}
+                  key={day.key}
                   type="button"
                   className={`w-7 h-7 text-xs border transition-colors ${
                     byweekday.includes(i)
@@ -213,7 +221,7 @@ export function RRulePicker({
                     handleCustomUpdate({ byweekday: next });
                   }}
                 >
-                  {label}
+                  {day.label}
                 </button>
               ))}
             </div>

@@ -118,11 +118,10 @@ export function WeekTimeGrid({
     scrollRef.current.scrollTop = scrollTo;
   }, [scrollRef.current]);
 
-  const [nowMinutes, setNowMinutes] = useState(() =>
-    getMinutesFromMidnight(new Date()),
-  );
+  const [nowMinutes, setNowMinutes] = useState(0);
 
   useEffect(() => {
+    setNowMinutes(getMinutesFromMidnight(new Date()));
     const id = setInterval(() => {
       setNowMinutes(getMinutesFromMidnight(new Date()));
     }, 60_000);

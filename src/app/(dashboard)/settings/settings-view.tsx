@@ -147,7 +147,7 @@ export function SettingsView({
       if (e.target instanceof HTMLInputElement) return;
 
       switch (e.key) {
-        case "l":
+        case "q":
           e.preventDefault();
           handleLogout();
           break;
@@ -189,7 +189,7 @@ export function SettingsView({
 
         <Section title="account">
           <Row label="username" value={username} />
-          <Row label="logout" hint="l" action onClick={handleLogout} />
+          <Row label="logout" hint="q" action onClick={handleLogout} />
         </Section>
 
         <Section title="security">
