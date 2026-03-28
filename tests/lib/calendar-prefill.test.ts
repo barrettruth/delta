@@ -83,10 +83,11 @@ describe("buildDayPreFill", () => {
     expect(due.getMinutes()).toBe(0);
   });
 
-  it("does not set startAt or endAt", () => {
+  it("sets startAt to noon but not endAt", () => {
     const date = new Date(2026, 2, 25);
     const result = buildDayPreFill(date);
-    expect(result.startAt).toBeUndefined();
+    expect(result.startAt).toBeDefined();
+    expect(new Date(result.startAt!).getHours()).toBe(12);
     expect(result.endAt).toBeUndefined();
   });
 
