@@ -348,18 +348,20 @@ function Row({
   const Tag = action ? "button" : "div";
   return (
     <Tag
-      className={`flex items-center w-full text-sm py-1 px-2 ${action ? "hover:bg-accent/50 cursor-pointer" : ""}`}
+      className={`flex items-center w-full text-sm py-1 px-2 overflow-hidden min-w-0 ${action ? "hover:bg-accent/50 cursor-pointer" : ""}`}
       onClick={onClick}
       type={action ? "button" : undefined}
     >
       <span
-        className={`flex-1 text-left ${muted ? "text-muted-foreground" : "text-foreground"}`}
+        className={`flex-1 text-left truncate min-w-0 ${muted ? "text-muted-foreground" : "text-foreground"}`}
       >
         {label}
       </span>
-      {value && <span className="text-muted-foreground">{value}</span>}
+      {value && <span className="text-muted-foreground shrink-0">{value}</span>}
       {hint && (
-        <kbd className="text-[10px] text-muted-foreground ml-4">{hint}</kbd>
+        <kbd className="text-[10px] text-muted-foreground ml-4 shrink-0 hidden sm:inline">
+          {hint}
+        </kbd>
       )}
     </Tag>
   );
