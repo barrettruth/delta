@@ -9,6 +9,7 @@ import {
   linkAccount,
   type OAuthProvider,
 } from "@/core/oauth";
+import { getUserTwoFactorMethods } from "@/core/two-factor";
 import { db } from "@/db";
 import { getAuthUser } from "@/lib/auth-middleware";
 
@@ -86,6 +87,19 @@ export async function GET(
       tokens,
     );
 
+    const twoFactorMethods = getUserTwoFactorMethods(db, user.id);
+
+    if (twoFactorMethods.length > 0) {
+      cookieStore.set("pending_2fa", String(user.id), {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 300,
+      });
+      return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/login/verify-2fa`);
+    }
+
     const sessionId = createSession(db, user.id);
     cookieStore.set("session", sessionId, {
       httpOnly: true,
@@ -95,7 +109,7 @@ export async function GET(
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/`);
+    return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/setup-2fa`);
   } catch {
     return NextResponse.redirect(
       `${OAUTH_REDIRECT_BASE}/login?error=oauth_failed`,
