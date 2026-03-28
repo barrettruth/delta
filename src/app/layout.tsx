@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -59,7 +59,23 @@ const apercuMono = localFont({
 
 export const metadata: Metadata = {
   title: "delta",
-  description: "Personal todo/productivity platform",
+  description: "Personal productivity platform",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "delta",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#121212" },
+  ],
 };
 
 export default function RootLayout({
