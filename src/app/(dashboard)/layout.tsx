@@ -9,7 +9,6 @@ import { MessageBar } from "@/components/keyboard-hints";
 import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
-import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
 import { userHas2FA } from "@/core/two-factor";
 import { db } from "@/db";
@@ -30,7 +29,6 @@ export default async function DashboardLayout({
 
   if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
 
-  const settings = getSettings(db, user.id);
   const allTasks = listTasks(db, user.id);
   const categories = [
     ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
@@ -57,11 +55,7 @@ export default async function DashboardLayout({
           <DashboardContent tasks={allTasks}>{children}</DashboardContent>
           <MessageBar />
         </SidebarInset>
-        <GlobalKeyboard
-          categories={categories}
-          defaultCategory={settings.defaultCategory}
-          tasks={allTasks}
-        />
+        <GlobalKeyboard categories={categories} />
       </NavigationWrapper>
     </Suspense>
   );

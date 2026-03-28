@@ -385,7 +385,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             nav.pushJump();
             panel.toggle(colTasks[rowIdx].id);
           } else {
-            window.dispatchEvent(new Event("open-create-task"));
+            panel.create();
           }
           break;
         }

@@ -166,7 +166,7 @@ export function QueueView({
         for (const id of ids) await updateTaskAction(id, { status });
       });
     },
-    onCreate: () => window.dispatchEvent(new Event("open-create-task")),
+    onCreate: () => panel.create(),
     onSelect: (task) => {
       nav.pushJump();
       panel.toggle(task.id);

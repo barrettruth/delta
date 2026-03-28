@@ -2,12 +2,11 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CreateTaskDrawer } from "@/components/create-task-drawer";
 import { KeymapHelp } from "@/components/keymap-help";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useNavigation } from "@/contexts/navigation";
+import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
-import type { Task } from "@/core/types";
 import { isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
@@ -20,12 +19,8 @@ const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 export function GlobalKeyboard({
   categories = [],
-  defaultCategory,
-  tasks,
 }: {
   categories?: string[];
-  defaultCategory?: string;
-  tasks?: Task[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -33,15 +28,10 @@ export function GlobalKeyboard({
   const { toggleSidebar } = useSidebar();
   const { pushJump, jumpBack, jumpForward, goAlternate } = useNavigation();
   const { undo: performUndo } = useUndo();
+  const panel = useTaskPanel();
   const [helpOpen, setHelpOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [createPreFill, setCreatePreFill] = useState<{
-    description?: string;
-    due?: string;
-  } | null>(null);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
@@ -84,11 +74,7 @@ export function GlobalKeyboard({
         } else if (key === "?") {
           setHelpOpen(true);
         } else if (key === "c") {
-          if (pathname === "/calendar") {
-            window.dispatchEvent(new CustomEvent("open-calendar-quick-create"));
-          } else {
-            setCreateOpen(true);
-          }
+          panel.create();
         } else if (key === ".") {
           const params = new URLSearchParams(searchParams.toString());
           if (params.has("showDone")) {
@@ -170,6 +156,7 @@ export function GlobalKeyboard({
       jumpForward,
       goAlternate,
       performUndo,
+      panel,
     ],
   );
 
@@ -185,46 +172,10 @@ export function GlobalKeyboard({
   }, []);
 
   useEffect(() => {
-    const open = () => setCreateOpen(true);
-    window.addEventListener("open-create-task", open);
-    return () => window.removeEventListener("open-create-task", open);
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      setCreatePreFill({
-        description: detail?.description,
-        due: detail?.due,
-      });
-      setCreateOpen(true);
-    };
-    window.addEventListener("open-create-task-with-data", handler);
-    return () =>
-      window.removeEventListener("open-create-task-with-data", handler);
-  }, []);
-
-  useEffect(() => {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
     };
   }, []);
 
-  return (
-    <>
-      <KeymapHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <CreateTaskDrawer
-        open={createOpen}
-        onOpenChange={(open) => {
-          setCreateOpen(open);
-          if (!open) setCreatePreFill(null);
-        }}
-        categories={categories}
-        defaultCategory={defaultCategory}
-        defaultDue={createPreFill?.due}
-        defaultDescription={createPreFill?.description}
-        tasks={tasks}
-      />
-    </>
-  );
+  return <KeymapHelp open={helpOpen} onClose={() => setHelpOpen(false)} />;
 }
