@@ -13,10 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v15
-        with:
-          name: delta-cache
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop --command biome check .
 
   typecheck:
@@ -24,10 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v15
-        with:
-          name: delta-cache
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command pnpm tsc --noEmit
 
@@ -36,10 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v15
-        with:
-          name: delta-cache
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command pnpm vitest run --reporter=verbose --coverage.enabled --coverage.reporter=text
 
@@ -49,10 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v15
-        with:
-          name: delta-cache
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command bash scripts/fetch-fonts.sh
       - run: nix develop --command pnpm build
