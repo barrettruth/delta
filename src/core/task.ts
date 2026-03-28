@@ -39,6 +39,10 @@ export function createTask(
       order: input.order ?? 0,
       location: input.location ?? null,
       meetingUrl: input.meetingUrl ?? null,
+      exdates: input.exdates ?? null,
+      rdates: input.rdates ?? null,
+      recurringTaskId: input.recurringTaskId ?? null,
+      originalStartAt: input.originalStartAt ?? null,
       createdAt: ts,
       updatedAt: ts,
     })
@@ -99,6 +103,14 @@ export function listTasks(
   return db.select().from(tasks).where(where).orderBy(sortFn(sortColumn)).all();
 }
 
+export function listExceptions(db: Db, masterId: number): Task[] {
+  return db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.recurringTaskId, masterId))
+    .all();
+}
+
 export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
   const existing = getTask(db, id);
   if (!existing) throw new Error(`Task ${id} not found`);
@@ -133,10 +145,12 @@ export function completeTask(
   const task = updateTask(db, id, { status: "done" });
 
   let spawnedTaskId: number | null = null;
-  const nextData = getNextTaskData(task);
-  if (nextData) {
-    const spawned = createTask(db, userId, nextData);
-    spawnedTaskId = spawned.id;
+  if (!task.recurringTaskId) {
+    const nextData = getNextTaskData(task);
+    if (nextData) {
+      const spawned = createTask(db, userId, nextData);
+      spawnedTaskId = spawned.id;
+    }
   }
 
   updateBlockedStatus(db, id);

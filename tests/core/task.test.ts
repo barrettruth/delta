@@ -234,6 +234,28 @@ describe("completeTask", () => {
       new Date("2026-03-22T09:00:00.000Z").getTime(),
     );
   });
+
+  it("does not spawn when completing a recurring exception", () => {
+    const master = createTask(db, userId, {
+      description: "Weekly review",
+      due: "2026-03-22T09:00:00.000Z",
+      recurrence: "FREQ=WEEKLY",
+      recurMode: "scheduled",
+    });
+    const exception = createTask(db, userId, {
+      description: "Weekly review",
+      recurringTaskId: master.id,
+      originalStartAt: "2026-03-29T09:00:00.000Z",
+    });
+
+    const { spawnedTaskId } = completeTask(db, userId, exception.id);
+    expect(spawnedTaskId).toBeNull();
+
+    const all = listTasks(db, userId);
+    const pending = all.filter((t) => t.status === "pending");
+    expect(pending).toHaveLength(1);
+    expect(pending[0].id).toBe(master.id);
+  });
 });
 
 describe("deleteTask", () => {

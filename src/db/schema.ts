@@ -64,6 +64,10 @@ export const tasks = sqliteTable("tasks", {
   completedAt: text("completed_at"),
   location: text("location"),
   meetingUrl: text("meeting_url"),
+  exdates: text("exdates"),
+  rdates: text("rdates"),
+  recurringTaskId: integer("recurring_task_id"),
+  originalStartAt: text("original_start_at"),
 });
 
 export const taskDependencies = sqliteTable(
