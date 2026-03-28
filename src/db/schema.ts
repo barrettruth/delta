@@ -178,3 +178,11 @@ export const accounts = sqliteTable(
   },
   (t) => [unique().on(t.provider, t.providerAccountId)],
 );
+
+export const systemConfigs = sqliteTable("system_configs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(current_timestamp)`),
+  updatedAt: text("updated_at").notNull().default(sql`(current_timestamp)`),
+});

@@ -141,6 +141,13 @@
       "when": 1774915200006,
       "tag": "0019_invite_links",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1774915200007,
+      "tag": "0020_system_configs",
+      "breakpoints": true
     }
   ]
 }
