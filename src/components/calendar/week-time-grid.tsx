@@ -238,7 +238,10 @@ export function WeekTimeGrid({
               <div
                 key={`gutter-${h}`}
                 className="absolute right-2 text-[10px] text-muted-foreground tabular-nums"
-                style={{ top: `${h * HOUR_HEIGHT - 6}px` }}
+                style={{
+                  top: `${h * HOUR_HEIGHT}px`,
+                  transform: "translateY(-50%)",
+                }}
               >
                 {h > 0 ? formatMilitaryTime(h) : ""}
               </div>
