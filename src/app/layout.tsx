@@ -38,6 +38,25 @@ const signifier = localFont({
   display: "swap",
 });
 
+const apercuMono = localFont({
+  src: [
+    { path: "../fonts/ApercuMonoProLight.ttf", weight: "300", style: "normal" },
+    {
+      path: "../fonts/ApercuMonoProRegular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/ApercuMonoProMedium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    { path: "../fonts/ApercuMonoProBold.ttf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-code",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "delta",
   description: "Personal todo/productivity platform",
@@ -50,7 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${berkeleyMono.variable} ${signifier.variable}`}>
+      <body className={`${berkeleyMono.variable} ${signifier.variable} ${apercuMono.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>

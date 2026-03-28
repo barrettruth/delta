@@ -22,7 +22,20 @@ import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
 import { usePhotonSearch } from "@/hooks/use-photon-search";
 import { formatTime } from "@/lib/calendar-utils";
-import { detectMeetingPlatform, formatDate } from "@/lib/utils";
+import { detectMeetingPlatform } from "@/lib/utils";
+
+function relativeTime(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   pending: "Pending",
@@ -388,28 +401,16 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex-1 min-w-0">
-              <span className="text-xs text-muted-foreground block mb-1">
-                due
-              </span>
-              <Input
-                type="datetime-local"
-                value={due}
-                onChange={(e) => setDue(e.target.value)}
-                className="h-7 text-xs"
-              />
-            </div>
-            {mode === "edit" && task?.createdAt && (
-              <div className="flex-1 min-w-0">
-                <span className="text-xs text-muted-foreground block mb-1">
-                  created
-                </span>
-                <span className="text-xs text-muted-foreground/60 tabular-nums leading-7 block">
-                  {formatDate(new Date(task.createdAt))}
-                </span>
-              </div>
-            )}
+          <div>
+            <span className="text-xs text-muted-foreground block mb-1">
+              due
+            </span>
+            <Input
+              type="datetime-local"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              className="h-7 text-xs"
+            />
           </div>
 
           <div>
@@ -547,6 +548,20 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             }}
           />
         </div>
+
+        {mode === "edit" && task?.createdAt && (
+          <div className="text-[10px] text-muted-foreground/40 px-4 py-2 border-t border-border/20">
+            created{" "}
+            {new Date(task.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).toLowerCase()}
+            {task.updatedAt && task.updatedAt !== task.createdAt && (
+              <> · updated {relativeTime(new Date(task.updatedAt))}</>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
