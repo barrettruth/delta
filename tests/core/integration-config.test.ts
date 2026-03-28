@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createUser } from "@/core/auth";
 import {
   deleteIntegrationConfig,
   getIntegrationConfig,
@@ -10,7 +9,7 @@ import {
 } from "@/core/integration-config";
 import type { Db } from "@/core/types";
 import { integrationConfigs } from "@/db/schema";
-import { createTestDb } from "../helpers";
+import { createTestDb, createTestUser } from "../helpers";
 
 const TEST_KEY = randomBytes(32).toString("hex");
 
@@ -20,7 +19,7 @@ let userId: number;
 beforeEach(() => {
   vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
   db = createTestDb();
-  const user = createUser(db, "testuser", "password123");
+  const user = createTestUser(db, "testuser");
   userId = user.id;
 });
 
@@ -101,7 +100,7 @@ describe("getIntegrationConfig", () => {
   it("does not return another user's config", () => {
     upsertIntegrationConfig(db, userId, "github", { token: "mine" });
 
-    const other = createUser(db, "otheruser", "password123");
+    const other = createTestUser(db, "otheruser");
     expect(getIntegrationConfig(db, other.id, "github")).toBeNull();
   });
 });
