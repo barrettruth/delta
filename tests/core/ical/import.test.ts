@@ -67,7 +67,7 @@ describe("importICalEvents", () => {
     expect(task.externalId).toBe("full-event@example.com");
     expect(task.externalSource).toBe("ical");
 
-    const notes = JSON.parse(task.notes!);
+    const notes = JSON.parse(task.notes as string);
     expect(notes.type).toBe("doc");
     expect(notes.content[0].content[0].text).toBe("Discuss goals");
   });

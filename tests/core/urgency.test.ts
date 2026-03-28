@@ -39,6 +39,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     rdates: null,
     recurringTaskId: null,
     originalStartAt: null,
+    externalId: null,
+    externalSource: null,
     ...overrides,
   };
 }

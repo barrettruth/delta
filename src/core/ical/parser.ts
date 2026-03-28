@@ -1,4 +1,4 @@
-import ical, { type VEvent, type ParameterValue } from "node-ical";
+import ical, { type ParameterValue, type VEvent } from "node-ical";
 
 export interface ParsedEvent {
   uid: string;
