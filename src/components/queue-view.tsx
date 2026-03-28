@@ -391,9 +391,13 @@ export function QueueView({
       </div>
       <RecurrenceStrategyDialog
         open={!!recurrenceDelete.pending}
-        onOpenChange={(open) => { if (!open) recurrenceDelete.cancel(); }}
+        onOpenChange={(open) => {
+          if (!open) recurrenceDelete.cancel();
+        }}
         mode="delete"
-        onSelect={(strategy) => { recurrenceDelete.executeStrategy(strategy); }}
+        onSelect={(strategy) => {
+          recurrenceDelete.executeStrategy(strategy);
+        }}
       />
     </div>
   );

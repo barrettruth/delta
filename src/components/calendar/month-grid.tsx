@@ -73,9 +73,9 @@ export function MonthGrid({
             day,
           );
           const dateKey = formatDateKey(cellDate);
-          const dayTasks = (tasksByDate.get(dateKey) ?? []).slice().sort(
-            (a, b) => (b.allDay ?? 0) - (a.allDay ?? 0),
-          );
+          const dayTasks = (tasksByDate.get(dateKey) ?? [])
+            .slice()
+            .sort((a, b) => (b.allDay ?? 0) - (a.allDay ?? 0));
           const isToday = isSameDay(cellDate, today);
           const isPast = cellDate < today && !isToday;
           const blend = dayBlendStyle(dayTasks, categoryColors);

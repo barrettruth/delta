@@ -1,7 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 import { HOUR_HEIGHT, snapMinuteTo15 } from "@/lib/calendar-utils";
 
-type InteractionMode = "idle" | "creating" | "moving" | "resizing" | "resizing-top" | "extending-left" | "extending-right";
+type InteractionMode =
+  | "idle"
+  | "creating"
+  | "moving"
+  | "resizing"
+  | "resizing-top"
+  | "extending-left"
+  | "extending-right";
 
 interface UseTimeGridInteractionOptions {
   hourHeight?: number;
@@ -15,7 +22,11 @@ interface UseTimeGridInteractionOptions {
   ) => void;
   onEventResize: (taskId: number, newEndAt: string) => void;
   onEventResizeStart: (taskId: number, newStartAt: string) => void;
-  onEventExtend?: (taskId: number, startDayIndex: number, endDayIndex: number) => void;
+  onEventExtend?: (
+    taskId: number,
+    startDayIndex: number,
+    endDayIndex: number,
+  ) => void;
   onRangeCreate: (
     dayIndex: number,
     startMinute: number,
@@ -111,7 +122,10 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         if (!eventEl) return;
         taskIdRef.current = Number(eventEl.dataset.eventId);
         origDayIndexRef.current = dayIndex;
-        eventStartMinRef.current = Number.parseInt(eventEl.dataset.eventStartMin || "0", 10);
+        eventStartMinRef.current = Number.parseInt(
+          eventEl.dataset.eventStartMin || "0",
+          10,
+        );
         eventEndMinRef.current = eventEl.dataset.eventEndMin
           ? Number.parseInt(eventEl.dataset.eventEndMin, 10)
           : eventStartMinRef.current + 15;
@@ -281,7 +295,10 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
           });
         }
 
-        if (modeRef.current === "extending-left" || modeRef.current === "extending-right") {
+        if (
+          modeRef.current === "extending-left" ||
+          modeRef.current === "extending-right"
+        ) {
           const extMode = modeRef.current;
           if (mode !== extMode) {
             setMode(extMode);
@@ -289,14 +306,24 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
           }
           const pointCol = findColumnFromPoint(clientX, clientY);
           if (pointCol) {
-            const newDayIndex = Math.max(0, Math.min(6, Number(pointCol.dataset.dayColumn)));
+            const newDayIndex = Math.max(
+              0,
+              Math.min(6, Number(pointCol.dataset.dayColumn)),
+            );
             const orig = origDayIndexRef.current;
-            const startDay = extMode === "extending-left" ? Math.min(newDayIndex, orig) : orig;
-            const endDay = extMode === "extending-right" ? Math.max(newDayIndex, orig) : orig;
+            const startDay =
+              extMode === "extending-left" ? Math.min(newDayIndex, orig) : orig;
+            const endDay =
+              extMode === "extending-right"
+                ? Math.max(newDayIndex, orig)
+                : orig;
             dayIndexRef.current = newDayIndex;
             setPreviewStyle({
               top: eventStartMinRef.current * pxPerMin,
-              height: ((eventEndMinRef.current ?? eventStartMinRef.current + 15) - eventStartMinRef.current) * pxPerMin,
+              height:
+                ((eventEndMinRef.current ?? eventStartMinRef.current + 15) -
+                  eventStartMinRef.current) *
+                pxPerMin,
               dayIndex: origDayIndexRef.current,
               startDayIndex: startDay,
               endDayIndex: endDay,
@@ -310,7 +337,8 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
             setDraggingTaskId(taskIdRef.current);
           }
           const minute = getMinuteFromY(clientY, columnEl);
-          const endMin = eventEndMinRef.current ?? eventStartMinRef.current + 15;
+          const endMin =
+            eventEndMinRef.current ?? eventStartMinRef.current + 15;
           const newStart = Math.min(endMin - 15, minute);
           currentMinuteRef.current = snapMinuteTo15(Math.max(0, newStart));
           setPreviewStyle({
@@ -389,15 +417,26 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         onEventResize(taskIdRef.current, String(currentMinuteRef.current));
       }
 
-      if (currentMode === "resizing-top" && taskIdRef.current !== null && wasDrag) {
+      if (
+        currentMode === "resizing-top" &&
+        taskIdRef.current !== null &&
+        wasDrag
+      ) {
         onEventResizeStart(taskIdRef.current, String(currentMinuteRef.current));
       }
 
-      if ((currentMode === "extending-left" || currentMode === "extending-right") && taskIdRef.current !== null && wasDrag) {
+      if (
+        (currentMode === "extending-left" ||
+          currentMode === "extending-right") &&
+        taskIdRef.current !== null &&
+        wasDrag
+      ) {
         const orig = origDayIndexRef.current;
         const target = dayIndexRef.current;
-        const startDay = currentMode === "extending-left" ? Math.min(target, orig) : orig;
-        const endDay = currentMode === "extending-right" ? Math.max(target, orig) : orig;
+        const startDay =
+          currentMode === "extending-left" ? Math.min(target, orig) : orig;
+        const endDay =
+          currentMode === "extending-right" ? Math.max(target, orig) : orig;
         if (startDay !== endDay || startDay !== orig) {
           onEventExtend?.(taskIdRef.current, startDay, endDay);
         }

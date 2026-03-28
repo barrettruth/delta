@@ -3,7 +3,6 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { addDependency, removeDependency } from "@/core/dag";
-import { materializeInstance } from "@/core/recurrence-expansion";
 import {
   deleteAllInstances,
   deleteThisAndFuture,
@@ -12,6 +11,7 @@ import {
   editThisAndFuture,
   editThisInstance,
 } from "@/core/recurrence-editing";
+import { materializeInstance } from "@/core/recurrence-expansion";
 import {
   completeTask,
   createTask,
@@ -249,7 +249,13 @@ export async function editThisAndFutureAction(
     const user = await requireUser();
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = editThisAndFuture(db, user.id, masterId, instanceDate, updates);
+    const task = editThisAndFuture(
+      db,
+      user.id,
+      masterId,
+      instanceDate,
+      updates,
+    );
     revalidatePath("/");
     return { data: task };
   } catch (e) {

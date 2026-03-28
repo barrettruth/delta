@@ -99,9 +99,7 @@ export function materializeInstance(
     ? new Date(new Date(instanceDate).getTime() + duration).toISOString()
     : master.endAt;
 
-  const exdates: string[] = master.exdates
-    ? JSON.parse(master.exdates)
-    : [];
+  const exdates: string[] = master.exdates ? JSON.parse(master.exdates) : [];
   exdates.push(new Date(instanceDate).toISOString());
   updateTask(db, masterId, { exdates: JSON.stringify(exdates) });
 

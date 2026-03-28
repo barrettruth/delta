@@ -17,16 +17,13 @@ interface PendingDelete {
 export function useRecurrenceDelete() {
   const [pending, setPending] = useState<PendingDelete | null>(null);
 
-  const requestDelete = useCallback(
-    (task: Task): boolean => {
-      if (task.recurrence) {
-        setPending({ task });
-        return true;
-      }
-      return false;
-    },
-    [],
-  );
+  const requestDelete = useCallback((task: Task): boolean => {
+    if (task.recurrence) {
+      setPending({ task });
+      return true;
+    }
+    return false;
+  }, []);
 
   const executeStrategy = useCallback(
     async (strategy: RecurrenceStrategy) => {
@@ -38,11 +35,18 @@ export function useRecurrenceDelete() {
         if (task.recurringTaskId) {
           await deleteTaskAction(task.id);
         } else {
-          await deleteThisInstanceAction(task.id, task.startAt ?? task.due ?? new Date().toISOString());
+          await deleteThisInstanceAction(
+            task.id,
+            task.startAt ?? task.due ?? new Date().toISOString(),
+          );
         }
       } else if (strategy === "this-and-future") {
         const masterId = task.recurringTaskId ?? task.id;
-        const instanceDate = task.originalStartAt ?? task.startAt ?? task.due ?? new Date().toISOString();
+        const instanceDate =
+          task.originalStartAt ??
+          task.startAt ??
+          task.due ??
+          new Date().toISOString();
         await deleteThisAndFutureAction(masterId, instanceDate);
       } else if (strategy === "all") {
         const masterId = task.recurringTaskId ?? task.id;

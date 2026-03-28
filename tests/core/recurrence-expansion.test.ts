@@ -5,7 +5,7 @@ import {
   getExceptionsForMaster,
   materializeInstance,
 } from "@/core/recurrence-expansion";
-import { createTask, getTask, listExceptions } from "@/core/task";
+import { createTask, getTask } from "@/core/task";
 import type { Db, Task } from "@/core/types";
 import { createTestDb, createTestUser } from "../helpers";
 
@@ -151,9 +151,9 @@ describe("expandInstances", () => {
       (i) => i.instanceDate.toISOString() === "2026-03-09T14:00:00.000Z",
     );
     expect(march9).toBeDefined();
-    expect(march9!.exception).not.toBeNull();
-    expect(march9!.startAt).toBe("2026-03-09T15:00:00.000Z");
-    expect(march9!.endAt).toBe("2026-03-09T16:00:00.000Z");
+    expect(march9?.exception).not.toBeNull();
+    expect(march9?.startAt).toBe("2026-03-09T15:00:00.000Z");
+    expect(march9?.endAt).toBe("2026-03-09T16:00:00.000Z");
   });
 
   it("returns empty for range with no occurrences", () => {

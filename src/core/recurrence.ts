@@ -10,7 +10,12 @@ export function rruleToText(rruleStr: string): string {
   return rule.toText();
 }
 
-export type RRuleFrequency = "daily" | "weekly" | "weekdays" | "monthly" | "yearly";
+export type RRuleFrequency =
+  | "daily"
+  | "weekly"
+  | "weekdays"
+  | "monthly"
+  | "yearly";
 
 export interface BuildRRuleOpts {
   freq: RRuleFrequency;

@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { RRule } from "rrule";
 import { tasks } from "@/db/schema";
-import { buildRRuleSet } from "./recurrence-expansion";
 import { createTask, getTask, updateTask } from "./task";
 import type { Db, Task, UpdateTaskInput } from "./types";
 
@@ -19,9 +18,7 @@ export function editThisInstance(
 
   const normalizedDate = new Date(instanceDate).toISOString();
 
-  const exdates: string[] = master.exdates
-    ? JSON.parse(master.exdates)
-    : [];
+  const exdates: string[] = master.exdates ? JSON.parse(master.exdates) : [];
   exdates.push(normalizedDate);
   updateTask(db, masterId, { exdates: JSON.stringify(exdates) });
 
@@ -169,7 +166,8 @@ export function editThisAndFuture(
     .filter(
       (t) =>
         t.originalStartAt &&
-        new Date(t.originalStartAt).getTime() >= new Date(normalizedDate).getTime(),
+        new Date(t.originalStartAt).getTime() >=
+          new Date(normalizedDate).getTime(),
     );
 
   for (const exc of futureExceptions) {
@@ -204,9 +202,7 @@ export function deleteThisInstance(
 
   const normalizedDate = new Date(instanceDate).toISOString();
 
-  const exdates: string[] = master.exdates
-    ? JSON.parse(master.exdates)
-    : [];
+  const exdates: string[] = master.exdates ? JSON.parse(master.exdates) : [];
   exdates.push(normalizedDate);
   updateTask(db, masterId, { exdates: JSON.stringify(exdates) });
 
@@ -254,7 +250,8 @@ export function deleteThisAndFuture(
     .filter(
       (t) =>
         t.originalStartAt &&
-        new Date(t.originalStartAt).getTime() >= new Date(normalizedDate).getTime(),
+        new Date(t.originalStartAt).getTime() >=
+          new Date(normalizedDate).getTime(),
     );
 
   for (const exc of futureExceptions) {

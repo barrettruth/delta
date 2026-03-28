@@ -10,22 +10,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  buildRRule,
-  rruleToText,
   type BuildRRuleOpts,
+  buildRRule,
   type RRuleFrequency,
+  rruleToText,
 } from "@/core/recurrence";
 import type { RecurMode } from "@/core/types";
 
-const PRESETS: { value: RRuleFrequency | "none" | "custom"; label: string }[] = [
-  { value: "none", label: "No repeat" },
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "weekdays", label: "Weekdays" },
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-  { value: "custom", label: "Custom..." },
-];
+const PRESETS: { value: RRuleFrequency | "none" | "custom"; label: string }[] =
+  [
+    { value: "none", label: "No repeat" },
+    { value: "daily", label: "Daily" },
+    { value: "weekly", label: "Weekly" },
+    { value: "weekdays", label: "Weekdays" },
+    { value: "monthly", label: "Monthly" },
+    { value: "yearly", label: "Yearly" },
+    { value: "custom", label: "Custom..." },
+  ];
 
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -40,9 +41,12 @@ export function RRulePicker({
   onChange: (rrule: string | null) => void;
   onRecurModeChange: (mode: RecurMode) => void;
 }) {
-  const [preset, setPreset] = useState<RRuleFrequency | "none" | "custom">("none");
+  const [preset, setPreset] = useState<RRuleFrequency | "none" | "custom">(
+    "none",
+  );
   const [interval, setInterval] = useState(1);
-  const [customFreq, setCustomFreq] = useState<Exclude<RRuleFrequency, "weekdays">>("weekly");
+  const [customFreq, setCustomFreq] =
+    useState<Exclude<RRuleFrequency, "weekdays">>("weekly");
   const [byweekday, setByweekday] = useState<number[]>([]);
   const [bymonthday, setBymonthdayStr] = useState("");
 
@@ -54,9 +58,16 @@ export function RRulePicker({
     const upper = value.toUpperCase();
     if (upper.includes("FREQ=DAILY") && !upper.includes("INTERVAL=")) {
       setPreset("daily");
-    } else if (upper.includes("FREQ=WEEKLY") && upper.includes("BYDAY=MO,TU,WE,TH,FR")) {
+    } else if (
+      upper.includes("FREQ=WEEKLY") &&
+      upper.includes("BYDAY=MO,TU,WE,TH,FR")
+    ) {
       setPreset("weekdays");
-    } else if (upper.includes("FREQ=WEEKLY") && !upper.includes("INTERVAL=") && !upper.includes("BYDAY=")) {
+    } else if (
+      upper.includes("FREQ=WEEKLY") &&
+      !upper.includes("INTERVAL=") &&
+      !upper.includes("BYDAY=")
+    ) {
       setPreset("weekly");
     } else if (upper.includes("FREQ=MONTHLY") && !upper.includes("INTERVAL=")) {
       setPreset("monthly");
@@ -90,9 +101,14 @@ export function RRulePicker({
 
   function handleCustomUpdate(opts: Partial<BuildRRuleOpts>) {
     const freq = opts.freq ?? customFreq;
-    if (opts.freq && opts.freq !== "weekdays") setCustomFreq(opts.freq as Exclude<RRuleFrequency, "weekdays">);
+    if (opts.freq && opts.freq !== "weekdays")
+      setCustomFreq(opts.freq as Exclude<RRuleFrequency, "weekdays">);
 
-    const bmd = opts.bymonthday ?? (bymonthday ? bymonthday.split(",").map(Number).filter(Boolean) : undefined);
+    const bmd =
+      opts.bymonthday ??
+      (bymonthday
+        ? bymonthday.split(",").map(Number).filter(Boolean)
+        : undefined);
 
     const rrule = buildRRule({
       freq,
@@ -162,10 +178,18 @@ export function RRulePicker({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">{interval > 1 ? "days" : "day"}</SelectItem>
-                <SelectItem value="weekly">{interval > 1 ? "weeks" : "week"}</SelectItem>
-                <SelectItem value="monthly">{interval > 1 ? "months" : "month"}</SelectItem>
-                <SelectItem value="yearly">{interval > 1 ? "years" : "year"}</SelectItem>
+                <SelectItem value="daily">
+                  {interval > 1 ? "days" : "day"}
+                </SelectItem>
+                <SelectItem value="weekly">
+                  {interval > 1 ? "weeks" : "week"}
+                </SelectItem>
+                <SelectItem value="monthly">
+                  {interval > 1 ? "months" : "month"}
+                </SelectItem>
+                <SelectItem value="yearly">
+                  {interval > 1 ? "years" : "year"}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -174,7 +198,7 @@ export function RRulePicker({
             <div className="flex gap-1">
               {DAY_LABELS.map((label, i) => (
                 <button
-                  key={`day-${label}-${i}`}
+                  key={label}
                   type="button"
                   className={`w-7 h-7 text-xs border transition-colors ${
                     byweekday.includes(i)
@@ -202,7 +226,10 @@ export function RRulePicker({
                 value={bymonthday}
                 onChange={(e) => {
                   setBymonthdayStr(e.target.value);
-                  const days = e.target.value.split(",").map(Number).filter(Boolean);
+                  const days = e.target.value
+                    .split(",")
+                    .map(Number)
+                    .filter(Boolean);
                   if (days.length) handleCustomUpdate({ bymonthday: days });
                 }}
                 placeholder="1, 15"

@@ -73,7 +73,9 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [location, setLocation] = useState("");
   const [meetingUrl, setMeetingUrl] = useState("");
   const [recurrence, setRecurrence] = useState<string | null>(null);
-  const [recurMode, setRecurMode] = useState<"scheduled" | "completion">("scheduled");
+  const [recurMode, setRecurMode] = useState<"scheduled" | "completion">(
+    "scheduled",
+  );
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [locationIdx, setLocationIdx] = useState(-1);
@@ -263,7 +265,17 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     if ("data" in result && result.data) {
       panel.open(result.data.id);
     }
-  }, [description, category, due, location, meetingUrl, recurrence, recurMode, preFill, panel]);
+  }, [
+    description,
+    category,
+    due,
+    location,
+    meetingUrl,
+    recurrence,
+    recurMode,
+    preFill,
+    panel,
+  ]);
 
   async function handleStatusChange(status: string) {
     if (!task) return;
@@ -456,10 +468,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                     ...locationResults.map((r) => r.displayName),
                   ];
                   if (!showLocationSuggestions || allItems.length === 0) return;
-                  if (
-                    (e.ctrlKey && e.key === "n") ||
-                    e.key === "ArrowDown"
-                  ) {
+                  if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
                     e.preventDefault();
                     setLocationIdx((prev) =>
                       prev < allItems.length - 1 ? prev + 1 : 0,
@@ -485,7 +494,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 className="h-7 text-xs"
               />
               {showLocationSuggestions &&
-                (filteredLocations.length > 0 || locationResults.length > 0) && (
+                (filteredLocations.length > 0 ||
+                  locationResults.length > 0) && (
                   <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
                     {filteredLocations.map((l, i) => (
                       <button
@@ -510,7 +520,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                       const idx = filteredLocations.length + i;
                       return (
                         <button
-                          key={`photon-${i}`}
+                          key={r.displayName}
                           type="button"
                           className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
                           onMouseDown={(e) => {
@@ -584,11 +594,13 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         {mode === "edit" && task?.createdAt && (
           <div className="text-[10px] text-muted-foreground/40 px-4 py-2 border-t border-border/20">
             created{" "}
-            {new Date(task.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }).toLowerCase()}
+            {new Date(task.createdAt)
+              .toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+              .toLowerCase()}
             {task.updatedAt && task.updatedAt !== task.createdAt && (
               <> · updated {relativeTime(new Date(task.updatedAt))}</>
             )}

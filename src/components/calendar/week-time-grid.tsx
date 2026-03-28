@@ -24,9 +24,7 @@ interface ColumnLayout {
 function computeOverlapLayout(entries: TimedEntry[]): ColumnLayout[] {
   if (entries.length === 0) return [];
 
-  const sorted = [...entries].sort(
-    (a, b) => a.timeStartMin - b.timeStartMin,
-  );
+  const sorted = [...entries].sort((a, b) => a.timeStartMin - b.timeStartMin);
 
   const columns: { end: number; entry: TimedEntry }[][] = [];
 
@@ -100,7 +98,11 @@ export function WeekTimeGrid({
     endMinute: number,
     anchor: DOMRect,
   ) => void;
-  onEventExtend?: (taskId: number, startDayIndex: number, endDayIndex: number) => void;
+  onEventExtend?: (
+    taskId: number,
+    startDayIndex: number,
+    endDayIndex: number,
+  ) => void;
   createPreview?: { dayIndex: number; startMin: number; endMin: number } | null;
 }) {
   const internalRef = useRef<HTMLDivElement>(null);

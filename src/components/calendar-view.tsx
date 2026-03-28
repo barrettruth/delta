@@ -22,11 +22,11 @@ import {
   DAY_NAMES,
   formatDateKey,
   formatMonthTitle,
+  formatWeekRange,
   getDatesBetween,
   getMinutesFromMidnight,
-  HOUR_HEIGHT,
-  formatWeekRange,
   getWeekStart,
+  HOUR_HEIGHT,
   isMultiDay,
   minuteToISOString,
   startOfMonth,
@@ -134,18 +134,30 @@ export function CalendarView({
 
     for (const master of masters) {
       const exceptions = exceptionsMap.get(master.id) ?? [];
-      const instances = expandInstances(master, monthGridStart, monthGridEnd, exceptions);
+      const instances = expandInstances(
+        master,
+        monthGridStart,
+        monthGridEnd,
+        exceptions,
+      );
 
       for (const inst of instances) {
         if (inst.exception) {
           if (inst.exception.status === "cancelled") continue;
-          const key = (inst.exception.startAt ?? inst.exception.due ?? inst.startAt).slice(0, 10);
+          const key = (
+            inst.exception.startAt ??
+            inst.exception.due ??
+            inst.startAt
+          ).slice(0, 10);
           if (!map.has(key)) map.set(key, []);
           map.get(key)?.push(inst.exception);
         } else {
           const virtual = {
             ...master,
-            id: -(master.id * 10000000 + (Math.floor(inst.instanceDate.getTime() / 60000) % 10000000)),
+            id: -(
+              master.id * 10000000 +
+              (Math.floor(inst.instanceDate.getTime() / 60000) % 10000000)
+            ),
             startAt: inst.startAt,
             endAt: inst.endAt,
           } as Task;
@@ -165,7 +177,10 @@ export function CalendarView({
     const map = new Map<string, TimedEntry[]>();
     const masters: Task[] = [];
     const exceptionsMap = new Map<number, Task[]>();
-    const virtualMeta = new Map<number, { masterId: number; instanceDate: string }>();
+    const virtualMeta = new Map<
+      number,
+      { masterId: number; instanceDate: string }
+    >();
 
     const addEntry = (task: Task) => {
       if (!task.startAt) return;
@@ -198,7 +213,7 @@ export function CalendarView({
           }
 
           if (!map.has(key)) map.set(key, []);
-          map.get(key)!.push({ task, continuation, timeStartMin, timeEndMin });
+          map.get(key)?.push({ task, continuation, timeStartMin, timeEndMin });
         }
       } else {
         const key = task.startAt.slice(0, 10);
@@ -207,7 +222,7 @@ export function CalendarView({
           ? getMinutesFromMidnight(endDate)
           : timeStartMin + 15;
         if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push({ task, timeStartMin, timeEndMin });
+        map.get(key)?.push({ task, timeStartMin, timeEndMin });
       }
     };
 
@@ -242,7 +257,12 @@ export function CalendarView({
 
     for (const master of masters) {
       const exceptions = exceptionsMap.get(master.id) ?? [];
-      const instances = expandInstances(master, weekAnchor, weekEnd, exceptions);
+      const instances = expandInstances(
+        master,
+        weekAnchor,
+        weekEnd,
+        exceptions,
+      );
 
       for (const inst of instances) {
         if (inst.exception) {
@@ -286,7 +306,11 @@ export function CalendarView({
   }, [tasks]);
 
   const createPreview = useMemo(() => {
-    if (panel.mode !== "create" || !panel.preFill?.startAt || panel.preFill.allDay)
+    if (
+      panel.mode !== "create" ||
+      !panel.preFill?.startAt ||
+      panel.preFill.allDay
+    )
       return null;
     const start = new Date(panel.preFill.startAt);
     const dayOffset = Math.floor(
@@ -375,7 +399,9 @@ export function CalendarView({
         ? tasks.find((t) => t.id === meta.masterId)
         : tasks.find((t) => t.id === taskId);
       if (!task || !task.startAt) return;
-      const baseDate = meta ? new Date(meta.instanceDate) : new Date(task.startAt);
+      const baseDate = meta
+        ? new Date(meta.instanceDate)
+        : new Date(task.startAt);
       const newEndMin = Number.parseInt(newEndMinStr, 10);
       const newEndAt = minuteToISOString(baseDate, newEndMin);
       setOptimisticUpdates((prev) => {
@@ -401,7 +427,9 @@ export function CalendarView({
         ? tasks.find((t) => t.id === meta.masterId)
         : tasks.find((t) => t.id === taskId);
       if (!task || !task.startAt) return;
-      const baseDate = meta ? new Date(meta.instanceDate) : new Date(task.startAt);
+      const baseDate = meta
+        ? new Date(meta.instanceDate)
+        : new Date(task.startAt);
       const newStartMin = Number.parseInt(newStartMinStr, 10);
       const newStartAt = minuteToISOString(baseDate, newStartMin);
       setOptimisticUpdates((prev) => {
@@ -643,14 +671,7 @@ export function CalendarView({
 
       countBuf.current = "";
     },
-    [
-      viewMode,
-      prevWeek,
-      nextWeek,
-      prevMonth,
-      nextMonth,
-      goToday,
-    ],
+    [viewMode, prevWeek, nextWeek, prevMonth, nextMonth, goToday],
   );
 
   useEffect(() => {

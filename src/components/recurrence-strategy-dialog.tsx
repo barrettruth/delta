@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { isInputFocused } from "@/lib/utils";
 
 export type RecurrenceStrategy = "this" | "this-and-future" | "all";
 

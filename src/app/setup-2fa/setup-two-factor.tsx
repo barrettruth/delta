@@ -21,7 +21,7 @@ export function SetupTwoFactor({ username }: { username: string }) {
   const [totpToken, setTotpToken] = useState("");
 
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
-  const [codesConfirmed, setCodesConfirmed] = useState(false);
+  const [_codesConfirmed, _setCodesConfirmed] = useState(false);
 
   async function handlePasskeySetup() {
     setError("");
@@ -162,6 +162,7 @@ export function SetupTwoFactor({ username }: { username: string }) {
         {step === "totp-qr" && (
           <div className="flex flex-col gap-3 w-full items-center">
             {qrCode && (
+              // biome-ignore lint/performance/noImgElement: data URI QR code
               <img src={qrCode} alt="TOTP QR code" className="w-48 h-48" />
             )}
             <code className="text-xs text-muted-foreground break-all select-all px-2">

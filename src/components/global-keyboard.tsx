@@ -17,11 +17,7 @@ const VIEW_KEYS: Record<string, string> = {
 };
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-export function GlobalKeyboard({
-  categories = [],
-}: {
-  categories?: string[];
-}) {
+export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

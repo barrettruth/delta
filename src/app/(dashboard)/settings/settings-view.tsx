@@ -236,6 +236,7 @@ export function SettingsView({
             <div className="pt-2 mt-2">
               <div className="flex flex-col items-center gap-2 mb-2">
                 {qrCode && (
+                  // biome-ignore lint/performance/noImgElement: data URI QR code
                   <img src={qrCode} alt="TOTP QR" className="w-36 h-36" />
                 )}
                 <code className="text-xs text-muted-foreground break-all select-all">

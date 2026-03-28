@@ -69,7 +69,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${berkeleyMono.variable} ${signifier.variable} ${apercuMono.variable}`}>
+      <body
+        className={`${berkeleyMono.variable} ${signifier.variable} ${apercuMono.variable}`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

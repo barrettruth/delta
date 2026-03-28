@@ -67,13 +67,9 @@ describe("editThisInstance", () => {
 
   it("removes the instance from master's expansion", () => {
     const master = makeWeeklyMaster();
-    editThisInstance(
-      db,
-      userId,
-      master.id,
-      "2026-03-09T14:00:00.000Z",
-      { description: "Modified" },
-    );
+    editThisInstance(db, userId, master.id, "2026-03-09T14:00:00.000Z", {
+      description: "Modified",
+    });
 
     const updated = getTask(db, master.id)!;
     const instances = expandInstances(
@@ -147,13 +143,9 @@ describe("editThisAndFuture", () => {
       startAt: "2026-03-09T16:00:00.000Z",
     });
 
-    editThisAndFuture(
-      db,
-      userId,
-      master.id,
-      "2026-03-16T14:00:00.000Z",
-      { description: "New format" },
-    );
+    editThisAndFuture(db, userId, master.id, "2026-03-16T14:00:00.000Z", {
+      description: "New format",
+    });
 
     const unchanged = getTask(db, pastExc.id)!;
     expect(unchanged.recurringTaskId).toBe(master.id);
