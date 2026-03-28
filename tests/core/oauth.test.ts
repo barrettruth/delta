@@ -23,19 +23,19 @@ describe("getProviderConfig", () => {
   it("returns null when GitHub env vars are missing", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "");
     vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "");
-    expect(getProviderConfig("github")).toBeNull();
+    expect(getProviderConfig(db, "github")).toBeNull();
   });
 
   it("returns null when only CLIENT_ID is set for GitHub", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "id");
     vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "");
-    expect(getProviderConfig("github")).toBeNull();
+    expect(getProviderConfig(db, "github")).toBeNull();
   });
 
   it("returns config when GitHub env vars are set", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "gh-id");
     vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "gh-secret");
-    const config = getProviderConfig("github");
+    const config = getProviderConfig(db, "github");
     expect(config).not.toBeNull();
     expect(config?.clientId).toBe("gh-id");
     expect(config?.clientSecret).toBe("gh-secret");
@@ -46,13 +46,13 @@ describe("getProviderConfig", () => {
   it("returns null when Google env vars are missing", () => {
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_ID", "");
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_SECRET", "");
-    expect(getProviderConfig("google")).toBeNull();
+    expect(getProviderConfig(db, "google")).toBeNull();
   });
 
   it("returns config when Google env vars are set", () => {
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_ID", "g-id");
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_SECRET", "g-secret");
-    const config = getProviderConfig("google");
+    const config = getProviderConfig(db, "google");
     expect(config).not.toBeNull();
     expect(config?.clientId).toBe("g-id");
     expect(config?.scopes).toContain("openid");
@@ -63,25 +63,29 @@ describe("getEnabledProviders", () => {
   it("returns empty array when no env vars set", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "");
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_ID", "");
-    expect(getEnabledProviders()).toEqual([]);
+    expect(getEnabledProviders(db)).toEqual([]);
   });
 
   it("returns only github when only GitHub CLIENT_ID is set", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "gh-id");
+    vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "gh-secret");
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_ID", "");
-    expect(getEnabledProviders()).toEqual(["github"]);
+    expect(getEnabledProviders(db)).toEqual(["github"]);
   });
 
   it("returns only google when only Google CLIENT_ID is set", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "");
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_ID", "g-id");
-    expect(getEnabledProviders()).toEqual(["google"]);
+    vi.stubEnv("OAUTH_GOOGLE_CLIENT_SECRET", "g-secret");
+    expect(getEnabledProviders(db)).toEqual(["google"]);
   });
 
   it("returns both when both are set", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "gh-id");
+    vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "gh-secret");
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_ID", "g-id");
-    expect(getEnabledProviders()).toEqual(["github", "google"]);
+    vi.stubEnv("OAUTH_GOOGLE_CLIENT_SECRET", "g-secret");
+    expect(getEnabledProviders(db)).toEqual(["github", "google"]);
   });
 });
 
@@ -95,6 +99,7 @@ describe("buildAuthorizationUrl", () => {
 
   it("builds correct GitHub authorization URL", () => {
     const url = buildAuthorizationUrl(
+      db,
       "github",
       "test-state",
       "http://localhost:3000/api/auth/callback/github",
@@ -113,6 +118,7 @@ describe("buildAuthorizationUrl", () => {
 
   it("builds correct Google authorization URL with offline access", () => {
     const url = buildAuthorizationUrl(
+      db,
       "google",
       "test-state",
       "http://localhost:3000/api/auth/callback/google",
@@ -128,7 +134,7 @@ describe("buildAuthorizationUrl", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_ID", "");
     vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "");
     expect(() =>
-      buildAuthorizationUrl("github", "state", "http://localhost:3000/cb"),
+      buildAuthorizationUrl(db, "github", "state", "http://localhost:3000/cb"),
     ).toThrow("not configured");
   });
 });
