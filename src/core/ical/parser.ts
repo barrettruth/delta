@@ -1,0 +1,76 @@
+import ical, { type VEvent, type ParameterValue } from "node-ical";
+
+export interface ParsedEvent {
+  uid: string;
+  summary: string;
+  description?: string;
+  dtstart: Date;
+  dtend?: Date;
+  allDay: boolean;
+  location?: string;
+  url?: string;
+  rrule?: string;
+  status?: string;
+}
+
+function extractParameterValue(
+  value: ParameterValue | undefined,
+): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === "string") return value;
+  return value.val;
+}
+
+function veventToParsedEvent(event: VEvent): ParsedEvent {
+  const summary = extractParameterValue(event.summary) ?? "";
+  const description = extractParameterValue(event.description);
+  const location = extractParameterValue(event.location);
+
+  const allDay = event.datetype === "date";
+
+  const parsed: ParsedEvent = {
+    uid: event.uid,
+    summary,
+    dtstart: new Date(event.start),
+    allDay,
+  };
+
+  if (description) {
+    parsed.description = description;
+  }
+
+  if (event.end) {
+    parsed.dtend = new Date(event.end);
+  }
+
+  if (location) {
+    parsed.location = location;
+  }
+
+  if (typeof event.url === "string" && event.url.length > 0) {
+    parsed.url = event.url;
+  }
+
+  if (event.rrule) {
+    parsed.rrule = event.rrule.toString();
+  }
+
+  if (event.status) {
+    parsed.status = event.status;
+  }
+
+  return parsed;
+}
+
+export function parseICalendar(icsContent: string): ParsedEvent[] {
+  const parsed = ical.parseICS(icsContent);
+  const events: ParsedEvent[] = [];
+
+  for (const key of Object.keys(parsed)) {
+    const component = parsed[key];
+    if (!component || component.type !== "VEVENT") continue;
+    events.push(veventToParsedEvent(component as VEvent));
+  }
+
+  return events;
+}
