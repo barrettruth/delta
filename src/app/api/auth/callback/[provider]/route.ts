@@ -76,7 +76,7 @@ export async function GET(
           tokens,
           providerUser.email,
         );
-        return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/`);
+        return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/settings`);
       }
     }
 

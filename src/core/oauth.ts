@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { accounts, users } from "@/db/schema";
+import { accounts, users, webauthnCredentials } from "@/db/schema";
 import type { Db } from "./types";
 
 export type OAuthProvider = "github" | "google";
@@ -344,4 +344,34 @@ export function getLinkedAccounts(db: Db, userId: number) {
     .from(accounts)
     .where(eq(accounts.userId, userId))
     .all();
+}
+
+export function unlinkAccount(
+  db: Db,
+  userId: number,
+  provider: OAuthProvider,
+): { success: boolean; error?: string } {
+  const linked = getLinkedAccounts(db, userId);
+  const hasPasskeys =
+    db
+      .select()
+      .from(webauthnCredentials)
+      .where(eq(webauthnCredentials.userId, userId))
+      .all().length > 0;
+
+  const otherProviders = linked.filter((a) => a.provider !== provider);
+  if (otherProviders.length === 0 && !hasPasskeys) {
+    return { success: false, error: "Cannot unlink last auth method" };
+  }
+
+  const target = linked.find((a) => a.provider === provider);
+  if (!target) {
+    return { success: false, error: "Provider not linked" };
+  }
+
+  db.delete(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.provider, provider)))
+    .run();
+
+  return { success: true };
 }

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { validateSession } from "@/core/auth";
 import { getFeedToken } from "@/core/calendar-feed";
+import { getEnabledProviders, getLinkedAccounts } from "@/core/oauth";
 import { remainingRecoveryCodeCount } from "@/core/recovery";
 import { userHasTotp } from "@/core/totp";
 import { getCredentialsForUser } from "@/core/webauthn";
@@ -24,6 +25,8 @@ export default async function SettingsPage() {
   const totpEnabled = userHasTotp(db, user.id);
   const recoveryCodesRemaining = remainingRecoveryCodeCount(db, user.id);
   const calendarFeedToken = getFeedToken(db, user.id);
+  const connectedAccounts = getLinkedAccounts(db, user.id);
+  const enabledProviders = getEnabledProviders();
 
   return (
     <SettingsView
@@ -32,6 +35,8 @@ export default async function SettingsPage() {
       totpEnabled={totpEnabled}
       recoveryCodesRemaining={recoveryCodesRemaining}
       calendarFeedToken={calendarFeedToken}
+      connectedAccounts={connectedAccounts}
+      enabledProviders={enabledProviders}
     />
   );
 }

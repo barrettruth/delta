@@ -12,18 +12,30 @@ interface Passkey {
   createdAt: string;
 }
 
+interface ConnectedAccount {
+  id: number;
+  provider: string;
+  providerAccountId: string;
+  email: string | null;
+  createdAt: string;
+}
+
 export function SettingsView({
   username,
   passkeys: initialPasskeys,
   totpEnabled: initialTotpEnabled,
   recoveryCodesRemaining: initialRecoveryRemaining,
   calendarFeedToken: initialFeedToken,
+  connectedAccounts: initialConnectedAccounts,
+  enabledProviders,
 }: {
   username: string;
   passkeys: Passkey[];
   totpEnabled: boolean;
   recoveryCodesRemaining: number;
   calendarFeedToken: string | null;
+  connectedAccounts: ConnectedAccount[];
+  enabledProviders: string[];
 }) {
   const router = useRouter();
   const [passkeys, setPasskeys] = useState(initialPasskeys);
@@ -34,6 +46,10 @@ export function SettingsView({
   const [feedToken, setFeedToken] = useState(initialFeedToken);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  const [connectedAccounts, setConnectedAccounts] = useState(
+    initialConnectedAccounts,
+  );
 
   const [showAddPasskey, setShowAddPasskey] = useState(false);
   const [passkeyName, setPasskeyName] = useState("");
@@ -168,6 +184,19 @@ export function SettingsView({
     flash("copied to clipboard");
   }
 
+  async function handleUnlinkProvider(provider: string) {
+    const res = await fetch(`/api/auth/unlink/${provider}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      flashError(data.error ?? "Failed to unlink provider");
+      return;
+    }
+    setConnectedAccounts((prev) => prev.filter((a) => a.provider !== provider));
+    flash(`${provider} unlinked`);
+  }
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
@@ -224,6 +253,49 @@ export function SettingsView({
         <Section title="account">
           <Row label="username" value={username} />
           <Row label="logout" hint="q" action onClick={handleLogout} />
+        </Section>
+
+        <Section title="connected accounts">
+          {enabledProviders.map((provider) => {
+            const linked = connectedAccounts.find(
+              (a) => a.provider === provider,
+            );
+            if (linked) {
+              return (
+                <div
+                  key={provider}
+                  className="flex items-center w-full text-sm py-1 px-2 min-w-0"
+                >
+                  <span className="flex-1 text-left truncate min-w-0 text-foreground">
+                    {provider}
+                  </span>
+                  {linked.email && (
+                    <span className="text-muted-foreground text-xs truncate mr-2">
+                      {linked.email}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => handleUnlinkProvider(provider)}
+                  >
+                    unlink
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <Row
+                key={provider}
+                label={`+ link ${provider}`}
+                action
+                muted
+                onClick={() => {
+                  window.location.href = `/api/auth/${provider}`;
+                }}
+              />
+            );
+          })}
         </Section>
 
         <Section title="security">
