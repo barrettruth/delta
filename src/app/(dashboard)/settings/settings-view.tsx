@@ -25,6 +25,11 @@ interface ConnectedAccount {
   createdAt: string;
 }
 
+type OAuthProviderStatus = {
+  github: boolean;
+  google: boolean;
+};
+
 export function SettingsView({
   username,
   passkeys: initialPasskeys,
@@ -33,6 +38,7 @@ export function SettingsView({
   calendarFeedToken: initialFeedToken,
   connectedAccounts: initialConnectedAccounts,
   enabledProviders,
+  oauthProviders: initialOAuthProviders,
 }: {
   username: string;
   passkeys: Passkey[];
@@ -41,6 +47,7 @@ export function SettingsView({
   calendarFeedToken: string | null;
   connectedAccounts: ConnectedAccount[];
   enabledProviders: string[];
+  oauthProviders: OAuthProviderStatus;
 }) {
   const router = useRouter();
   const [passkeys, setPasskeys] = useState(initialPasskeys);
@@ -49,6 +56,7 @@ export function SettingsView({
     initialRecoveryRemaining,
   );
   const [feedToken, setFeedToken] = useState(initialFeedToken);
+  const [oauthProviders, setOAuthProviders] = useState(initialOAuthProviders);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -66,6 +74,9 @@ export function SettingsView({
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [invites, setInvites] = useState<InviteLinkRow[]>([]);
   const [invitesLoaded, setInvitesLoaded] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [oauthClientId, setOAuthClientId] = useState("");
+  const [oauthClientSecret, setOAuthClientSecret] = useState("");
 
   const flash = useCallback((msg: string) => {
     setMessage(msg);
@@ -234,6 +245,58 @@ export function SettingsView({
   useEffect(() => {
     loadInvites();
   }, [loadInvites]);
+
+  function handleEditOAuthProvider(provider: string) {
+    setEditingProvider(provider);
+    setOAuthClientId("");
+    setOAuthClientSecret("");
+  }
+
+  async function handleSaveOAuthProvider() {
+    if (!editingProvider) return;
+
+    const res = await fetch(`/api/settings/oauth/${editingProvider}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId: oauthClientId,
+        clientSecret: oauthClientSecret,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      flashError(data.error ?? "Failed to save credentials");
+      return;
+    }
+
+    setOAuthProviders((prev) => ({
+      ...prev,
+      [editingProvider]: true,
+    }));
+    setEditingProvider(null);
+    setOAuthClientId("");
+    setOAuthClientSecret("");
+    flash(`${editingProvider} configured`);
+  }
+
+  async function handleRemoveOAuthProvider(provider: string) {
+    const res = await fetch(`/api/settings/oauth/${provider}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      flashError(data.error ?? "Failed to remove credentials");
+      return;
+    }
+
+    setOAuthProviders((prev) => ({
+      ...prev,
+      [provider]: false,
+    }));
+    flash(`${provider} removed`);
+  }
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
@@ -454,6 +517,87 @@ export function SettingsView({
               onClick={handleRegenerateRecovery}
             />
           )}
+        </Section>
+
+        <Section title="oauth providers">
+          {(["github", "google"] as const).map((provider) => (
+            <div key={provider}>
+              {editingProvider === provider ? (
+                <div className="mb-3">
+                  <div className="text-sm text-foreground mb-2">{provider}</div>
+                  <div className="flex flex-col gap-2 ml-4">
+                    <Input
+                      value={oauthClientId}
+                      onChange={(e) => setOAuthClientId(e.target.value)}
+                      placeholder="client id"
+                      autoFocus
+                      className="h-7 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setEditingProvider(null);
+                      }}
+                    />
+                    <Input
+                      value={oauthClientSecret}
+                      onChange={(e) => setOAuthClientSecret(e.target.value)}
+                      placeholder="client secret"
+                      type="password"
+                      className="h-7 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveOAuthProvider();
+                        if (e.key === "Escape") setEditingProvider(null);
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveOAuthProvider}
+                        className="h-7 text-xs"
+                      >
+                        save
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingProvider(null)}
+                        className="h-7 text-xs"
+                      >
+                        cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center w-full text-sm py-1 px-2">
+                  <span className="flex-1 text-left truncate min-w-0 text-foreground">
+                    {provider}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 mr-2">
+                    {oauthProviders[provider] ? "configured" : "not configured"}
+                  </span>
+                  {oauthProviders[provider] ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveOAuthProvider(provider)}
+                      className="h-6 text-xs px-2"
+                    >
+                      remove
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditOAuthProvider(provider)}
+                      className="h-6 text-xs px-2"
+                    >
+                      configure
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </Section>
 
         <Section title="calendar feed">

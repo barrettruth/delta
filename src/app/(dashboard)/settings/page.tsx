@@ -4,6 +4,7 @@ import { validateSession } from "@/core/auth";
 import { getFeedToken } from "@/core/calendar-feed";
 import { getEnabledProviders, getLinkedAccounts } from "@/core/oauth";
 import { remainingRecoveryCodeCount } from "@/core/recovery";
+import { isOAuthProviderConfigured } from "@/core/system-config";
 import { userHasTotp } from "@/core/totp";
 import { getCredentialsForUser } from "@/core/webauthn";
 import { db } from "@/db";
@@ -26,7 +27,12 @@ export default async function SettingsPage() {
   const recoveryCodesRemaining = remainingRecoveryCodeCount(db, user.id);
   const calendarFeedToken = getFeedToken(db, user.id);
   const connectedAccounts = getLinkedAccounts(db, user.id);
-  const enabledProviders = getEnabledProviders();
+  const enabledProviders = getEnabledProviders(db);
+
+  const oauthProviders = {
+    github: isOAuthProviderConfigured(db, "github"),
+    google: isOAuthProviderConfigured(db, "google"),
+  };
 
   return (
     <SettingsView
@@ -37,6 +43,7 @@ export default async function SettingsPage() {
       calendarFeedToken={calendarFeedToken}
       connectedAccounts={connectedAccounts}
       enabledProviders={enabledProviders}
+      oauthProviders={oauthProviders}
     />
   );
 }
