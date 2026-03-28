@@ -70,7 +70,6 @@ export function WeekTimeGrid({
   onEventResize,
   onEventResizeStart,
   onRangeCreate,
-  onEventExtend,
   createPreview,
 }: {
   weekStart: Date;
@@ -97,11 +96,6 @@ export function WeekTimeGrid({
     startMinute: number,
     endMinute: number,
     anchor: DOMRect,
-  ) => void;
-  onEventExtend?: (
-    taskId: number,
-    startDayIndex: number,
-    endDayIndex: number,
   ) => void;
   createPreview?: { dayIndex: number; startMin: number; endMin: number } | null;
 }) {
@@ -188,9 +182,6 @@ export function WeekTimeGrid({
     },
     onRangeCreate: (dayIndex, startMinute, endMinute, anchor) => {
       onRangeCreate?.(dayIndex, startMinute, endMinute, anchor);
-    },
-    onEventExtend: (taskId, startDayIndex, endDayIndex) => {
-      onEventExtend?.(taskId, startDayIndex, endDayIndex);
     },
   });
 
@@ -316,22 +307,6 @@ export function WeekTimeGrid({
                 ))}
 
                 {interaction.previewStyle &&
-                  interaction.previewStyle.startDayIndex != null &&
-                  interaction.previewStyle.endDayIndex != null &&
-                  dayIdx >= interaction.previewStyle.startDayIndex &&
-                  dayIdx <= interaction.previewStyle.endDayIndex && (
-                    <div
-                      className="absolute left-0 right-0 border border-dashed border-primary z-20 pointer-events-none"
-                      style={{
-                        top: `${interaction.previewStyle.top}px`,
-                        height: `${interaction.previewStyle.height}px`,
-                        backgroundColor: "hsl(var(--primary) / 0.2)",
-                      }}
-                    />
-                  )}
-
-                {interaction.previewStyle &&
-                  interaction.previewStyle.startDayIndex == null &&
                   interaction.previewStyle.dayIndex === dayIdx && (
                     <div
                       className="absolute left-0 right-0 border border-dashed border-primary z-20 pointer-events-none"

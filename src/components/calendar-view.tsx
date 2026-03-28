@@ -468,50 +468,6 @@ export function CalendarView({
     [weekDays, panel],
   );
 
-  const handleEventExtend = useCallback(
-    (taskId: number, startDayIndex: number, endDayIndex: number) => {
-      const meta = virtualMetaRef.current.get(taskId);
-      const task = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === taskId);
-      if (!task || !task.startAt) return;
-
-      const startDate = weekDays[startDayIndex];
-      const endDate = weekDays[endDayIndex];
-      if (!startDate || !endDate) return;
-
-      const origStart = new Date(task.startAt);
-      const origEnd = task.endAt
-        ? new Date(task.endAt)
-        : new Date(origStart.getTime() + 15 * 60000);
-
-      const newStartAt = minuteToISOString(
-        startDate,
-        origStart.getHours() * 60 + origStart.getMinutes(),
-      );
-      const newEndAt = minuteToISOString(
-        endDate,
-        origEnd.getHours() * 60 + origEnd.getMinutes(),
-      );
-
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(taskId, { startAt: newStartAt, endAt: newEndAt });
-        return next;
-      });
-
-      if (meta) {
-        editRecurringInstanceAction(meta.masterId, meta.instanceDate, {
-          startAt: newStartAt,
-          endAt: newEndAt,
-        });
-      } else {
-        updateTaskAction(taskId, { startAt: newStartAt, endAt: newEndAt });
-      }
-    },
-    [tasks, weekDays],
-  );
-
   const prevWeek = useCallback(() => {
     setAnchor((d) => addDays(d ?? new Date(), -7));
   }, []);
@@ -754,7 +710,6 @@ export function CalendarView({
           onEventResize={handleEventResize}
           onEventResizeStart={handleEventResizeStart}
           onRangeCreate={handleRangeCreate}
-          onEventExtend={handleEventExtend}
           createPreview={createPreview}
         />
       ) : (
