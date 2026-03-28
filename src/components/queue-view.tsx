@@ -111,15 +111,14 @@ export function QueueView({
         mutations,
         timestamp: Date.now(),
       });
-      undo.scheduleExecution(entryId, async () => {
-        for (const id of ids) {
-          const result = await completeTaskAction(id);
+      for (const id of ids) {
+        completeTaskAction(id).then((result) => {
           const m = mutations.find((mut) => mut.taskId === id);
           if (m && result && "data" in result) {
             m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
           }
-        }
-      });
+        });
+      }
     },
     onDelete: (ids) => {
       if (ids.length === 1) {
@@ -144,9 +143,7 @@ export function QueueView({
         mutations,
         timestamp: Date.now(),
       });
-      undo.scheduleExecution(entryId, async () => {
-        for (const id of ids) await deleteTaskAction(id);
-      });
+      for (const id of ids) deleteTaskAction(id);
       if (panel.taskId && ids.includes(panel.taskId)) panel.close();
     },
     onStatusChange: (ids, status) => {
@@ -168,9 +165,7 @@ export function QueueView({
         mutations,
         timestamp: Date.now(),
       });
-      undo.scheduleExecution(entryId, async () => {
-        for (const id of ids) await updateTaskAction(id, { status });
-      });
+      for (const id of ids) updateTaskAction(id, { status });
     },
     onCreate: () => panel.create(),
     onSelect: (task) => {

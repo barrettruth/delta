@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardContent } from "@/components/dashboard-content";
 import { GlobalKeyboard } from "@/components/global-keyboard";
-import { MessageBar } from "@/components/keyboard-hints";
 import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { validateSession } from "@/core/auth";
@@ -53,7 +52,6 @@ export default async function DashboardLayout({
         />
         <SidebarInset className="flex flex-col h-dvh">
           <DashboardContent tasks={allTasks}>{children}</DashboardContent>
-          <MessageBar />
         </SidebarInset>
         <GlobalKeyboard categories={categories} />
       </NavigationWrapper>

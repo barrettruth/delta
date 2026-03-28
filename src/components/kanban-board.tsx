@@ -100,9 +100,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         mutations,
         timestamp: Date.now(),
       });
-      undo.scheduleExecution(entryId, async () => {
-        for (const id of ids) await deleteTaskAction(id);
-      });
+      for (const id of ids) deleteTaskAction(id);
     },
     [tasks, undo, recurrenceDelete],
   );
@@ -127,15 +125,14 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         mutations,
         timestamp: Date.now(),
       });
-      undo.scheduleExecution(entryId, async () => {
-        for (const id of ids) {
-          const result = await completeTaskAction(id);
+      for (const id of ids) {
+        completeTaskAction(id).then((result) => {
           const m = mutations.find((mut) => mut.taskId === id);
           if (m && result && "data" in result) {
             m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
           }
-        }
-      });
+        });
+      }
     },
     [tasks, undo],
   );
@@ -160,9 +157,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         mutations,
         timestamp: Date.now(),
       });
-      undo.scheduleExecution(entryId, async () => {
-        for (const id of ids) await updateTaskAction(id, { status });
-      });
+      for (const id of ids) updateTaskAction(id, { status });
     },
     [tasks, undo],
   );
