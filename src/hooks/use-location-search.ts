@@ -1,44 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 
-export interface PhotonResult {
+export interface LocationResult {
   name: string;
   displayName: string;
   lat: number;
   lon: number;
 }
 
-interface PhotonFeature {
+interface MapboxFeature {
   properties: {
     name?: string;
-    city?: string;
-    state?: string;
-    country?: string;
+    full_address?: string;
   };
   geometry: {
     coordinates: [number, number];
   };
 }
 
-function buildDisplayName(props: PhotonFeature["properties"]): string {
-  const parts = [props.name, props.city, props.state].filter(
-    (p): p is string => !!p,
-  );
-  const seen = new Set<string>();
-  const deduped: string[] = [];
-  for (const part of parts) {
-    if (!seen.has(part)) {
-      seen.add(part);
-      deduped.push(part);
-    }
-  }
-  return deduped.join(", ");
-}
-
-export function usePhotonSearch(query: string): {
-  results: PhotonResult[];
+export function useLocationSearch(query: string): {
+  results: LocationResult[];
   loading: boolean;
 } {
-  const [results, setResults] = useState<PhotonResult[]>([]);
+  const [results, setResults] = useState<LocationResult[]>([]);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -49,6 +32,8 @@ export function usePhotonSearch(query: string): {
       return;
     }
 
+    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
     const timer = setTimeout(async () => {
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -57,7 +42,7 @@ export function usePhotonSearch(query: string): {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=10`,
+          `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(query)}&access_token=${token}&limit=10`,
           { signal: controller.signal },
         );
         if (!res.ok) {
@@ -65,11 +50,11 @@ export function usePhotonSearch(query: string): {
           return;
         }
         const data = await res.json();
-        const features: PhotonFeature[] = data.features ?? [];
+        const features: MapboxFeature[] = data.features ?? [];
         setResults(
           features.map((f) => ({
             name: f.properties.name ?? "",
-            displayName: buildDisplayName(f.properties),
+            displayName: f.properties.full_address ?? "",
             lat: f.geometry.coordinates[1],
             lon: f.geometry.coordinates[0],
           })),
