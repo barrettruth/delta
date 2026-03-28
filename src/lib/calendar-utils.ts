@@ -184,6 +184,7 @@ export function buildDayPreFill(date: Date): QuickCreatePreFill {
     0,
   );
   return {
+    startAt: noon.toISOString(),
     due: noon.toISOString(),
     allDay: 1,
     timezone: getUserTimezone(),
