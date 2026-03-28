@@ -80,6 +80,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
           }
           const qs = params.toString();
           router.push(qs ? `${pathname}?${qs}` : pathname);
+          router.refresh();
         }
         return;
       }
