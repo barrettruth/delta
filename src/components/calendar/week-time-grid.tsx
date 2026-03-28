@@ -202,7 +202,8 @@ export function WeekTimeGrid({
                 {DAY_NAMES[idx]}
               </span>
               <span
-                className={`text-sm font-semibold mt-0.5 ${isToday ? "text-primary" : "text-foreground"}`}
+                className={`text-sm font-semibold mt-0.5 inline-flex items-center justify-center ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}
+                style={isToday ? { width: "24px", height: "24px" } : undefined}
               >
                 {date.getDate()}
               </span>
