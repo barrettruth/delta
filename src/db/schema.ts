@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   integer,
   primaryKey,
@@ -136,6 +137,23 @@ export const automations = sqliteTable("automations", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const integrationConfigs = sqliteTable(
+  "integration_configs",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    encryptedTokens: text("encrypted_tokens").notNull(),
+    metadata: text("metadata"),
+    enabled: integer("enabled").notNull().default(1),
+    createdAt: text("created_at").notNull().default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at").notNull().default(sql`(current_timestamp)`),
+  },
+  (t) => [unique().on(t.userId, t.provider)],
+);
 
 export const accounts = sqliteTable(
   "accounts",
