@@ -207,6 +207,28 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       if (pendingOp.current) {
         const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
         if (isModifier) return;
+
+        if (
+          (e.key >= "1" && e.key <= "9") ||
+          (e.key === "0" && countBuf.current.length > 0)
+        ) {
+          e.preventDefault();
+          countBuf.current += e.key;
+          if (opTimer.current) {
+            clearTimeout(opTimer.current);
+          }
+          opTimer.current = setTimeout(() => {
+            pendingOp.current = null;
+            opTimer.current = null;
+            countBuf.current = "";
+          }, 500);
+          return;
+        }
+
+        const motionCount = countBuf.current
+          ? Number.parseInt(countBuf.current, 10)
+          : null;
+        countBuf.current = "";
         const { key: op, preCount } = pendingOp.current;
         pendingOp.current = null;
         if (opTimer.current) {
@@ -239,8 +261,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
             if (colTasks.length > 0 && rowIdx < colTasks.length) {
+              const n = pre * (motionCount ?? 1);
               const lo = rowIdx;
-              const hi = Math.min(rowIdx + pre, colTasks.length - 1);
+              const hi = Math.min(rowIdx + n, colTasks.length - 1);
               const ids: number[] = [];
               for (let i = lo; i <= hi; i++) ids.push(colTasks[i].id);
               if (ids.length > 0) kbDelete(ids);
@@ -251,7 +274,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
             if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              const lo = Math.max(rowIdx - pre, 0);
+              const n = pre * (motionCount ?? 1);
+              const lo = Math.max(rowIdx - n, 0);
               const hi = rowIdx;
               const ids: number[] = [];
               for (let i = lo; i <= hi; i++) ids.push(colTasks[i].id);
