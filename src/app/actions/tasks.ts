@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 import { addDependency, removeDependency } from "@/core/dag";
 import { materializeInstance } from "@/core/recurrence-expansion";
 import {
+  deleteAllInstances,
+  deleteThisAndFuture,
+  deleteThisInstance,
+  editAllInstances,
+  editThisAndFuture,
   editThisInstance,
 } from "@/core/recurrence-editing";
 import {
@@ -231,6 +236,96 @@ export async function editRecurringInstanceAction(
   } catch (e) {
     return {
       error: e instanceof Error ? e.message : "Failed to edit instance",
+    };
+  }
+}
+
+export async function editThisAndFutureAction(
+  masterId: number,
+  instanceDate: string,
+  updates: UpdateTaskInput,
+): Promise<ActionResult<Task>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    const task = editThisAndFuture(db, user.id, masterId, instanceDate, updates);
+    revalidatePath("/");
+    return { data: task };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to edit instances",
+    };
+  }
+}
+
+export async function editAllInstancesAction(
+  masterId: number,
+  updates: UpdateTaskInput,
+): Promise<ActionResult<Task>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    const task = editAllInstances(db, user.id, masterId, updates);
+    revalidatePath("/");
+    return { data: task };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to edit instances",
+    };
+  }
+}
+
+export async function deleteThisInstanceAction(
+  masterId: number,
+  instanceDate: string,
+): Promise<ActionResult<null>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    deleteThisInstance(db, user.id, masterId, instanceDate);
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to delete instance",
+    };
+  }
+}
+
+export async function deleteThisAndFutureAction(
+  masterId: number,
+  instanceDate: string,
+): Promise<ActionResult<null>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    deleteThisAndFuture(db, user.id, masterId, instanceDate);
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to delete instances",
+    };
+  }
+}
+
+export async function deleteAllInstancesAction(
+  masterId: number,
+): Promise<ActionResult<null>> {
+  try {
+    const user = await requireUser();
+    const master = getTask(db, masterId);
+    if (!master || master.userId !== user.id) throw new Error("Task not found");
+    deleteAllInstances(db, masterId);
+    revalidatePath("/");
+    return { data: null };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to delete instances",
     };
   }
 }
