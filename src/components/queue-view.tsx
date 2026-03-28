@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPin, Video } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -353,15 +354,18 @@ export function QueueView({
                       {task.description}
                     </span>
                   </div>
-                  {(task.category || task.due) && (
+                  {(task.category ||
+                    task.due ||
+                    task.location ||
+                    task.meetingUrl) && (
                     <div
-                      className="text-xs text-muted-foreground mt-0.5"
+                      className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
                       style={{
                         paddingLeft: `calc(${gutterWidth}ch + 1.5rem)`,
                       }}
                     >
                       {task.category && <span>#{task.category}</span>}
-                      {task.category && task.due && <span> &middot; </span>}
+                      {task.category && task.due && <span>&middot;</span>}
                       {task.due && (
                         <span
                           className={cn(
@@ -371,6 +375,18 @@ export function QueueView({
                         >
                           {formatRelativeDate(new Date(task.due))}
                         </span>
+                      )}
+                      {task.location && (task.category || task.due) && (
+                        <span>&middot;</span>
+                      )}
+                      {task.location && (
+                        <span className="inline-flex items-center gap-0.5 truncate max-w-[20ch]">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {task.location}
+                        </span>
+                      )}
+                      {task.meetingUrl && (
+                        <Video className="w-3 h-3 shrink-0" />
                       )}
                     </div>
                   )}

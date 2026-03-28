@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPin, Video } from "lucide-react";
 import type { Task } from "@/core/types";
 import type { Continuation } from "@/lib/calendar-utils";
 import {
@@ -88,13 +89,19 @@ export function EventBlock({
         e.stopPropagation();
       }}
     >
-      <span className="font-medium truncate block">
+      <span className="font-medium truncate flex items-center gap-0.5">
         {isRecurring && (
-          <span className="mr-0.5" role="img" aria-label="recurring">
+          <span className="mr-0.5 shrink-0" role="img" aria-label="recurring">
             &#x21BB;
           </span>
         )}
-        {task.description}
+        <span className="truncate">{task.description}</span>
+        {height < 40 && task.location && (
+          <MapPin className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+        )}
+        {height < 45 && task.meetingUrl && (
+          <Video className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+        )}
       </span>
       {height >= 30 && (
         <span className="truncate block text-muted-foreground">
@@ -103,7 +110,8 @@ export function EventBlock({
         </span>
       )}
       {height >= 40 && task.location && (
-        <span className="truncate block text-[9px] text-muted-foreground">
+        <span className="truncate flex items-center gap-0.5 text-[9px] text-muted-foreground">
+          <MapPin className="w-2.5 h-2.5 shrink-0" />
           {task.location}
         </span>
       )}
@@ -112,10 +120,10 @@ export function EventBlock({
           href={task.meetingUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block text-[9px] text-muted-foreground underline hover:text-foreground"
+          className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-foreground"
           onClick={(e) => e.stopPropagation()}
         >
-          {"↗"}
+          <Video className="w-2.5 h-2.5 shrink-0" />
         </a>
       )}
       <div

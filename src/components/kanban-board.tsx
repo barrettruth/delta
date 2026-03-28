@@ -1,12 +1,12 @@
 "use client";
 
+import { MapPin, Video } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
@@ -708,6 +708,15 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                               <span className="text-xs text-muted-foreground">
                                 # {task.category}
                               </span>
+                            )}
+                            {task.location && (
+                              <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground truncate max-w-[16ch]">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                {task.location}
+                              </span>
+                            )}
+                            {task.meetingUrl && (
+                              <Video className="w-3 h-3 shrink-0 text-muted-foreground" />
                             )}
                             {task.due && (
                               <span className="text-xs text-muted-foreground ml-auto tabular-nums">
