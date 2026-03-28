@@ -2,12 +2,12 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSession } from "@/core/auth";
 import {
-  type OAuthProvider,
   exchangeCodeForToken,
   fetchProviderUser,
   findOrCreateUserFromOAuth,
   getEnabledProviders,
   linkAccount,
+  type OAuthProvider,
 } from "@/core/oauth";
 import { db } from "@/db";
 import { getAuthUser } from "@/lib/auth-middleware";

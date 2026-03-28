@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
-  type OAuthProvider,
   buildAuthorizationUrl,
   getEnabledProviders,
+  type OAuthProvider,
 } from "@/core/oauth";
 import { getAuthUser } from "@/lib/auth-middleware";
 

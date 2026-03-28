@@ -37,10 +37,10 @@ describe("getProviderConfig", () => {
     vi.stubEnv("OAUTH_GITHUB_CLIENT_SECRET", "gh-secret");
     const config = getProviderConfig("github");
     expect(config).not.toBeNull();
-    expect(config!.clientId).toBe("gh-id");
-    expect(config!.clientSecret).toBe("gh-secret");
-    expect(config!.authorizeUrl).toContain("github.com");
-    expect(config!.scopes).toContain("read:user");
+    expect(config?.clientId).toBe("gh-id");
+    expect(config?.clientSecret).toBe("gh-secret");
+    expect(config?.authorizeUrl).toContain("github.com");
+    expect(config?.scopes).toContain("read:user");
   });
 
   it("returns null when Google env vars are missing", () => {
@@ -54,8 +54,8 @@ describe("getProviderConfig", () => {
     vi.stubEnv("OAUTH_GOOGLE_CLIENT_SECRET", "g-secret");
     const config = getProviderConfig("google");
     expect(config).not.toBeNull();
-    expect(config!.clientId).toBe("g-id");
-    expect(config!.scopes).toContain("openid");
+    expect(config?.clientId).toBe("g-id");
+    expect(config?.scopes).toContain("openid");
   });
 });
 
@@ -220,8 +220,8 @@ describe("findAccountByProvider", () => {
 
     const result = findAccountByProvider(db, "github", "gh-789");
     expect(result).not.toBeNull();
-    expect(result!.users.id).toBe(user.id);
-    expect(result!.accounts.provider).toBe("github");
+    expect(result?.users.id).toBe(user.id);
+    expect(result?.accounts.provider).toBe("github");
   });
 });
 
