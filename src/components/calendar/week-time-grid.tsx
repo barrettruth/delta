@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EventBlock } from "@/components/calendar/event-block";
 import type { Task } from "@/core/types";
 import { useTimeGridInteraction } from "@/hooks/use-time-grid-interaction";
+import type { TimedEntry } from "@/lib/calendar-utils";
 import {
   addDays,
   DAY_NAMES,
@@ -15,49 +16,43 @@ import {
 } from "@/lib/calendar-utils";
 
 interface ColumnLayout {
-  task: Task;
+  entry: TimedEntry;
   column: number;
   totalColumns: number;
 }
 
-function computeOverlapLayout(tasks: Task[]): ColumnLayout[] {
-  if (tasks.length === 0) return [];
+function computeOverlapLayout(entries: TimedEntry[]): ColumnLayout[] {
+  if (entries.length === 0) return [];
 
-  const sorted = [...tasks].sort((a, b) => {
-    const aStart = a.startAt ? new Date(a.startAt).getTime() : 0;
-    const bStart = b.startAt ? new Date(b.startAt).getTime() : 0;
-    return aStart - bStart;
-  });
+  const sorted = [...entries].sort(
+    (a, b) => a.timeStartMin - b.timeStartMin,
+  );
 
-  const columns: { end: number; task: Task }[][] = [];
+  const columns: { end: number; entry: TimedEntry }[][] = [];
 
-  for (const task of sorted) {
-    const start = task.startAt
-      ? getMinutesFromMidnight(new Date(task.startAt))
-      : 0;
-    const end = task.endAt
-      ? getMinutesFromMidnight(new Date(task.endAt))
-      : start + 15;
+  for (const entry of sorted) {
+    const start = entry.timeStartMin;
+    const end = entry.timeEndMin;
 
     let placed = false;
     for (let c = 0; c < columns.length; c++) {
       const lastInCol = columns[c][columns[c].length - 1];
       if (lastInCol.end <= start) {
-        columns[c].push({ end, task });
+        columns[c].push({ end, entry });
         placed = true;
         break;
       }
     }
     if (!placed) {
-      columns.push([{ end, task }]);
+      columns.push([{ end, entry }]);
     }
   }
 
   const totalColumns = columns.length;
   const result: ColumnLayout[] = [];
   for (let c = 0; c < columns.length; c++) {
-    for (const entry of columns[c]) {
-      result.push({ task: entry.task, column: c, totalColumns });
+    for (const item of columns[c]) {
+      result.push({ entry: item.entry, column: c, totalColumns });
     }
   }
   return result;
@@ -77,11 +72,12 @@ export function WeekTimeGrid({
   onEventResize,
   onEventResizeStart,
   onRangeCreate,
+  onEventExtend,
   createPreview,
 }: {
   weekStart: Date;
   today: Date;
-  timedTasksByDate: Map<string, Task[]>;
+  timedTasksByDate: Map<string, TimedEntry[]>;
   onSlotClick: (
     date: Date,
     minuteOfDay: number,
@@ -104,6 +100,7 @@ export function WeekTimeGrid({
     endMinute: number,
     anchor: DOMRect,
   ) => void;
+  onEventExtend?: (taskId: number, startDayIndex: number, endDayIndex: number) => void;
   createPreview?: { dayIndex: number; startMin: number; endMin: number } | null;
 }) {
   const internalRef = useRef<HTMLDivElement>(null);
@@ -142,8 +139,8 @@ export function WeekTimeGrid({
     const map = new Map<string, ColumnLayout[]>();
     for (const day of days) {
       const key = formatDateKey(day);
-      const tasks = timedTasksByDate.get(key) ?? [];
-      map.set(key, computeOverlapLayout(tasks));
+      const entries = timedTasksByDate.get(key) ?? [];
+      map.set(key, computeOverlapLayout(entries));
     }
     return map;
   }, [timedTasksByDate, days]);
@@ -170,10 +167,10 @@ export function WeekTimeGrid({
       });
     },
     onEventClick: (taskId) => {
-      for (const [, taskList] of tasksRef.current) {
-        const task = taskList.find((t) => t.id === taskId);
-        if (task) {
-          onTaskClick(task);
+      for (const [, entries] of tasksRef.current) {
+        const entry = entries.find((e) => e.task.id === taskId);
+        if (entry) {
+          onTaskClick(entry.task);
           return;
         }
       }
@@ -189,6 +186,9 @@ export function WeekTimeGrid({
     },
     onRangeCreate: (dayIndex, startMinute, endMinute, anchor) => {
       onRangeCreate?.(dayIndex, startMinute, endMinute, anchor);
+    },
+    onEventExtend: (taskId, startDayIndex, endDayIndex) => {
+      onEventExtend?.(taskId, startDayIndex, endDayIndex);
     },
   });
 
@@ -289,23 +289,44 @@ export function WeekTimeGrid({
                   />
                 )}
 
-                {layout.map(({ task, column, totalColumns }) => (
+                {layout.map(({ entry, column, totalColumns }) => (
                   <EventBlock
-                    key={task.id}
-                    task={task}
+                    key={`${entry.task.id}-${entry.continuation ?? "full"}`}
+                    task={entry.task}
                     column={column}
                     totalColumns={totalColumns}
                     categoryColor={
-                      task.category ? categoryColors[task.category] : undefined
+                      entry.task.category
+                        ? categoryColors[entry.task.category]
+                        : undefined
                     }
                     onClick={(t) => {
                       onTaskClick(t);
                     }}
-                    isDragging={interaction.draggingTaskId === task.id}
+                    isDragging={interaction.draggingTaskId === entry.task.id}
+                    continuation={entry.continuation}
+                    overrideStartMin={entry.timeStartMin}
+                    overrideEndMin={entry.timeEndMin}
                   />
                 ))}
 
                 {interaction.previewStyle &&
+                  interaction.previewStyle.startDayIndex != null &&
+                  interaction.previewStyle.endDayIndex != null &&
+                  dayIdx >= interaction.previewStyle.startDayIndex &&
+                  dayIdx <= interaction.previewStyle.endDayIndex && (
+                    <div
+                      className="absolute left-0 right-0 border border-dashed border-primary z-20 pointer-events-none"
+                      style={{
+                        top: `${interaction.previewStyle.top}px`,
+                        height: `${interaction.previewStyle.height}px`,
+                        backgroundColor: "hsl(var(--primary) / 0.2)",
+                      }}
+                    />
+                  )}
+
+                {interaction.previewStyle &&
+                  interaction.previewStyle.startDayIndex == null &&
                   interaction.previewStyle.dayIndex === dayIdx && (
                     <div
                       className="absolute left-0 right-0 border border-dashed border-primary z-20 pointer-events-none"

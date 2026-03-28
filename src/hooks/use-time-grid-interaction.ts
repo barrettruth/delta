@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { HOUR_HEIGHT, snapMinuteTo15 } from "@/lib/calendar-utils";
 
-type InteractionMode = "idle" | "creating" | "moving" | "resizing" | "resizing-top";
+type InteractionMode = "idle" | "creating" | "moving" | "resizing" | "resizing-top" | "extending-left" | "extending-right";
 
 interface UseTimeGridInteractionOptions {
   hourHeight?: number;
@@ -15,6 +15,7 @@ interface UseTimeGridInteractionOptions {
   ) => void;
   onEventResize: (taskId: number, newEndAt: string) => void;
   onEventResizeStart: (taskId: number, newStartAt: string) => void;
+  onEventExtend?: (taskId: number, startDayIndex: number, endDayIndex: number) => void;
   onRangeCreate: (
     dayIndex: number,
     startMinute: number,
@@ -27,6 +28,8 @@ interface PreviewStyle {
   top: number;
   height: number;
   dayIndex: number;
+  startDayIndex?: number;
+  endDayIndex?: number;
 }
 
 export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
@@ -37,6 +40,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
     onEventMove,
     onEventResize,
     onEventResizeStart,
+    onEventExtend,
     onRangeCreate,
   } = options;
 
@@ -55,6 +59,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
   const eventStartMinRef = useRef(0);
   const eventEndMinRef = useRef<number | null>(null);
   const eventDurationRef = useRef(0);
+  const origDayIndexRef = useRef(0);
   const didDragRef = useRef(false);
   const rafRef = useRef(0);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
@@ -98,6 +103,23 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         "[data-time-grid-scroll]",
       ) as HTMLElement | null;
       scrollContainerRef.current = scrollParent;
+
+      const extendLeft = target.closest("[data-extend-handle-left]");
+      const extendRight = target.closest("[data-extend-handle-right]");
+      if (extendLeft || extendRight) {
+        const eventEl = target.closest("[data-event-id]") as HTMLElement | null;
+        if (!eventEl) return;
+        taskIdRef.current = Number(eventEl.dataset.eventId);
+        origDayIndexRef.current = dayIndex;
+        eventStartMinRef.current = Number.parseInt(eventEl.dataset.eventStartMin || "0", 10);
+        eventEndMinRef.current = eventEl.dataset.eventEndMin
+          ? Number.parseInt(eventEl.dataset.eventEndMin, 10)
+          : eventStartMinRef.current + 15;
+        modeRef.current = extendLeft ? "extending-left" : "extending-right";
+        e.preventDefault();
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        return;
+      }
 
       const resizeHandleTop = target.closest("[data-resize-handle-top]");
       const resizeHandle = target.closest("[data-resize-handle]");
@@ -259,6 +281,29 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
           });
         }
 
+        if (modeRef.current === "extending-left" || modeRef.current === "extending-right") {
+          const extMode = modeRef.current;
+          if (mode !== extMode) {
+            setMode(extMode);
+            setDraggingTaskId(taskIdRef.current);
+          }
+          const pointCol = findColumnFromPoint(clientX, clientY);
+          if (pointCol) {
+            const newDayIndex = Math.max(0, Math.min(6, Number(pointCol.dataset.dayColumn)));
+            const orig = origDayIndexRef.current;
+            const startDay = extMode === "extending-left" ? Math.min(newDayIndex, orig) : orig;
+            const endDay = extMode === "extending-right" ? Math.max(newDayIndex, orig) : orig;
+            dayIndexRef.current = newDayIndex;
+            setPreviewStyle({
+              top: eventStartMinRef.current * pxPerMin,
+              height: ((eventEndMinRef.current ?? eventStartMinRef.current + 15) - eventStartMinRef.current) * pxPerMin,
+              dayIndex: origDayIndexRef.current,
+              startDayIndex: startDay,
+              endDayIndex: endDay,
+            });
+          }
+        }
+
         if (modeRef.current === "resizing-top") {
           if (mode !== "resizing-top") {
             setMode("resizing-top");
@@ -348,6 +393,16 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         onEventResizeStart(taskIdRef.current, String(currentMinuteRef.current));
       }
 
+      if ((currentMode === "extending-left" || currentMode === "extending-right") && taskIdRef.current !== null && wasDrag) {
+        const orig = origDayIndexRef.current;
+        const target = dayIndexRef.current;
+        const startDay = currentMode === "extending-left" ? Math.min(target, orig) : orig;
+        const endDay = currentMode === "extending-right" ? Math.max(target, orig) : orig;
+        if (startDay !== endDay || startDay !== orig) {
+          onEventExtend?.(taskIdRef.current, startDay, endDay);
+        }
+      }
+
       taskIdRef.current = null;
     },
     [
@@ -357,6 +412,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
       onEventMove,
       onEventResize,
       onEventResizeStart,
+      onEventExtend,
       pxPerMin,
     ],
   );
