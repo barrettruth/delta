@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  deleteTaskAction,
   editRecurringInstanceAction,
   materializeInstanceAction,
   updateTaskAction,
@@ -54,7 +55,9 @@ export function CalendarView({
   const weekScrollRef = useRef<HTMLDivElement>(null);
   const countBuf = useRef("");
   const pendingG = useRef(false);
+  const pendingOp = useRef<string | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
   const [allDayExpanded, setAllDayExpanded] = useState(false);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
@@ -531,6 +534,24 @@ export function CalendarView({
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
       if (isModifier) return;
 
+      if (pendingOp.current && !isModifier) {
+        const op = pendingOp.current;
+        pendingOp.current = null;
+        if (opTimer.current) {
+          clearTimeout(opTimer.current);
+          opTimer.current = null;
+        }
+        if (e.key === op && op === "d") {
+          e.preventDefault();
+          if (panel.isOpen && panel.taskId !== null) {
+            deleteTaskAction(panel.taskId);
+            panel.close();
+          }
+        }
+        countBuf.current = "";
+        return;
+      }
+
       const consumeCount = () => {
         const n = countBuf.current ? Number.parseInt(countBuf.current, 10) : 1;
         countBuf.current = "";
@@ -631,9 +652,19 @@ export function CalendarView({
         return;
       }
 
+      if (e.key === "d") {
+        e.preventDefault();
+        pendingOp.current = "d";
+        opTimer.current = setTimeout(() => {
+          pendingOp.current = null;
+          opTimer.current = null;
+        }, 500);
+        return;
+      }
+
       countBuf.current = "";
     },
-    [viewMode, prevWeek, nextWeek, prevMonth, nextMonth, goToday],
+    [viewMode, prevWeek, nextWeek, prevMonth, nextMonth, goToday, panel],
   );
 
   useEffect(() => {
@@ -644,7 +675,9 @@ export function CalendarView({
   useEffect(() => {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
+      if (opTimer.current) clearTimeout(opTimer.current);
       pendingG.current = false;
+      pendingOp.current = null;
       countBuf.current = "";
     };
   }, []);
