@@ -55,6 +55,14 @@ export function CalendarView({
     Map<number, { startAt?: string; endAt?: string }>
   >(new Map());
 
+  const prevTasksRef = useRef(tasks);
+  useEffect(() => {
+    if (prevTasksRef.current !== tasks && optimisticUpdates.size > 0) {
+      setOptimisticUpdates(new Map());
+    }
+    prevTasksRef.current = tasks;
+  }, [tasks, optimisticUpdates.size]);
+
   useEffect(() => {
     const savedAnchor = nav.getViewState<string>("cal:anchor");
     const savedSelection = nav.getViewState<string>("cal:selection");
@@ -102,8 +110,35 @@ export function CalendarView({
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(merged);
     }
+    if (panel.mode === "create" && panel.preFill?.startAt && !panel.preFill.allDay) {
+      const preview = {
+        id: -1,
+        userId: 0,
+        description: "new task",
+        status: "pending" as const,
+        category: panel.preFill.category ?? null,
+        label: null,
+        due: panel.preFill.due ?? null,
+        startAt: panel.preFill.startAt,
+        endAt: panel.preFill.endAt ?? null,
+        allDay: 0,
+        recurrence: null,
+        recurMode: null,
+        location: null,
+        meetingUrl: null,
+        notes: null,
+        order: 0,
+        timezone: null,
+        completedAt: null,
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      } as Task;
+      const key = panel.preFill.startAt.slice(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)?.push(preview);
+    }
     return map;
-  }, [tasks, optimisticUpdates, pendingEdits]);
+  }, [tasks, optimisticUpdates, pendingEdits, panel.mode, panel.preFill]);
 
   const allDayTasks = useMemo(() => {
     return tasks.filter((t) => t.allDay === 1 && t.startAt);
@@ -171,12 +206,6 @@ export function CalendarView({
       updateTaskAction(taskId, {
         startAt: newStartAt,
         endAt: newEndAt,
-      }).then(() => {
-        setOptimisticUpdates((prev) => {
-          const next = new Map(prev);
-          next.delete(taskId);
-          return next;
-        });
       });
     },
     [tasks, weekDays],
@@ -194,13 +223,24 @@ export function CalendarView({
         next.set(taskId, { endAt: newEndAt });
         return next;
       });
-      updateTaskAction(taskId, { endAt: newEndAt }).then(() => {
-        setOptimisticUpdates((prev) => {
-          const next = new Map(prev);
-          next.delete(taskId);
-          return next;
-        });
+      updateTaskAction(taskId, { endAt: newEndAt });
+    },
+    [tasks],
+  );
+
+  const handleEventResizeStart = useCallback(
+    (taskId: number, newStartMinStr: string) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !task.startAt) return;
+      const baseDate = new Date(task.startAt);
+      const newStartMin = Number.parseInt(newStartMinStr, 10);
+      const newStartAt = minuteToISOString(baseDate, newStartMin);
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(taskId, { startAt: newStartAt });
+        return next;
       });
+      updateTaskAction(taskId, { startAt: newStartAt });
     },
     [tasks],
   );
@@ -558,6 +598,7 @@ export function CalendarView({
           scrollRef={weekScrollRef}
           onEventMove={handleEventMove}
           onEventResize={handleEventResize}
+          onEventResizeStart={handleEventResizeStart}
           onRangeCreate={handleRangeCreate}
         />
       ) : (

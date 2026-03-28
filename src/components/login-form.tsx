@@ -222,7 +222,7 @@ export function LoginForm() {
                   onClick={handlePasskeyOnly}
                   disabled={loading}
                 >
-                  sign in with passkey
+                  use passkey
                 </Button>
               )}
               <button

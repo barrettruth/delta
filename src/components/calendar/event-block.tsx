@@ -15,6 +15,7 @@ export function EventBlock({
   categoryColor,
   onClick,
   isDragging,
+  continuation,
 }: {
   task: Task;
   column: number;
@@ -22,15 +23,27 @@ export function EventBlock({
   categoryColor?: string;
   onClick: (task: Task) => void;
   isDragging?: boolean;
+  continuation?: "start" | "end";
 }) {
   const start = task.startAt ? new Date(task.startAt) : null;
   const end = task.endAt ? new Date(task.endAt) : null;
   if (!start) return null;
 
-  const startMin = getMinutesFromMidnight(start);
-  const endMin = end ? getMinutesFromMidnight(end) : startMin + 15;
-  const durationMin = Math.max(endMin - startMin, 15);
+  let startMin: number;
+  let endMin: number;
 
+  if (continuation === "end") {
+    startMin = 0;
+    endMin = end ? getMinutesFromMidnight(end) : 60;
+  } else if (continuation === "start") {
+    startMin = getMinutesFromMidnight(start);
+    endMin = 1440;
+  } else {
+    startMin = getMinutesFromMidnight(start);
+    endMin = end ? getMinutesFromMidnight(end) : startMin + 15;
+  }
+
+  const durationMin = Math.max(endMin - startMin, 15);
   const pxPerMin = HOUR_HEIGHT / 60;
   const top = startMin * pxPerMin;
   const height = durationMin * pxPerMin;
@@ -54,10 +67,11 @@ export function EventBlock({
         width: `${widthPct}%`,
         backgroundColor: categoryColor ? `${categoryColor}20` : "var(--accent)",
         borderLeftColor: categoryColor || "var(--primary)",
+        ...(continuation === "end" ? { borderTop: "none" } : {}),
+        ...(continuation === "start" ? { borderBottom: "none" } : {}),
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onClick(task);
       }}
     >
       <span className="font-medium truncate block">{task.description}</span>
@@ -82,9 +96,24 @@ export function EventBlock({
         </a>
       )}
       <div
+        data-resize-handle-top=""
+        className="absolute top-0 left-0 right-0 cursor-ns-resize"
+        style={{ height: "8px" }}
+      />
+      <div
         data-resize-handle=""
         className="absolute bottom-0 left-0 right-0 cursor-ns-resize"
         style={{ height: "8px" }}
+      />
+      <div
+        data-drag-handle-left=""
+        className="absolute top-0 bottom-0 left-0 cursor-ew-resize"
+        style={{ width: "6px" }}
+      />
+      <div
+        data-drag-handle-right=""
+        className="absolute top-0 bottom-0 right-0 cursor-ew-resize"
+        style={{ width: "6px" }}
       />
     </button>
   );

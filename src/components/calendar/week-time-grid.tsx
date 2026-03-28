@@ -76,6 +76,7 @@ export function WeekTimeGrid({
   scrollRef: externalScrollRef,
   onEventMove,
   onEventResize,
+  onEventResizeStart,
   onRangeCreate,
 }: {
   weekStart: Date;
@@ -97,6 +98,7 @@ export function WeekTimeGrid({
     dayIndex: number,
   ) => void;
   onEventResize?: (taskId: number, newEndAt: string) => void;
+  onEventResizeStart?: (taskId: number, newStartAt: string) => void;
   onRangeCreate?: (
     dayIndex: number,
     startMinute: number,
@@ -210,6 +212,9 @@ export function WeekTimeGrid({
     },
     onEventResize: (taskId, newEndAt) => {
       onEventResize?.(taskId, newEndAt);
+    },
+    onEventResizeStart: (taskId, newStartAt) => {
+      onEventResizeStart?.(taskId, newStartAt);
     },
     onRangeCreate: (dayIndex, startMinute, endMinute, anchor) => {
       onRangeCreate?.(dayIndex, startMinute, endMinute, anchor);

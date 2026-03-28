@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { HOUR_HEIGHT, snapMinuteTo15 } from "@/lib/calendar-utils";
 
-type InteractionMode = "idle" | "creating" | "moving" | "resizing";
+type InteractionMode = "idle" | "creating" | "moving" | "resizing" | "resizing-top";
 
 interface UseTimeGridInteractionOptions {
   hourHeight?: number;
@@ -14,6 +14,7 @@ interface UseTimeGridInteractionOptions {
     dayIndex: number,
   ) => void;
   onEventResize: (taskId: number, newEndAt: string) => void;
+  onEventResizeStart: (taskId: number, newStartAt: string) => void;
   onRangeCreate: (
     dayIndex: number,
     startMinute: number,
@@ -35,6 +36,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
     onEventClick,
     onEventMove,
     onEventResize,
+    onEventResizeStart,
     onRangeCreate,
   } = options;
 
@@ -97,8 +99,44 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
       ) as HTMLElement | null;
       scrollContainerRef.current = scrollParent;
 
+      const dragHandleSide =
+        target.closest("[data-drag-handle-left]") ||
+        target.closest("[data-drag-handle-right]");
+      if (dragHandleSide) {
+        const eventEl = target.closest("[data-event-id]") as HTMLElement | null;
+        if (!eventEl) return;
+        const taskId = Number(eventEl.dataset.eventId);
+        taskIdRef.current = taskId;
+        eventStartMinRef.current = Number.parseInt(
+          eventEl.dataset.eventStartMin || "0",
+          10,
+        );
+        eventEndMinRef.current = eventEl.dataset.eventEndMin
+          ? Number.parseInt(eventEl.dataset.eventEndMin, 10)
+          : null;
+        eventDurationRef.current =
+          (eventEndMinRef.current ?? eventStartMinRef.current + 15) -
+          eventStartMinRef.current;
+
+        const eventRect = eventEl.getBoundingClientRect();
+        const scrollTop = scrollContainerRef.current
+          ? scrollContainerRef.current.scrollTop
+          : 0;
+        const eventTopPx =
+          eventRect.top - columnEl.getBoundingClientRect().top + scrollTop;
+        const pointerPx =
+          e.clientY - columnEl.getBoundingClientRect().top + scrollTop;
+        offsetRef.current = pointerPx - eventTopPx;
+
+        modeRef.current = "moving";
+        e.preventDefault();
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        return;
+      }
+
+      const resizeHandleTop = target.closest("[data-resize-handle-top]");
       const resizeHandle = target.closest("[data-resize-handle]");
-      if (resizeHandle) {
+      if (resizeHandleTop || resizeHandle) {
         const eventEl = target.closest("[data-event-id]") as HTMLElement | null;
         if (!eventEl) return;
         const taskId = Number(eventEl.dataset.eventId);
@@ -114,8 +152,14 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         eventEndMinRef.current = endAt
           ? Number.parseInt(eventEl.dataset.eventEndMin || "0", 10)
           : eventStartMinRef.current + 15;
-        currentMinuteRef.current = eventEndMinRef.current;
-        modeRef.current = "resizing";
+
+        if (resizeHandleTop && !resizeHandle?.contains(target)) {
+          currentMinuteRef.current = eventStartMinRef.current;
+          modeRef.current = "resizing-top";
+        } else {
+          currentMinuteRef.current = eventEndMinRef.current;
+          modeRef.current = "resizing";
+        }
 
         e.preventDefault();
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -249,6 +293,22 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
             dayIndex: dayIndexRef.current,
           });
         }
+
+        if (modeRef.current === "resizing-top") {
+          if (mode !== "resizing-top") {
+            setMode("resizing-top");
+            setDraggingTaskId(taskIdRef.current);
+          }
+          const minute = getMinuteFromY(clientY, columnEl);
+          const endMin = eventEndMinRef.current ?? eventStartMinRef.current + 15;
+          const newStart = Math.min(endMin - 15, minute);
+          currentMinuteRef.current = snapMinuteTo15(Math.max(0, newStart));
+          setPreviewStyle({
+            top: currentMinuteRef.current * pxPerMin,
+            height: (endMin - currentMinuteRef.current) * pxPerMin,
+            dayIndex: dayIndexRef.current,
+          });
+        }
       });
     },
     [findColumnEl, findColumnFromPoint, getMinuteFromY, mode, pxPerMin],
@@ -315,12 +375,12 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
         }
       }
 
-      if (currentMode === "resizing" && taskIdRef.current !== null) {
-        if (wasDrag) {
-          onEventResize(taskIdRef.current, String(currentMinuteRef.current));
-        } else {
-          onEventClick(taskIdRef.current);
-        }
+      if (currentMode === "resizing" && taskIdRef.current !== null && wasDrag) {
+        onEventResize(taskIdRef.current, String(currentMinuteRef.current));
+      }
+
+      if (currentMode === "resizing-top" && taskIdRef.current !== null && wasDrag) {
+        onEventResizeStart(taskIdRef.current, String(currentMinuteRef.current));
       }
 
       taskIdRef.current = null;
@@ -331,6 +391,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
       onRangeCreate,
       onEventMove,
       onEventResize,
+      onEventResizeStart,
       pxPerMin,
     ],
   );
