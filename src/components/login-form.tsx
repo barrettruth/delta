@@ -1,17 +1,26 @@
 "use client";
 
 import { startAuthentication } from "@simplewebauthn/browser";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 type Provider = "github" | "google";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  no_invite: "an invite link is required to create an account",
+};
+
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const urlError = searchParams.get("error");
+  const urlErrorMessage = urlError ? ERROR_MESSAGES[urlError] : null;
 
   useEffect(() => {
     fetch("/api/auth/providers")
@@ -52,6 +61,8 @@ export function LoginForm() {
     setLoading(false);
   }
 
+  const hasProviders = providers.length > 0;
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="flex flex-col items-center">
@@ -59,42 +70,56 @@ export function LoginForm() {
           δ
         </span>
         <div className="flex flex-col gap-3 w-64">
-          {error && <div className="text-sm text-destructive">{error}</div>}
+          {urlErrorMessage && (
+            <p className="text-sm text-destructive text-center">
+              {urlErrorMessage}
+            </p>
+          )}
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
+          )}
 
-          {providers.includes("github") && (
+          {!expanded ? (
             <Button
               variant="outline"
-              onClick={() => handleOAuth("github")}
+              onClick={() => (hasProviders ? setExpanded(true) : handlePasskey())}
               disabled={loading}
               className="w-full"
             >
-              sign in with github
+              {loading ? "..." : "sign in"}
             </Button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {providers.includes("github") && (
+                <Button
+                  variant="ghost"
+                  onClick={() => handleOAuth("github")}
+                  disabled={loading}
+                  className="w-full justify-start"
+                >
+                  github
+                </Button>
+              )}
+              {providers.includes("google") && (
+                <Button
+                  variant="ghost"
+                  onClick={() => handleOAuth("google")}
+                  disabled={loading}
+                  className="w-full justify-start"
+                >
+                  google
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                onClick={handlePasskey}
+                disabled={loading}
+                className="w-full justify-start"
+              >
+                {loading ? "..." : "passkey"}
+              </Button>
+            </div>
           )}
-
-          {providers.includes("google") && (
-            <Button
-              variant="outline"
-              onClick={() => handleOAuth("google")}
-              disabled={loading}
-              className="w-full"
-            >
-              sign in with google
-            </Button>
-          )}
-
-          <Button
-            variant="outline"
-            onClick={handlePasskey}
-            disabled={loading}
-            className="w-full"
-          >
-            {loading
-              ? "..."
-              : providers.length > 0
-                ? "sign in with passkey"
-                : "sign in"}
-          </Button>
         </div>
       </div>
     </div>
