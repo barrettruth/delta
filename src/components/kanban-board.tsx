@@ -7,12 +7,14 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 
+import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
+import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { formatDate, isInputFocused } from "@/lib/utils";
 
 const COLUMN_HINTS = ["W", "I", "B", "X"];
@@ -55,6 +57,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
   const undo = useUndo();
   const panel = useTaskPanel();
+  const recurrenceDelete = useRecurrenceDelete();
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
   const [colIdx, setColIdx] = useState(0);
@@ -75,6 +78,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   const kbDelete = useCallback(
     (ids: number[]) => {
+      if (ids.length === 1) {
+        const task = tasks.find((t) => t.id === ids[0]);
+        if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
+      }
       const entryId = `delete-${Date.now()}-${ids.join(",")}`;
       const mutations = ids.map((id) => {
         const task = tasks.find((t) => t.id === id);
@@ -97,7 +104,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         for (const id of ids) await deleteTaskAction(id);
       });
     },
-    [tasks, undo],
+    [tasks, undo, recurrenceDelete],
   );
 
   const kbComplete = useCallback(
@@ -708,6 +715,12 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           })}
         </div>
       )}
+      <RecurrenceStrategyDialog
+        open={!!recurrenceDelete.pending}
+        onOpenChange={(open) => { if (!open) recurrenceDelete.cancel(); }}
+        mode="delete"
+        onSelect={(strategy) => { recurrenceDelete.executeStrategy(strategy); }}
+      />
     </div>
   );
 }

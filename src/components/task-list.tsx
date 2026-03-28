@@ -7,11 +7,13 @@ import {
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
+import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task, TaskStatus } from "@/core/types";
 import { useKeyboard } from "@/hooks/use-keyboard";
+import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { formatDate } from "@/lib/utils";
 
 const statusIcon: Record<TaskStatus, React.ReactNode> = {
@@ -25,6 +27,7 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
 export function TaskList({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
   const panel = useTaskPanel();
+  const recurrenceDelete = useRecurrenceDelete();
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +37,10 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
       for (const id of ids) completeTaskAction(id);
     },
     onDelete: (ids) => {
+      if (ids.length === 1) {
+        const task = tasks.find((t) => t.id === ids[0]);
+        if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
+      }
       for (const id of ids) deleteTaskAction(id);
       if (panel.taskId && ids.includes(panel.taskId)) panel.close();
     },
@@ -126,6 +133,12 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
           </div>
         )}
       </div>
+      <RecurrenceStrategyDialog
+        open={!!recurrenceDelete.pending}
+        onOpenChange={(open) => { if (!open) recurrenceDelete.cancel(); }}
+        mode="delete"
+        onSelect={(strategy) => { recurrenceDelete.executeStrategy(strategy); }}
+      />
     </div>
   );
 }

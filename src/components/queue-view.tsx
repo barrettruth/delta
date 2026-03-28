@@ -6,6 +6,7 @@ import {
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
+import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
@@ -15,6 +16,7 @@ import type { TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
+import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
 
 const STATUS_SIGIL: Record<TaskStatus, string> = {
@@ -69,6 +71,7 @@ export function QueueView({
   const nav = useNavigation();
   const undo = useUndo();
   const panel = useTaskPanel();
+  const recurrenceDelete = useRecurrenceDelete();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -120,6 +123,10 @@ export function QueueView({
       });
     },
     onDelete: (ids) => {
+      if (ids.length === 1) {
+        const task = filtered.find((t) => t.id === ids[0]);
+        if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
+      }
       const entryId = `delete-${Date.now()}-${ids.join(",")}`;
       const mutations = ids.map((id) => {
         const task = filtered.find((t) => t.id === id);
@@ -382,6 +389,12 @@ export function QueueView({
           </div>
         )}
       </div>
+      <RecurrenceStrategyDialog
+        open={!!recurrenceDelete.pending}
+        onOpenChange={(open) => { if (!open) recurrenceDelete.cancel(); }}
+        mode="delete"
+        onSelect={(strategy) => { recurrenceDelete.executeStrategy(strategy); }}
+      />
     </div>
   );
 }
