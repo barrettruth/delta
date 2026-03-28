@@ -14,6 +14,7 @@ export const users = sqliteTable("users", {
   apiKey: text("api_key").unique(),
   totpSecret: text("totp_secret"),
   totpEnabled: integer("totp_enabled").default(0),
+  calendarFeedToken: text("calendar_feed_token").unique(),
   createdAt: text("created_at").notNull(),
 });
 

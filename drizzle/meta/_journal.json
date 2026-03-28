@@ -127,6 +127,13 @@
       "when": 1774737719663,
       "tag": "0017_productive_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1774738013496,
+      "tag": "0018_fancy_amazoness",
+      "breakpoints": true
     }
   ]
 }
