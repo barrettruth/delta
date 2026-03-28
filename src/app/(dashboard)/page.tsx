@@ -23,7 +23,6 @@ export default async function QueuePage({
 }: {
   searchParams: Promise<{
     category?: string;
-    label?: string;
     status?: string;
     date?: string;
     showDone?: string;
@@ -41,7 +40,6 @@ export default async function QueuePage({
     settings.defaultView !== "queue" &&
     settings.defaultView !== "list" &&
     !params.category &&
-    !params.label &&
     !params.status &&
     !params.date
   ) {
@@ -51,7 +49,6 @@ export default async function QueuePage({
   const filters: TaskFilters = {};
 
   if (params.category) filters.category = params.category;
-  if (params.label) filters.label = params.label;
   if (params.status) {
     filters.status = params.status.split(",") as TaskStatus[];
   }

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, like, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { tasks } from "@/db/schema";
 import { updateBlockedStatus } from "./dag";
 import { getNextTaskData } from "./recurrence";
@@ -27,7 +27,6 @@ export function createTask(
       description: input.description,
       status: input.status ?? "pending",
       category: input.category ?? "Todo",
-      label: input.label ?? null,
       startAt: input.startAt ?? null,
       endAt: input.endAt ?? null,
       allDay: input.allDay ?? 0,
@@ -82,10 +81,6 @@ export function listTasks(
 
   if (filters?.category) {
     conditions.push(eq(tasks.category, filters.category));
-  }
-
-  if (filters?.label) {
-    conditions.push(like(tasks.label, `%${filters.label}%`));
   }
 
   if (filters?.dueBefore) {

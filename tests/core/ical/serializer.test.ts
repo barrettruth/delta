@@ -9,7 +9,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     description: "Test event",
     status: "pending",
     category: "Work",
-    label: null,
     due: null,
     recurrence: null,
     recurMode: null,

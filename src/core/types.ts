@@ -21,7 +21,6 @@ export interface CreateTaskInput {
   description: string;
   status?: TaskStatus;
   category?: string;
-  label?: string;
   due?: string;
   startAt?: string;
   endAt?: string;
@@ -43,7 +42,6 @@ export interface UpdateTaskInput {
   description?: string;
   status?: TaskStatus;
   category?: string | null;
-  label?: string | null;
   due?: string | null;
   startAt?: string | null;
   endAt?: string | null;
@@ -62,7 +60,6 @@ export interface UpdateTaskInput {
 export interface TaskFilters {
   status?: TaskStatus | TaskStatus[];
   category?: string;
-  label?: string;
   dueBefore?: string;
   dueAfter?: string;
   sortBy?: "due" | "createdAt" | "order";

@@ -181,8 +181,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     return tasks.filter(
       (t) =>
         t.description.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q) ||
-        t.label?.toLowerCase().includes(q),
+        t.category?.toLowerCase().includes(q),
     );
   }, [tasks, searchQuery]);
 
@@ -715,14 +714,6 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                                 # {task.category}
                               </span>
                             )}
-                            {task.label?.split(",").map((l) => (
-                              <span
-                                key={l.trim()}
-                                className="text-xs text-muted-foreground"
-                              >
-                                [{l.trim()}]
-                              </span>
-                            ))}
                             {task.due && (
                               <span className="text-xs text-muted-foreground ml-auto tabular-nums">
                                 {formatDate(new Date(task.due))}

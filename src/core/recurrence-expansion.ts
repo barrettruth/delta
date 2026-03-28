@@ -107,7 +107,6 @@ export function materializeInstance(
     description: master.description,
     status: master.status ?? "pending",
     category: master.category ?? undefined,
-    label: master.label ?? undefined,
     due: master.due ?? undefined,
     startAt: instanceStart,
     endAt: instanceEnd ?? undefined,

@@ -43,10 +43,6 @@ export function editThisInstance(
       updates.category !== undefined
         ? (updates.category ?? undefined)
         : (master.category ?? undefined),
-    label:
-      updates.label !== undefined
-        ? (updates.label ?? undefined)
-        : (master.label ?? undefined),
     due:
       updates.due !== undefined
         ? (updates.due ?? undefined)
@@ -116,10 +112,6 @@ export function editThisAndFuture(
       updates.category !== undefined
         ? (updates.category ?? undefined)
         : (master.category ?? undefined),
-    label:
-      updates.label !== undefined
-        ? (updates.label ?? undefined)
-        : (master.label ?? undefined),
     due:
       updates.due !== undefined
         ? (updates.due ?? undefined)

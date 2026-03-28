@@ -84,8 +84,7 @@ export function QueueView({
     return tasks.filter(
       (t) =>
         t.description.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q) ||
-        t.label?.toLowerCase().includes(q),
+        t.category?.toLowerCase().includes(q),
     );
   }, [tasks, searchQuery]);
 
@@ -357,13 +356,6 @@ export function QueueView({
                   >
                     {task.description}
                   </span>
-                  {task.label && (
-                    <span className="text-xs text-muted-foreground shrink-0 flex gap-1">
-                      {task.label.split(",").map((l) => (
-                        <span key={l.trim()}>[{l.trim()}]</span>
-                      ))}
-                    </span>
-                  )}
                   {task.category && (
                     <span className="max-w-[16ch] truncate text-xs text-right shrink-0">
                       <span className="font-bold text-muted-foreground">

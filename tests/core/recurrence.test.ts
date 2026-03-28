@@ -130,7 +130,6 @@ describe("getNextTaskData", () => {
     description: "Weekly review",
     status: "done",
     category: "Work",
-    label: null,
     startAt: null,
     endAt: null,
     allDay: 0,

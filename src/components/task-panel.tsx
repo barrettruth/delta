@@ -68,7 +68,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
 
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [label, setLabel] = useState("");
   const [due, setDue] = useState("");
   const [location, setLocation] = useState("");
   const [meetingUrl, setMeetingUrl] = useState("");
@@ -86,7 +85,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const formDataRef = useRef({
     description: "",
     category: "",
-    label: "",
     due: "",
     location: "",
     meetingUrl: "",
@@ -98,7 +96,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   formDataRef.current = {
     description,
     category,
-    label,
     due,
     location,
     meetingUrl,
@@ -112,7 +109,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setPendingEdit(taskId, {
         description,
         category: category || null,
-        label: label || null,
         location: location || null,
         meetingUrl: meetingUrl || null,
       } as Partial<Task>);
@@ -122,7 +118,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     taskId,
     description,
     category,
-    label,
     location,
     meetingUrl,
     setPendingEdit,
@@ -178,7 +173,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     await updateTaskAction(id, {
       description: f.description,
       category: f.category || null,
-      label: f.label || null,
       due: f.due ? new Date(f.due).toISOString() : null,
       notes: f.notes || null,
       location: f.location || null,
@@ -199,7 +193,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     if (mode === "edit" && t) {
       setDescription(t.description);
       setCategory(t.category ?? "");
-      setLabel(t.label ?? "");
       setDue(t.due ? t.due.slice(0, 16) : "");
       setLocation(t.location ?? "");
       setMeetingUrl(t.meetingUrl ?? "");
@@ -209,7 +202,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     } else if (mode === "create") {
       setDescription("");
       setCategory(preFill?.category ?? "");
-      setLabel("");
       setDue(preFill?.startAt ? preFill.startAt.slice(0, 16) : "");
       setLocation("");
       setMeetingUrl("");

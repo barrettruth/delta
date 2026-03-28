@@ -21,7 +21,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     description: "Test",
     status: "pending",
     category: "Todo",
-    label: null,
     startAt: null,
     endAt: null,
     allDay: 0,
