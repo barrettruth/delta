@@ -50,7 +50,6 @@ export const tasks = sqliteTable("tasks", {
     .notNull()
     .default("pending"),
   category: text("category").default("Todo"),
-  label: text("label"),
   due: text("due"),
   recurrence: text("recurrence"),
   recurMode: text("recur_mode", { enum: ["scheduled", "completion"] }),
