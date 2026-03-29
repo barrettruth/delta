@@ -36,7 +36,7 @@ import {
   minuteToISOString,
   startOfMonth,
 } from "@/lib/calendar-utils";
-import { isInputFocused } from "@/lib/utils";
+import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
 
@@ -511,6 +511,7 @@ export function CalendarView({
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
+      if (isBrowserShortcut(e)) return;
 
       if (e.ctrlKey && viewMode === "week" && weekScrollRef.current) {
         const el = weekScrollRef.current;

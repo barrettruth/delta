@@ -15,7 +15,7 @@ import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
-import { formatDate, isInputFocused } from "@/lib/utils";
+import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const COLUMN_HINTS = ["W", "I", "B", "X"];
 
@@ -196,6 +196,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
+      if (isBrowserShortcut(e)) return;
       if (panel.isOpen) return;
 
       if (pendingOp.current) {
