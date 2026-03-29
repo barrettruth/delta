@@ -427,27 +427,30 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           </div>
 
           <span className="text-xs text-muted-foreground/60">due</span>
-          <Input
-            type="datetime-local"
-            value={due}
-            onChange={(e) => setDue(e.target.value)}
-            className="h-7 text-xs"
-          />
-
-          <span className="text-xs text-muted-foreground/60">repeat</span>
-          {mode === "edit" && task?.recurringTaskId ? (
-            <span className="text-xs text-muted-foreground/60 h-7 flex items-center">
-              recurring instance
+          <div className="flex gap-3 items-center">
+            <Input
+              type="datetime-local"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              className="h-7 text-xs flex-1"
+            />
+            <span className="text-xs text-muted-foreground/60 shrink-0">
+              repeat
             </span>
-          ) : (
-            <button
-              type="button"
-              className="text-xs text-left h-7 flex items-center px-2 border border-transparent hover:border-border transition-colors w-full"
-              onClick={() => setRruleDialogOpen(true)}
-            >
-              {rruleHuman ?? "none"}
-            </button>
-          )}
+            {mode === "edit" && task?.recurringTaskId ? (
+              <span className="text-xs text-muted-foreground/60 h-7 flex items-center">
+                recurring instance
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="text-xs text-left h-7 flex items-center px-2 border border-transparent hover:border-border transition-colors shrink-0"
+                onClick={() => setRruleDialogOpen(true)}
+              >
+                {rruleHuman ?? "none"}
+              </button>
+            )}
+          </div>
 
           <span className="text-xs text-muted-foreground/60">location</span>
           <div className="relative">

@@ -306,8 +306,9 @@ export function SettingsView({
                   className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                   onClick={() => handleUnlinkProvider(provider)}
                 >
-                  <span className="flex-1 text-left truncate min-w-0 text-destructive">
-                    - unlink {provider}
+                  <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+                    <span className="text-destructive">-</span> unlink{" "}
+                    {provider}
                   </span>
                   <span className="text-muted-foreground text-xs truncate shrink-0">
                     {linked.email ?? linked.providerAccountId}
@@ -324,8 +325,8 @@ export function SettingsView({
                   window.location.href = `/api/auth/${provider}`;
                 }}
               >
-                <span className="flex-1 text-left truncate min-w-0 text-status-done">
-                  + link {provider}
+                <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+                  <span className="text-status-done">+</span> link {provider}
                 </span>
               </button>
             );
@@ -501,8 +502,9 @@ export function SettingsView({
                   className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                   onClick={() => handleDisconnectIntegration(provider.id)}
                 >
-                  <span className="flex-1 text-left truncate min-w-0 text-destructive">
-                    - disconnect {provider.label}
+                  <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+                    <span className="text-destructive">-</span> disconnect{" "}
+                    {provider.label}
                   </span>
                 </button>
               );
@@ -550,8 +552,9 @@ export function SettingsView({
                   }
                 }}
               >
-                <span className="flex-1 text-left truncate min-w-0 text-status-done">
-                  + connect {provider.label}
+                <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+                  <span className="text-status-done">+</span> connect{" "}
+                  {provider.label}
                 </span>
               </button>
             );
