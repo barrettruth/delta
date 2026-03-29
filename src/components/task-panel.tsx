@@ -4,11 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   createTaskAction,
+  deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
+import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { ResizeHandle } from "@/components/resize-handle";
 import { RRulePicker } from "@/components/rrule-picker";
 import { TiptapEditor } from "@/components/tiptap-editor";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,11 +23,13 @@ import {
 } from "@/components/ui/select";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
+import { useUndo } from "@/contexts/undo";
 import { rruleToText } from "@/core/recurrence";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { formatTime } from "@/lib/calendar-utils";
 import { detectMeetingPlatform } from "@/lib/utils";
 
@@ -39,6 +44,8 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const nav = useNavigation();
+  const undo = useUndo();
+  const recurrenceDelete = useRecurrenceDelete();
   const {
     isOpen,
     mode,
@@ -285,6 +292,33 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     panel,
   ]);
 
+  const handleDelete = useCallback(() => {
+    if (!task) return;
+    if (
+      (task.recurrence || task.recurringTaskId) &&
+      recurrenceDelete.requestDelete(task)
+    ) {
+      return;
+    }
+    undo.push({
+      id: `delete-${Date.now()}-${task.id}`,
+      op: "delete",
+      label: "1 task deleted",
+      mutations: [
+        {
+          taskId: task.id,
+          restore: {
+            status: (task.status as TaskStatus) ?? "pending",
+            completedAt: task.completedAt ?? null,
+          },
+        },
+      ],
+      timestamp: Date.now(),
+    });
+    deleteTaskAction(task.id);
+    panel.close();
+  }, [task, recurrenceDelete, undo, panel]);
+
   async function handleStatusChange(status: string) {
     if (!task) return;
     if (status === "done") {
@@ -307,6 +341,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         e.preventDefault();
         e.stopPropagation();
         if (mode === "edit" && task) saveTask(task.id);
+        if (mode === "create" && description.trim()) handleCreate();
         panel.close();
         return;
       }
@@ -322,7 +357,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         return;
       }
     },
-    [mode, task, saveTask, panel, handleCreate],
+    [mode, task, saveTask, panel, handleCreate, description],
   );
 
   useEffect(() => {
@@ -603,6 +638,19 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             }}
           />
         </div>
+
+        {mode === "edit" && task && (
+          <div className="px-4 py-3 border-t border-border/40">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="w-full"
+              onClick={handleDelete}
+            >
+              delete
+            </Button>
+          </div>
+        )}
       </div>
 
       <Dialog open={rruleDialogOpen} onOpenChange={setRruleDialogOpen}>
@@ -617,6 +665,18 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           />
         </DialogContent>
       </Dialog>
+
+      <RecurrenceStrategyDialog
+        open={!!recurrenceDelete.pending}
+        onOpenChange={(open) => {
+          if (!open) recurrenceDelete.cancel();
+        }}
+        mode="delete"
+        onSelect={(strategy) => {
+          recurrenceDelete.executeStrategy(strategy);
+          panel.close();
+        }}
+      />
     </>
   );
 }
