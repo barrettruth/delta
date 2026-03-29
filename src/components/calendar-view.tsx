@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/tasks";
 import { AllDayBar } from "@/components/calendar/all-day-bar";
 import { CalendarFeedPopover } from "@/components/calendar/feed-popover";
+import { GeocodingPopover } from "@/components/calendar/geocoding-popover";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { IcalPopover } from "@/components/ical-popover";
@@ -749,6 +750,7 @@ export function CalendarView({
         <div className="flex-1" />
         <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
         <div className="flex-1 flex justify-end gap-1">
+          <GeocodingPopover />
           <IcalPopover />
           <CalendarFeedPopover />
         </div>
