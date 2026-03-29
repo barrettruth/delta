@@ -21,6 +21,7 @@ interface StatusBarContextValue {
   state: StatusBarState;
   message: (text: string, duration?: number) => void;
   error: (text: string, duration?: number) => void;
+  undo: (text: string, duration?: number) => void;
   setOperation: (label: string) => void;
   clearOperation: () => void;
 }
@@ -76,6 +77,13 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     [setPrimaryWithTimer],
   );
 
+  const undo = useCallback(
+    (text: string, duration?: number) => {
+      setPrimaryWithTimer(text, "undo", duration ?? UNDO_DURATION);
+    },
+    [setPrimaryWithTimer],
+  );
+
   const setOperation = useCallback((label: string) => {
     setState((prev) => ({ ...prev, operation: label }));
   }, []);
@@ -88,6 +96,7 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     state,
     message,
     error,
+    undo,
     setOperation,
     clearOperation,
   };

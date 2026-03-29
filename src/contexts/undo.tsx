@@ -9,7 +9,8 @@ import {
   useState,
 } from "react";
 import { undoCompleteTaskAction, undoTaskAction } from "@/app/actions/tasks";
-import type { UndoEntry } from "@/core/undo";
+import { useStatusBar } from "@/contexts/status-bar";
+import type { UndoEntry, UndoOperationType } from "@/core/undo";
 
 interface UndoContextValue {
   push: (entry: UndoEntry) => void;
@@ -21,18 +22,36 @@ const UndoContext = createContext<UndoContextValue | null>(null);
 
 const MAX_UNDO_STACK = 50;
 
+const OP_VERBS: Record<UndoOperationType, string> = {
+  delete: "deleted",
+  complete: "completed",
+  "status-change": "status changed",
+};
+
+function describeEntry(entry: UndoEntry): string {
+  const count = entry.mutations.length;
+  const noun = count === 1 ? "task" : "tasks";
+  const verb = OP_VERBS[entry.op];
+  return `${count} ${noun} ${verb}`;
+}
+
 export function UndoProvider({ children }: { children: ReactNode }) {
   const stackRef = useRef<UndoEntry[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  const statusBar = useStatusBar();
 
-  const push = useCallback((entry: UndoEntry) => {
-    const stack = stackRef.current;
-    stack.push(entry);
-    if (stack.length > MAX_UNDO_STACK) {
-      stack.shift();
-    }
-    setCanUndo(true);
-  }, []);
+  const push = useCallback(
+    (entry: UndoEntry) => {
+      const stack = stackRef.current;
+      stack.push(entry);
+      if (stack.length > MAX_UNDO_STACK) {
+        stack.shift();
+      }
+      setCanUndo(true);
+      statusBar.undo(describeEntry(entry));
+    },
+    [statusBar],
+  );
 
   const executeUndo = useCallback(async (entry: UndoEntry) => {
     if (entry.op === "complete") {
@@ -62,7 +81,10 @@ export function UndoProvider({ children }: { children: ReactNode }) {
 
     setCanUndo(stack.length > 0);
     await executeUndo(entry);
-  }, [executeUndo]);
+    const count = entry.mutations.length;
+    const noun = count === 1 ? "task" : "tasks";
+    statusBar.message(`${count} ${noun} restored`);
+  }, [executeUndo, statusBar]);
 
   const value: UndoContextValue = {
     push,
