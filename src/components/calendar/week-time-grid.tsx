@@ -70,6 +70,7 @@ export function WeekTimeGrid({
   onEventResize,
   onEventResizeStart,
   onRangeCreate,
+  onDeleteTask,
   createPreview,
 }: {
   weekStart: Date;
@@ -97,6 +98,7 @@ export function WeekTimeGrid({
     endMinute: number,
     anchor: DOMRect,
   ) => void;
+  onDeleteTask?: (task: Task) => void;
   createPreview?: { dayIndex: number; startMin: number; endMin: number } | null;
 }) {
   const internalRef = useRef<HTMLDivElement>(null);
@@ -318,6 +320,7 @@ export function WeekTimeGrid({
                     onClick={(t) => {
                       onTaskClick(t);
                     }}
+                    onDelete={onDeleteTask}
                     isDragging={interaction.draggingTaskId === entry.task.id}
                     continuation={entry.continuation}
                     overrideStartMin={entry.timeStartMin}

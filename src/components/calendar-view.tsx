@@ -485,6 +485,41 @@ export function CalendarView({
     [weekDays, panel],
   );
 
+  const handleDeleteTask = useCallback(
+    (task: Task) => {
+      const meta = virtualMetaRef.current.get(task.id);
+      const target = meta
+        ? tasks.find((t) => t.id === meta.masterId)
+        : tasks.find((t) => t.id === task.id);
+      if (!target) return;
+
+      if (
+        (target.recurrence || target.recurringTaskId) &&
+        recurrenceDelete.requestDelete(target)
+      ) {
+        return;
+      }
+
+      undo.push({
+        id: `delete-${Date.now()}-${target.id}`,
+        op: "delete",
+        label: "1 event deleted",
+        mutations: [
+          {
+            taskId: target.id,
+            restore: {
+              status: (target.status as TaskStatus) ?? "pending",
+              completedAt: target.completedAt ?? null,
+            },
+          },
+        ],
+        timestamp: Date.now(),
+      });
+      deleteTaskAction(target.id);
+    },
+    [tasks, recurrenceDelete, undo],
+  );
+
   const prevWeek = useCallback(() => {
     setAnchor((d) => addDays(d ?? new Date(), -7));
   }, []);
@@ -815,6 +850,7 @@ export function CalendarView({
           onEventResize={handleEventResize}
           onEventResizeStart={handleEventResizeStart}
           onRangeCreate={handleRangeCreate}
+          onDeleteTask={handleDeleteTask}
           createPreview={createPreview}
         />
       ) : (
