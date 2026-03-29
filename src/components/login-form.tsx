@@ -2,8 +2,7 @@
 
 import { startAuthentication } from "@simplewebauthn/browser";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Provider = "github" | "google" | "gitlab";
 
@@ -12,13 +11,19 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_invite: "invalid or expired invite link",
 };
 
+interface LoginOption {
+  id: string;
+  label: string;
+  action: () => void;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [selected, setSelected] = useState(0);
 
   const urlError = searchParams.get("error");
   const urlErrorMessage = urlError ? ERROR_MESSAGES[urlError] : null;
@@ -30,11 +35,11 @@ export function LoginForm() {
       .catch(() => {});
   }, []);
 
-  function handleOAuth(provider: Provider) {
+  const handleOAuth = useCallback((provider: Provider) => {
     window.location.href = `/api/auth/${provider}`;
-  }
+  }, []);
 
-  async function handlePasskey() {
+  const handlePasskey = useCallback(async () => {
     setError("");
     setLoading(true);
     try {
@@ -60,9 +65,37 @@ export function LoginForm() {
       setError("passkey authentication cancelled");
     }
     setLoading(false);
-  }
+  }, [router]);
 
-  const hasProviders = providers.length > 0;
+  const options: LoginOption[] = useMemo(
+    () => [
+      { id: "passkey", label: "passkey", action: handlePasskey },
+      ...providers.map((p) => ({
+        id: p,
+        label: p,
+        action: () => handleOAuth(p),
+      })),
+    ],
+    [handlePasskey, handleOAuth, providers],
+  );
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (loading) return;
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelected((s) => Math.min(s + 1, options.length - 1));
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelected((s) => Math.max(s - 1, 0));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        options[selected]?.action();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [options, selected, loading]);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -70,69 +103,27 @@ export function LoginForm() {
         <span className="font-serif text-6xl text-foreground select-none mb-8">
           δ
         </span>
-        <div className="flex flex-col gap-3 w-64">
+        <div className="flex flex-col w-64">
           {urlErrorMessage && (
-            <p className="text-sm text-destructive text-center">
+            <p className="text-sm text-destructive text-center mb-3">
               {urlErrorMessage}
             </p>
           )}
           {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
+            <p className="text-sm text-destructive text-center mb-3">{error}</p>
           )}
-
-          {!expanded ? (
-            <Button
-              variant="outline"
-              onClick={() =>
-                hasProviders ? setExpanded(true) : handlePasskey()
-              }
+          {options.map((opt, i) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`w-full text-left text-sm py-1.5 px-3 transition-colors ${selected === i ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+              onClick={opt.action}
+              onMouseEnter={() => setSelected(i)}
               disabled={loading}
-              className="w-full"
             >
-              {loading ? "..." : "sign in"}
-            </Button>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {providers.includes("github") && (
-                <Button
-                  variant="ghost"
-                  onClick={() => handleOAuth("github")}
-                  disabled={loading}
-                  className="w-full justify-start"
-                >
-                  github
-                </Button>
-              )}
-              {providers.includes("google") && (
-                <Button
-                  variant="ghost"
-                  onClick={() => handleOAuth("google")}
-                  disabled={loading}
-                  className="w-full justify-start"
-                >
-                  google
-                </Button>
-              )}
-              {providers.includes("gitlab") && (
-                <Button
-                  variant="ghost"
-                  onClick={() => handleOAuth("gitlab")}
-                  disabled={loading}
-                  className="w-full justify-start"
-                >
-                  gitlab
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                onClick={handlePasskey}
-                disabled={loading}
-                className="w-full justify-start"
-              >
-                {loading ? "..." : "passkey"}
-              </Button>
-            </div>
-          )}
+              {loading && selected === i ? "..." : opt.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
