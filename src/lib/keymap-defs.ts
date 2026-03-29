@@ -34,6 +34,16 @@ export const SECTION_ORDER: KeySection[] = [
   "task_detail",
 ];
 
+const VIEW_SECTIONS: Record<string, KeySection[]> = {
+  "/queue": ["global", "queue", "navigation", "task_detail"],
+  "/kanban": ["global", "kanban", "navigation", "task_detail"],
+  "/calendar": ["global", "calendar", "navigation", "task_detail"],
+};
+
+export function sectionsForPath(pathname: string): KeySection[] {
+  return VIEW_SECTIONS[pathname] ?? ["global"];
+}
+
 export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "global.queue",

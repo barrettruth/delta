@@ -14,19 +14,26 @@ import {
   isModifierOnly,
   type KeymapDef,
   SECTION_LABELS,
+  sectionsForPath,
 } from "@/lib/keymap-defs";
 
 export function KeymapHelp({
   open,
   onClose,
+  pathname,
 }: {
   open: boolean;
   onClose: () => void;
+  pathname: string;
 }) {
   const keymaps = useKeymaps();
   const statusBar = useStatusBar();
   const [capturingId, setCapturingId] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
+  const visibleSections = sectionsForPath(pathname);
+  const filteredSections = HELP_SECTIONS.filter((s) =>
+    visibleSections.includes(s.section),
+  );
 
   useEffect(() => {
     if (!open) {
@@ -97,7 +104,7 @@ export function KeymapHelp({
             <kbd className="text-[10px] text-muted-foreground">q to close</kbd>
           </div>
           <div className="grid grid-cols-2 gap-6 p-6 overflow-auto">
-            {HELP_SECTIONS.map((section) => (
+            {filteredSections.map((section) => (
               <div key={section.section}>
                 <h3 className="text-xs font-medium text-muted-foreground mb-3">
                   {SECTION_LABELS[section.section]}
