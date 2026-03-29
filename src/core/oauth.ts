@@ -206,7 +206,7 @@ export async function fetchProviderUser(
     return {
       id: String(data.id),
       email: email ?? "",
-      name: data.name ?? data.login,
+      name: data.login,
     };
   }
 
@@ -214,7 +214,7 @@ export async function fetchProviderUser(
     return {
       id: String(data.id),
       email: data.email ?? "",
-      name: data.name || data.username,
+      name: data.username,
     };
   }
 
