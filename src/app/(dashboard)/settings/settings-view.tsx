@@ -36,8 +36,14 @@ interface IntegrationSummary {
 
 const INTEGRATION_PROVIDERS = [
   { id: "google_calendar", label: "google calendar", type: "oauth" as const },
-  { id: "mapbox", label: "mapbox", type: "api_key" as const },
 ] as const;
+
+type GeoProvider = "photon" | "mapbox" | "google_maps";
+const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
+  { id: "photon", label: "photon" },
+  { id: "mapbox", label: "mapbox" },
+  { id: "google_maps", label: "google maps" },
+];
 
 export function SettingsView({
   username,
@@ -79,8 +85,15 @@ export function SettingsView({
   const [invites, setInvites] = useState<InviteLinkRow[]>([]);
   const [invitesLoaded, setInvitesLoaded] = useState(false);
   const [integrations, setIntegrations] = useState(initialIntegrations);
-  const [expandedApiKey, setExpandedApiKey] = useState<string | null>(null);
-  const [apiKeyValue, setApiKeyValue] = useState("");
+  const [geoProvider, setGeoProvider] = useState<GeoProvider>(() => {
+    if (initialIntegrations.find((i) => i.provider === "google_maps"))
+      return "google_maps";
+    if (initialIntegrations.find((i) => i.provider === "mapbox"))
+      return "mapbox";
+    return "photon";
+  });
+  const [geoKeyInput, setGeoKeyInput] = useState("");
+  const [geoExpanded, setGeoExpanded] = useState(false);
   const [feedToken, setFeedToken] = useState<string | null>(null);
   const [feedLoading, setFeedLoading] = useState(true);
 
@@ -247,24 +260,64 @@ export function SettingsView({
     statusBar.message("copied to clipboard");
   }
 
-  async function handleConnectApiKey(provider: string) {
-    if (!apiKeyValue.trim()) return;
+  async function handleSelectGeoProvider(id: GeoProvider) {
+    if (id === "photon") {
+      for (const p of ["mapbox", "google_maps"]) {
+        const exists = integrations.find((i) => i.provider === p);
+        if (exists) {
+          await fetch(`/api/settings/integrations/${p}`, { method: "DELETE" });
+          setIntegrations((prev) => prev.filter((i) => i.provider !== p));
+        }
+      }
+      setGeoProvider("photon");
+      setGeoExpanded(false);
+      statusBar.message("geocoding set to photon");
+      return;
+    }
+    const existing = integrations.find((i) => i.provider === id);
+    if (existing) {
+      const other = id === "mapbox" ? "google_maps" : "mapbox";
+      const otherExists = integrations.find((i) => i.provider === other);
+      if (otherExists) {
+        await fetch(`/api/settings/integrations/${other}`, {
+          method: "DELETE",
+        });
+        setIntegrations((prev) => prev.filter((i) => i.provider !== other));
+      }
+      setGeoProvider(id);
+      setGeoExpanded(false);
+      const label = GEO_PROVIDERS.find((p) => p.id === id)?.label ?? id;
+      statusBar.message(`geocoding set to ${label}`);
+      return;
+    }
+    setGeoExpanded(true);
+    setGeoKeyInput("");
+    setGeoProvider(id);
+  }
+
+  async function handleSaveGeoKey() {
+    if (!geoKeyInput.trim()) return;
     const res = await fetch("/api/settings/integrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        provider,
-        tokens: { api_key: apiKeyValue.trim() },
+        provider: geoProvider,
+        tokens: { api_key: geoKeyInput.trim() },
       }),
     });
     if (!res.ok) {
-      const data = await res.json();
-      statusBar.error(data.error ?? "failed to save api key");
+      statusBar.error("failed to save api key");
       return;
+    }
+    const other = geoProvider === "mapbox" ? "google_maps" : "mapbox";
+    const otherExists = integrations.find((i) => i.provider === other);
+    if (otherExists) {
+      await fetch(`/api/settings/integrations/${other}`, { method: "DELETE" });
+      setIntegrations((prev) => prev.filter((i) => i.provider !== other));
     }
     const data = await res.json();
     setIntegrations((prev) => [
-      ...prev,
+      ...prev.filter((i) => i.provider !== geoProvider),
       {
         provider: data.provider,
         enabled: data.enabled,
@@ -273,11 +326,11 @@ export function SettingsView({
         updatedAt: data.updatedAt,
       },
     ]);
-    setExpandedApiKey(null);
-    setApiKeyValue("");
+    setGeoExpanded(false);
+    setGeoKeyInput("");
     const label =
-      INTEGRATION_PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
-    statusBar.message(`${label} connected`);
+      GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
+    statusBar.message(`geocoding set to ${label}`);
   }
 
   async function handleDisconnectIntegration(provider: string) {
@@ -541,6 +594,52 @@ export function SettingsView({
           )}
         </Section>
 
+        <Section title="geocoding">
+          {GEO_PROVIDERS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+              onClick={() => handleSelectGeoProvider(p.id)}
+            >
+              <span
+                className={`flex-1 text-left truncate min-w-0 ${geoProvider === p.id ? "text-foreground" : "text-muted-foreground"}`}
+              >
+                {p.label}
+              </span>
+              {geoProvider === p.id && (
+                <span className="text-muted-foreground">&#10003;</span>
+              )}
+            </button>
+          ))}
+          {geoExpanded && (
+            <div className="flex gap-2 ml-4 mt-1 mb-2">
+              <Input
+                value={geoKeyInput}
+                onChange={(e) => setGeoKeyInput(e.target.value)}
+                placeholder="api key"
+                autoFocus
+                className="h-7 text-sm flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveGeoKey();
+                  if (e.key === "Escape") {
+                    setGeoExpanded(false);
+                    setGeoKeyInput("");
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveGeoKey}
+                className="h-7 text-xs"
+              >
+                save
+              </Button>
+            </div>
+          )}
+        </Section>
+
         <Section title="integrations">
           {INTEGRATION_PROVIDERS.map((provider) => {
             const connected = integrations.find(
@@ -561,47 +660,14 @@ export function SettingsView({
                 </button>
               );
             }
-            if (provider.type === "api_key" && expandedApiKey === provider.id) {
-              return (
-                <div key={provider.id} className="flex gap-2 ml-4 mb-2">
-                  <Input
-                    value={apiKeyValue}
-                    onChange={(e) => setApiKeyValue(e.target.value)}
-                    placeholder="api key"
-                    autoFocus
-                    className="h-7 text-sm flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleConnectApiKey(provider.id);
-                      if (e.key === "Escape") {
-                        setExpandedApiKey(null);
-                        setApiKeyValue("");
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleConnectApiKey(provider.id)}
-                    className="h-7 text-xs"
-                  >
-                    save
-                  </Button>
-                </div>
-              );
-            }
             return (
               <button
                 key={provider.id}
                 type="button"
                 className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                 onClick={() => {
-                  if (provider.type === "api_key") {
-                    setExpandedApiKey(provider.id);
-                    setApiKeyValue("");
-                  } else {
-                    window.location.href =
-                      "/api/auth/google?scope=calendar.events";
-                  }
+                  window.location.href =
+                    "/api/auth/google?scope=calendar.events";
                 }}
               >
                 <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
