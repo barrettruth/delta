@@ -83,7 +83,9 @@ export function LoginForm() {
           {!expanded ? (
             <Button
               variant="outline"
-              onClick={() => (hasProviders ? setExpanded(true) : handlePasskey())}
+              onClick={() =>
+                hasProviders ? setExpanded(true) : handlePasskey()
+              }
               disabled={loading}
               className="w-full"
             >

@@ -55,8 +55,8 @@ END:VEVENT
 END:VCALENDAR`;
 
 describe("parseICalendar", () => {
-  it("parses a simple VCALENDAR with one event", () => {
-    const events = parseICalendar(SIMPLE_EVENT);
+  it("parses a simple VCALENDAR with one event", async () => {
+    const events = await parseICalendar(SIMPLE_EVENT);
     expect(events).toHaveLength(1);
     expect(events[0].uid).toBe("test-uid-1@example.com");
     expect(events[0].summary).toBe("Team standup");
@@ -65,24 +65,24 @@ describe("parseICalendar", () => {
     expect(events[0].allDay).toBe(false);
   });
 
-  it("parses an all-day event", () => {
-    const events = parseICalendar(ALL_DAY_EVENT);
+  it("parses an all-day event", async () => {
+    const events = await parseICalendar(ALL_DAY_EVENT);
     expect(events).toHaveLength(1);
     expect(events[0].uid).toBe("test-uid-allday@example.com");
     expect(events[0].summary).toBe("Company holiday");
     expect(events[0].allDay).toBe(true);
   });
 
-  it("parses a recurring event with RRULE", () => {
-    const events = parseICalendar(RECURRING_EVENT);
+  it("parses a recurring event with RRULE", async () => {
+    const events = await parseICalendar(RECURRING_EVENT);
     expect(events).toHaveLength(1);
     expect(events[0].uid).toBe("test-uid-recurring@example.com");
     expect(events[0].rrule).toBeDefined();
     expect(events[0].rrule).toContain("FREQ=WEEKLY");
   });
 
-  it("parses event with location, URL, description, and status", () => {
-    const events = parseICalendar(RICH_EVENT);
+  it("parses event with location, URL, description, and status", async () => {
+    const events = await parseICalendar(RICH_EVENT);
     expect(events).toHaveLength(1);
     expect(events[0].location).toBe("Conference Room B");
     expect(events[0].url).toBe("https://meet.example.com/planning");
@@ -90,17 +90,17 @@ describe("parseICalendar", () => {
     expect(events[0].status).toBe("CONFIRMED");
   });
 
-  it("returns empty array for empty input", () => {
-    const events = parseICalendar("");
+  it("returns empty array for empty input", async () => {
+    const events = await parseICalendar("");
     expect(events).toHaveLength(0);
   });
 
-  it("returns empty array for malformed input", () => {
-    const events = parseICalendar("not valid ical data");
+  it("returns empty array for malformed input", async () => {
+    const events = await parseICalendar("not valid ical data");
     expect(events).toHaveLength(0);
   });
 
-  it("skips non-VEVENT components", () => {
+  it("skips non-VEVENT components", async () => {
     const ics = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -116,12 +116,12 @@ SUMMARY:Real event
 DTSTAMP:20260328T000000Z
 END:VEVENT
 END:VCALENDAR`;
-    const events = parseICalendar(ics);
+    const events = await parseICalendar(ics);
     expect(events).toHaveLength(1);
     expect(events[0].uid).toBe("event-1@example.com");
   });
 
-  it("parses multiple events", () => {
+  it("parses multiple events", async () => {
     const ics = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -138,7 +138,7 @@ SUMMARY:Second
 DTSTAMP:20260328T000000Z
 END:VEVENT
 END:VCALENDAR`;
-    const events = parseICalendar(ics);
+    const events = await parseICalendar(ics);
     expect(events).toHaveLength(2);
   });
 });

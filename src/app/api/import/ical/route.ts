@@ -37,9 +37,9 @@ export async function POST(request: Request) {
 
   const content = await file.text();
 
-  let events: ReturnType<typeof parseICalendar>;
+  let events: Awaited<ReturnType<typeof parseICalendar>>;
   try {
-    events = parseICalendar(content);
+    events = await parseICalendar(content);
   } catch {
     return NextResponse.json(
       { error: "Failed to parse iCal content" },

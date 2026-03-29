@@ -1,4 +1,4 @@
-import ical, { type ParameterValue, type VEvent } from "node-ical";
+import type { ParameterValue, VEvent } from "node-ical";
 
 export interface ParsedEvent {
   uid: string;
@@ -62,7 +62,10 @@ function veventToParsedEvent(event: VEvent): ParsedEvent {
   return parsed;
 }
 
-export function parseICalendar(icsContent: string): ParsedEvent[] {
+export async function parseICalendar(
+  icsContent: string,
+): Promise<ParsedEvent[]> {
+  const ical = await import("node-ical");
   const parsed = ical.parseICS(icsContent);
   const events: ParsedEvent[] = [];
 

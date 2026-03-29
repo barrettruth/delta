@@ -323,7 +323,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               .map((col) => col.idx);
             if (visibleIndices.length === 0) return c;
             const pos = visibleIndices.indexOf(c);
-            const target = pos === -1 ? visibleIndices[0] : Math.max(pos - n, 0);
+            const target =
+              pos === -1 ? visibleIndices[0] : Math.max(pos - n, 0);
             return visibleIndices[target];
           });
           setRowIdx(0);
@@ -555,6 +556,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       nav,
       kbDelete,
       kbMoveToStatus,
+      grouped,
     ],
   );
 

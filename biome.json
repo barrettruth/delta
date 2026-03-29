@@ -34,5 +34,17 @@
   },
   "files": {
     "includes": ["**", "!.next", "!.claude", "!drizzle", "!src/components/ui"]
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/components/tiptap-styles.css"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          }
+        }
+      }
+    }
+  ]
 }
