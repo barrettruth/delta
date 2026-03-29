@@ -81,6 +81,8 @@ export function SettingsView({
   const [integrations, setIntegrations] = useState(initialIntegrations);
   const [expandedApiKey, setExpandedApiKey] = useState<string | null>(null);
   const [apiKeyValue, setApiKeyValue] = useState("");
+  const [feedToken, setFeedToken] = useState<string | null>(null);
+  const [feedLoading, setFeedLoading] = useState(true);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -208,6 +210,40 @@ export function SettingsView({
 
   async function handleCopyInviteUrl(token: string) {
     await navigator.clipboard.writeText(getInviteUrl(token));
+    statusBar.message("copied to clipboard");
+  }
+
+  const loadFeed = useCallback(async () => {
+    const res = await fetch("/api/calendar/feed");
+    const data = await res.json();
+    setFeedToken(data.token);
+    setFeedLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  function getFeedUrl(token: string): string {
+    return `${window.location.origin}/api/calendar/feed/${token}`;
+  }
+
+  async function handleGenerateFeed() {
+    const res = await fetch("/api/calendar/feed", { method: "POST" });
+    const data = await res.json();
+    setFeedToken(data.token);
+    statusBar.message("feed url generated");
+  }
+
+  async function handleRevokeFeed() {
+    await fetch("/api/calendar/feed", { method: "DELETE" });
+    setFeedToken(null);
+    statusBar.message("feed url revoked");
+  }
+
+  async function handleCopyFeedUrl() {
+    if (!feedToken) return;
+    await navigator.clipboard.writeText(getFeedUrl(feedToken));
     statusBar.message("copied to clipboard");
   }
 
@@ -469,6 +505,38 @@ export function SettingsView({
               action
               muted
               onClick={handleGenerateInvite}
+            />
+          )}
+        </Section>
+
+        <Section title="calendar feed">
+          {feedLoading ? null : feedToken ? (
+            <>
+              <button
+                type="button"
+                className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                onClick={handleCopyFeedUrl}
+              >
+                <span className="flex-1 text-left truncate min-w-0 font-mono text-xs text-muted-foreground">
+                  {getFeedUrl(feedToken)}
+                </span>
+              </button>
+              <div className="flex">
+                <Row
+                  label="regenerate"
+                  action
+                  muted
+                  onClick={handleGenerateFeed}
+                />
+                <Row label="revoke" action muted onClick={handleRevokeFeed} />
+              </div>
+            </>
+          ) : (
+            <Row
+              label="+ generate feed url"
+              action
+              muted
+              onClick={handleGenerateFeed}
             />
           )}
         </Section>

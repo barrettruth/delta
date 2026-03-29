@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -12,7 +11,6 @@ import { useStatusBar } from "@/contexts/status-bar";
 
 export function IcalPopover() {
   const statusBar = useStatusBar();
-  const [category, setCategory] = useState("");
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -26,7 +24,6 @@ export function IcalPopover() {
     try {
       const body = new FormData();
       body.append("file", file);
-      if (category.trim()) body.append("category", category.trim());
       const res = await fetch("/api/import/ical", { method: "POST", body });
       const data = await res.json();
       if (!res.ok) {
@@ -37,7 +34,6 @@ export function IcalPopover() {
         `imported ${data.created} events, skipped ${data.skipped} duplicates`,
       );
       if (fileRef.current) fileRef.current.value = "";
-      setCategory("");
     } catch (e) {
       statusBar.error(e instanceof Error ? e.message : "import failed");
     } finally {
@@ -56,7 +52,7 @@ export function IcalPopover() {
           <Button variant="ghost" size="xs" className="text-muted-foreground" />
         }
       >
-        ical
+        import/export
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
         <div className="flex flex-col gap-3">
@@ -77,30 +73,22 @@ export function IcalPopover() {
           <div className="text-xs text-muted-foreground uppercase tracking-wider">
             import
           </div>
-          <Input
-            ref={fileRef}
-            type="file"
-            accept=".ics"
-            className="h-8 text-sm"
-          />
-          <Input
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="category (optional)"
-            className="h-7 text-sm"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleImport();
-            }}
-          />
           <Button
             variant="outline"
             size="sm"
-            onClick={handleImport}
-            disabled={importing}
             className="h-7 text-xs w-full"
+            onClick={() => fileRef.current?.click()}
+            disabled={importing}
           >
             {importing ? "importing..." : "import .ics"}
           </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".ics"
+            className="hidden"
+            onChange={() => handleImport()}
+          />
         </div>
       </PopoverContent>
     </Popover>
