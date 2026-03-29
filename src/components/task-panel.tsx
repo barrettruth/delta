@@ -277,7 +277,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     });
 
     if ("data" in result && result.data) {
-      panel.open(result.data.id);
+      panel.close();
     }
   }, [
     description,

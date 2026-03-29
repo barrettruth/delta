@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Video } from "lucide-react";
+import { MapPin, Video, X } from "lucide-react";
 import type { Task } from "@/core/types";
 import type { Continuation } from "@/lib/calendar-utils";
 import {
@@ -16,6 +16,7 @@ export function EventBlock({
   totalColumns,
   categoryColor,
   onClick,
+  onDelete,
   isDragging,
   continuation,
   overrideStartMin,
@@ -27,6 +28,7 @@ export function EventBlock({
   totalColumns: number;
   categoryColor?: string;
   onClick: (task: Task) => void;
+  onDelete?: (task: Task) => void;
   isDragging?: boolean;
   continuation?: Continuation;
   overrideStartMin?: number;
@@ -70,7 +72,7 @@ export function EventBlock({
       data-event-end={task.endAt ?? ""}
       data-event-start-min={startMin}
       data-event-end-min={endMin}
-      className={`absolute z-10 overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left flex flex-col justify-start ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
+      className={`group/event absolute z-10 overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left flex flex-col justify-start ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -126,6 +128,28 @@ export function EventBlock({
         >
           <Video className="w-2.5 h-2.5 shrink-0" />
         </a>
+      )}
+      {onDelete && (
+        <div
+          role="button"
+          tabIndex={-1}
+          className="absolute top-0 right-0 z-20 p-0.5 opacity-0 group-hover/event:opacity-100 transition-opacity hover:text-destructive"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(task);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+              onDelete(task);
+            }
+          }}
+        >
+          <X className="w-3 h-3" />
+        </div>
       )}
       <div
         data-resize-handle-top=""
