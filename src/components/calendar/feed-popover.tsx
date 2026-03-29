@@ -51,14 +51,16 @@ export function CalendarFeedPopover() {
 
   return (
     <Popover>
-      <PopoverTrigger>
-        <Button
-          variant="ghost"
-          size="xs"
-          className="text-xs text-muted-foreground"
-        >
-          feed
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="xs"
+            className="text-xs text-muted-foreground"
+          />
+        }
+      >
+        feed
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-3">
         {feedToken ? (
