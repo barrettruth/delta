@@ -10,6 +10,7 @@ import {
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
+import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
@@ -77,6 +78,7 @@ function groupByStatus(tasks: Task[]): Record<string, Task[]> {
 
 export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
+  const statusBar = useStatusBar();
   const undo = useUndo();
   const panel = useTaskPanel();
   const recurrenceDelete = useRecurrenceDelete();
@@ -97,6 +99,11 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   );
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countBuf = useRef("");
+
+  useEffect(() => {
+    const left = visualMode ? "-- VISUAL --" : "-- KANBAN --";
+    statusBar.setIdle(left, "");
+  }, [visualMode, statusBar]);
 
   const kbDelete = useCallback(
     (ids: number[]) => {

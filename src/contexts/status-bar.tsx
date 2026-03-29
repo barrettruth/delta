@@ -15,6 +15,8 @@ interface StatusBarState {
   primary: string;
   primaryType: PrimaryType;
   operation: string;
+  idleLeft: string;
+  idleRight: string;
 }
 
 interface StatusBarContextValue {
@@ -24,6 +26,7 @@ interface StatusBarContextValue {
   undo: (text: string, duration?: number) => void;
   setOperation: (label: string) => void;
   clearOperation: () => void;
+  setIdle: (left: string, right: string) => void;
 }
 
 const StatusBarContext = createContext<StatusBarContextValue | null>(null);
@@ -37,6 +40,8 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     primary: "",
     primaryType: "message",
     operation: "",
+    idleLeft: "",
+    idleRight: "",
   });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,6 +97,10 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, operation: "" }));
   }, []);
 
+  const setIdle = useCallback((left: string, right: string) => {
+    setState((prev) => ({ ...prev, idleLeft: left, idleRight: right }));
+  }, []);
+
   const value: StatusBarContextValue = {
     state,
     message,
@@ -99,6 +108,7 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     undo,
     setOperation,
     clearOperation,
+    setIdle,
   };
 
   return (

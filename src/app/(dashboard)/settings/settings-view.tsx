@@ -71,6 +71,11 @@ export function SettingsView({
 }) {
   const router = useRouter();
   const statusBar = useStatusBar();
+
+  useEffect(() => {
+    statusBar.setIdle("-- SETTINGS --", "");
+  }, [statusBar]);
+
   const [passkeys, setPasskeys] = useState(initialPasskeys);
   const [totpEnabled, setTotpEnabled] = useState(initialTotpEnabled);
   const [recoveryRemaining, setRecoveryRemaining] = useState(
