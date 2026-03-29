@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useStatusBar } from "@/contexts/status-bar";
 
 interface Passkey {
   id: number;
@@ -56,13 +57,12 @@ export function SettingsView({
   integrations: IntegrationSummary[];
 }) {
   const router = useRouter();
+  const statusBar = useStatusBar();
   const [passkeys, setPasskeys] = useState(initialPasskeys);
   const [totpEnabled, setTotpEnabled] = useState(initialTotpEnabled);
   const [recoveryRemaining, setRecoveryRemaining] = useState(
     initialRecoveryRemaining,
   );
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   const [connectedAccounts, setConnectedAccounts] = useState(
     initialConnectedAccounts,
@@ -81,18 +81,6 @@ export function SettingsView({
   const [integrations, setIntegrations] = useState(initialIntegrations);
   const [expandedApiKey, setExpandedApiKey] = useState<string | null>(null);
   const [apiKeyValue, setApiKeyValue] = useState("");
-
-  const flash = useCallback((msg: string) => {
-    setMessage(msg);
-    setError("");
-    setTimeout(() => setMessage(""), 3000);
-  }, []);
-
-  const flashError = useCallback((msg: string) => {
-    setError(msg);
-    setMessage("");
-    setTimeout(() => setError(""), 5000);
-  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -115,15 +103,15 @@ export function SettingsView({
       });
       if (!res.ok) {
         const data = await res.json();
-        flashError(data.error ?? "Failed to add passkey");
+        statusBar.error(data.error ?? "failed to add passkey");
         return;
       }
       setShowAddPasskey(false);
       setPasskeyName("");
-      flash("passkey added");
+      statusBar.message("passkey added");
       router.refresh();
     } catch (e) {
-      flashError(e instanceof Error ? e.message : "Failed to add passkey");
+      statusBar.error(e instanceof Error ? e.message : "failed to add passkey");
     }
   }
 
@@ -133,22 +121,22 @@ export function SettingsView({
     });
     if (!res.ok) {
       const data = await res.json();
-      flashError(data.error ?? "Failed to remove passkey");
+      statusBar.error(data.error ?? "failed to remove passkey");
       return;
     }
     setPasskeys((prev) => prev.filter((p) => p.id !== id));
-    flash("passkey removed");
+    statusBar.message("passkey removed");
   }
 
   async function handleTotpToggle() {
     if (totpEnabled) {
       const res = await fetch("/api/auth/totp/setup", { method: "DELETE" });
       if (!res.ok) {
-        flashError("Failed to disable authenticator");
+        statusBar.error("failed to disable authenticator");
         return;
       }
       setTotpEnabled(false);
-      flash("authenticator disabled");
+      statusBar.message("authenticator disabled");
     } else {
       const res = await fetch("/api/auth/totp/setup");
       const data = await res.json();
@@ -166,13 +154,13 @@ export function SettingsView({
     });
     if (!res.ok) {
       const data = await res.json();
-      flashError(data.error ?? "Invalid code");
+      statusBar.error(data.error ?? "invalid code");
       return;
     }
     setTotpEnabled(true);
     setShowTotpSetup(false);
     setTotpToken("");
-    flash("authenticator enabled");
+    statusBar.message("authenticator enabled");
   }
 
   async function handleRegenerateRecovery() {
@@ -189,11 +177,11 @@ export function SettingsView({
     });
     if (!res.ok) {
       const data = await res.json();
-      flashError(data.error ?? "Failed to unlink provider");
+      statusBar.error(data.error ?? "failed to unlink provider");
       return;
     }
     setConnectedAccounts((prev) => prev.filter((a) => a.provider !== provider));
-    flash(`${provider} unlinked`);
+    statusBar.message(`${provider} unlinked`);
   }
 
   function getInviteUrl(token: string): string {
@@ -203,10 +191,10 @@ export function SettingsView({
   async function handleGenerateInvite() {
     const result = await generateInviteAction();
     if ("error" in result) {
-      flashError(result.error);
+      statusBar.error(result.error);
       return;
     }
-    flash("invite link generated");
+    statusBar.message("invite link generated");
     await loadInvites();
   }
 
@@ -220,7 +208,7 @@ export function SettingsView({
 
   async function handleCopyInviteUrl(token: string) {
     await navigator.clipboard.writeText(getInviteUrl(token));
-    flash("copied to clipboard");
+    statusBar.message("copied to clipboard");
   }
 
   async function handleConnectApiKey(provider: string) {
@@ -235,7 +223,7 @@ export function SettingsView({
     });
     if (!res.ok) {
       const data = await res.json();
-      flashError(data.error ?? "Failed to connect");
+      statusBar.error(data.error ?? "failed to save api key");
       return;
     }
     const data = await res.json();
@@ -251,7 +239,9 @@ export function SettingsView({
     ]);
     setExpandedApiKey(null);
     setApiKeyValue("");
-    flash(`${provider} connected`);
+    const label =
+      INTEGRATION_PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
+    statusBar.message(`${label} connected`);
   }
 
   async function handleDisconnectIntegration(provider: string) {
@@ -260,11 +250,13 @@ export function SettingsView({
     });
     if (!res.ok) {
       const data = await res.json();
-      flashError(data.error ?? "Failed to disconnect");
+      statusBar.error(data.error ?? "failed to disconnect");
       return;
     }
     setIntegrations((prev) => prev.filter((i) => i.provider !== provider));
-    flash(`${provider} disconnected`);
+    const label =
+      INTEGRATION_PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
+    statusBar.message(`${label} disconnected`);
   }
 
   useEffect(() => {
@@ -280,14 +272,6 @@ export function SettingsView({
   return (
     <div className="flex-1 overflow-y-auto flex justify-center">
       <div className="w-full max-w-md p-6">
-        {(error || message) && (
-          <div
-            className={`text-sm mb-4 ${error ? "text-destructive" : "text-muted-foreground"}`}
-          >
-            {error || message}
-          </div>
-        )}
-
         <Section title="account">
           <Row label="username" value={username} />
           <Row label="logout" action onClick={handleLogout} />

@@ -8,30 +8,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useStatusBar } from "@/contexts/status-bar";
 
 export function IcalPopover() {
+  const statusBar = useStatusBar();
   const [category, setCategory] = useState("");
   const [importing, setImporting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-
-  function flash(msg: string) {
-    setMessage(msg);
-    setError("");
-    setTimeout(() => setMessage(""), 3000);
-  }
-
-  function flashError(msg: string) {
-    setError(msg);
-    setMessage("");
-    setTimeout(() => setError(""), 5000);
-  }
 
   async function handleImport() {
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      flashError("select a .ics file first");
+      statusBar.error("select a .ics file first");
       return;
     }
     setImporting(true);
@@ -42,16 +30,16 @@ export function IcalPopover() {
       const res = await fetch("/api/import/ical", { method: "POST", body });
       const data = await res.json();
       if (!res.ok) {
-        flashError(data.error ?? "import failed");
+        statusBar.error(data.error ?? "import failed");
         return;
       }
-      flash(
+      statusBar.message(
         `imported ${data.created} events, skipped ${data.skipped} duplicates`,
       );
       if (fileRef.current) fileRef.current.value = "";
       setCategory("");
     } catch (e) {
-      flashError(e instanceof Error ? e.message : "import failed");
+      statusBar.error(e instanceof Error ? e.message : "import failed");
     } finally {
       setImporting(false);
     }
@@ -113,14 +101,6 @@ export function IcalPopover() {
           >
             {importing ? "importing..." : "import .ics"}
           </Button>
-
-          {(error || message) && (
-            <div
-              className={`text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}
-            >
-              {error || message}
-            </div>
-          )}
         </div>
       </PopoverContent>
     </Popover>

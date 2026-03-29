@@ -7,11 +7,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useStatusBar } from "@/contexts/status-bar";
 
 export function CalendarFeedPopover() {
+  const statusBar = useStatusBar();
   const [feedToken, setFeedToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     const res = await fetch("/api/calendar/feed");
@@ -37,14 +38,12 @@ export function CalendarFeedPopover() {
   async function handleRevoke() {
     await fetch("/api/calendar/feed", { method: "DELETE" });
     setFeedToken(null);
-    setCopied(false);
   }
 
   async function handleCopy() {
     if (!feedToken) return;
     await navigator.clipboard.writeText(getFeedUrl(feedToken));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    statusBar.message("copied to clipboard");
   }
 
   if (loading) return null;
@@ -70,7 +69,7 @@ export function CalendarFeedPopover() {
               onClick={handleCopy}
               className="w-full text-left text-[11px] text-muted-foreground break-all select-all px-2 py-1.5 border border-border font-mono hover:bg-muted/50 cursor-pointer transition-colors"
             >
-              {copied ? "copied" : getFeedUrl(feedToken)}
+              {getFeedUrl(feedToken)}
             </button>
             <div className="flex gap-2">
               <Button
