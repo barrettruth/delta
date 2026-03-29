@@ -201,8 +201,8 @@ export function StatusBar() {
   return (
     <div className="h-7 shrink-0 border-t border-border bg-background flex items-center justify-between px-2 md:px-4 font-mono text-[13px] text-muted-foreground overflow-hidden">
       <div className="truncate">
-        {state.primary !== "" &&
-          (state.primaryType === "error" ? (
+        {state.primary !== "" ? (
+          state.primaryType === "error" ? (
             <span className="text-destructive">{state.primary}</span>
           ) : state.primaryType === "undo" ? (
             <span>
@@ -212,10 +212,17 @@ export function StatusBar() {
             </span>
           ) : (
             <span>{state.primary}</span>
-          ))}
+          )
+        ) : state.idleLeft !== "" ? (
+          <span className="text-muted-foreground/40">{state.idleLeft}</span>
+        ) : null}
       </div>
       <div className="text-muted-foreground/60">
-        {state.operation !== "" && <span>{state.operation}</span>}
+        {state.operation !== "" ? (
+          <span>{state.operation}</span>
+        ) : state.idleRight !== "" ? (
+          <span className="text-muted-foreground/40">{state.idleRight}</span>
+        ) : null}
       </div>
       <input
         ref={fileRef}

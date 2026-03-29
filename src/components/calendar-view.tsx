@@ -12,6 +12,7 @@ import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useNavigation } from "@/contexts/navigation";
+import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import { expandInstances } from "@/core/recurrence-expansion";
@@ -56,6 +57,7 @@ export function CalendarView({
   gcalStatus?: { connected: boolean; lastSyncTime: string | null };
 }) {
   const nav = useNavigation();
+  const statusBar = useStatusBar();
   const panel = useTaskPanel();
   const undo = useUndo();
   const { pendingEdits } = panel;
@@ -745,6 +747,10 @@ export function CalendarView({
     viewMode === "week"
       ? formatWeekRange(weekAnchor)
       : formatMonthTitle(monthStart);
+
+  useEffect(() => {
+    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, headerTitle);
+  }, [viewMode, headerTitle, statusBar]);
 
   return (
     <div className="flex flex-col h-full">

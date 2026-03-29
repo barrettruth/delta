@@ -11,6 +11,7 @@ import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialo
 import { Input } from "@/components/ui/input";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
+import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { TaskStatus } from "@/core/types";
@@ -65,11 +66,14 @@ function getTaskDimming(status: string): string {
 export function QueueView({
   tasks,
   categoryColors,
+  categoryFilter,
 }: {
   tasks: RankedTask[];
   categoryColors: Record<string, string>;
+  categoryFilter?: string;
 }) {
   const nav = useNavigation();
+  const statusBar = useStatusBar();
   const undo = useUndo();
   const panel = useTaskPanel();
   const recurrenceDelete = useRecurrenceDelete();
@@ -91,7 +95,8 @@ export function QueueView({
 
   const gutterWidth = String(filtered.length).length;
 
-  const { cursor, setCursor, selectedIds, toggleSelect } = useKeyboard({
+  const { cursor, setCursor, selectedIds, toggleSelect, visualMode } =
+    useKeyboard({
     tasks: filtered,
     onComplete: (ids) => {
       const entryId = `complete-${Date.now()}-${ids.join(",")}`;
@@ -177,7 +182,22 @@ export function QueueView({
     onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
     onJump: () => nav.pushJump(),
     scrollRef,
-  });
+    });
+
+  useEffect(() => {
+    const left = visualMode
+      ? "-- VISUAL --"
+      : categoryFilter
+        ? `-- QUEUE -- # ${categoryFilter}`
+        : "-- QUEUE --";
+    const right =
+      filtered.length > 0 && cursor >= 0
+        ? `${cursor + 1}/${filtered.length}`
+        : filtered.length > 0
+          ? `0/${filtered.length}`
+          : "";
+    statusBar.setIdle(left, right);
+  }, [visualMode, categoryFilter, cursor, filtered.length, statusBar]);
 
   useEffect(() => {
     const saved = nav.getViewState<number>("queue:cursor");

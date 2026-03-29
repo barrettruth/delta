@@ -71,5 +71,11 @@ export default async function QueuePage({
       .all()
       .map((c) => [c.category, c.color]),
   );
-  return <QueueView tasks={ranked} categoryColors={colors} />;
+  return (
+    <QueueView
+      tasks={ranked}
+      categoryColors={colors}
+      categoryFilter={params.category}
+    />
+  );
 }
