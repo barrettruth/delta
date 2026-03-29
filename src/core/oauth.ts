@@ -265,6 +265,7 @@ export function linkAccount(
   providerAccountId: string,
   tokens: { accessToken?: string; refreshToken?: string; expiresIn?: number },
   email?: string,
+  name?: string,
 ) {
   const tokenExpiresAt = tokens.expiresIn
     ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
@@ -280,6 +281,7 @@ export function linkAccount(
       refreshToken: tokens.refreshToken ?? null,
       tokenExpiresAt: tokenExpiresAt ?? null,
       email: email ?? null,
+      name: name ?? null,
       createdAt: new Date().toISOString(),
     })
     .returning()
@@ -333,6 +335,7 @@ export function findOrCreateUserFromOAuth(
       providerUser.id,
       tokens,
       providerUser.email,
+      providerUser.name,
     );
     return { user: existingUser, isNew: false };
   }
@@ -365,6 +368,7 @@ export function findOrCreateUserFromOAuth(
     providerUser.id,
     tokens,
     providerUser.email,
+    providerUser.name,
   );
 
   return { user: newUser, isNew: true };
@@ -377,6 +381,7 @@ export function getLinkedAccounts(db: Db, userId: number) {
       provider: accounts.provider,
       providerAccountId: accounts.providerAccountId,
       email: accounts.email,
+      name: accounts.name,
       createdAt: accounts.createdAt,
     })
     .from(accounts)

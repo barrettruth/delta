@@ -122,6 +122,7 @@ export async function GET(
           providerUser.id,
           tokens,
           providerUser.email,
+          providerUser.name,
         );
         return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/settings`);
       }

@@ -23,6 +23,7 @@ interface ConnectedAccount {
   provider: string;
   providerAccountId: string;
   email: string | null;
+  name: string | null;
   createdAt: string;
 }
 
@@ -383,7 +384,7 @@ export function SettingsView({
                     <span className="text-destructive">-</span> {provider}
                   </span>
                   <span className="text-muted-foreground text-xs truncate shrink-0">
-                    {linked.email ?? linked.providerAccountId}
+                    {linked.name ?? linked.email ?? linked.providerAccountId}
                   </span>
                 </button>
               );

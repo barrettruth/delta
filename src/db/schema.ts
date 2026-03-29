@@ -177,6 +177,7 @@ export const accounts = sqliteTable(
     refreshToken: text("refresh_token"),
     tokenExpiresAt: text("token_expires_at"),
     email: text("email"),
+    name: text("name"),
     createdAt: text("created_at").notNull(),
   },
   (t) => [unique().on(t.provider, t.providerAccountId)],
