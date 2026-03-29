@@ -7,6 +7,7 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { AllDayBar } from "@/components/calendar/all-day-bar";
+import { CalendarFeedPopover } from "@/components/calendar/feed-popover";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { IcalPopover } from "@/components/ical-popover";
@@ -745,12 +746,11 @@ export function CalendarView({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center px-6 py-3 border-b border-border/60 shrink-0">
-        <div className="w-12 shrink-0" />
-        <h2 className="text-lg font-semibold tracking-tight flex-1 text-center">
-          {headerTitle}
-        </h2>
-        <div className="w-12 shrink-0 flex justify-end">
+        <div className="flex-1" />
+        <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
+        <div className="flex-1 flex justify-end gap-1">
           <IcalPopover />
+          <CalendarFeedPopover />
         </div>
       </div>
 

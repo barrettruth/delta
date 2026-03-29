@@ -31,7 +31,6 @@ export function SettingsView({
   passkeys: initialPasskeys,
   totpEnabled: initialTotpEnabled,
   recoveryCodesRemaining: initialRecoveryRemaining,
-  calendarFeedToken: initialFeedToken,
   connectedAccounts: initialConnectedAccounts,
   enabledProviders,
 }: {
@@ -39,7 +38,6 @@ export function SettingsView({
   passkeys: Passkey[];
   totpEnabled: boolean;
   recoveryCodesRemaining: number;
-  calendarFeedToken: string | null;
   connectedAccounts: ConnectedAccount[];
   enabledProviders: string[];
 }) {
@@ -49,7 +47,6 @@ export function SettingsView({
   const [recoveryRemaining, setRecoveryRemaining] = useState(
     initialRecoveryRemaining,
   );
-  const [feedToken, setFeedToken] = useState(initialFeedToken);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -169,29 +166,6 @@ export function SettingsView({
     setShowRecoveryCodes(true);
   }
 
-  function getFeedUrl(token: string): string {
-    return `${window.location.origin}/api/calendar/feed/${token}`;
-  }
-
-  async function handleGenerateFeed() {
-    const res = await fetch("/api/calendar/feed", { method: "POST" });
-    const data = await res.json();
-    setFeedToken(data.token);
-    flash("feed URL generated");
-  }
-
-  async function handleRevokeFeed() {
-    await fetch("/api/calendar/feed", { method: "DELETE" });
-    setFeedToken(null);
-    flash("feed URL revoked");
-  }
-
-  async function handleCopyFeedUrl() {
-    if (!feedToken) return;
-    await navigator.clipboard.writeText(getFeedUrl(feedToken));
-    flash("copied to clipboard");
-  }
-
   async function handleUnlinkProvider(provider: string) {
     const res = await fetch(`/api/auth/unlink/${provider}`, {
       method: "DELETE",
@@ -257,14 +231,6 @@ export function SettingsView({
         case "r":
           e.preventDefault();
           handleRegenerateRecovery();
-          break;
-        case "c":
-          e.preventDefault();
-          if (feedToken) {
-            handleCopyFeedUrl();
-          } else {
-            handleGenerateFeed();
-          }
           break;
         case "i":
           e.preventDefault();
@@ -455,37 +421,6 @@ export function SettingsView({
               hint="r"
               action
               onClick={handleRegenerateRecovery}
-            />
-          )}
-        </Section>
-
-        <Section title="calendar feed">
-          {feedToken ? (
-            <>
-              <div className="text-xs text-muted-foreground break-all select-all px-2 py-1 border border-border mb-2 font-mono">
-                {getFeedUrl(feedToken)}
-              </div>
-              <Row
-                label="copy URL"
-                hint="c"
-                action
-                onClick={handleCopyFeedUrl}
-              />
-              <Row
-                label="regenerate"
-                action
-                muted
-                onClick={handleGenerateFeed}
-              />
-              <Row label="disable" action muted onClick={handleRevokeFeed} />
-            </>
-          ) : (
-            <Row
-              label="enable calendar feed"
-              hint="c"
-              action
-              muted
-              onClick={handleGenerateFeed}
             />
           )}
         </Section>
