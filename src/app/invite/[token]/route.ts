@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 import { validateInviteToken } from "@/core/auth";
 import { db } from "@/db";
 
-export default async function InvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ token: string }> },
+) {
   const { token } = await params;
   const invite = validateInviteToken(db, token);
 

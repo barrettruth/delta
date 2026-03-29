@@ -69,9 +69,7 @@ export function useTimeGridInteraction(options: UseTimeGridInteractionOptions) {
   const getMinuteFromY = useCallback(
     (clientY: number, columnEl: HTMLElement): number => {
       const rect = columnEl.getBoundingClientRect();
-      const scrollParent = scrollContainerRef.current;
-      const scrollTop = scrollParent ? scrollParent.scrollTop : 0;
-      const y = clientY - rect.top + scrollTop;
+      const y = clientY - rect.top;
       const minute = y / pxPerMin;
       return snapMinuteTo15(minute);
     },

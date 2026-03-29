@@ -364,7 +364,7 @@ export function QueueView({
                         paddingLeft: `calc(${gutterWidth}ch + 1.5rem)`,
                       }}
                     >
-                      {task.category && <span>#{task.category}</span>}
+                      {task.category && <span># {task.category}</span>}
                       {task.category && task.due && <span>&middot;</span>}
                       {task.due && (
                         <span
