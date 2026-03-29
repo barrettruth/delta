@@ -15,6 +15,8 @@ import { useStatusBar } from "@/contexts/status-bar";
 import {
   DEFAULT_KEYMAPS,
   formatKey,
+  isBrowserReserved,
+  isModifierOnly,
   type KeymapDef,
   SECTION_LABELS,
   SECTION_ORDER,
@@ -695,24 +697,6 @@ function Row({
   );
 }
 
-const BROWSER_RESERVED_COMBOS = new Set([
-  "ctrl+w",
-  "ctrl+t",
-  "ctrl+n",
-  "ctrl+Tab",
-]);
-
-const BROWSER_RESERVED_KEYS = new Set(["F1", "F3", "F5", "F11", "F12"]);
-
-function isBrowserReserved(e: KeyboardEvent): boolean {
-  if (BROWSER_RESERVED_KEYS.has(e.key)) return true;
-  if (e.ctrlKey) {
-    const combo = `ctrl+${e.key}`;
-    if (BROWSER_RESERVED_COMBOS.has(combo)) return true;
-  }
-  return false;
-}
-
 function KeymapRow({
   def,
   isOverridden,
@@ -743,12 +727,7 @@ function KeymapRow({
         onCancelCapture();
         return;
       }
-      if (
-        e.key === "Shift" ||
-        e.key === "Control" ||
-        e.key === "Alt" ||
-        e.key === "Meta"
-      ) {
+      if (isModifierOnly(e.key)) {
         return;
       }
       if (isBrowserReserved(e)) {

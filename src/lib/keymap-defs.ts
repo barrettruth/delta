@@ -590,6 +590,7 @@ export function matchesEvent(id: string, e: KeyboardEvent): boolean {
 }
 
 export function formatKey(def: KeymapDef): string {
+  const displayKey = def.triggerKey;
   if (def.modifiers?.length) {
     const mods = def.modifiers.map((m) => {
       if (m === "ctrl") return "C";
@@ -598,11 +599,35 @@ export function formatKey(def: KeymapDef): string {
       if (m === "alt") return "A";
       return m;
     });
-    return `<${mods.join("-")}-${def.key}>`;
+    return `<${mods.join("-")}-${displayKey}>`;
   }
-  if (def.key === "Escape") return "<Esc>";
-  if (def.key === "Enter") return "<Enter>";
-  return def.key;
+  if (displayKey === "Escape") return "<Esc>";
+  if (displayKey === "Enter") return "<Enter>";
+  return displayKey;
+}
+
+const BROWSER_RESERVED_COMBOS = new Set([
+  "ctrl+w",
+  "ctrl+t",
+  "ctrl+n",
+  "ctrl+Tab",
+]);
+
+const BROWSER_RESERVED_KEYS = new Set(["F1", "F3", "F5", "F11", "F12"]);
+
+export function isBrowserReserved(e: KeyboardEvent): boolean {
+  if (BROWSER_RESERVED_KEYS.has(e.key)) return true;
+  if (e.ctrlKey) {
+    const combo = `ctrl+${e.key}`;
+    if (BROWSER_RESERVED_COMBOS.has(combo)) return true;
+  }
+  return false;
+}
+
+export function isModifierOnly(key: string): boolean {
+  return (
+    key === "Shift" || key === "Control" || key === "Alt" || key === "Meta"
+  );
 }
 
 export interface HelpRow {
