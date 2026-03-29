@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { KeymapHelp } from "@/components/keymap-help";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useCommandBar } from "@/contexts/command-bar";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
@@ -25,6 +26,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const { pushJump, jumpBack, jumpForward, goAlternate } = useNavigation();
   const { undo: performUndo } = useUndo();
   const panel = useTaskPanel();
+  const commandBar = useCommandBar();
   const [helpOpen, setHelpOpen] = useState(false);
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,6 +35,19 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
       if (isBrowserShortcut(e)) return;
+
+      if (
+        e.key === ":" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !pendingG.current &&
+        !document.querySelector("[role=dialog]")
+      ) {
+        e.preventDefault();
+        commandBar.activate();
+        return;
+      }
 
       if (e.ctrlKey) {
         if (e.key === "o") {
@@ -155,6 +170,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       goAlternate,
       performUndo,
       panel,
+      commandBar,
     ],
   );
 

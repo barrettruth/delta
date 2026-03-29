@@ -1,6 +1,18 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { commandRegistry } from "@/core/commands";
+
+const commandSection = {
+  title: "Commands",
+  keys: commandRegistry.map((cmd) => {
+    const aliases =
+      cmd.aliases.length > 0
+        ? ` (${cmd.aliases.map((a) => `:${a}`).join(", ")})`
+        : "";
+    return [`:${cmd.name}${aliases}`, cmd.description];
+  }),
+};
 
 const sections = [
   {
@@ -91,6 +103,7 @@ const sections = [
       ["<Esc>", "Close"],
     ],
   },
+  commandSection,
 ];
 
 export function KeymapHelp({
