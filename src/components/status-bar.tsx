@@ -6,8 +6,8 @@ export function StatusBar() {
   const { state } = useStatusBar();
 
   return (
-    <div className="h-7 shrink-0 border-t border-border bg-background flex items-center justify-between px-4 font-mono text-[13px] text-muted-foreground">
-      <div>
+    <div className="h-7 shrink-0 border-t border-border bg-background flex items-center justify-between px-2 md:px-4 font-mono text-[13px] text-muted-foreground overflow-hidden">
+      <div className="truncate">
         {state.primary !== "" &&
           (state.primaryType === "error" ? (
             <span className="text-destructive">{state.primary}</span>

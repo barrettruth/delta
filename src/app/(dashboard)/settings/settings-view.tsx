@@ -360,7 +360,7 @@ export function SettingsView({
 
   return (
     <div className="flex-1 overflow-y-auto flex justify-center">
-      <div className="w-full max-w-md p-6">
+      <div className="w-full max-w-md px-4 py-4 md:p-6">
         <Section title="account">
           <Row label="username" value={username} />
           <Row label="logout" action onClick={handleLogout} />
@@ -376,7 +376,7 @@ export function SettingsView({
                 <button
                   key={provider}
                   type="button"
-                  className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                  className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                   onClick={() => handleUnlinkProvider(provider)}
                 >
                   <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
@@ -392,7 +392,7 @@ export function SettingsView({
               <button
                 key={provider}
                 type="button"
-                className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                 onClick={() => {
                   window.location.href = `/api/auth/${provider}`;
                 }}
@@ -530,7 +530,7 @@ export function SettingsView({
                 return (
                   <button
                     type="button"
-                    className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                    className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                     onClick={() => handleCopyInviteUrl(active.token)}
                   >
                     <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
@@ -565,7 +565,7 @@ export function SettingsView({
           {feedLoading ? null : feedToken ? (
             <button
               type="button"
-              className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+              className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
               onClick={handleCopyFeedUrl}
             >
               <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
@@ -587,7 +587,7 @@ export function SettingsView({
             <button
               key={p.id}
               type="button"
-              className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+              className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
               onClick={() => handleSelectGeoProvider(p.id)}
             >
               <span
@@ -635,7 +635,7 @@ export function SettingsView({
                 <button
                   key={provider.id}
                   type="button"
-                  className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                  className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                   onClick={() => handleDisconnectIntegration(provider.id)}
                 >
                   <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
@@ -649,7 +649,7 @@ export function SettingsView({
               <button
                 key={provider.id}
                 type="button"
-                className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                 onClick={() => {
                   window.location.href =
                     "/api/auth/google?scope=calendar.events";
@@ -701,7 +701,7 @@ function Row({
   const Tag = action ? "button" : "div";
   return (
     <Tag
-      className={`flex items-center w-full text-sm py-1 px-2 overflow-hidden min-w-0 ${action ? "hover:bg-accent/50 cursor-pointer" : ""}`}
+      className={`flex items-center w-full text-sm py-2 md:py-1 px-2 overflow-hidden min-w-0 ${action ? "hover:bg-accent/50 cursor-pointer" : ""}`}
       onClick={onClick}
       type={action ? "button" : undefined}
     >

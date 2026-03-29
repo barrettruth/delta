@@ -116,7 +116,7 @@ export function LoginForm() {
             <button
               key={opt.id}
               type="button"
-              className={`w-full text-left text-sm py-1.5 px-3 transition-colors ${selected === i ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+              className={`w-full text-left text-sm py-3 md:py-1.5 px-3 transition-colors ${selected === i ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
               onClick={opt.action}
               onMouseEnter={() => setSelected(i)}
               disabled={loading}

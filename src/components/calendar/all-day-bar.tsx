@@ -109,10 +109,13 @@ export function AllDayBar({
   const rowHeight = 22;
 
   return (
-    <div className="border-b border-border/60 shrink-0">
+    <div className="border-b border-border/60 shrink-0 overflow-x-auto">
       <div
         className="grid"
-        style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
+        style={{
+          gridTemplateColumns: "3rem repeat(7, 1fr)",
+          minWidth: "640px",
+        }}
       >
         <div className="py-1 text-[10px] text-muted-foreground text-right pr-2 flex items-end">
           {hiddenCount > 0 && <span>+{hiddenCount}</span>}

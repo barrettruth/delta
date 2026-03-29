@@ -658,104 +658,112 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           <span className="text-sm">no tasks on board</span>
         </div>
       ) : (
-        <div className={`grid ${gridCols} gap-0 flex-1 min-h-0`}>
-          {visibleColumns.map((col) => {
-            const ci = columns.indexOf(col);
-            const colTasks = grouped[col.status] ?? [];
-            const isActiveCol = kbActive && ci === colIdx;
-            return (
-              <section
-                key={col.status}
-                className={`flex flex-col min-w-0 border-r border-border/40 last:border-r-0 transition-colors ${
-                  dragOver === col.status
-                    ? "bg-primary/5"
-                    : isActiveCol
-                      ? "bg-accent/30"
-                      : ""
-                }`}
-                aria-label={`${col.label} column`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(col.status);
-                }}
-                onDragLeave={() => setDragOver(null)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const id = Number(e.dataTransfer.getData("text/plain"));
-                  if (id) handleDrop(id, col.status);
-                  setDragId(null);
-                  setDragOver(null);
-                }}
-              >
-                <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
-                  <span className="text-xs font-medium">{col.label}</span>
-                  <kbd className="text-[10px] text-muted-foreground">
-                    {COLUMN_HINTS[ci]}
-                  </kbd>
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                  {colTasks.map((task, ri) => {
-                    const isCursor = isActiveCol && ri === rowIdx;
-                    const isSelected = selectedIds.has(task.id);
-                    let bg = "hover:bg-accent/50";
-                    if (isSelected) bg = "bg-primary/10";
-                    else if (isCursor) bg = "bg-accent";
-                    return (
-                      <article
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/plain", String(task.id));
-                          setDragId(task.id);
-                        }}
-                        onDragEnd={() => {
-                          setDragId(null);
-                          setDragOver(null);
-                        }}
-                        className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors ${bg} ${
-                          dragId === task.id ? "opacity-40" : ""
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          onClick={() => {
-                            nav.pushJump();
-                            panel.open(task.id);
+        <div className="flex-1 min-h-0 overflow-x-auto">
+          <div
+            className={`grid ${gridCols} gap-0 h-full`}
+            style={{ minWidth: `${visibleColumns.length * 200}px` }}
+          >
+            {visibleColumns.map((col) => {
+              const ci = columns.indexOf(col);
+              const colTasks = grouped[col.status] ?? [];
+              const isActiveCol = kbActive && ci === colIdx;
+              return (
+                <section
+                  key={col.status}
+                  className={`flex flex-col min-w-0 border-r border-border/40 last:border-r-0 transition-colors ${
+                    dragOver === col.status
+                      ? "bg-primary/5"
+                      : isActiveCol
+                        ? "bg-accent/30"
+                        : ""
+                  }`}
+                  aria-label={`${col.label} column`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(col.status);
+                  }}
+                  onDragLeave={() => setDragOver(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const id = Number(e.dataTransfer.getData("text/plain"));
+                    if (id) handleDrop(id, col.status);
+                    setDragId(null);
+                    setDragOver(null);
+                  }}
+                >
+                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
+                    <span className="text-xs font-medium">{col.label}</span>
+                    <kbd className="text-[10px] text-muted-foreground">
+                      {COLUMN_HINTS[ci]}
+                    </kbd>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {colTasks.map((task, ri) => {
+                      const isCursor = isActiveCol && ri === rowIdx;
+                      const isSelected = selectedIds.has(task.id);
+                      let bg = "hover:bg-accent/50";
+                      if (isSelected) bg = "bg-primary/10";
+                      else if (isCursor) bg = "bg-accent";
+                      return (
+                        <article
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData(
+                              "text/plain",
+                              String(task.id),
+                            );
+                            setDragId(task.id);
                           }}
+                          onDragEnd={() => {
+                            setDragId(null);
+                            setDragOver(null);
+                          }}
+                          className={`border-b border-border/40 p-3 cursor-grab active:cursor-grabbing transition-colors min-h-[44px] ${bg} ${
+                            dragId === task.id ? "opacity-40" : ""
+                          }`}
                         >
-                          <p className="text-sm font-medium leading-snug">
-                            {task.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            {task.category && task.category !== "Todo" && (
-                              <span className="text-xs text-muted-foreground">
-                                # {task.category}
-                              </span>
-                            )}
-                            {task.location && (
-                              <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground truncate max-w-[16ch]">
-                                <MapPin className="w-3 h-3 shrink-0" />
-                                {task.location}
-                              </span>
-                            )}
-                            {task.meetingUrl && (
-                              <Video className="w-3 h-3 shrink-0 text-muted-foreground" />
-                            )}
-                            {task.due && (
-                              <span className="text-xs text-muted-foreground ml-auto tabular-nums">
-                                {formatDate(new Date(task.due))}
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+                          <button
+                            type="button"
+                            className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            onClick={() => {
+                              nav.pushJump();
+                              panel.open(task.id);
+                            }}
+                          >
+                            <p className="text-sm font-medium leading-snug">
+                              {task.description}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              {task.category && task.category !== "Todo" && (
+                                <span className="text-xs text-muted-foreground">
+                                  # {task.category}
+                                </span>
+                              )}
+                              {task.location && (
+                                <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground truncate max-w-[16ch]">
+                                  <MapPin className="w-3 h-3 shrink-0" />
+                                  {task.location}
+                                </span>
+                              )}
+                              {task.meetingUrl && (
+                                <Video className="w-3 h-3 shrink-0 text-muted-foreground" />
+                              )}
+                              {task.due && (
+                                <span className="text-xs text-muted-foreground ml-auto tabular-nums">
+                                  {formatDate(new Date(task.due))}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
         </div>
       )}
       <RecurrenceStrategyDialog

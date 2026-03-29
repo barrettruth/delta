@@ -186,30 +186,37 @@ export function WeekTimeGrid({
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div
-        className="grid shrink-0 border-b border-border/60"
-        style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}
-      >
-        <div className="py-2" />
-        {days.map((date, idx) => {
-          const isToday = isSameDay(date, today);
-          return (
-            <div
-              key={formatDateKey(date)}
-              className={`flex flex-col items-center py-2 border-l border-border/30 ${isToday ? "bg-primary/10" : ""}`}
-            >
-              <span className="text-xs text-muted-foreground">
-                {DAY_NAMES[idx]}
-              </span>
-              <span
-                className={`text-sm font-semibold mt-0.5 inline-flex items-center justify-center ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-                style={isToday ? { width: "24px", height: "24px" } : undefined}
+      <div className="overflow-x-auto shrink-0 border-b border-border/60">
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: "3rem repeat(7, 1fr)",
+            minWidth: "640px",
+          }}
+        >
+          <div className="py-2" />
+          {days.map((date, idx) => {
+            const isToday = isSameDay(date, today);
+            return (
+              <div
+                key={formatDateKey(date)}
+                className={`flex flex-col items-center py-2 border-l border-border/30 ${isToday ? "bg-primary/10" : ""}`}
               >
-                {date.getDate()}
-              </span>
-            </div>
-          );
-        })}
+                <span className="text-xs text-muted-foreground">
+                  {DAY_NAMES[idx]}
+                </span>
+                <span
+                  className={`text-sm font-semibold mt-0.5 inline-flex items-center justify-center ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}
+                  style={
+                    isToday ? { width: "24px", height: "24px" } : undefined
+                  }
+                >
+                  {date.getDate()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div
@@ -220,7 +227,8 @@ export function WeekTimeGrid({
         <div
           className="grid"
           style={{
-            gridTemplateColumns: "4rem repeat(7, 1fr)",
+            gridTemplateColumns: "3rem repeat(7, 1fr)",
+            minWidth: "640px",
             height: `${totalHeight}px`,
           }}
         >

@@ -24,6 +24,7 @@ import { rruleToText } from "@/core/recurrence";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatTime } from "@/lib/calendar-utils";
 import { detectMeetingPlatform } from "@/lib/utils";
 
@@ -330,19 +331,33 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     }
   }, [isOpen, mode, task, panel]);
 
+  const isMobile = useIsMobile();
+
   if (!isOpen) return null;
   if (mode === "edit" && !task) return null;
 
   return (
     <>
-      <ResizeHandle onResize={panel.setWidth} />
+      {!isMobile && <ResizeHandle onResize={panel.setWidth} />}
       <div
         role="region"
-        style={{ width: `${width}%` }}
-        className="flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden"
+        style={isMobile ? undefined : { width: `${width}%` }}
+        className="flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden w-full"
         onKeyDown={handleKeyDown}
       >
         <div className="px-4 pt-3 pb-2">
+          {isMobile && (
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground mb-2 min-h-[44px] flex items-center"
+              onClick={() => {
+                if (mode === "edit" && task) saveTask(task.id);
+                panel.close();
+              }}
+            >
+              &larr; back
+            </button>
+          )}
           <input
             ref={titleRef}
             value={description}

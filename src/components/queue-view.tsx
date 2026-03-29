@@ -299,7 +299,7 @@ export function QueueView({
                     if (el) rowRefs.current.set(task.id, el);
                   }}
                   className={cn(
-                    "w-full pl-2 pr-4 py-1.5 cursor-pointer text-left select-none border-l-2",
+                    "w-full pl-2 pr-4 py-2.5 md:py-1.5 cursor-pointer text-left select-none border-l-2",
                     getRowClasses(isCursor, isSelected),
                     getTaskDimming(task.status),
                   )}
@@ -315,7 +315,7 @@ export function QueueView({
                   tabIndex={0}
                   role="row"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span
                       className={cn(
                         "text-xs text-right tabular-nums shrink-0",
@@ -344,7 +344,7 @@ export function QueueView({
                     </button>
                     <span
                       className={cn(
-                        "text-sm",
+                        "text-sm truncate",
                         task.status === "done" &&
                           "line-through text-muted-foreground",
                         task.status === "cancelled" &&
