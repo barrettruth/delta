@@ -98,7 +98,11 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setIdle = useCallback((left: string, right: string) => {
-    setState((prev) => ({ ...prev, idleLeft: left, idleRight: right }));
+    setState((prev) =>
+      prev.idleLeft === left && prev.idleRight === right
+        ? prev
+        : { ...prev, idleLeft: left, idleRight: right },
+    );
   }, []);
 
   const value: StatusBarContextValue = {

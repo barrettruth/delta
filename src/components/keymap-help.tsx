@@ -1,9 +1,9 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { useKeymaps } from "@/contexts/keymaps";
 import { commandRegistry } from "@/core/commands";
 import { HELP_SECTIONS, SECTION_LABELS } from "@/lib/keymap-defs";
-import { useKeymaps } from "@/contexts/keymaps";
 
 export function KeymapHelp({
   open,

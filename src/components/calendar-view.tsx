@@ -762,7 +762,7 @@ export function CalendarView({
 
   useEffect(() => {
     statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, headerTitle);
-  }, [viewMode, headerTitle, statusBar]);
+  }, [viewMode, headerTitle, statusBar.setIdle]);
 
   return (
     <div className="flex flex-col h-full">

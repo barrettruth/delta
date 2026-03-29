@@ -97,91 +97,91 @@ export function QueueView({
 
   const { cursor, setCursor, selectedIds, toggleSelect, visualMode } =
     useKeyboard({
-    tasks: filtered,
-    onComplete: (ids) => {
-      const entryId = `complete-${Date.now()}-${ids.join(",")}`;
-      const mutations: UndoMutation[] = ids.map((id) => {
-        const task = filtered.find((t) => t.id === id);
-        return {
-          taskId: id,
-          restore: {
-            status: (task?.status as TaskStatus) ?? "pending",
-            completedAt: task?.completedAt ?? null,
-          },
-        };
-      });
-      undo.push({
-        id: entryId,
-        op: "complete",
-        label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
-        mutations,
-        timestamp: Date.now(),
-      });
-      for (const id of ids) {
-        completeTaskAction(id).then((result) => {
-          const m = mutations.find((mut) => mut.taskId === id);
-          if (m && result && "data" in result) {
-            m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
-          }
+      tasks: filtered,
+      onComplete: (ids) => {
+        const entryId = `complete-${Date.now()}-${ids.join(",")}`;
+        const mutations: UndoMutation[] = ids.map((id) => {
+          const task = filtered.find((t) => t.id === id);
+          return {
+            taskId: id,
+            restore: {
+              status: (task?.status as TaskStatus) ?? "pending",
+              completedAt: task?.completedAt ?? null,
+            },
+          };
         });
-      }
-    },
-    onDelete: (ids) => {
-      if (ids.length === 1) {
-        const task = filtered.find((t) => t.id === ids[0]);
-        if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
-      }
-      const entryId = `delete-${Date.now()}-${ids.join(",")}`;
-      const mutations = ids.map((id) => {
-        const task = filtered.find((t) => t.id === id);
-        return {
-          taskId: id,
-          restore: {
-            status: (task?.status as TaskStatus) ?? "pending",
-            completedAt: task?.completedAt ?? null,
-          },
-        };
-      });
-      undo.push({
-        id: entryId,
-        op: "delete",
-        label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
-        mutations,
-        timestamp: Date.now(),
-      });
-      for (const id of ids) deleteTaskAction(id);
-      if (panel.taskId && ids.includes(panel.taskId)) panel.close();
-    },
-    onStatusChange: (ids, status) => {
-      const entryId = `status-${Date.now()}-${ids.join(",")}`;
-      const mutations = ids.map((id) => {
-        const task = filtered.find((t) => t.id === id);
-        return {
-          taskId: id,
-          restore: {
-            status: (task?.status as TaskStatus) ?? "pending",
-            completedAt: task?.completedAt ?? null,
-          },
-        };
-      });
-      undo.push({
-        id: entryId,
-        op: "status-change",
-        label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
-        mutations,
-        timestamp: Date.now(),
-      });
-      for (const id of ids) updateTaskAction(id, { status });
-    },
-    onCreate: () => panel.create(),
-    onSelect: (task) => {
-      nav.pushJump();
-      panel.toggle(task.id);
-    },
-    onDeselect: () => panel.close(),
-    onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
-    onJump: () => nav.pushJump(),
-    scrollRef,
+        undo.push({
+          id: entryId,
+          op: "complete",
+          label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
+          mutations,
+          timestamp: Date.now(),
+        });
+        for (const id of ids) {
+          completeTaskAction(id).then((result) => {
+            const m = mutations.find((mut) => mut.taskId === id);
+            if (m && result && "data" in result) {
+              m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
+            }
+          });
+        }
+      },
+      onDelete: (ids) => {
+        if (ids.length === 1) {
+          const task = filtered.find((t) => t.id === ids[0]);
+          if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
+        }
+        const entryId = `delete-${Date.now()}-${ids.join(",")}`;
+        const mutations = ids.map((id) => {
+          const task = filtered.find((t) => t.id === id);
+          return {
+            taskId: id,
+            restore: {
+              status: (task?.status as TaskStatus) ?? "pending",
+              completedAt: task?.completedAt ?? null,
+            },
+          };
+        });
+        undo.push({
+          id: entryId,
+          op: "delete",
+          label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
+          mutations,
+          timestamp: Date.now(),
+        });
+        for (const id of ids) deleteTaskAction(id);
+        if (panel.taskId && ids.includes(panel.taskId)) panel.close();
+      },
+      onStatusChange: (ids, status) => {
+        const entryId = `status-${Date.now()}-${ids.join(",")}`;
+        const mutations = ids.map((id) => {
+          const task = filtered.find((t) => t.id === id);
+          return {
+            taskId: id,
+            restore: {
+              status: (task?.status as TaskStatus) ?? "pending",
+              completedAt: task?.completedAt ?? null,
+            },
+          };
+        });
+        undo.push({
+          id: entryId,
+          op: "status-change",
+          label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
+          mutations,
+          timestamp: Date.now(),
+        });
+        for (const id of ids) updateTaskAction(id, { status });
+      },
+      onCreate: () => panel.create(),
+      onSelect: (task) => {
+        nav.pushJump();
+        panel.toggle(task.id);
+      },
+      onDeselect: () => panel.close(),
+      onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
+      onJump: () => nav.pushJump(),
+      scrollRef,
     });
 
   useEffect(() => {
@@ -197,7 +197,7 @@ export function QueueView({
           ? `0/${filtered.length}`
           : "";
     statusBar.setIdle(left, right);
-  }, [visualMode, categoryFilter, cursor, filtered.length, statusBar]);
+  }, [visualMode, categoryFilter, cursor, filtered.length, statusBar.setIdle]);
 
   useEffect(() => {
     const saved = nav.getViewState<number>("queue:cursor");
