@@ -126,18 +126,11 @@
   color: var(--muted-foreground);
 }
 
-.tiptap pre.shiki {
-  background-color: var(--shiki-light-bg, var(--muted));
-}
-
-.tiptap pre.shiki code span {
-  color: var(--shiki-light);
-}
-
 html.dark .tiptap pre.shiki {
-  background-color: var(--shiki-dark-bg, #222222);
+  background-color: var(--shiki-dark-bg, #222222) !important;
+  color: var(--shiki-dark, #e0e0e0) !important;
 }
 
 html.dark .tiptap pre.shiki code span {
-  color: var(--shiki-dark);
+  color: var(--shiki-dark) !important;
 }
