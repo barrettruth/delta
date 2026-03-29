@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { undoCompleteTaskAction, undoTaskAction } from "@/app/actions/tasks";
+import { useStatusBar } from "@/contexts/status-bar";
 import type { UndoEntry } from "@/core/undo";
 
 interface UndoContextValue {
@@ -24,15 +25,20 @@ const MAX_UNDO_STACK = 50;
 export function UndoProvider({ children }: { children: ReactNode }) {
   const stackRef = useRef<UndoEntry[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  const statusBar = useStatusBar();
 
-  const push = useCallback((entry: UndoEntry) => {
-    const stack = stackRef.current;
-    stack.push(entry);
-    if (stack.length > MAX_UNDO_STACK) {
-      stack.shift();
-    }
-    setCanUndo(true);
-  }, []);
+  const push = useCallback(
+    (entry: UndoEntry) => {
+      const stack = stackRef.current;
+      stack.push(entry);
+      if (stack.length > MAX_UNDO_STACK) {
+        stack.shift();
+      }
+      setCanUndo(true);
+      statusBar.undo(entry.label);
+    },
+    [statusBar],
+  );
 
   const executeUndo = useCallback(async (entry: UndoEntry) => {
     if (entry.op === "complete") {
