@@ -108,7 +108,7 @@ export async function GET(
           upsertIntegrationConfig(db, currentUser.id, "google_calendar", {});
         }
 
-        return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/settings`);
+        return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/calendar`);
       }
     }
 

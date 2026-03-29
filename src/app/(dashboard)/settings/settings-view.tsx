@@ -34,10 +34,6 @@ interface IntegrationSummary {
   updatedAt: string;
 }
 
-const INTEGRATION_PROVIDERS = [
-  { id: "google_calendar", label: "google calendar", type: "oauth" as const },
-] as const;
-
 type GeoProvider = "photon" | "mapbox" | "google_maps";
 const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
   { id: "photon", label: "photon" },
@@ -94,9 +90,6 @@ export function SettingsView({
   });
   const [geoKeyInput, setGeoKeyInput] = useState("");
   const [geoExpanded, setGeoExpanded] = useState(false);
-  const [feedToken, setFeedToken] = useState<string | null>(null);
-  const [feedLoading, setFeedLoading] = useState(true);
-
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -226,40 +219,6 @@ export function SettingsView({
     statusBar.message("copied to clipboard");
   }
 
-  const loadFeed = useCallback(async () => {
-    const res = await fetch("/api/calendar/feed");
-    const data = await res.json();
-    setFeedToken(data.token);
-    setFeedLoading(false);
-  }, []);
-
-  useEffect(() => {
-    loadFeed();
-  }, [loadFeed]);
-
-  function getFeedUrl(token: string): string {
-    return `${window.location.origin}/api/calendar/feed/${token}`;
-  }
-
-  async function handleGenerateFeed() {
-    const res = await fetch("/api/calendar/feed", { method: "POST" });
-    const data = await res.json();
-    setFeedToken(data.token);
-    statusBar.message("feed url generated");
-  }
-
-  async function handleRevokeFeed() {
-    await fetch("/api/calendar/feed", { method: "DELETE" });
-    setFeedToken(null);
-    statusBar.message("feed url revoked");
-  }
-
-  async function handleCopyFeedUrl() {
-    if (!feedToken) return;
-    await navigator.clipboard.writeText(getFeedUrl(feedToken));
-    statusBar.message("copied to clipboard");
-  }
-
   async function handleSelectGeoProvider(id: GeoProvider) {
     if (id === "photon") {
       for (const p of ["mapbox", "google_maps"]) {
@@ -331,21 +290,6 @@ export function SettingsView({
     const label =
       GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
     statusBar.message(`geocoding set to ${label}`);
-  }
-
-  async function handleDisconnectIntegration(provider: string) {
-    const res = await fetch(`/api/settings/integrations/${provider}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      statusBar.error(data.error ?? "failed to disconnect");
-      return;
-    }
-    setIntegrations((prev) => prev.filter((i) => i.provider !== provider));
-    const label =
-      INTEGRATION_PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
-    statusBar.message(`${label} disconnected`);
   }
 
   useEffect(() => {
@@ -561,27 +505,6 @@ export function SettingsView({
           )}
         </Section>
 
-        <Section title="calendar feed">
-          {feedLoading ? null : feedToken ? (
-            <button
-              type="button"
-              className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
-              onClick={handleCopyFeedUrl}
-            >
-              <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
-                copy feed url
-              </span>
-            </button>
-          ) : (
-            <Row
-              label="+ generate feed url"
-              action
-              muted
-              onClick={handleGenerateFeed}
-            />
-          )}
-        </Section>
-
         <Section title="geocoding">
           {GEO_PROVIDERS.map((p) => (
             <button
@@ -623,45 +546,6 @@ export function SettingsView({
               </Button>
             </div>
           )}
-        </Section>
-
-        <Section title="integrations">
-          {INTEGRATION_PROVIDERS.map((provider) => {
-            const connected = integrations.find(
-              (i) => i.provider === provider.id,
-            );
-            if (connected) {
-              return (
-                <button
-                  key={provider.id}
-                  type="button"
-                  className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
-                  onClick={() => handleDisconnectIntegration(provider.id)}
-                >
-                  <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
-                    <span className="text-destructive">-</span> disconnect{" "}
-                    {provider.label}
-                  </span>
-                </button>
-              );
-            }
-            return (
-              <button
-                key={provider.id}
-                type="button"
-                className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
-                onClick={() => {
-                  window.location.href =
-                    "/api/auth/google?scope=calendar.events";
-                }}
-              >
-                <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
-                  <span className="text-status-done">+</span> connect{" "}
-                  {provider.label}
-                </span>
-              </button>
-            );
-          })}
         </Section>
       </div>
     </div>

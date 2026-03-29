@@ -130,12 +130,18 @@ async function pullEvents(
   accessToken: string,
   calendarId: string,
   syncToken?: string,
-): Promise<{ nextSyncToken?: string; fullSyncNeeded: boolean }> {
+): Promise<{
+  nextSyncToken?: string;
+  fullSyncNeeded: boolean;
+  pulled: number;
+}> {
   const result = await listCalendarEvents(accessToken, calendarId, syncToken);
 
   if (syncToken && !result.nextSyncToken && result.events.length === 0) {
-    return { nextSyncToken: undefined, fullSyncNeeded: true };
+    return { nextSyncToken: undefined, fullSyncNeeded: true, pulled: 0 };
   }
+
+  let pulled = 0;
 
   for (const event of result.events) {
     const externalId = `gcal:${event.id}`;
@@ -147,6 +153,7 @@ async function pullEvents(
           status: "cancelled",
           externalId: null,
         });
+        pulled++;
       }
       continue;
     }
@@ -159,16 +166,18 @@ async function pullEvents(
 
       if (Object.keys(merged).length > 0) {
         updateTask(db, existing.id, merged);
+        pulled++;
       }
     } else {
       createTask(db, userId, {
         description: input.description ?? "(No title)",
         ...input,
       });
+      pulled++;
     }
   }
 
-  return { nextSyncToken: result.nextSyncToken, fullSyncNeeded: false };
+  return { nextSyncToken: result.nextSyncToken, fullSyncNeeded: false, pulled };
 }
 
 async function pushEvents(
@@ -177,7 +186,7 @@ async function pushEvents(
   accessToken: string,
   calendarId: string,
   lastSyncTime?: string,
-): Promise<void> {
+): Promise<number> {
   const conditions = [eq(tasks.userId, userId), isNotNull(tasks.startAt)];
 
   if (lastSyncTime) {
@@ -190,6 +199,8 @@ async function pushEvents(
     .where(and(...conditions))
     .all();
 
+  let pushed = 0;
+
   for (const task of modifiedTasks) {
     const gcalId = task.externalId?.startsWith("gcal:")
       ? task.externalId.slice(5)
@@ -198,6 +209,7 @@ async function pushEvents(
     if (gcalId && task.status === "cancelled") {
       try {
         await deleteCalendarEvent(accessToken, calendarId, gcalId);
+        pushed++;
       } catch {
         /* noop */
       }
@@ -209,6 +221,7 @@ async function pushEvents(
       const eventBody = taskToGoogleEvent(task);
       try {
         await updateCalendarEvent(accessToken, calendarId, gcalId, eventBody);
+        pushed++;
       } catch {
         /* noop */
       }
@@ -224,17 +237,20 @@ async function pushEvents(
           eventBody,
         );
         updateTask(db, task.id, { externalId: `gcal:${created.id}` });
+        pushed++;
       } catch {
         /* noop */
       }
     }
   }
+
+  return pushed;
 }
 
 export async function syncGoogleCalendar(
   db: Db,
   userId: number,
-): Promise<void> {
+): Promise<{ pulled: number; pushed: number }> {
   const configData = getMetadata(db, userId);
   if (!configData) {
     throw new Error(
@@ -262,6 +278,7 @@ export async function syncGoogleCalendar(
   }
 
   let syncToken = metadata.syncToken;
+  let totalPulled = 0;
 
   const pullResult = await pullEvents(
     db,
@@ -280,14 +297,24 @@ export async function syncGoogleCalendar(
       undefined,
     );
     syncToken = retryResult.nextSyncToken;
+    totalPulled = retryResult.pulled;
   } else {
     syncToken = pullResult.nextSyncToken ?? syncToken;
+    totalPulled = pullResult.pulled;
   }
 
-  await pushEvents(db, userId, accessToken, calendarId, metadata.lastSyncTime);
+  const pushed = await pushEvents(
+    db,
+    userId,
+    accessToken,
+    calendarId,
+    metadata.lastSyncTime,
+  );
 
   const now = new Date().toISOString();
   metadata.syncToken = syncToken;
   metadata.lastSyncTime = now;
   saveMetadata(db, userId, metadata, tokens);
+
+  return { pulled: totalPulled, pushed };
 }
