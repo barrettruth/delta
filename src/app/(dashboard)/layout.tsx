@@ -42,9 +42,13 @@ export default async function DashboardLayout({
       .map((c) => [c.category, c.color]),
   );
 
+  const keymapOverrides: Record<string, string> = user.keymapOverrides
+    ? JSON.parse(user.keymapOverrides)
+    : {};
+
   return (
     <Suspense>
-      <NavigationWrapper>
+      <NavigationWrapper keymapOverrides={keymapOverrides}>
         <AppSidebar
           username={user.username}
           categories={categories}

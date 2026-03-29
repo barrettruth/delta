@@ -28,6 +28,10 @@ export default async function SettingsPage() {
   const enabledProviders = getEnabledProviders(db);
   const integrations = listIntegrationConfigs(db, user.id);
 
+  const keymapOverrides: Record<string, string> = user.keymapOverrides
+    ? JSON.parse(user.keymapOverrides)
+    : {};
+
   return (
     <SettingsView
       username={user.username}
@@ -37,6 +41,7 @@ export default async function SettingsPage() {
       connectedAccounts={connectedAccounts}
       enabledProviders={enabledProviders}
       integrations={integrations}
+      keymapOverrides={keymapOverrides}
     />
   );
 }

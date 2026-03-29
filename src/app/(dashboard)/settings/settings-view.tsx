@@ -10,7 +10,15 @@ import {
 } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useKeymaps } from "@/contexts/keymaps";
 import { useStatusBar } from "@/contexts/status-bar";
+import {
+  DEFAULT_KEYMAPS,
+  formatKey,
+  type KeymapDef,
+  SECTION_LABELS,
+  SECTION_ORDER,
+} from "@/lib/keymap-defs";
 
 interface Passkey {
   id: number;
@@ -50,6 +58,7 @@ export function SettingsView({
   connectedAccounts: initialConnectedAccounts,
   enabledProviders,
   integrations: initialIntegrations,
+  keymapOverrides: _keymapOverrides,
 }: {
   username: string;
   passkeys: Passkey[];
@@ -58,6 +67,7 @@ export function SettingsView({
   connectedAccounts: ConnectedAccount[];
   enabledProviders: string[];
   integrations: IntegrationSummary[];
+  keymapOverrides: Record<string, string>;
 }) {
   const router = useRouter();
   const statusBar = useStatusBar();
@@ -91,6 +101,10 @@ export function SettingsView({
   });
   const [geoKeyInput, setGeoKeyInput] = useState("");
   const [geoExpanded, setGeoExpanded] = useState(false);
+  const keymaps = useKeymaps();
+  const [capturingId, setCapturingId] = useState<string | null>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -548,6 +562,82 @@ export function SettingsView({
             </div>
           )}
         </Section>
+
+        <Section title="keymaps">
+          {SECTION_ORDER.map((section) => {
+            const defs = DEFAULT_KEYMAPS.filter(
+              (d) => d.section === section && d.configurable !== false,
+            );
+            if (defs.length === 0) return null;
+            return (
+              <div key={section} className="mb-3">
+                <div className="text-xs font-medium text-muted-foreground mb-1 px-2">
+                  {SECTION_LABELS[section]}
+                </div>
+                {defs.map((def) => (
+                  <KeymapRow
+                    key={def.id}
+                    def={def}
+                    isOverridden={def.id in keymaps.overrides}
+                    currentKey={keymaps.getResolvedKeymap(def.id)}
+                    capturing={capturingId === def.id}
+                    captureError={capturingId === def.id ? captureError : null}
+                    onStartCapture={() => {
+                      setCapturingId(def.id);
+                      setCaptureError(null);
+                    }}
+                    onCapture={async (triggerKey: string) => {
+                      const section = def.section;
+                      const sectionDefs = DEFAULT_KEYMAPS.filter(
+                        (d) =>
+                          d.section === section &&
+                          d.id !== def.id &&
+                          d.configurable !== false,
+                      );
+                      const duplicate = sectionDefs.find((d) => {
+                        const resolved = keymaps.getResolvedKeymap(d.id);
+                        return (
+                          resolved.triggerKey === triggerKey &&
+                          JSON.stringify(resolved.modifiers ?? []) ===
+                            JSON.stringify(def.modifiers ?? [])
+                        );
+                      });
+                      if (duplicate) {
+                        setCaptureError(`already used by "${duplicate.label}"`);
+                        return;
+                      }
+                      await keymaps.setOverride(def.id, triggerKey);
+                      setCapturingId(null);
+                      setCaptureError(null);
+                      statusBar.message("keymap updated");
+                    }}
+                    onCancelCapture={() => {
+                      setCapturingId(null);
+                      setCaptureError(null);
+                    }}
+                    onReset={async () => {
+                      await keymaps.resetOverride(def.id);
+                      statusBar.message("keymap reset");
+                    }}
+                  />
+                ))}
+              </div>
+            );
+          })}
+          {Object.keys(keymaps.overrides).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full mt-2 h-7 text-xs"
+              onClick={async () => {
+                await keymaps.resetAll();
+                statusBar.message("all keymaps reset");
+              }}
+            >
+              reset all keymaps
+            </Button>
+          )}
+        </Section>
       </div>
     </div>
   );
@@ -597,5 +687,113 @@ function Row({
       </span>
       {value && <span className="text-muted-foreground shrink-0">{value}</span>}
     </Tag>
+  );
+}
+
+const BROWSER_RESERVED_COMBOS = new Set([
+  "ctrl+w",
+  "ctrl+t",
+  "ctrl+n",
+  "ctrl+Tab",
+]);
+
+const BROWSER_RESERVED_KEYS = new Set(["F1", "F3", "F5", "F11", "F12"]);
+
+function isBrowserReserved(e: KeyboardEvent): boolean {
+  if (BROWSER_RESERVED_KEYS.has(e.key)) return true;
+  if (e.ctrlKey) {
+    const combo = `ctrl+${e.key}`;
+    if (BROWSER_RESERVED_COMBOS.has(combo)) return true;
+  }
+  return false;
+}
+
+function KeymapRow({
+  def,
+  isOverridden,
+  currentKey,
+  capturing,
+  captureError,
+  onStartCapture,
+  onCapture,
+  onCancelCapture,
+  onReset,
+}: {
+  def: KeymapDef;
+  isOverridden: boolean;
+  currentKey: KeymapDef;
+  capturing: boolean;
+  captureError: string | null;
+  onStartCapture: () => void;
+  onCapture: (triggerKey: string) => Promise<void>;
+  onCancelCapture: () => void;
+  onReset: () => Promise<void>;
+}) {
+  useEffect(() => {
+    if (!capturing) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "Escape") {
+        onCancelCapture();
+        return;
+      }
+      if (
+        e.key === "Shift" ||
+        e.key === "Control" ||
+        e.key === "Alt" ||
+        e.key === "Meta"
+      ) {
+        return;
+      }
+      if (isBrowserReserved(e)) {
+        return;
+      }
+      onCapture(e.key);
+    }
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [capturing, onCapture, onCancelCapture]);
+
+  return (
+    <div className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0">
+      <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+        {def.label}
+      </span>
+      <span className="flex items-center gap-2 shrink-0">
+        {capturing ? (
+          <span className="flex items-center gap-1">
+            {captureError ? (
+              <span className="text-destructive text-xs">{captureError}</span>
+            ) : (
+              <span className="text-muted-foreground text-xs animate-pulse">
+                press key...
+              </span>
+            )}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="hover:bg-accent/50 cursor-pointer px-1"
+            onClick={onStartCapture}
+          >
+            <kbd
+              className={`font-mono text-xs px-1.5 py-0.5 border border-border ${isOverridden ? "text-foreground" : "text-muted-foreground"}`}
+            >
+              {formatKey(currentKey)}
+            </kbd>
+          </button>
+        )}
+        {isOverridden && !capturing && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+            onClick={onReset}
+          >
+            reset
+          </button>
+        )}
+      </span>
+    </div>
   );
 }
