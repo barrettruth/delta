@@ -9,6 +9,7 @@ import {
 import { AllDayBar } from "@/components/calendar/all-day-bar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
+import { IcalPopover } from "@/components/ical-popover";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -742,8 +743,14 @@ export function CalendarView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-center px-6 py-3 border-b border-border/60 shrink-0">
-        <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
+      <div className="flex items-center px-6 py-3 border-b border-border/60 shrink-0">
+        <div className="w-12 shrink-0" />
+        <h2 className="text-lg font-semibold tracking-tight flex-1 text-center">
+          {headerTitle}
+        </h2>
+        <div className="w-12 shrink-0 flex justify-end">
+          <IcalPopover />
+        </div>
       </div>
 
       {viewMode === "week" && allDayTasks.length > 0 && (
