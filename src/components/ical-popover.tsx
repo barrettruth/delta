@@ -54,29 +54,20 @@ export function IcalPopover() {
       >
         import/export
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64">
-        <div className="flex flex-col gap-3">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider">
-            export
-          </div>
+      <PopoverContent align="end" className="w-40 p-2">
+        <div className="flex flex-col gap-1">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleExport}
-            className="h-7 text-xs w-full"
+            className="h-7 text-xs w-full justify-start"
           >
             export .ics
           </Button>
-
-          <div className="h-px bg-border" />
-
-          <div className="text-xs text-muted-foreground uppercase tracking-wider">
-            import
-          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-7 text-xs w-full"
+            className="h-7 text-xs w-full justify-start"
             onClick={() => fileRef.current?.click()}
             disabled={importing}
           >
