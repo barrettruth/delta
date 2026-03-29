@@ -12,8 +12,9 @@ import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
+import { useUndo } from "@/contexts/undo";
 import { expandInstances } from "@/core/recurrence-expansion";
-import type { Task } from "@/core/types";
+import type { Task, TaskStatus } from "@/core/types";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { useRecurrenceEdit } from "@/hooks/use-recurrence-edit";
 import type { TimedEntry } from "@/lib/calendar-utils";
@@ -51,6 +52,7 @@ export function CalendarView({
 }) {
   const nav = useNavigation();
   const panel = useTaskPanel();
+  const undo = useUndo();
   const { pendingEdits } = panel;
   const recurrenceDelete = useRecurrenceDelete();
   const recurrenceEdit = useRecurrenceEdit();
@@ -555,7 +557,22 @@ export function CalendarView({
               recurrenceDelete.requestDelete(target)
             ) {
               panel.close();
-            } else {
+            } else if (target) {
+              undo.push({
+                id: `delete-${Date.now()}-${panel.taskId}`,
+                op: "delete",
+                label: "1 task deleted",
+                mutations: [
+                  {
+                    taskId: panel.taskId,
+                    restore: {
+                      status: (target.status as TaskStatus) ?? "pending",
+                      completedAt: target.completedAt ?? null,
+                    },
+                  },
+                ],
+                timestamp: Date.now(),
+              });
               deleteTaskAction(panel.taskId);
               panel.close();
             }
@@ -687,6 +704,7 @@ export function CalendarView({
       panel,
       tasks,
       recurrenceDelete,
+      undo,
     ],
   );
 
