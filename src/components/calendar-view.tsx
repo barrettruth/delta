@@ -205,7 +205,7 @@ export function CalendarView({
       const startDate = new Date(task.startAt);
       const endDate = task.endAt ? new Date(task.endAt) : null;
 
-      if (endDate && isMultiDay(task.startAt, task.endAt!)) {
+      if (endDate && task.endAt && isMultiDay(task.startAt, task.endAt)) {
         const dates = getDatesBetween(startDate, endDate);
         for (let i = 0; i < dates.length; i++) {
           const key = formatDateKey(dates[i]);

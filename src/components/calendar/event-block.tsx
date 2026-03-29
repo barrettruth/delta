@@ -87,6 +87,7 @@ export function EventBlock({
       }}
       onClick={(e) => {
         e.stopPropagation();
+        onClick(task);
       }}
     >
       <span className="font-medium truncate flex items-center gap-0.5">

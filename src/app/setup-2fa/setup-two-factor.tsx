@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 
 type Step = "choose" | "passkey" | "totp-qr" | "totp-verify" | "recovery";
 
-export function SetupTwoFactor({ username }: { username: string }) {
+export function SetupTwoFactor({ username: _username }: { username: string }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("choose");
   const [error, setError] = useState("");
