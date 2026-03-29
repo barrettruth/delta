@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { validateSession } from "@/core/auth";
+import { listIntegrationConfigs } from "@/core/integration-config";
 import { getEnabledProviders, getLinkedAccounts } from "@/core/oauth";
 import { remainingRecoveryCodeCount } from "@/core/recovery";
 import { userHasTotp } from "@/core/totp";
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
   const recoveryCodesRemaining = remainingRecoveryCodeCount(db, user.id);
   const connectedAccounts = getLinkedAccounts(db, user.id);
   const enabledProviders = getEnabledProviders(db);
+  const integrations = listIntegrationConfigs(db, user.id);
 
   return (
     <SettingsView
@@ -34,6 +36,7 @@ export default async function SettingsPage() {
       recoveryCodesRemaining={recoveryCodesRemaining}
       connectedAccounts={connectedAccounts}
       enabledProviders={enabledProviders}
+      integrations={integrations}
     />
   );
 }

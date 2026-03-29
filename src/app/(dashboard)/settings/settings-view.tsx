@@ -25,6 +25,19 @@ interface ConnectedAccount {
   createdAt: string;
 }
 
+interface IntegrationSummary {
+  provider: string;
+  enabled: number;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const INTEGRATION_PROVIDERS = [
+  { id: "google_calendar", label: "google calendar", type: "oauth" as const },
+  { id: "mapbox", label: "mapbox", type: "api_key" as const },
+] as const;
+
 export function SettingsView({
   username,
   passkeys: initialPasskeys,
@@ -32,6 +45,7 @@ export function SettingsView({
   recoveryCodesRemaining: initialRecoveryRemaining,
   connectedAccounts: initialConnectedAccounts,
   enabledProviders,
+  integrations: initialIntegrations,
 }: {
   username: string;
   passkeys: Passkey[];
@@ -39,6 +53,7 @@ export function SettingsView({
   recoveryCodesRemaining: number;
   connectedAccounts: ConnectedAccount[];
   enabledProviders: string[];
+  integrations: IntegrationSummary[];
 }) {
   const router = useRouter();
   const [passkeys, setPasskeys] = useState(initialPasskeys);
@@ -63,6 +78,9 @@ export function SettingsView({
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [invites, setInvites] = useState<InviteLinkRow[]>([]);
   const [invitesLoaded, setInvitesLoaded] = useState(false);
+  const [integrations, setIntegrations] = useState(initialIntegrations);
+  const [expandedApiKey, setExpandedApiKey] = useState<string | null>(null);
+  const [apiKeyValue, setApiKeyValue] = useState("");
 
   const flash = useCallback((msg: string) => {
     setMessage(msg);
@@ -203,6 +221,50 @@ export function SettingsView({
   async function handleCopyInviteUrl(token: string) {
     await navigator.clipboard.writeText(getInviteUrl(token));
     flash("copied to clipboard");
+  }
+
+  async function handleConnectApiKey(provider: string) {
+    if (!apiKeyValue.trim()) return;
+    const res = await fetch("/api/settings/integrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider,
+        tokens: { api_key: apiKeyValue.trim() },
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      flashError(data.error ?? "Failed to connect");
+      return;
+    }
+    const data = await res.json();
+    setIntegrations((prev) => [
+      ...prev,
+      {
+        provider: data.provider,
+        enabled: data.enabled,
+        metadata: data.metadata,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      },
+    ]);
+    setExpandedApiKey(null);
+    setApiKeyValue("");
+    flash(`${provider} connected`);
+  }
+
+  async function handleDisconnectIntegration(provider: string) {
+    const res = await fetch(`/api/settings/integrations/${provider}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      flashError(data.error ?? "Failed to disconnect");
+      return;
+    }
+    setIntegrations((prev) => prev.filter((i) => i.provider !== provider));
+    flash(`${provider} disconnected`);
   }
 
   useEffect(() => {
@@ -424,6 +486,76 @@ export function SettingsView({
               onClick={handleGenerateInvite}
             />
           )}
+        </Section>
+
+        <Section title="integrations">
+          {INTEGRATION_PROVIDERS.map((provider) => {
+            const connected = integrations.find(
+              (i) => i.provider === provider.id,
+            );
+            if (connected) {
+              return (
+                <button
+                  key={provider.id}
+                  type="button"
+                  className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                  onClick={() => handleDisconnectIntegration(provider.id)}
+                >
+                  <span className="flex-1 text-left truncate min-w-0 text-destructive">
+                    - disconnect {provider.label}
+                  </span>
+                </button>
+              );
+            }
+            if (provider.type === "api_key" && expandedApiKey === provider.id) {
+              return (
+                <div key={provider.id} className="flex gap-2 ml-4 mb-2">
+                  <Input
+                    value={apiKeyValue}
+                    onChange={(e) => setApiKeyValue(e.target.value)}
+                    placeholder="api key"
+                    autoFocus
+                    className="h-7 text-sm flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleConnectApiKey(provider.id);
+                      if (e.key === "Escape") {
+                        setExpandedApiKey(null);
+                        setApiKeyValue("");
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConnectApiKey(provider.id)}
+                    className="h-7 text-xs"
+                  >
+                    save
+                  </Button>
+                </div>
+              );
+            }
+            return (
+              <button
+                key={provider.id}
+                type="button"
+                className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                onClick={() => {
+                  if (provider.type === "api_key") {
+                    setExpandedApiKey(provider.id);
+                    setApiKeyValue("");
+                  } else {
+                    window.location.href =
+                      "/api/auth/google?scope=calendar.events";
+                  }
+                }}
+              >
+                <span className="flex-1 text-left truncate min-w-0 text-status-done">
+                  + connect {provider.label}
+                </span>
+              </button>
+            );
+          })}
         </Section>
       </div>
     </div>
