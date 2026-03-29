@@ -96,14 +96,19 @@ export function buildAuthorizationUrl(
   provider: OAuthProvider,
   state: string,
   redirectUri: string,
+  extraScopes?: string[],
 ): string {
   const config = getProviderConfig(db, provider);
   if (!config) throw new Error(`Provider ${provider} is not configured`);
 
+  const allScopes = extraScopes
+    ? [...config.scopes, ...extraScopes]
+    : config.scopes;
+
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: redirectUri,
-    scope: config.scopes.join(" "),
+    scope: allScopes.join(" "),
     state,
     response_type: "code",
   });

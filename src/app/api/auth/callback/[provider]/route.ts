@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
@@ -5,6 +6,7 @@ import {
   createSession,
   validateInviteToken,
 } from "@/core/auth";
+import { upsertIntegrationConfig } from "@/core/integration-config";
 import {
   exchangeCodeForToken,
   fetchProviderUser,
@@ -16,6 +18,7 @@ import {
 } from "@/core/oauth";
 import { getUserTwoFactorMethods } from "@/core/two-factor";
 import { db } from "@/db";
+import { accounts } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
 
 const OAUTH_REDIRECT_BASE =
@@ -48,9 +51,11 @@ export async function GET(
   const cookieStore = await cookies();
   const storedState = cookieStore.get("oauth_state")?.value;
   const isLinking = cookieStore.get("oauth_link")?.value === "1";
+  const extraScopes = cookieStore.get("oauth_extra_scopes")?.value;
 
   cookieStore.delete("oauth_state");
   cookieStore.delete("oauth_link");
+  cookieStore.delete("oauth_extra_scopes");
 
   if (!code || !state || state !== storedState) {
     return NextResponse.redirect(
@@ -71,6 +76,41 @@ export async function GET(
       provider as OAuthProvider,
       tokens.accessToken,
     );
+
+    if (extraScopes && isLinking) {
+      const currentUser = await getAuthUser();
+      if (currentUser) {
+        const tokenExpiresAt = tokens.expiresIn
+          ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
+          : undefined;
+
+        db.update(accounts)
+          .set({
+            accessToken: tokens.accessToken,
+            ...(tokens.refreshToken
+              ? { refreshToken: tokens.refreshToken }
+              : {}),
+            ...(tokenExpiresAt ? { tokenExpiresAt } : {}),
+          })
+          .where(
+            and(
+              eq(accounts.userId, currentUser.id),
+              eq(accounts.provider, provider),
+            ),
+          )
+          .run();
+
+        if (
+          extraScopes.includes(
+            "https://www.googleapis.com/auth/calendar.events",
+          )
+        ) {
+          upsertIntegrationConfig(db, currentUser.id, "google_calendar", {});
+        }
+
+        return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/settings`);
+      }
+    }
 
     if (isLinking) {
       const currentUser = await getAuthUser();
