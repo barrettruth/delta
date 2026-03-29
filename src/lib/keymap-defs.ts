@@ -9,7 +9,9 @@ export type KeySection =
 export interface KeymapDef {
   id: string;
   key: string;
+  triggerKey: string;
   modifiers?: ("ctrl" | "shift" | "meta" | "alt")[];
+  configurable?: boolean;
   section: KeySection;
   label: string;
 }
@@ -33,67 +35,134 @@ export const SECTION_ORDER: KeySection[] = [
 ];
 
 export const DEFAULT_KEYMAPS: KeymapDef[] = [
-  { id: "global.queue", key: "Q", section: "global", label: "Queue view" },
-  { id: "global.kanban", key: "K", section: "global", label: "Kanban view" },
+  {
+    id: "global.queue",
+    key: "Q",
+    triggerKey: "Q",
+    section: "global",
+    label: "Queue view",
+  },
+  {
+    id: "global.kanban",
+    key: "K",
+    triggerKey: "K",
+    section: "global",
+    label: "Kanban view",
+  },
   {
     id: "global.calendar",
     key: "C",
+    triggerKey: "C",
     section: "global",
     label: "Calendar view",
   },
-  { id: "global.settings", key: "S", section: "global", label: "Settings" },
+  {
+    id: "global.settings",
+    key: "S",
+    triggerKey: "S",
+    section: "global",
+    label: "Settings",
+  },
   {
     id: "global.calendar_week",
     key: "w",
+    triggerKey: "w",
     section: "global",
     label: "Calendar week view",
   },
   {
     id: "global.calendar_month",
     key: "m",
+    triggerKey: "m",
     section: "global",
     label: "Calendar month view",
   },
   {
     id: "global.toggle_sidebar",
     key: "-",
+    triggerKey: "-",
     section: "global",
     label: "Toggle sidebar",
   },
-  { id: "global.logout", key: "q", section: "global", label: "Logout" },
-  { id: "global.undo", key: "u", section: "global", label: "Undo" },
+  {
+    id: "global.logout",
+    key: "q",
+    triggerKey: "q",
+    section: "global",
+    label: "Logout",
+  },
+  {
+    id: "global.undo",
+    key: "u",
+    triggerKey: "u",
+    section: "global",
+    label: "Undo",
+  },
   {
     id: "global.category_jump",
     key: "g1-9",
+    triggerKey: "g",
+    configurable: false,
     section: "global",
     label: "Jump to category",
   },
   {
     id: "global.create_task",
     key: "gc",
+    triggerKey: "g",
+    configurable: false,
     section: "global",
     label: "Create task",
   },
   {
     id: "global.toggle_done",
     key: "g.",
+    triggerKey: "g",
+    configurable: false,
     section: "global",
     label: "Toggle done tasks",
   },
-  { id: "global.help", key: "g?", section: "global", label: "This help" },
+  {
+    id: "global.help",
+    key: "g?",
+    triggerKey: "g",
+    configurable: false,
+    section: "global",
+    label: "This help",
+  },
 
-  { id: "queue.move_down", key: "j", section: "queue", label: "Move down" },
-  { id: "queue.move_up", key: "k", section: "queue", label: "Move up" },
-  { id: "queue.jump_top", key: "gg", section: "queue", label: "Jump to top" },
+  {
+    id: "queue.move_down",
+    key: "j",
+    triggerKey: "j",
+    section: "queue",
+    label: "Move down",
+  },
+  {
+    id: "queue.move_up",
+    key: "k",
+    triggerKey: "k",
+    section: "queue",
+    label: "Move up",
+  },
+  {
+    id: "queue.jump_top",
+    key: "gg",
+    triggerKey: "g",
+    section: "queue",
+    label: "Jump to top",
+  },
   {
     id: "queue.jump_bottom",
     key: "G",
+    triggerKey: "G",
     section: "queue",
     label: "Jump to bottom",
   },
   {
     id: "queue.half_page_down",
     key: "d",
+    triggerKey: "d",
     modifiers: ["ctrl"],
     section: "queue",
     label: "Half page down",
@@ -101,6 +170,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "queue.half_page_up",
     key: "u",
+    triggerKey: "u",
     modifiers: ["ctrl"],
     section: "queue",
     label: "Half page up",
@@ -108,60 +178,75 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "queue.search",
     key: "/",
+    triggerKey: "/",
     section: "queue",
     label: "Search filter",
   },
   {
     id: "queue.edit",
     key: "e",
+    triggerKey: "e",
     section: "queue",
     label: "Edit / create task",
   },
   {
     id: "queue.complete",
     key: "xx / xj / xk",
+    triggerKey: "x",
+    configurable: false,
     section: "queue",
     label: "Complete task(s)",
   },
   {
     id: "queue.delete",
     key: "dd / dj / dk",
+    triggerKey: "d",
+    configurable: false,
     section: "queue",
     label: "Delete task(s)",
   },
   {
     id: "queue.set_pending",
     key: "pp / pj / pk",
+    triggerKey: "p",
+    configurable: false,
     section: "queue",
     label: "Set pending",
   },
   {
     id: "queue.set_wip",
     key: "ww / wj / wk",
+    triggerKey: "w",
+    configurable: false,
     section: "queue",
     label: "Set wip",
   },
   {
     id: "queue.set_blocked",
     key: "bb / bj / bk",
+    triggerKey: "b",
+    configurable: false,
     section: "queue",
     label: "Set blocked",
   },
   {
     id: "queue.toggle_select",
     key: "v",
+    triggerKey: "v",
     section: "queue",
     label: "Toggle select",
   },
   {
     id: "queue.visual_mode",
     key: "V",
+    triggerKey: "V",
     section: "queue",
     label: "Visual select mode",
   },
   {
     id: "queue.escape",
     key: "Escape",
+    triggerKey: "Escape",
     section: "queue",
     label: "Clear / close",
   },
@@ -169,132 +254,161 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "kanban.col_left",
     key: "h",
+    triggerKey: "h",
     section: "kanban",
     label: "Move between columns",
   },
   {
     id: "kanban.col_right",
     key: "l",
+    triggerKey: "l",
     section: "kanban",
     label: "Move between columns",
   },
   {
     id: "kanban.row_down",
     key: "j",
+    triggerKey: "j",
     section: "kanban",
     label: "Move within column",
   },
   {
     id: "kanban.row_up",
     key: "k",
+    triggerKey: "k",
     section: "kanban",
     label: "Move within column",
   },
   {
     id: "kanban.move_task_left",
     key: "H",
+    triggerKey: "H",
+    configurable: false,
     section: "kanban",
     label: "Move task left",
   },
   {
     id: "kanban.move_task_right",
     key: "L",
+    triggerKey: "L",
+    configurable: false,
     section: "kanban",
     label: "Move task right",
   },
   {
     id: "kanban.swap_col_left",
     key: "<",
+    triggerKey: "<",
     section: "kanban",
     label: "Swap column left",
   },
   {
     id: "kanban.swap_col_right",
     key: ">",
+    triggerKey: ">",
     section: "kanban",
     label: "Swap column right",
   },
   {
     id: "kanban.jump_waiting",
     key: "W",
+    triggerKey: "W",
     section: "kanban",
     label: "Jump to Waiting column",
   },
   {
     id: "kanban.jump_in_progress",
     key: "I",
+    triggerKey: "I",
     section: "kanban",
     label: "Jump to In Progress column",
   },
   {
     id: "kanban.jump_blocked",
     key: "B",
+    triggerKey: "B",
     section: "kanban",
     label: "Jump to Blocked column",
   },
   {
     id: "kanban.jump_done",
     key: "X",
+    triggerKey: "X",
     section: "kanban",
     label: "Jump to Done column",
   },
   {
     id: "kanban.set_waiting",
     key: "w",
+    triggerKey: "w",
+    configurable: false,
     section: "kanban",
     label: "Set status Waiting",
   },
   {
     id: "kanban.set_in_progress",
     key: "i",
+    triggerKey: "i",
+    configurable: false,
     section: "kanban",
     label: "Set status In Progress",
   },
   {
     id: "kanban.set_blocked",
     key: "b",
+    triggerKey: "b",
+    configurable: false,
     section: "kanban",
     label: "Set status Blocked",
   },
   {
     id: "kanban.complete",
     key: "x",
+    triggerKey: "x",
+    configurable: false,
     section: "kanban",
     label: "Complete task",
   },
   {
     id: "kanban.search",
     key: "/",
+    triggerKey: "/",
     section: "kanban",
     label: "Search filter",
   },
   {
     id: "kanban.edit",
     key: "e",
+    triggerKey: "e",
     section: "kanban",
     label: "Edit / create task",
   },
   {
     id: "kanban.toggle_select",
     key: "v",
+    triggerKey: "v",
     section: "kanban",
     label: "Toggle select",
   },
   {
     id: "kanban.visual_mode",
     key: "V",
+    triggerKey: "V",
     section: "kanban",
     label: "Visual select mode",
   },
   {
     id: "kanban.delete",
     key: "dd",
+    triggerKey: "d",
+    configurable: false,
     section: "kanban",
     label: "Delete task",
   },
   {
     id: "kanban.escape",
     key: "Escape",
+    triggerKey: "Escape",
     section: "kanban",
     label: "Deactivate keyboard",
   },
@@ -302,30 +416,35 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "calendar.prev_period",
     key: "h",
+    triggerKey: "h",
     section: "calendar",
     label: "Previous period",
   },
   {
     id: "calendar.next_period",
     key: "l",
+    triggerKey: "l",
     section: "calendar",
     label: "Next period",
   },
   {
     id: "calendar.scroll_top",
     key: "gg",
+    triggerKey: "g",
     section: "calendar",
     label: "First hour (00:00)",
   },
   {
     id: "calendar.scroll_bottom",
     key: "G",
+    triggerKey: "G",
     section: "calendar",
     label: "Last hour (23:00)",
   },
   {
     id: "calendar.scroll_down_hour",
     key: "e",
+    triggerKey: "e",
     modifiers: ["ctrl"],
     section: "calendar",
     label: "Scroll down 1 hour",
@@ -333,6 +452,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "calendar.scroll_up_hour",
     key: "y",
+    triggerKey: "y",
     modifiers: ["ctrl"],
     section: "calendar",
     label: "Scroll up 1 hour",
@@ -340,6 +460,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "calendar.half_page_down",
     key: "d",
+    triggerKey: "d",
     modifiers: ["ctrl"],
     section: "calendar",
     label: "Scroll half page down",
@@ -347,6 +468,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "calendar.half_page_up",
     key: "u",
+    triggerKey: "u",
     modifiers: ["ctrl"],
     section: "calendar",
     label: "Scroll half page up",
@@ -354,30 +476,36 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "calendar.week_view",
     key: "w",
+    triggerKey: "w",
     section: "calendar",
     label: "Week view",
   },
   {
     id: "calendar.month_view",
     key: "m",
+    triggerKey: "m",
     section: "calendar",
     label: "Month view",
   },
   {
     id: "calendar.today",
     key: "t",
+    triggerKey: "t",
     section: "calendar",
     label: "Jump to today",
   },
   {
     id: "calendar.toggle_allday",
     key: "E",
+    triggerKey: "E",
     section: "calendar",
     label: "Toggle all-day bar",
   },
   {
     id: "calendar.delete",
     key: "dd",
+    triggerKey: "d",
+    configurable: false,
     section: "calendar",
     label: "Delete event",
   },
@@ -385,6 +513,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "nav.jump_back",
     key: "o",
+    triggerKey: "o",
     modifiers: ["ctrl"],
     section: "navigation",
     label: "Jump back",
@@ -392,6 +521,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "nav.jump_forward",
     key: "i",
+    triggerKey: "i",
     modifiers: ["ctrl"],
     section: "navigation",
     label: "Jump forward",
@@ -399,6 +529,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "nav.alternate",
     key: "6",
+    triggerKey: "6",
     modifiers: ["ctrl"],
     section: "navigation",
     label: "Alternate buffer",
@@ -407,6 +538,7 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "task_detail.save",
     key: "s",
+    triggerKey: "s",
     modifiers: ["ctrl"],
     section: "task_detail",
     label: "Save",
@@ -414,12 +546,14 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "task_detail.close",
     key: "Escape",
+    triggerKey: "Escape",
     section: "task_detail",
     label: "Close",
   },
   {
     id: "task_detail.create",
     key: "Enter",
+    triggerKey: "Enter",
     section: "task_detail",
     label: "Create (in new task mode)",
   },
@@ -438,6 +572,21 @@ export function getKeymap(id: string): KeymapDef {
 
 export function getKeymapsBySection(section: KeySection): KeymapDef[] {
   return DEFAULT_KEYMAPS.filter((def) => def.section === section);
+}
+
+export function matchesEvent(id: string, e: KeyboardEvent): boolean {
+  const def = getKeymap(id);
+  if (e.key !== def.triggerKey) return false;
+  const wantCtrlOrMeta =
+    (def.modifiers?.includes("ctrl") ?? false) ||
+    (def.modifiers?.includes("meta") ?? false);
+  const wantShift = def.modifiers?.includes("shift") ?? false;
+  const wantAlt = def.modifiers?.includes("alt") ?? false;
+  return (
+    (e.ctrlKey || e.metaKey) === wantCtrlOrMeta &&
+    e.shiftKey === wantShift &&
+    e.altKey === wantAlt
+  );
 }
 
 export function formatKey(def: KeymapDef): string {
