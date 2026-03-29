@@ -380,8 +380,7 @@ export function SettingsView({
                   onClick={() => handleUnlinkProvider(provider)}
                 >
                   <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
-                    <span className="text-destructive">-</span> unlink{" "}
-                    {provider}
+                    <span className="text-destructive">-</span> {provider}
                   </span>
                   <span className="text-muted-foreground text-xs truncate shrink-0">
                     {linked.email ?? linked.providerAccountId}
@@ -399,7 +398,7 @@ export function SettingsView({
                 }}
               >
                 <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
-                  <span className="text-status-done">+</span> link {provider}
+                  <span className="text-status-done">+</span> {provider}
                 </span>
               </button>
             );
@@ -564,26 +563,15 @@ export function SettingsView({
 
         <Section title="calendar feed">
           {feedLoading ? null : feedToken ? (
-            <>
-              <button
-                type="button"
-                className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
-                onClick={handleCopyFeedUrl}
-              >
-                <span className="flex-1 text-left truncate min-w-0 font-mono text-xs text-muted-foreground">
-                  {getFeedUrl(feedToken)}
-                </span>
-              </button>
-              <div className="flex">
-                <Row
-                  label="regenerate"
-                  action
-                  muted
-                  onClick={handleGenerateFeed}
-                />
-                <Row label="revoke" action muted onClick={handleRevokeFeed} />
-              </div>
-            </>
+            <button
+              type="button"
+              className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+              onClick={handleCopyFeedUrl}
+            >
+              <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+                copy feed url
+              </span>
+            </button>
           ) : (
             <Row
               label="+ generate feed url"
@@ -607,9 +595,6 @@ export function SettingsView({
               >
                 {p.label}
               </span>
-              {geoProvider === p.id && (
-                <span className="text-muted-foreground">&#10003;</span>
-              )}
             </button>
           ))}
           {geoExpanded && (
