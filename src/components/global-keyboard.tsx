@@ -7,7 +7,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
-import { isInputFocused } from "@/lib/utils";
+import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
   Q: "/",
@@ -32,6 +32,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
+      if (isBrowserShortcut(e)) return;
 
       if (e.ctrlKey) {
         if (e.key === "o") {

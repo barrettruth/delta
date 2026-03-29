@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isBrowserShortcut } from "@/lib/utils";
 
 interface Passkey {
   id: number;
@@ -270,6 +271,7 @@ export function SettingsView({
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement) return;
+      if (isBrowserShortcut(e)) return;
 
       switch (e.key) {
         case "q":

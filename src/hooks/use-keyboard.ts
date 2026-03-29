@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Task, TaskStatus } from "@/core/types";
-import { isInputFocused } from "@/lib/utils";
+import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const STATUS_OPS: Record<string, TaskStatus> = {
   p: "pending",
@@ -148,6 +148,7 @@ export function useKeyboard(actions: KeyboardActions) {
   const handler = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
+      if (isBrowserShortcut(e)) return;
 
       const { tasks, onSelect, onDeselect, onCreate } = actionsRef.current;
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
