@@ -12,8 +12,12 @@ import { getAuthUser } from "@/lib/auth-middleware";
 const OAUTH_REDIRECT_BASE =
   process.env.OAUTH_REDIRECT_BASE_URL ?? "http://localhost:3000";
 
+const SCOPE_MAP: Record<string, string> = {
+  "calendar.events": "https://www.googleapis.com/auth/calendar.events",
+};
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ provider: string }> },
 ) {
   const { provider } = await params;
@@ -24,6 +28,19 @@ export async function GET(
       { error: "Unknown or disabled provider" },
       { status: 400 },
     );
+  }
+
+  const url = new URL(request.url);
+  const scopeParam = url.searchParams.get("scope");
+  const extraScopes: string[] = [];
+
+  if (scopeParam) {
+    for (const s of scopeParam.split(",")) {
+      const mapped = SCOPE_MAP[s.trim()];
+      if (mapped) {
+        extraScopes.push(mapped);
+      }
+    }
   }
 
   const state = randomBytes(32).toString("hex");
@@ -50,11 +67,22 @@ export async function GET(
     });
   }
 
-  const url = buildAuthorizationUrl(
+  if (extraScopes.length > 0) {
+    cookieStore.set("oauth_extra_scopes", extraScopes.join(" "), {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 300,
+    });
+  }
+
+  const authUrl = buildAuthorizationUrl(
     db,
     provider as OAuthProvider,
     state,
     redirectUri,
+    extraScopes.length > 0 ? extraScopes : undefined,
   );
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(authUrl);
 }
