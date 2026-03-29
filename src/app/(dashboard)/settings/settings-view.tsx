@@ -2,7 +2,7 @@
 
 import { startRegistration } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   generateInviteAction,
   type InviteLinkRow,
@@ -67,9 +67,6 @@ export function SettingsView({
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [invites, setInvites] = useState<InviteLinkRow[]>([]);
   const [invitesLoaded, setInvitesLoaded] = useState(false);
-  const [icalCategory, setIcalCategory] = useState("");
-  const [icalImporting, setIcalImporting] = useState(false);
-  const icalFileRef = useRef<HTMLInputElement>(null);
 
   const flash = useCallback((msg: string) => {
     setMessage(msg);
@@ -238,35 +235,6 @@ export function SettingsView({
   useEffect(() => {
     loadInvites();
   }, [loadInvites]);
-
-  async function handleIcalImport() {
-    const file = icalFileRef.current?.files?.[0];
-    if (!file) {
-      flashError("select a .ics file first");
-      return;
-    }
-    setIcalImporting(true);
-    try {
-      const body = new FormData();
-      body.append("file", file);
-      if (icalCategory.trim()) body.append("category", icalCategory.trim());
-      const res = await fetch("/api/import/ical", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) {
-        flashError(data.error ?? "import failed");
-        return;
-      }
-      flash(
-        `imported ${data.created} events, skipped ${data.skipped} duplicates`,
-      );
-      if (icalFileRef.current) icalFileRef.current.value = "";
-      setIcalCategory("");
-    } catch (e) {
-      flashError(e instanceof Error ? e.message : "import failed");
-    } finally {
-      setIcalImporting(false);
-    }
-  }
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -520,35 +488,6 @@ export function SettingsView({
               onClick={handleGenerateFeed}
             />
           )}
-        </Section>
-
-        <Section title="import">
-          <div className="flex flex-col gap-2 px-2">
-            <Input
-              ref={icalFileRef}
-              type="file"
-              accept=".ics"
-              className="h-8 text-sm"
-            />
-            <Input
-              value={icalCategory}
-              onChange={(e) => setIcalCategory(e.target.value)}
-              placeholder="category (optional)"
-              className="h-7 text-sm"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleIcalImport();
-              }}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleIcalImport}
-              disabled={icalImporting}
-              className="h-7 text-xs w-full"
-            >
-              {icalImporting ? "importing..." : "import .ics"}
-            </Button>
-          </div>
         </Section>
 
         <Section title="invites">
