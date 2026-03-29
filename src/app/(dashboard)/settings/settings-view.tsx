@@ -238,38 +238,34 @@ export function SettingsView({
             );
             if (linked) {
               return (
-                <div
+                <button
                   key={provider}
-                  className="flex items-center w-full text-sm py-1 px-2 min-w-0"
+                  type="button"
+                  className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                  onClick={() => handleUnlinkProvider(provider)}
                 >
-                  <span className="flex-1 text-left truncate min-w-0 text-foreground">
-                    {provider}
+                  <span className="flex-1 text-left truncate min-w-0 text-destructive">
+                    - unlink {provider}
                   </span>
-                  {linked.email && (
-                    <span className="text-muted-foreground text-xs truncate mr-2">
-                      {linked.email}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => handleUnlinkProvider(provider)}
-                  >
-                    unlink
-                  </button>
-                </div>
+                  <span className="text-muted-foreground text-xs truncate shrink-0">
+                    {linked.email ?? linked.providerAccountId}
+                  </span>
+                </button>
               );
             }
             return (
-              <Row
+              <button
                 key={provider}
-                label={`+ link ${provider}`}
-                action
-                muted
+                type="button"
+                className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
                 onClick={() => {
                   window.location.href = `/api/auth/${provider}`;
                 }}
-              />
+              >
+                <span className="flex-1 text-left truncate min-w-0 text-status-done">
+                  + link {provider}
+                </span>
+              </button>
             );
           })}
         </Section>
@@ -388,44 +384,46 @@ export function SettingsView({
         </Section>
 
         <Section title="invites">
-          <Row
-            label="+ generate invite link"
-            action
-            muted
-            onClick={handleGenerateInvite}
-          />
-          {invitesLoaded &&
-            invites.map((inv) => {
-              const expired = new Date(inv.expiresAt) < new Date();
-              const exhausted = inv.useCount >= inv.maxUses;
-              const status = expired
-                ? "expired"
-                : exhausted
-                  ? "used"
-                  : "active";
-              return (
-                <div key={inv.id} className="mb-2">
-                  <div className="text-xs text-muted-foreground break-all select-all px-2 py-1 border border-border font-mono">
-                    {getInviteUrl(inv.token)}
-                  </div>
-                  <div className="flex items-center px-2 py-1 text-xs text-muted-foreground">
-                    <span className="flex-1">
-                      {status} · {inv.useCount}/{inv.maxUses} uses · expires{" "}
-                      {inv.expiresAt.slice(0, 10)}
+          {invitesLoaded && invites.length > 0 ? (
+            (() => {
+              const active = invites.find((inv) => {
+                const expired = new Date(inv.expiresAt) < new Date();
+                const exhausted = inv.useCount >= inv.maxUses;
+                return !expired && !exhausted;
+              });
+              if (active) {
+                return (
+                  <button
+                    type="button"
+                    className="flex items-center w-full text-sm py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
+                    onClick={() => handleCopyInviteUrl(active.token)}
+                  >
+                    <span className="flex-1 text-left truncate min-w-0 text-muted-foreground">
+                      copy invite link
                     </span>
-                    {status === "active" && (
-                      <button
-                        type="button"
-                        className="hover:text-foreground"
-                        onClick={() => handleCopyInviteUrl(inv.token)}
-                      >
-                        copy
-                      </button>
-                    )}
-                  </div>
-                </div>
+                    <span className="text-muted-foreground text-xs shrink-0">
+                      {active.useCount}/{active.maxUses} uses
+                    </span>
+                  </button>
+                );
+              }
+              return (
+                <Row
+                  label="+ generate invite link"
+                  action
+                  muted
+                  onClick={handleGenerateInvite}
+                />
               );
-            })}
+            })()
+          ) : (
+            <Row
+              label="+ generate invite link"
+              action
+              muted
+              onClick={handleGenerateInvite}
+            />
+          )}
         </Section>
       </div>
     </div>
