@@ -43,11 +43,13 @@ export function RRulePicker({
   recurMode,
   onChange,
   onRecurModeChange,
+  alwaysShowMode = false,
 }: {
   value: string | null;
   recurMode: RecurMode | null;
   onChange: (rrule: string | null) => void;
   onRecurModeChange: (mode: RecurMode) => void;
+  alwaysShowMode?: boolean;
 }) {
   const [preset, setPreset] = useState<RRuleFrequency | "none" | "custom">(
     "none",
@@ -142,7 +144,7 @@ export function RRulePicker({
             ))}
           </SelectContent>
         </Select>
-        {value && (
+        {(alwaysShowMode || value) && (
           <Select
             value={recurMode ?? "scheduled"}
             onValueChange={(v) => onRecurModeChange(v as RecurMode)}

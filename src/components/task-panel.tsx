@@ -9,6 +9,7 @@ import {
 import { ResizeHandle } from "@/components/resize-handle";
 import { RRulePicker } from "@/components/rrule-picker";
 import { TiptapEditor } from "@/components/tiptap-editor";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,24 +20,12 @@ import {
 } from "@/components/ui/select";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
+import { rruleToText } from "@/core/recurrence";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { formatTime } from "@/lib/calendar-utils";
 import { detectMeetingPlatform } from "@/lib/utils";
-
-function relativeTime(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
-}
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   pending: "Pending",
@@ -78,6 +67,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [locationIdx, setLocationIdx] = useState(-1);
+  const [rruleDialogOpen, setRruleDialogOpen] = useState(false);
   const notesRef = useRef<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const prevTaskIdRef = useRef<number | null>(null);
@@ -165,6 +155,15 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     () => (meetingUrl ? detectMeetingPlatform(meetingUrl) : null),
     [meetingUrl],
   );
+
+  const rruleHuman = useMemo(() => {
+    if (!recurrence) return null;
+    try {
+      return rruleToText(recurrence);
+    } catch {
+      return null;
+    }
+  }, [recurrence]);
 
   const { results: locationResults } = useLocationSearch(location);
 
@@ -332,7 +331,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             ref={titleRef}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full text-lg font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+            className="w-full text-base font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
             placeholder={mode === "create" ? "New task..." : "Task description"}
           />
         </div>
@@ -350,225 +349,201 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           </div>
         )}
 
-        <div className="flex flex-col gap-2 px-4 pb-3 border-b border-border/40">
-          <div className="flex gap-3">
-            <div className="flex-[2] min-w-0">
-              <span className="text-xs text-muted-foreground block mb-1">
-                status
-              </span>
-              {mode === "edit" && task ? (
-                <Select
-                  value={task.status}
-                  onValueChange={(v) => v && handleStatusChange(v)}
-                >
-                  <SelectTrigger size="sm" className="h-7 w-full">
-                    <SelectValue>
-                      {STATUS_LABELS[task.status as TaskStatus]}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    {TASK_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <span className="text-xs text-muted-foreground/50 leading-7">
-                  pending
-                </span>
-              )}
-            </div>
-            <div className="flex-[3] min-w-0">
-              <span className="text-xs text-muted-foreground block mb-1">
-                category
-              </span>
-              <div className="relative">
-                <Input
-                  value={category}
-                  onChange={(e) => {
-                    setCategory(e.target.value);
-                    setShowCategorySuggestions(true);
-                  }}
-                  onFocus={() => setShowCategorySuggestions(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowCategorySuggestions(false), 150)
-                  }
-                  placeholder="#"
-                  className="h-7 text-xs"
-                />
-                {showCategorySuggestions && filteredCategories.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
-                    {filteredCategories.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setCategory(c);
-                          setShowCategorySuggestions(false);
-                        }}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-muted-foreground block mb-1">
-              due
+        <div className="grid grid-cols-[4rem_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 border-b border-border/40">
+          <span className="text-xs text-muted-foreground/60">status</span>
+          {mode === "edit" && task ? (
+            <Select
+              value={task.status}
+              onValueChange={(v) => v && handleStatusChange(v)}
+            >
+              <SelectTrigger size="sm" className="h-7 text-xs w-full">
+                <SelectValue>
+                  {STATUS_LABELS[task.status as TaskStatus]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                {TASK_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className="text-xs text-muted-foreground/50 h-7 flex items-center">
+              pending
             </span>
+          )}
+
+          <span className="text-xs text-muted-foreground/60">category</span>
+          <div className="relative">
             <Input
-              type="datetime-local"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setShowCategorySuggestions(true);
+              }}
+              onFocus={() => setShowCategorySuggestions(true)}
+              onBlur={() =>
+                setTimeout(() => setShowCategorySuggestions(false), 150)
+              }
+              placeholder="#"
               className="h-7 text-xs"
             />
+            {showCategorySuggestions && filteredCategories.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1">
+                {filteredCategories.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className="w-full px-2 py-1 text-xs text-left hover:bg-accent transition-colors"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setCategory(c);
+                      setShowCategorySuggestions(false);
+                    }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div>
-            <span className="text-xs text-muted-foreground block mb-1">
-              location
+          <span className="text-xs text-muted-foreground/60">due</span>
+          <Input
+            type="datetime-local"
+            value={due}
+            onChange={(e) => setDue(e.target.value)}
+            className="h-7 text-xs"
+          />
+
+          <span className="text-xs text-muted-foreground/60">repeat</span>
+          {mode === "edit" && task?.recurringTaskId ? (
+            <span className="text-xs text-muted-foreground/60 h-7 flex items-center">
+              recurring instance
             </span>
-            <div className="relative">
-              <Input
-                value={location}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (detectMeetingPlatform(val)) {
-                    setMeetingUrl(val);
-                    setLocation("");
-                  } else {
-                    setLocation(val);
-                  }
-                  setShowLocationSuggestions(true);
-                  setLocationIdx(-1);
-                }}
-                onFocus={() => setShowLocationSuggestions(true)}
-                onBlur={() =>
-                  setTimeout(() => setShowLocationSuggestions(false), 150)
+          ) : (
+            <button
+              type="button"
+              className="text-xs text-left h-7 flex items-center px-2 border border-transparent hover:border-border transition-colors w-full"
+              onClick={() => setRruleDialogOpen(true)}
+            >
+              {rruleHuman ?? "none"}
+            </button>
+          )}
+
+          <span className="text-xs text-muted-foreground/60">location</span>
+          <div className="relative">
+            <Input
+              value={location}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (detectMeetingPlatform(val)) {
+                  setMeetingUrl(val);
+                  setLocation("");
+                } else {
+                  setLocation(val);
                 }
-                onKeyDown={(e) => {
-                  const allItems = [
-                    ...filteredLocations,
-                    ...locationResults.map((r) => r.displayName),
-                  ];
-                  if (!showLocationSuggestions || allItems.length === 0) return;
-                  if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setLocationIdx((prev) =>
-                      prev < allItems.length - 1 ? prev + 1 : 0,
-                    );
-                  } else if (
-                    (e.ctrlKey && e.key === "p") ||
-                    e.key === "ArrowUp"
-                  ) {
-                    e.preventDefault();
-                    setLocationIdx((prev) =>
-                      prev > 0 ? prev - 1 : allItems.length - 1,
-                    );
-                  } else if (e.key === "Enter" && locationIdx >= 0) {
-                    e.preventDefault();
-                    setLocation(allItems[locationIdx]);
-                    setShowLocationSuggestions(false);
-                    setLocationIdx(-1);
-                  } else if (e.key === "Escape") {
-                    setShowLocationSuggestions(false);
-                    setLocationIdx(-1);
-                  }
-                }}
-                className="h-7 text-xs"
-              />
-              {showLocationSuggestions &&
-                (filteredLocations.length > 0 ||
-                  locationResults.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
-                    {filteredLocations.map((l, i) => (
+                setShowLocationSuggestions(true);
+                setLocationIdx(-1);
+              }}
+              onFocus={() => setShowLocationSuggestions(true)}
+              onBlur={() =>
+                setTimeout(() => setShowLocationSuggestions(false), 150)
+              }
+              onKeyDown={(e) => {
+                const allItems = [
+                  ...filteredLocations,
+                  ...locationResults.map((r) => r.displayName),
+                ];
+                if (!showLocationSuggestions || allItems.length === 0) return;
+                if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setLocationIdx((prev) =>
+                    prev < allItems.length - 1 ? prev + 1 : 0,
+                  );
+                } else if (
+                  (e.ctrlKey && e.key === "p") ||
+                  e.key === "ArrowUp"
+                ) {
+                  e.preventDefault();
+                  setLocationIdx((prev) =>
+                    prev > 0 ? prev - 1 : allItems.length - 1,
+                  );
+                } else if (e.key === "Enter" && locationIdx >= 0) {
+                  e.preventDefault();
+                  setLocation(allItems[locationIdx]);
+                  setShowLocationSuggestions(false);
+                  setLocationIdx(-1);
+                } else if (e.key === "Escape") {
+                  setShowLocationSuggestions(false);
+                  setLocationIdx(-1);
+                }
+              }}
+              className="h-7 text-xs"
+            />
+            {showLocationSuggestions &&
+              (filteredLocations.length > 0 || locationResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
+                  {filteredLocations.map((l, i) => (
+                    <button
+                      key={l}
+                      type="button"
+                      className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setLocation(l);
+                        setShowLocationSuggestions(false);
+                        setLocationIdx(-1);
+                      }}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                  {filteredLocations.length > 0 &&
+                    locationResults.length > 0 && (
+                      <div className="border-t border-border/40 my-1" />
+                    )}
+                  {locationResults.map((r, i) => {
+                    const idx = filteredLocations.length + i;
+                    return (
                       <button
-                        key={l}
+                        key={r.displayName}
                         type="button"
-                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
+                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setLocation(l);
+                          setLocation(r.displayName);
                           setShowLocationSuggestions(false);
                           setLocationIdx(-1);
                         }}
                       >
-                        {l}
+                        {r.displayName}
                       </button>
-                    ))}
-                    {filteredLocations.length > 0 &&
-                      locationResults.length > 0 && (
-                        <div className="border-t border-border/40 my-1" />
-                      )}
-                    {locationResults.map((r, i) => {
-                      const idx = filteredLocations.length + i;
-                      return (
-                        <button
-                          key={r.displayName}
-                          type="button"
-                          className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setLocation(r.displayName);
-                            setShowLocationSuggestions(false);
-                            setLocationIdx(-1);
-                          }}
-                        >
-                          {r.displayName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
           </div>
 
-          <div>
-            <span className="text-xs text-muted-foreground block mb-1">
-              meeting
-            </span>
-            <div className="flex items-center gap-1">
-              <Input
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="link"
-                className="h-7 text-xs flex-1"
-              />
-              {detectedPlatform && (
-                <a
-                  href={meetingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center h-7 px-2 text-xs hover:bg-accent transition-colors border border-transparent shrink-0"
-                >
-                  Join
-                </a>
-              )}
-            </div>
-          </div>
-          <div>
-            <span className="text-xs text-muted-foreground block mb-1">
-              repeat
-            </span>
-            {mode === "edit" && task?.recurringTaskId ? (
-              <span className="text-xs text-muted-foreground/60">
-                recurring instance
-              </span>
-            ) : (
-              <RRulePicker
-                value={recurrence}
-                recurMode={recurMode}
-                onChange={setRecurrence}
-                onRecurModeChange={setRecurMode}
-              />
+          <span className="text-xs text-muted-foreground/60">meeting</span>
+          <div className="flex items-center gap-1">
+            <Input
+              value={meetingUrl}
+              onChange={(e) => setMeetingUrl(e.target.value)}
+              placeholder="link"
+              className="h-7 text-xs flex-1"
+            />
+            {detectedPlatform && (
+              <a
+                href={meetingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center h-7 px-2 text-xs hover:bg-accent transition-colors border border-transparent shrink-0"
+              >
+                Join
+              </a>
             )}
           </div>
         </div>
@@ -582,23 +557,20 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             }}
           />
         </div>
-
-        {mode === "edit" && task?.createdAt && (
-          <div className="text-[10px] text-muted-foreground/40 px-4 py-2 border-t border-border/20">
-            created{" "}
-            {new Date(task.createdAt)
-              .toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
-              .toLowerCase()}
-            {task.updatedAt && task.updatedAt !== task.createdAt && (
-              <> · updated {relativeTime(new Date(task.updatedAt))}</>
-            )}
-          </div>
-        )}
       </div>
+
+      <Dialog open={rruleDialogOpen} onOpenChange={setRruleDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Recurrence</DialogTitle>
+          <RRulePicker
+            value={recurrence}
+            recurMode={recurMode}
+            onChange={setRecurrence}
+            onRecurModeChange={setRecurMode}
+            alwaysShowMode
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
