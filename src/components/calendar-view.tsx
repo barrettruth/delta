@@ -6,10 +6,10 @@ import {
   materializeInstanceAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
+import { CalendarActionsPopover } from "@/components/calendar/actions-popover";
 import { AllDayBar } from "@/components/calendar/all-day-bar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
-import { IcalPopover } from "@/components/ical-popover";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -45,11 +45,15 @@ export function CalendarView({
   categoryColors = {},
   categories: _categories = [],
   defaultViewMode = "week",
+  feedToken = null,
+  gcalStatus = { connected: false, lastSyncTime: null },
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
   categories?: string[];
   defaultViewMode?: ViewMode;
+  feedToken?: string | null;
+  gcalStatus?: { connected: boolean; lastSyncTime: string | null };
 }) {
   const nav = useNavigation();
   const panel = useTaskPanel();
@@ -748,7 +752,10 @@ export function CalendarView({
         <div className="flex-1" />
         <h2 className="text-lg font-semibold tracking-tight">{headerTitle}</h2>
         <div className="flex-1 flex justify-end gap-1">
-          <IcalPopover />
+          <CalendarActionsPopover
+            feedToken={feedToken}
+            gcalStatus={gcalStatus}
+          />
         </div>
       </div>
 

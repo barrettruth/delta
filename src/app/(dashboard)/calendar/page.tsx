@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CalendarView } from "@/components/calendar-view";
 import { validateSession } from "@/core/auth";
+import { getFeedToken } from "@/core/calendar-feed";
+import { getIntegrationConfig } from "@/core/integration-config";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
 import type { TaskFilters } from "@/core/types";
@@ -41,12 +43,26 @@ export default async function CalendarPage({
   const categories = [
     ...new Set(tasks.map((t) => t.category).filter(Boolean)),
   ] as string[];
+
+  const feedToken = getFeedToken(db, user.id);
+
+  const gcalConfig = getIntegrationConfig(db, user.id, "google_calendar");
+  const gcalStatus = gcalConfig
+    ? {
+        connected: gcalConfig.enabled === 1,
+        lastSyncTime: (gcalConfig.metadata as Record<string, unknown> | null)
+          ?.lastSyncTime as string | null,
+      }
+    : { connected: false, lastSyncTime: null };
+
   return (
     <CalendarView
       tasks={tasks}
       categoryColors={colors}
       categories={categories}
       defaultViewMode={defaultViewMode}
+      feedToken={feedToken}
+      gcalStatus={gcalStatus}
     />
   );
 }
