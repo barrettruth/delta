@@ -1,7 +1,110 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { HELP_SECTIONS, SECTION_LABELS } from "@/lib/keymap-defs";
+import { commandRegistry } from "@/core/commands";
+
+const commandSection = {
+  title: "Commands",
+  keys: commandRegistry.map((cmd) => {
+    const aliases =
+      cmd.aliases.length > 0
+        ? ` (${cmd.aliases.map((a) => `:${a}`).join(", ")})`
+        : "";
+    return [`:${cmd.name}${aliases}`, cmd.description];
+  }),
+};
+
+const sections = [
+  {
+    title: "Global",
+    keys: [
+      ["Q", "Queue view"],
+      ["K", "Kanban view"],
+      ["C", "Calendar view"],
+      ["w", "Calendar week view"],
+      ["m", "Calendar month view"],
+      ["-", "Toggle sidebar"],
+      ["q", "Logout"],
+      ["g1-9", "Jump to category"],
+      ["gc", "Create task"],
+      ["g.", "Toggle done tasks"],
+      ["g?", "This help"],
+    ],
+  },
+  {
+    title: "Queue / List",
+    keys: [
+      ["j / k", "Move down / up"],
+      ["gg", "Jump to top"],
+      ["G", "Jump to bottom"],
+      ["<C-d>", "Half page down"],
+      ["<C-u>", "Half page up"],
+      ["/", "Search filter"],
+      ["e", "Edit / create task"],
+      ["xx / xj / xk", "Complete task(s)"],
+      ["dd / dj / dk", "Delete task(s)"],
+      ["pp / pj / pk", "Set pending"],
+      ["ww / wj / wk", "Set wip"],
+      ["bb / bj / bk", "Set blocked"],
+      ["v", "Toggle select"],
+      ["V", "Visual select mode"],
+      ["<Esc>", "Clear / close"],
+    ],
+  },
+  {
+    title: "Kanban",
+    keys: [
+      ["h / l", "Move between columns"],
+      ["j / k", "Move within column"],
+      ["H / L", "Move task left / right"],
+      ["< / >", "Swap column left / right"],
+      ["p / i / b / w", "Jump to column"],
+      ["/", "Search filter"],
+      ["e", "Edit / create task"],
+      ["V", "Visual select mode"],
+      ["x", "Complete task"],
+      ["dd", "Delete task"],
+      ["<Esc>", "Deactivate keyboard"],
+    ],
+  },
+  {
+    title: "Calendar",
+    keys: [
+      ["h / l", "Previous / next day"],
+      ["j / k", "Previous / next week"],
+      ["e", "View day in queue"],
+      ["gg", "First hour (00:00)"],
+      ["G", "Last hour (23:00)"],
+      ["<C-e>", "Scroll down 1 hour"],
+      ["<C-y>", "Scroll up 1 hour"],
+      ["<C-d>", "Scroll half page down"],
+      ["<C-u>", "Scroll half page up"],
+      ["w", "Week view"],
+      ["m", "Month view"],
+      ["[[", "Previous period"],
+      ["]]", "Next period"],
+      ["t", "Jump to today"],
+      ["<Esc>", "Clear selection"],
+    ],
+  },
+  {
+    title: "Navigation",
+    keys: [
+      ["<C-o>", "Jump back"],
+      ["<C-i>", "Jump forward"],
+      ["<C-6>", "Alternate buffer"],
+    ],
+  },
+  {
+    title: "Task Detail",
+    keys: [
+      ["j / k", "Next / previous task"],
+      ["<C-s>", "Save"],
+      ["<Esc>", "Close"],
+    ],
+  },
+  commandSection,
+];
 
 export function KeymapHelp({
   open,
@@ -28,22 +131,22 @@ export function KeymapHelp({
             <kbd className="text-[10px] text-muted-foreground">q to close</kbd>
           </div>
           <div className="grid grid-cols-2 gap-6 p-6 overflow-auto">
-            {HELP_SECTIONS.map((section) => (
-              <div key={section.section}>
+            {sections.map((section) => (
+              <div key={section.title}>
                 <h3 className="text-xs font-medium text-muted-foreground mb-3">
-                  {SECTION_LABELS[section.section]}
+                  {section.title}
                 </h3>
                 <div className="flex flex-col gap-1.5">
-                  {section.rows.map((entry) => (
+                  {section.keys.map(([key, desc]) => (
                     <div
-                      key={entry.keyDisplay}
+                      key={key}
                       className="flex items-center justify-between gap-4"
                     >
                       <kbd className="text-xs text-foreground shrink-0 min-w-16">
-                        {entry.keyDisplay}
+                        {key}
                       </kbd>
                       <span className="text-xs text-muted-foreground text-right">
-                        {entry.label}
+                        {desc}
                       </span>
                     </div>
                   ))}
