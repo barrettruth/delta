@@ -10,7 +10,6 @@ import {
 } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { isBrowserShortcut } from "@/lib/utils";
 
 interface Passkey {
   id: number;
@@ -211,39 +210,6 @@ export function SettingsView({
   }, [loadInvites]);
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement) return;
-      if (isBrowserShortcut(e)) return;
-
-      switch (e.key) {
-        case "q":
-          e.preventDefault();
-          handleLogout();
-          break;
-        case "a":
-          e.preventDefault();
-          setShowAddPasskey(true);
-          break;
-        case "t":
-          e.preventDefault();
-          handleTotpToggle();
-          break;
-        case "r":
-          e.preventDefault();
-          handleRegenerateRecovery();
-          break;
-        case "i":
-          e.preventDefault();
-          handleGenerateInvite();
-          break;
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  });
-
-  useEffect(() => {
     if (!showRecoveryCodes) return;
     const id = setTimeout(() => setShowRecoveryCodes(false), 30_000);
     return () => clearTimeout(id);
@@ -262,7 +228,7 @@ export function SettingsView({
 
         <Section title="account">
           <Row label="username" value={username} />
-          <Row label="logout" hint="q" action onClick={handleLogout} />
+          <Row label="logout" action onClick={handleLogout} />
         </Section>
 
         <Section title="connected accounts">
@@ -317,7 +283,6 @@ export function SettingsView({
               key={pk.id}
               label={`  ${pk.name}`}
               value={pk.createdAt.slice(0, 10)}
-              hint="x"
               action
               onClick={() => handleRemovePasskey(pk.id)}
             />
@@ -347,7 +312,6 @@ export function SettingsView({
           ) : (
             <Row
               label="  + add passkey"
-              hint="a"
               action
               muted
               onClick={() => setShowAddPasskey(true)}
@@ -392,7 +356,6 @@ export function SettingsView({
             <Row
               label="authenticator"
               value={totpEnabled ? "enabled" : "disabled"}
-              hint="t"
               action
               onClick={handleTotpToggle}
             />
@@ -418,7 +381,6 @@ export function SettingsView({
             <Row
               label="recovery codes"
               value={`${recoveryRemaining} remaining`}
-              hint="r"
               action
               onClick={handleRegenerateRecovery}
             />
@@ -428,7 +390,6 @@ export function SettingsView({
         <Section title="invites">
           <Row
             label="+ generate invite link"
-            hint="i"
             action
             muted
             onClick={handleGenerateInvite}
@@ -491,14 +452,12 @@ function Section({
 function Row({
   label,
   value,
-  hint,
   action,
   muted,
   onClick,
 }: {
   label: string;
   value?: string;
-  hint?: string;
   action?: boolean;
   muted?: boolean;
   onClick?: () => void;
@@ -516,11 +475,6 @@ function Row({
         {label}
       </span>
       {value && <span className="text-muted-foreground shrink-0">{value}</span>}
-      {hint && (
-        <kbd className="text-[10px] text-muted-foreground ml-4 shrink-0 hidden sm:inline">
-          {hint}
-        </kbd>
-      )}
     </Tag>
   );
 }
