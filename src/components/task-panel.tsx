@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
@@ -31,7 +32,6 @@ import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { formatTime } from "@/lib/calendar-utils";
-import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { detectMeetingPlatform } from "@/lib/utils";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -46,6 +46,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const nav = useNavigation();
   const undo = useUndo();
+  const keymaps = useKeymaps();
   const recurrenceDelete = useRecurrenceDelete();
   const {
     isOpen,
@@ -331,14 +332,16 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (matchesEvent("task_detail.save", e.nativeEvent)) {
+      if (keymaps.resolvedMatchesEvent("task_detail.save", e.nativeEvent)) {
         e.preventDefault();
         if (mode === "edit" && task) saveTask(task.id);
         else if (mode === "create") handleCreate();
         return;
       }
 
-      if (e.key === getKeymap("task_detail.close").triggerKey) {
+      const closeKey =
+        keymaps.getResolvedKeymap("task_detail.close").triggerKey;
+      if (e.key === closeKey) {
         e.preventDefault();
         e.stopPropagation();
         if (mode === "edit" && task) saveTask(task.id);
@@ -347,9 +350,11 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         return;
       }
 
+      const createKey =
+        keymaps.getResolvedKeymap("task_detail.create").triggerKey;
       if (
         mode === "create" &&
-        e.key === getKeymap("task_detail.create").triggerKey &&
+        e.key === createKey &&
         !e.shiftKey &&
         e.target === titleRef.current
       ) {
@@ -358,7 +363,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         return;
       }
     },
-    [mode, task, saveTask, panel, handleCreate, description],
+    [mode, task, saveTask, panel, handleCreate, description, keymaps],
   );
 
   useEffect(() => {

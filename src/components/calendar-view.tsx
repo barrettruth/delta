@@ -11,6 +11,7 @@ import { AllDayBar } from "@/components/calendar/all-day-bar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
+import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -37,7 +38,6 @@ import {
   minuteToISOString,
   startOfMonth,
 } from "@/lib/calendar-utils";
-import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
@@ -61,6 +61,7 @@ export function CalendarView({
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
   const undo = useUndo();
+  const keymaps = useKeymaps();
   const { pendingEdits } = panel;
   const recurrenceDelete = useRecurrenceDelete();
   const recurrenceEdit = useRecurrenceEdit();
@@ -557,22 +558,22 @@ export function CalendarView({
 
       if (viewMode === "week" && weekScrollRef.current) {
         const el = weekScrollRef.current;
-        if (matchesEvent("calendar.scroll_down_hour", e)) {
+        if (keymaps.resolvedMatchesEvent("calendar.scroll_down_hour", e)) {
           e.preventDefault();
           el.scrollBy({ top: HOUR_HEIGHT });
           return;
         }
-        if (matchesEvent("calendar.scroll_up_hour", e)) {
+        if (keymaps.resolvedMatchesEvent("calendar.scroll_up_hour", e)) {
           e.preventDefault();
           el.scrollBy({ top: -HOUR_HEIGHT });
           return;
         }
-        if (matchesEvent("calendar.half_page_down", e)) {
+        if (keymaps.resolvedMatchesEvent("calendar.half_page_down", e)) {
           e.preventDefault();
           el.scrollBy({ top: el.clientHeight / 2 });
           return;
         }
-        if (matchesEvent("calendar.half_page_up", e)) {
+        if (keymaps.resolvedMatchesEvent("calendar.half_page_up", e)) {
           e.preventDefault();
           el.scrollBy({ top: -el.clientHeight / 2 });
           return;
@@ -584,6 +585,8 @@ export function CalendarView({
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
       if (isModifier) return;
 
+      const delKey = keymaps.getResolvedKeymap("calendar.delete").triggerKey;
+
       if (pendingOp.current && !isModifier) {
         const op = pendingOp.current;
         pendingOp.current = null;
@@ -591,7 +594,7 @@ export function CalendarView({
           clearTimeout(opTimer.current);
           opTimer.current = null;
         }
-        if (e.key === op && op === getKeymap("calendar.delete").triggerKey) {
+        if (e.key === op && op === delKey) {
           e.preventDefault();
           if (panel.isOpen && panel.taskId !== null) {
             const target = tasks.find((t) => t.id === panel.taskId);
@@ -632,6 +635,10 @@ export function CalendarView({
         return n;
       };
 
+      const scrollTopKey = keymaps.getResolvedKeymap(
+        "calendar.scroll_top",
+      ).triggerKey;
+
       if (pendingG.current) {
         pendingG.current = false;
         if (gTimer.current) {
@@ -639,7 +646,7 @@ export function CalendarView({
           gTimer.current = null;
         }
         if (
-          e.key === getKeymap("calendar.scroll_top").triggerKey &&
+          e.key === scrollTopKey &&
           viewMode === "week" &&
           weekScrollRef.current
         ) {
@@ -664,7 +671,7 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === getKeymap("calendar.scroll_top").triggerKey) {
+      if (e.key === scrollTopKey) {
         e.preventDefault();
         pendingG.current = true;
         gTimer.current = setTimeout(() => {
@@ -675,8 +682,11 @@ export function CalendarView({
         return;
       }
 
+      const scrollBottomKey = keymaps.getResolvedKeymap(
+        "calendar.scroll_bottom",
+      ).triggerKey;
       if (
-        e.key === getKeymap("calendar.scroll_bottom").triggerKey &&
+        e.key === scrollBottomKey &&
         viewMode === "week" &&
         weekScrollRef.current
       ) {
@@ -689,7 +699,10 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === getKeymap("calendar.prev_period").triggerKey) {
+      const prevKey = keymaps.getResolvedKeymap(
+        "calendar.prev_period",
+      ).triggerKey;
+      if (e.key === prevKey) {
         e.preventDefault();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
@@ -698,7 +711,10 @@ export function CalendarView({
         }
         return;
       }
-      if (e.key === getKeymap("calendar.next_period").triggerKey) {
+      const nextKey = keymaps.getResolvedKeymap(
+        "calendar.next_period",
+      ).triggerKey;
+      if (e.key === nextKey) {
         e.preventDefault();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
@@ -708,38 +724,44 @@ export function CalendarView({
         return;
       }
 
-      if (
-        e.key === getKeymap("calendar.toggle_allday").triggerKey &&
-        viewMode === "week"
-      ) {
+      const alldayKey = keymaps.getResolvedKeymap(
+        "calendar.toggle_allday",
+      ).triggerKey;
+      if (e.key === alldayKey && viewMode === "week") {
         e.preventDefault();
         countBuf.current = "";
         setAllDayExpanded((prev) => !prev);
         return;
       }
 
-      if (e.key === getKeymap("calendar.week_view").triggerKey) {
+      const weekViewKey =
+        keymaps.getResolvedKeymap("calendar.week_view").triggerKey;
+      if (e.key === weekViewKey) {
         e.preventDefault();
         countBuf.current = "";
         setViewMode("week");
         return;
       }
-      if (e.key === getKeymap("calendar.month_view").triggerKey) {
+      const monthViewKey = keymaps.getResolvedKeymap(
+        "calendar.month_view",
+      ).triggerKey;
+      if (e.key === monthViewKey) {
         e.preventDefault();
         countBuf.current = "";
         setViewMode("month");
         return;
       }
-      if (e.key === getKeymap("calendar.today").triggerKey) {
+      const todayKey = keymaps.getResolvedKeymap("calendar.today").triggerKey;
+      if (e.key === todayKey) {
         e.preventDefault();
         countBuf.current = "";
         goToday();
         return;
       }
 
-      if (e.key === getKeymap("calendar.delete").triggerKey) {
+      if (e.key === delKey) {
         e.preventDefault();
-        pendingOp.current = getKeymap("calendar.delete").triggerKey;
+        pendingOp.current = delKey;
         opTimer.current = setTimeout(() => {
           pendingOp.current = null;
           opTimer.current = null;
@@ -760,6 +782,7 @@ export function CalendarView({
       tasks,
       recurrenceDelete,
       undo,
+      keymaps,
     ],
   );
 

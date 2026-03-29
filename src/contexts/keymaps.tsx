@@ -17,6 +17,7 @@ interface KeymapContextValue {
   resolvedMatchesEvent(id: string, e: KeyboardEvent): boolean;
   setOverride(id: string, triggerKey: string): Promise<void>;
   resetOverride(id: string): Promise<void>;
+  resetSection(ids: string[]): Promise<void>;
   resetAll(): Promise<void>;
 }
 
@@ -91,6 +92,18 @@ export function KeymapProvider({
     [overrides],
   );
 
+  const resetSection = useCallback(
+    async (ids: string[]): Promise<void> => {
+      const next = { ...overrides };
+      for (const id of ids) {
+        delete next[id];
+      }
+      setOverrides(next);
+      await persistOverrides(next);
+    },
+    [overrides],
+  );
+
   const resetAll = useCallback(async (): Promise<void> => {
     setOverrides({});
     await persistOverrides({});
@@ -102,6 +115,7 @@ export function KeymapProvider({
     resolvedMatchesEvent,
     setOverride,
     resetOverride,
+    resetSection,
     resetAll,
   };
 

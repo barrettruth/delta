@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
+import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -16,38 +17,7 @@ import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
-import { getKeymap } from "@/lib/keymap-defs";
 import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
-
-const COLUMN_HINTS = [
-  getKeymap("kanban.jump_waiting").triggerKey,
-  getKeymap("kanban.jump_in_progress").triggerKey,
-  getKeymap("kanban.jump_blocked").triggerKey,
-  getKeymap("kanban.jump_done").triggerKey,
-];
-
-const STATUS_FOR_KEY: Record<string, TaskStatus> = {
-  [getKeymap("kanban.set_waiting").triggerKey]: "pending",
-  [getKeymap("kanban.set_in_progress").triggerKey]: "wip",
-  [getKeymap("kanban.set_blocked").triggerKey]: "blocked",
-  [getKeymap("kanban.complete").triggerKey]: "done",
-};
-
-const COL_LEFT_KEY = getKeymap("kanban.col_left").triggerKey;
-const COL_RIGHT_KEY = getKeymap("kanban.col_right").triggerKey;
-const ROW_DOWN_KEY = getKeymap("kanban.row_down").triggerKey;
-const ROW_UP_KEY = getKeymap("kanban.row_up").triggerKey;
-const MOVE_LEFT_KEY = getKeymap("kanban.move_task_left").triggerKey;
-const MOVE_RIGHT_KEY = getKeymap("kanban.move_task_right").triggerKey;
-const SWAP_LEFT_KEY = getKeymap("kanban.swap_col_left").triggerKey;
-const SWAP_RIGHT_KEY = getKeymap("kanban.swap_col_right").triggerKey;
-const EDIT_KEY = getKeymap("kanban.edit").triggerKey;
-const TOGGLE_SELECT_KEY = getKeymap("kanban.toggle_select").triggerKey;
-const VISUAL_MODE_KEY = getKeymap("kanban.visual_mode").triggerKey;
-const DELETE_KEY = getKeymap("kanban.delete").triggerKey;
-const SEARCH_KEY = getKeymap("kanban.search").triggerKey;
-const ESCAPE_KEY = getKeymap("kanban.escape").triggerKey;
-const JUMP_BOTTOM_KEY = getKeymap("queue.jump_bottom").triggerKey;
 
 const defaultColumns: { status: TaskStatus; label: string }[] = [
   { status: "pending", label: "Waiting" },
@@ -81,7 +51,41 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const statusBar = useStatusBar();
   const undo = useUndo();
   const panel = useTaskPanel();
+  const keymaps = useKeymaps();
   const recurrenceDelete = useRecurrenceDelete();
+
+  const k = useMemo(() => {
+    const r = (id: string) => keymaps.getResolvedKeymap(id).triggerKey;
+    return {
+      columnHints: [
+        r("kanban.jump_waiting"),
+        r("kanban.jump_in_progress"),
+        r("kanban.jump_blocked"),
+        r("kanban.jump_done"),
+      ],
+      statusForKey: {
+        [r("kanban.set_waiting")]: "pending" as TaskStatus,
+        [r("kanban.set_in_progress")]: "wip" as TaskStatus,
+        [r("kanban.set_blocked")]: "blocked" as TaskStatus,
+        [r("kanban.complete")]: "done" as TaskStatus,
+      },
+      colLeft: r("kanban.col_left"),
+      colRight: r("kanban.col_right"),
+      rowDown: r("kanban.row_down"),
+      rowUp: r("kanban.row_up"),
+      moveLeft: r("kanban.move_task_left"),
+      moveRight: r("kanban.move_task_right"),
+      swapLeft: r("kanban.swap_col_left"),
+      swapRight: r("kanban.swap_col_right"),
+      edit: r("kanban.edit"),
+      toggleSelect: r("kanban.toggle_select"),
+      visualMode: r("kanban.visual_mode"),
+      deleteKey: r("kanban.delete"),
+      search: r("kanban.search"),
+      escape: r("kanban.escape"),
+      jumpBottom: r("queue.jump_bottom"),
+    };
+  }, [keymaps]);
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
   const [colIdx, setColIdx] = useState(0);
@@ -280,7 +284,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               if (ids.length > 0) kbDelete(ids);
             }
           }
-        } else if (e.key === ROW_DOWN_KEY) {
+        } else if (e.key === k.rowDown) {
           e.preventDefault();
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
@@ -293,7 +297,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               if (ids.length > 0) kbDelete(ids);
             }
           }
-        } else if (e.key === ROW_UP_KEY) {
+        } else if (e.key === k.rowUp) {
           e.preventDefault();
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
@@ -306,7 +310,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               if (ids.length > 0) kbDelete(ids);
             }
           }
-        } else if (e.key === JUMP_BOTTOM_KEY) {
+        } else if (e.key === k.jumpBottom) {
           e.preventDefault();
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
@@ -341,7 +345,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       countBuf.current = "";
       const n = rawCount ? Number.parseInt(rawCount, 10) : 1;
 
-      if (e.key === COL_LEFT_KEY) {
+      if (e.key === k.colLeft) {
         e.preventDefault();
         if (!visualMode) {
           setKbActive(true);
@@ -358,7 +362,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           });
           setRowIdx(0);
         }
-      } else if (e.key === COL_RIGHT_KEY) {
+      } else if (e.key === k.colRight) {
         e.preventDefault();
         if (!visualMode) {
           setKbActive(true);
@@ -377,18 +381,18 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           });
           setRowIdx(0);
         }
-      } else if (e.key === ROW_DOWN_KEY) {
+      } else if (e.key === k.rowDown) {
         e.preventDefault();
         setKbActive(true);
         setRowIdx((r) => {
           const colTasks = getColTasks(colIdx);
           return Math.min(r + n, colTasks.length - 1);
         });
-      } else if (e.key === ROW_UP_KEY) {
+      } else if (e.key === k.rowUp) {
         e.preventDefault();
         setKbActive(true);
         setRowIdx((r) => Math.max(r - n, 0));
-      } else if (e.key === MOVE_LEFT_KEY) {
+      } else if (e.key === k.moveLeft) {
         e.preventDefault();
         const newColH = Math.max(colIdx - 1, 0);
         if (newColH !== colIdx) {
@@ -406,7 +410,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setColIdx(newColH);
           setRowIdx(0);
         }
-      } else if (e.key === MOVE_RIGHT_KEY) {
+      } else if (e.key === k.moveRight) {
         e.preventDefault();
         const newColL = Math.min(colIdx + 1, columns.length - 1);
         if (newColL !== colIdx) {
@@ -424,7 +428,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setColIdx(newColL);
           setRowIdx(0);
         }
-      } else if (e.key === SWAP_LEFT_KEY) {
+      } else if (e.key === k.swapLeft) {
         e.preventDefault();
         if (!visualMode && colIdx > 0) {
           setColumns((prev) => {
@@ -434,7 +438,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           });
           setColIdx((c) => c - 1);
         }
-      } else if (e.key === SWAP_RIGHT_KEY) {
+      } else if (e.key === k.swapRight) {
         e.preventDefault();
         if (!visualMode && colIdx < columns.length - 1) {
           setColumns((prev) => {
@@ -444,7 +448,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           });
           setColIdx((c) => c + 1);
         }
-      } else if (e.key === EDIT_KEY) {
+      } else if (e.key === k.edit) {
         e.preventDefault();
         const colTasks = getColTasks(colIdx);
         if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
@@ -453,10 +457,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         } else {
           panel.create();
         }
-      } else if (STATUS_FOR_KEY[e.key]) {
+      } else if (k.statusForKey[e.key]) {
         e.preventDefault();
         if (kbActive || selectedIds.size > 0) {
-          const newStatus = STATUS_FOR_KEY[e.key];
+          const newStatus = k.statusForKey[e.key];
           if (newStatus) {
             if (selectedIds.size > 0) {
               kbMoveToStatus([...selectedIds], newStatus);
@@ -475,15 +479,15 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             }
           }
         }
-      } else if (COLUMN_HINTS.includes(e.key)) {
+      } else if (k.columnHints.includes(e.key)) {
         e.preventDefault();
-        const jumpIdx = COLUMN_HINTS.indexOf(e.key);
+        const jumpIdx = k.columnHints.indexOf(e.key);
         if (jumpIdx !== -1 && jumpIdx < columns.length) {
           setKbActive(true);
           setColIdx(jumpIdx);
           setRowIdx(0);
         }
-      } else if (e.key === TOGGLE_SELECT_KEY) {
+      } else if (e.key === k.toggleSelect) {
         e.preventDefault();
         if (visualMode) setVisualMode(false);
         if (kbActive) {
@@ -498,7 +502,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             });
           }
         }
-      } else if (e.key === VISUAL_MODE_KEY) {
+      } else if (e.key === k.visualMode) {
         e.preventDefault();
         if (visualMode) {
           setVisualMode(false);
@@ -511,7 +515,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             setSelectedIds(new Set([colTasks[rowIdx].id]));
           }
         }
-      } else if (e.key === DELETE_KEY) {
+      } else if (e.key === k.deleteKey) {
         e.preventDefault();
         if (selectedIds.size > 0) {
           kbDelete([...selectedIds]);
@@ -519,17 +523,17 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           setVisualMode(false);
         } else {
           const parsedCount = rawCount ? Number.parseInt(rawCount, 10) : null;
-          pendingOp.current = { key: DELETE_KEY, preCount: parsedCount };
+          pendingOp.current = { key: k.deleteKey, preCount: parsedCount };
           opTimer.current = setTimeout(() => {
             pendingOp.current = null;
             opTimer.current = null;
           }, 500);
         }
-      } else if (e.key === SEARCH_KEY) {
+      } else if (e.key === k.search) {
         e.preventDefault();
         setSearchActive(true);
         requestAnimationFrame(() => searchRef.current?.focus());
-      } else if (e.key === ESCAPE_KEY) {
+      } else if (e.key === k.escape) {
         if (searchActive) {
           setSearchQuery("");
           setSearchActive(false);
@@ -557,6 +561,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       kbDelete,
       kbMoveToStatus,
       grouped,
+      k,
     ],
   );
 
@@ -693,7 +698,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                   <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
                     <span className="text-xs font-medium">{col.label}</span>
                     <kbd className="text-[10px] text-muted-foreground">
-                      {COLUMN_HINTS[ci]}
+                      {k.columnHints[ci]}
                     </kbd>
                   </div>
                   <div className="flex-1 overflow-y-auto">

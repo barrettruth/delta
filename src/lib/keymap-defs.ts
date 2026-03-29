@@ -599,11 +599,11 @@ export function formatKey(def: KeymapDef): string {
       if (m === "alt") return "A";
       return m;
     });
-    return `<${mods.join("-")}-${displayKey}>`;
+    return `<${mods.join("-")}-${def.triggerKey}>`;
   }
-  if (displayKey === "Escape") return "<Esc>";
-  if (displayKey === "Enter") return "<Enter>";
-  return displayKey;
+  if (def.triggerKey === "Escape") return "<Esc>";
+  if (def.triggerKey === "Enter") return "<Enter>";
+  return def.triggerKey;
 }
 
 const BROWSER_RESERVED_COMBOS = new Set([

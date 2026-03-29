@@ -18,6 +18,7 @@ import {
   isBrowserReserved,
   isModifierOnly,
   type KeymapDef,
+  type KeySection,
   SECTION_LABELS,
   SECTION_ORDER,
 } from "@/lib/keymap-defs";
@@ -111,6 +112,19 @@ export function SettingsView({
   const keymaps = useKeymaps();
   const [capturingId, setCapturingId] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
+
+  async function resetSectionKeymaps(section: KeySection) {
+    const ids = DEFAULT_KEYMAPS.filter(
+      (d) =>
+        d.section === section &&
+        d.configurable !== false &&
+        d.id in keymaps.overrides,
+    ).map((d) => d.id);
+    if (ids.length > 0) {
+      await keymaps.resetSection(ids);
+    }
+    statusBar.message(`${SECTION_LABELS[section].toLowerCase()} keymaps reset`);
+  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -277,7 +291,10 @@ export function SettingsView({
   }
 
   async function handleSaveGeoKey() {
-    if (!geoKeyInput.trim()) return;
+    if (!geoKeyInput.trim()) {
+      statusBar.error("api key cannot be empty");
+      return;
+    }
     const res = await fetch("/api/settings/integrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -570,81 +587,80 @@ export function SettingsView({
           )}
         </Section>
 
-        <Section title="keymaps">
-          {SECTION_ORDER.map((section) => {
-            const defs = DEFAULT_KEYMAPS.filter(
-              (d) => d.section === section && d.configurable !== false,
-            );
-            if (defs.length === 0) return null;
-            return (
-              <div key={section} className="mb-3">
-                <div className="text-xs font-medium text-muted-foreground mb-1 px-2">
-                  {SECTION_LABELS[section]}
-                </div>
-                {defs.map((def) => (
-                  <KeymapRow
-                    key={def.id}
-                    def={def}
-                    isOverridden={def.id in keymaps.overrides}
-                    currentKey={keymaps.getResolvedKeymap(def.id)}
-                    capturing={capturingId === def.id}
-                    captureError={capturingId === def.id ? captureError : null}
-                    onStartCapture={() => {
-                      setCapturingId(def.id);
-                      setCaptureError(null);
-                    }}
-                    onCapture={async (triggerKey: string) => {
-                      const section = def.section;
-                      const sectionDefs = DEFAULT_KEYMAPS.filter(
-                        (d) =>
-                          d.section === section &&
-                          d.id !== def.id &&
-                          d.configurable !== false,
-                      );
-                      const duplicate = sectionDefs.find((d) => {
-                        const resolved = keymaps.getResolvedKeymap(d.id);
-                        return (
-                          resolved.triggerKey === triggerKey &&
-                          JSON.stringify(resolved.modifiers ?? []) ===
-                            JSON.stringify(def.modifiers ?? [])
-                        );
-                      });
-                      if (duplicate) {
-                        setCaptureError(`already used by "${duplicate.label}"`);
-                        return;
-                      }
-                      await keymaps.setOverride(def.id, triggerKey);
-                      setCapturingId(null);
-                      setCaptureError(null);
-                      statusBar.message("keymap updated");
-                    }}
-                    onCancelCapture={() => {
-                      setCapturingId(null);
-                      setCaptureError(null);
-                    }}
-                    onReset={async () => {
-                      await keymaps.resetOverride(def.id);
-                      statusBar.message("keymap reset");
-                    }}
-                  />
-                ))}
-              </div>
-            );
-          })}
-          {Object.keys(keymaps.overrides).length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2 h-7 text-xs"
-              onClick={async () => {
-                await keymaps.resetAll();
-                statusBar.message("all keymaps reset");
-              }}
+        {SECTION_ORDER.map((section) => {
+          const defs = DEFAULT_KEYMAPS.filter(
+            (d) => d.section === section && d.configurable !== false,
+          );
+          if (defs.length === 0) return null;
+          const sectionHasOverrides = defs.some(
+            (d) => d.id in keymaps.overrides,
+          );
+          return (
+            <Section
+              key={section}
+              title={`keymaps: ${SECTION_LABELS[section]}`}
             >
-              reset all keymaps
-            </Button>
-          )}
-        </Section>
+              {defs.map((def) => (
+                <KeymapRow
+                  key={def.id}
+                  def={def}
+                  isOverridden={def.id in keymaps.overrides}
+                  currentKey={keymaps.getResolvedKeymap(def.id)}
+                  capturing={capturingId === def.id}
+                  captureError={capturingId === def.id ? captureError : null}
+                  onStartCapture={() => {
+                    setCapturingId(def.id);
+                    setCaptureError(null);
+                  }}
+                  onCapture={async (triggerKey: string) => {
+                    const sectionDefs = DEFAULT_KEYMAPS.filter(
+                      (d) =>
+                        d.section === section &&
+                        d.id !== def.id &&
+                        d.configurable !== false,
+                    );
+                    const duplicate = sectionDefs.find((d) => {
+                      const resolved = keymaps.getResolvedKeymap(d.id);
+                      return (
+                        resolved.triggerKey === triggerKey &&
+                        JSON.stringify(resolved.modifiers ?? []) ===
+                          JSON.stringify(def.modifiers ?? [])
+                      );
+                    });
+                    if (duplicate) {
+                      setCaptureError(`already used by "${duplicate.label}"`);
+                      return;
+                    }
+                    await keymaps.setOverride(def.id, triggerKey);
+                    setCapturingId(null);
+                    setCaptureError(null);
+                    statusBar.message("keymap updated");
+                  }}
+                  onCancelCapture={() => {
+                    setCapturingId(null);
+                    setCaptureError(null);
+                  }}
+                  onReset={async () => {
+                    await keymaps.resetOverride(def.id);
+                    statusBar.message("keymap reset");
+                  }}
+                />
+              ))}
+              {sectionHasOverrides && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 h-7 text-xs"
+                  onClick={async () => {
+                    await resetSectionKeymaps(section);
+                  }}
+                >
+                  reset {SECTION_LABELS[section].toLowerCase()} to default
+                </Button>
+              )}
+            </Section>
+          );
+        })}
       </div>
     </div>
   );
@@ -758,7 +774,7 @@ function KeymapRow({
         ) : (
           <button
             type="button"
-            className="hover:bg-accent/50 cursor-pointer px-1"
+            className="cursor-pointer"
             onClick={onStartCapture}
           >
             <kbd
