@@ -59,6 +59,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [category, setCategory] = useState("");
   const [due, setDue] = useState("");
   const [location, setLocation] = useState("");
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLon, setLocationLon] = useState<number | null>(null);
   const [meetingUrl, setMeetingUrl] = useState("");
   const [recurrence, setRecurrence] = useState<string | null>(null);
   const [recurMode, setRecurMode] = useState<"scheduled" | "completion">(
@@ -77,6 +79,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     category: "",
     due: "",
     location: "",
+    locationLat: null as number | null,
+    locationLon: null as number | null,
     meetingUrl: "",
     recurrence: null as string | null,
     recurMode: "scheduled" as "scheduled" | "completion",
@@ -88,6 +92,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     category,
     due,
     location,
+    locationLat,
+    locationLon,
     meetingUrl,
     recurrence,
     recurMode,
@@ -175,6 +181,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       due: f.due ? new Date(f.due).toISOString() : null,
       notes: f.notes || null,
       location: f.location || null,
+      locationLat: f.location ? f.locationLat : null,
+      locationLon: f.location ? f.locationLon : null,
       meetingUrl: f.meetingUrl || null,
       recurrence: f.recurrence || null,
       recurMode: f.recurrence ? f.recurMode : null,
@@ -194,6 +202,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setCategory(t.category ?? "");
       setDue(t.due ? t.due.slice(0, 16) : "");
       setLocation(t.location ?? "");
+      setLocationLat(t.locationLat ?? null);
+      setLocationLon(t.locationLon ?? null);
       setMeetingUrl(t.meetingUrl ?? "");
       setRecurrence(t.recurrence);
       setRecurMode(t.recurMode ?? "scheduled");
@@ -203,6 +213,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       setCategory(preFill?.category ?? "");
       setDue(preFill?.startAt ? preFill.startAt.slice(0, 16) : "");
       setLocation("");
+      setLocationLat(null);
+      setLocationLon(null);
       setMeetingUrl("");
       setRecurrence(null);
       setRecurMode("scheduled");
@@ -244,6 +256,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       due: due ? new Date(due).toISOString() : undefined,
       notes: notesRef.current || undefined,
       location: location || undefined,
+      locationLat: location && locationLat != null ? locationLat : undefined,
+      locationLon: location && locationLon != null ? locationLon : undefined,
       meetingUrl: meetingUrl || undefined,
       startAt: preFill?.startAt,
       endAt: preFill?.endAt,
@@ -261,6 +275,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     category,
     due,
     location,
+    locationLat,
+    locationLon,
     meetingUrl,
     recurrence,
     recurMode,
@@ -445,6 +461,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 } else {
                   setLocation(val);
                 }
+                setLocationLat(null);
+                setLocationLon(null);
                 setShowLocationSuggestions(true);
                 setLocationIdx(-1);
               }}
@@ -474,6 +492,14 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 } else if (e.key === "Enter" && locationIdx >= 0) {
                   e.preventDefault();
                   setLocation(allItems[locationIdx]);
+                  const geoIdx = locationIdx - filteredLocations.length;
+                  if (geoIdx >= 0 && locationResults[geoIdx]) {
+                    setLocationLat(locationResults[geoIdx].lat);
+                    setLocationLon(locationResults[geoIdx].lon);
+                  } else {
+                    setLocationLat(null);
+                    setLocationLon(null);
+                  }
                   setShowLocationSuggestions(false);
                   setLocationIdx(-1);
                 } else if (e.key === "Escape") {
@@ -515,6 +541,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setLocation(r.displayName);
+                          setLocationLat(r.lat);
+                          setLocationLon(r.lon);
                           setShowLocationSuggestions(false);
                           setLocationIdx(-1);
                         }}

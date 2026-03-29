@@ -34,6 +34,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     updatedAt: new Date().toISOString(),
     completedAt: null,
     location: null,
+    locationLat: null,
+    locationLon: null,
     meetingUrl: null,
     exdates: null,
     rdates: null,

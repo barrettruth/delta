@@ -31,6 +31,8 @@ export interface CreateTaskInput {
   notes?: string;
   order?: number;
   location?: string;
+  locationLat?: number;
+  locationLon?: number;
   meetingUrl?: string;
   exdates?: string;
   rdates?: string;
@@ -54,6 +56,8 @@ export interface UpdateTaskInput {
   notes?: string | null;
   order?: number;
   location?: string | null;
+  locationLat?: number | null;
+  locationLon?: number | null;
   meetingUrl?: string | null;
   exdates?: string | null;
   rdates?: string | null;

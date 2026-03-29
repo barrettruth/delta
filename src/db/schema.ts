@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   unique,
@@ -65,6 +66,8 @@ export const tasks = sqliteTable("tasks", {
   timezone: text("timezone"),
   completedAt: text("completed_at"),
   location: text("location"),
+  locationLat: real("location_lat"),
+  locationLon: real("location_lon"),
   meetingUrl: text("meeting_url"),
   exdates: text("exdates"),
   rdates: text("rdates"),

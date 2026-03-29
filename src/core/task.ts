@@ -37,6 +37,8 @@ export function createTask(
       notes: input.notes ?? null,
       order: input.order ?? 0,
       location: input.location ?? null,
+      locationLat: input.locationLat ?? null,
+      locationLon: input.locationLon ?? null,
       meetingUrl: input.meetingUrl ?? null,
       exdates: input.exdates ?? null,
       rdates: input.rdates ?? null,

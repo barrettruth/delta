@@ -143,6 +143,8 @@ describe("getNextTaskData", () => {
     updatedAt: "2026-03-22T15:00:00.000Z",
     completedAt: "2026-03-22T15:00:00.000Z",
     location: null,
+    locationLat: null,
+    locationLon: null,
     meetingUrl: null,
     exdates: null,
     rdates: null,
