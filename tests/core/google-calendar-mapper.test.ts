@@ -34,6 +34,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     originalStartAt: null,
     externalId: null,
     externalSource: null,
+    locationLat: null,
+    locationLon: null,
     ...overrides,
   };
 }

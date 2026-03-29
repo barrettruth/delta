@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "dce2ad6b-f569-4009-bb01-c94f486a7436",
-  "prevId": "20af2f00-15d9-4834-96fe-bdd56a3fcfc5",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "prevId": "dce2ad6b-f569-4009-bb01-c94f486a7436",
   "tables": {
     "accounts": {
       "name": "accounts",
@@ -670,6 +670,20 @@
         "original_start_at": {
           "name": "original_start_at",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "location_lat": {
+          "name": "location_lat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "location_lon": {
+          "name": "location_lon",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
