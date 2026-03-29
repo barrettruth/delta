@@ -92,7 +92,11 @@ export async function loadBuiltinRecipes(): Promise<void> {
   if (_recipesLoaded) return;
   const { githubIssuesHandler } = await import("./recipes/github-issues");
   const { githubDevHandler } = await import("./recipes/github-dev");
+  const { googleCalendarSyncHandler } = await import(
+    "./recipes/google-calendar-sync"
+  );
   registerRecipe("github_issues", githubIssuesHandler);
   registerRecipe("github_dev", githubDevHandler);
+  registerRecipe("google_calendar", googleCalendarSyncHandler);
   _recipesLoaded = true;
 }
