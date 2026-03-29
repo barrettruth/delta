@@ -103,7 +103,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   useEffect(() => {
     const left = visualMode ? "-- VISUAL --" : "-- KANBAN --";
     statusBar.setIdle(left, "");
-  }, [visualMode, statusBar]);
+  }, [visualMode, statusBar.setIdle]);
 
   const kbDelete = useCallback(
     (ids: number[]) => {

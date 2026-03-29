@@ -74,7 +74,7 @@ export function SettingsView({
 
   useEffect(() => {
     statusBar.setIdle("-- SETTINGS --", "");
-  }, [statusBar]);
+  }, [statusBar.setIdle]);
 
   const [passkeys, setPasskeys] = useState(initialPasskeys);
   const [totpEnabled, setTotpEnabled] = useState(initialTotpEnabled);
