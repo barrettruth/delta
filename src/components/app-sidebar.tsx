@@ -24,14 +24,29 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 
-const views: { label: string; href: string; icon: LucideIcon; key: string }[] =
-  [
-    { label: "Queue", href: "/", icon: Zap, key: "Q" },
-    { label: "Kanban", href: "/kanban", icon: Columns3, key: "K" },
-    { label: "Calendar", href: "/calendar", icon: Calendar, key: "C" },
-  ];
+const VIEW_KEYMAP_IDS: {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  keymapId: string;
+}[] = [
+  { label: "Queue", href: "/", icon: Zap, keymapId: "global.queue" },
+  {
+    label: "Kanban",
+    href: "/kanban",
+    icon: Columns3,
+    keymapId: "global.kanban",
+  },
+  {
+    label: "Calendar",
+    href: "/calendar",
+    icon: Calendar,
+    keymapId: "global.calendar",
+  },
+];
 
 export function AppSidebar({
   username,
@@ -46,6 +61,7 @@ export function AppSidebar({
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const nav = useNavigation();
+  const keymaps = useKeymaps();
   const [editingColor, setEditingColor] = useState<string | null>(null);
 
   return (
@@ -64,7 +80,7 @@ export function AppSidebar({
           <SidebarGroupLabel>Views</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {views.map((view) => (
+              {VIEW_KEYMAP_IDS.map((view) => (
                 <SidebarMenuItem key={view.href}>
                   <SidebarMenuButton
                     render={<Link href={view.href} />}
@@ -74,7 +90,7 @@ export function AppSidebar({
                     <view.icon className="size-4" />
                     <span className="flex-1">{view.label}</span>
                     <kbd className="text-[10px] text-muted-foreground">
-                      {view.key}
+                      {keymaps.getResolvedKeymap(view.keymapId).triggerKey}
                     </kbd>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -107,7 +123,11 @@ export function AppSidebar({
                         <span className="flex-1">{cat}</span>
                         {shortcutKey && (
                           <kbd className="text-[10px] text-muted-foreground">
-                            g{shortcutKey}
+                            {
+                              keymaps.getResolvedKeymap("global.category_jump")
+                                .triggerKey
+                            }
+                            {shortcutKey}
                           </kbd>
                         )}
                       </SidebarMenuButton>
@@ -148,7 +168,9 @@ export function AppSidebar({
             >
               <Settings className="size-4" />
               <span className="flex-1">{username}</span>
-              <kbd className="text-[10px] text-muted-foreground">S</kbd>
+              <kbd className="text-[10px] text-muted-foreground">
+                {keymaps.getResolvedKeymap("global.settings").triggerKey}
+              </kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
