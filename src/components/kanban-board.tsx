@@ -316,7 +316,16 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           if (visualMode) break;
           setKbActive(true);
-          setColIdx((c) => Math.max(c - n, 0));
+          setColIdx((c) => {
+            const visibleIndices = columns
+              .map((col, idx) => ({ idx, status: col.status }))
+              .filter((col) => (grouped[col.status] ?? []).length > 0)
+              .map((col) => col.idx);
+            if (visibleIndices.length === 0) return c;
+            const pos = visibleIndices.indexOf(c);
+            const target = pos === -1 ? visibleIndices[0] : Math.max(pos - n, 0);
+            return visibleIndices[target];
+          });
           setRowIdx(0);
           break;
         }
@@ -324,7 +333,19 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           e.preventDefault();
           if (visualMode) break;
           setKbActive(true);
-          setColIdx((c) => Math.min(c + n, columns.length - 1));
+          setColIdx((c) => {
+            const visibleIndices = columns
+              .map((col, idx) => ({ idx, status: col.status }))
+              .filter((col) => (grouped[col.status] ?? []).length > 0)
+              .map((col) => col.idx);
+            if (visibleIndices.length === 0) return c;
+            const pos = visibleIndices.indexOf(c);
+            const target =
+              pos === -1
+                ? visibleIndices[0]
+                : Math.min(pos + n, visibleIndices.length - 1);
+            return visibleIndices[target];
+          });
           setRowIdx(0);
           break;
         }
