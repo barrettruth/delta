@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useStatusBar } from "@/contexts/status-bar";
 
 type GeoProvider = "photon" | "mapbox";
 
@@ -25,6 +26,7 @@ interface IntegrationSummary {
 }
 
 export function GeocodingPopover() {
+  const statusBar = useStatusBar();
   const [active, setActive] = useState<GeoProvider>("photon");
   const [mapboxConfigured, setMapboxConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,7 @@ export function GeocodingPopover() {
     if (mapboxConfigured) {
       await fetch("/api/settings/integrations/mapbox", { method: "DELETE" });
       setMapboxConfigured(false);
+      statusBar.message("Mapbox disconnected");
     }
     setActive("photon");
     setPopoverOpen(false);
@@ -83,7 +86,7 @@ export function GeocodingPopover() {
   async function handleSaveKey() {
     if (!apiKey.trim()) return;
     setSaving(true);
-    await fetch("/api/settings/integrations", {
+    const res = await fetch("/api/settings/integrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -92,10 +95,15 @@ export function GeocodingPopover() {
       }),
     });
     setSaving(false);
+    if (!res.ok) {
+      statusBar.error("failed to save api key");
+      return;
+    }
     setMapboxConfigured(true);
     setActive("mapbox");
     setDialogOpen(false);
     setApiKey("");
+    statusBar.message("Mapbox connected");
   }
 
   if (loading) return null;
