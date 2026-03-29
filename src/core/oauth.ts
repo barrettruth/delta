@@ -4,7 +4,7 @@ import { accounts, users, webauthnCredentials } from "@/db/schema";
 import { getOAuthProviderConfig } from "./system-config";
 import type { Db } from "./types";
 
-export type OAuthProvider = "github" | "google";
+export type OAuthProvider = "github" | "google" | "gitlab";
 
 export type ProviderConfig = {
   authorizeUrl: string;
@@ -27,7 +27,7 @@ type TokenResponse = {
   expiresIn?: number;
 };
 
-const ALL_PROVIDERS: OAuthProvider[] = ["github", "google"];
+const ALL_PROVIDERS: OAuthProvider[] = ["github", "google", "gitlab"];
 
 function getCredentials(
   db: Db,
@@ -70,6 +70,17 @@ export function getProviderConfig(
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
       scopes: ["openid", "email", "profile"],
+    };
+  }
+
+  if (provider === "gitlab") {
+    return {
+      authorizeUrl: "https://gitlab.com/oauth/authorize",
+      tokenUrl: "https://gitlab.com/oauth/token",
+      userInfoUrl: "https://gitlab.com/api/v4/user",
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
+      scopes: ["read_user"],
     };
   }
 
@@ -121,7 +132,7 @@ export async function exchangeCodeForToken(
     redirect_uri: redirectUri,
   });
 
-  if (provider === "google") {
+  if (provider === "google" || provider === "gitlab") {
     body.set("grant_type", "authorization_code");
   }
 
@@ -191,6 +202,14 @@ export async function fetchProviderUser(
       id: String(data.id),
       email: email ?? "",
       name: data.name ?? data.login,
+    };
+  }
+
+  if (provider === "gitlab") {
+    return {
+      id: String(data.id),
+      email: data.email ?? "",
+      name: data.name || data.username,
     };
   }
 

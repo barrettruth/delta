@@ -32,6 +32,7 @@ export default async function SettingsPage() {
   const oauthProviders = {
     github: isOAuthProviderConfigured(db, "github"),
     google: isOAuthProviderConfigured(db, "google"),
+    gitlab: isOAuthProviderConfigured(db, "gitlab"),
   };
 
   return (

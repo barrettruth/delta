@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-type Provider = "github" | "google";
+type Provider = "github" | "google" | "gitlab";
 
 const ERROR_MESSAGES: Record<string, string> = {
   no_invite: "an invite link is required to create an account",
+  invalid_invite: "invalid or expired invite link",
 };
 
 export function LoginForm() {
@@ -108,6 +109,16 @@ export function LoginForm() {
                   className="w-full justify-start"
                 >
                   google
+                </Button>
+              )}
+              {providers.includes("gitlab") && (
+                <Button
+                  variant="ghost"
+                  onClick={() => handleOAuth("gitlab")}
+                  disabled={loading}
+                  className="w-full justify-start"
+                >
+                  gitlab
                 </Button>
               )}
               <Button

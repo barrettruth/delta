@@ -28,6 +28,7 @@ interface ConnectedAccount {
 type OAuthProviderStatus = {
   github: boolean;
   google: boolean;
+  gitlab: boolean;
 };
 
 export function SettingsView({
@@ -520,7 +521,7 @@ export function SettingsView({
         </Section>
 
         <Section title="oauth providers">
-          {(["github", "google"] as const).map((provider) => (
+          {(["github", "google", "gitlab"] as const).map((provider) => (
             <div key={provider}>
               {editingProvider === provider ? (
                 <div className="mb-3">
