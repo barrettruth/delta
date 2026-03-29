@@ -216,5 +216,11 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     };
   }, []);
 
-  return <KeymapHelp open={helpOpen} onClose={() => setHelpOpen(false)} />;
+  return (
+    <KeymapHelp
+      open={helpOpen}
+      onClose={() => setHelpOpen(false)}
+      pathname={pathname}
+    />
+  );
 }

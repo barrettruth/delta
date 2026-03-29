@@ -20,7 +20,6 @@ import {
   type KeymapDef,
   type KeySection,
   SECTION_LABELS,
-  SECTION_ORDER,
 } from "@/lib/keymap-defs";
 
 interface Passkey {
@@ -587,7 +586,7 @@ export function SettingsView({
           )}
         </Section>
 
-        {SECTION_ORDER.map((section) => {
+        {(["global"] as const).map((section) => {
           const defs = DEFAULT_KEYMAPS.filter(
             (d) => d.section === section && d.configurable !== false,
           );
