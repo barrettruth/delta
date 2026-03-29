@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusBar } from "@/components/status-bar";
 import { TaskPanel } from "@/components/task-panel";
 import { TaskPanelProvider } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
@@ -19,6 +20,7 @@ export function DashboardContent({
         </main>
         <TaskPanel tasks={tasks} />
       </div>
+      <StatusBar />
     </TaskPanelProvider>
   );
 }
