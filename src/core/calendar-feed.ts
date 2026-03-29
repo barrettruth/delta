@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, max } from "drizzle-orm";
 import { tasks, users } from "@/db/schema";
 import { tasksToICalendar } from "./ical/serializer";
 import type { Db } from "./types";
@@ -35,6 +35,15 @@ export function getUserByFeedToken(
     .where(eq(users.calendarFeedToken, token))
     .get();
   return user ?? null;
+}
+
+export function getLastModified(db: Db, userId: number): Date | null {
+  const row = db
+    .select({ latest: max(tasks.updatedAt) })
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), isNotNull(tasks.startAt)))
+    .get();
+  return row?.latest ? new Date(row.latest) : null;
 }
 
 export function generateFeedIcs(db: Db, userId: number): string {
