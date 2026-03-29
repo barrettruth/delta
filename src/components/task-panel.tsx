@@ -31,6 +31,7 @@ import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { formatTime } from "@/lib/calendar-utils";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { detectMeetingPlatform } from "@/lib/utils";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -330,14 +331,14 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      if (matchesEvent("task_detail.save", e.nativeEvent)) {
         e.preventDefault();
         if (mode === "edit" && task) saveTask(task.id);
         else if (mode === "create") handleCreate();
         return;
       }
 
-      if (e.key === "Escape") {
+      if (e.key === getKeymap("task_detail.close").triggerKey) {
         e.preventDefault();
         e.stopPropagation();
         if (mode === "edit" && task) saveTask(task.id);
@@ -348,7 +349,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
 
       if (
         mode === "create" &&
-        e.key === "Enter" &&
+        e.key === getKeymap("task_detail.create").triggerKey &&
         !e.shiftKey &&
         e.target === titleRef.current
       ) {

@@ -36,6 +36,7 @@ import {
   minuteToISOString,
   startOfMonth,
 } from "@/lib/calendar-utils";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 type ViewMode = "week" | "month";
@@ -517,24 +518,24 @@ export function CalendarView({
       if (isInputFocused()) return;
       if (isBrowserShortcut(e)) return;
 
-      if (e.ctrlKey && viewMode === "week" && weekScrollRef.current) {
+      if (viewMode === "week" && weekScrollRef.current) {
         const el = weekScrollRef.current;
-        if (e.key === "e") {
+        if (matchesEvent("calendar.scroll_down_hour", e)) {
           e.preventDefault();
           el.scrollBy({ top: HOUR_HEIGHT });
           return;
         }
-        if (e.key === "y") {
+        if (matchesEvent("calendar.scroll_up_hour", e)) {
           e.preventDefault();
           el.scrollBy({ top: -HOUR_HEIGHT });
           return;
         }
-        if (e.key === "d") {
+        if (matchesEvent("calendar.half_page_down", e)) {
           e.preventDefault();
           el.scrollBy({ top: el.clientHeight / 2 });
           return;
         }
-        if (e.key === "u") {
+        if (matchesEvent("calendar.half_page_up", e)) {
           e.preventDefault();
           el.scrollBy({ top: -el.clientHeight / 2 });
           return;
@@ -553,7 +554,7 @@ export function CalendarView({
           clearTimeout(opTimer.current);
           opTimer.current = null;
         }
-        if (e.key === op && op === "d") {
+        if (e.key === op && op === getKeymap("calendar.delete").triggerKey) {
           e.preventDefault();
           if (panel.isOpen && panel.taskId !== null) {
             const target = tasks.find((t) => t.id === panel.taskId);
@@ -600,7 +601,11 @@ export function CalendarView({
           clearTimeout(gTimer.current);
           gTimer.current = null;
         }
-        if (e.key === "g" && viewMode === "week" && weekScrollRef.current) {
+        if (
+          e.key === getKeymap("calendar.scroll_top").triggerKey &&
+          viewMode === "week" &&
+          weekScrollRef.current
+        ) {
           e.preventDefault();
           const hour = countBuf.current
             ? Math.min(23, Number.parseInt(countBuf.current, 10))
@@ -622,7 +627,7 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === "g") {
+      if (e.key === getKeymap("calendar.scroll_top").triggerKey) {
         e.preventDefault();
         pendingG.current = true;
         gTimer.current = setTimeout(() => {
@@ -633,7 +638,11 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === "G" && viewMode === "week" && weekScrollRef.current) {
+      if (
+        e.key === getKeymap("calendar.scroll_bottom").triggerKey &&
+        viewMode === "week" &&
+        weekScrollRef.current
+      ) {
         e.preventDefault();
         const n = countBuf.current
           ? Math.min(23, Number.parseInt(countBuf.current, 10))
@@ -643,7 +652,7 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === "h") {
+      if (e.key === getKeymap("calendar.prev_period").triggerKey) {
         e.preventDefault();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
@@ -652,7 +661,7 @@ export function CalendarView({
         }
         return;
       }
-      if (e.key === "l") {
+      if (e.key === getKeymap("calendar.next_period").triggerKey) {
         e.preventDefault();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
@@ -662,35 +671,38 @@ export function CalendarView({
         return;
       }
 
-      if (e.key === "E" && viewMode === "week") {
+      if (
+        e.key === getKeymap("calendar.toggle_allday").triggerKey &&
+        viewMode === "week"
+      ) {
         e.preventDefault();
         countBuf.current = "";
         setAllDayExpanded((prev) => !prev);
         return;
       }
 
-      if (e.key === "w") {
+      if (e.key === getKeymap("calendar.week_view").triggerKey) {
         e.preventDefault();
         countBuf.current = "";
         setViewMode("week");
         return;
       }
-      if (e.key === "m") {
+      if (e.key === getKeymap("calendar.month_view").triggerKey) {
         e.preventDefault();
         countBuf.current = "";
         setViewMode("month");
         return;
       }
-      if (e.key === "t") {
+      if (e.key === getKeymap("calendar.today").triggerKey) {
         e.preventDefault();
         countBuf.current = "";
         goToday();
         return;
       }
 
-      if (e.key === "d") {
+      if (e.key === getKeymap("calendar.delete").triggerKey) {
         e.preventDefault();
-        pendingOp.current = "d";
+        pendingOp.current = getKeymap("calendar.delete").triggerKey;
         opTimer.current = setTimeout(() => {
           pendingOp.current = null;
           opTimer.current = null;

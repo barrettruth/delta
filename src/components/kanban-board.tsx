@@ -15,16 +15,38 @@ import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { getKeymap } from "@/lib/keymap-defs";
 import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
-const COLUMN_HINTS = ["W", "I", "B", "X"];
+const COLUMN_HINTS = [
+  getKeymap("kanban.jump_waiting").triggerKey,
+  getKeymap("kanban.jump_in_progress").triggerKey,
+  getKeymap("kanban.jump_blocked").triggerKey,
+  getKeymap("kanban.jump_done").triggerKey,
+];
 
 const STATUS_FOR_KEY: Record<string, TaskStatus> = {
-  w: "pending",
-  i: "wip",
-  b: "blocked",
-  x: "done",
+  [getKeymap("kanban.set_waiting").triggerKey]: "pending",
+  [getKeymap("kanban.set_in_progress").triggerKey]: "wip",
+  [getKeymap("kanban.set_blocked").triggerKey]: "blocked",
+  [getKeymap("kanban.complete").triggerKey]: "done",
 };
+
+const COL_LEFT_KEY = getKeymap("kanban.col_left").triggerKey;
+const COL_RIGHT_KEY = getKeymap("kanban.col_right").triggerKey;
+const ROW_DOWN_KEY = getKeymap("kanban.row_down").triggerKey;
+const ROW_UP_KEY = getKeymap("kanban.row_up").triggerKey;
+const MOVE_LEFT_KEY = getKeymap("kanban.move_task_left").triggerKey;
+const MOVE_RIGHT_KEY = getKeymap("kanban.move_task_right").triggerKey;
+const SWAP_LEFT_KEY = getKeymap("kanban.swap_col_left").triggerKey;
+const SWAP_RIGHT_KEY = getKeymap("kanban.swap_col_right").triggerKey;
+const EDIT_KEY = getKeymap("kanban.edit").triggerKey;
+const TOGGLE_SELECT_KEY = getKeymap("kanban.toggle_select").triggerKey;
+const VISUAL_MODE_KEY = getKeymap("kanban.visual_mode").triggerKey;
+const DELETE_KEY = getKeymap("kanban.delete").triggerKey;
+const SEARCH_KEY = getKeymap("kanban.search").triggerKey;
+const ESCAPE_KEY = getKeymap("kanban.escape").triggerKey;
+const JUMP_BOTTOM_KEY = getKeymap("queue.jump_bottom").triggerKey;
 
 const defaultColumns: { status: TaskStatus; label: string }[] = [
   { status: "pending", label: "Waiting" },
@@ -251,7 +273,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               if (ids.length > 0) kbDelete(ids);
             }
           }
-        } else if (e.key === "j") {
+        } else if (e.key === ROW_DOWN_KEY) {
           e.preventDefault();
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
@@ -264,7 +286,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               if (ids.length > 0) kbDelete(ids);
             }
           }
-        } else if (e.key === "k") {
+        } else if (e.key === ROW_UP_KEY) {
           e.preventDefault();
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
@@ -277,7 +299,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               if (ids.length > 0) kbDelete(ids);
             }
           }
-        } else if (e.key === "G") {
+        } else if (e.key === JUMP_BOTTOM_KEY) {
           e.preventDefault();
           if (kbActive) {
             const colTasks = getColTasks(colIdx);
@@ -312,10 +334,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       countBuf.current = "";
       const n = rawCount ? Number.parseInt(rawCount, 10) : 1;
 
-      switch (e.key) {
-        case "h": {
-          e.preventDefault();
-          if (visualMode) break;
+      if (e.key === COL_LEFT_KEY) {
+        e.preventDefault();
+        if (!visualMode) {
           setKbActive(true);
           setColIdx((c) => {
             const visibleIndices = columns
@@ -329,11 +350,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             return visibleIndices[target];
           });
           setRowIdx(0);
-          break;
         }
-        case "l": {
-          e.preventDefault();
-          if (visualMode) break;
+      } else if (e.key === COL_RIGHT_KEY) {
+        e.preventDefault();
+        if (!visualMode) {
           setKbActive(true);
           setColIdx((c) => {
             const visibleIndices = columns
@@ -349,27 +369,22 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             return visibleIndices[target];
           });
           setRowIdx(0);
-          break;
         }
-        case "j": {
-          e.preventDefault();
-          setKbActive(true);
-          setRowIdx((r) => {
-            const colTasks = getColTasks(colIdx);
-            return Math.min(r + n, colTasks.length - 1);
-          });
-          break;
-        }
-        case "k": {
-          e.preventDefault();
-          setKbActive(true);
-          setRowIdx((r) => Math.max(r - n, 0));
-          break;
-        }
-        case "H": {
-          e.preventDefault();
-          const newColH = Math.max(colIdx - 1, 0);
-          if (newColH === colIdx) break;
+      } else if (e.key === ROW_DOWN_KEY) {
+        e.preventDefault();
+        setKbActive(true);
+        setRowIdx((r) => {
+          const colTasks = getColTasks(colIdx);
+          return Math.min(r + n, colTasks.length - 1);
+        });
+      } else if (e.key === ROW_UP_KEY) {
+        e.preventDefault();
+        setKbActive(true);
+        setRowIdx((r) => Math.max(r - n, 0));
+      } else if (e.key === MOVE_LEFT_KEY) {
+        e.preventDefault();
+        const newColH = Math.max(colIdx - 1, 0);
+        if (newColH !== colIdx) {
           const newStatusH = columns[newColH].status;
           if (selectedIds.size > 0) {
             kbMoveToStatus([...selectedIds], newStatusH);
@@ -377,17 +392,17 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             setVisualMode(false);
           } else {
             const colTasksH = getColTasks(colIdx);
-            if (colTasksH.length === 0 || rowIdx >= colTasksH.length) break;
-            kbMoveToStatus([colTasksH[rowIdx].id], newStatusH);
+            if (colTasksH.length > 0 && rowIdx < colTasksH.length) {
+              kbMoveToStatus([colTasksH[rowIdx].id], newStatusH);
+            }
           }
           setColIdx(newColH);
           setRowIdx(0);
-          break;
         }
-        case "L": {
-          e.preventDefault();
-          const newColL = Math.min(colIdx + 1, columns.length - 1);
-          if (newColL === colIdx) break;
+      } else if (e.key === MOVE_RIGHT_KEY) {
+        e.preventDefault();
+        const newColL = Math.min(colIdx + 1, columns.length - 1);
+        if (newColL !== colIdx) {
           const newStatusL = columns[newColL].status;
           if (selectedIds.size > 0) {
             kbMoveToStatus([...selectedIds], newStatusL);
@@ -395,152 +410,129 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
             setVisualMode(false);
           } else {
             const colTasksL = getColTasks(colIdx);
-            if (colTasksL.length === 0 || rowIdx >= colTasksL.length) break;
-            kbMoveToStatus([colTasksL[rowIdx].id], newStatusL);
+            if (colTasksL.length > 0 && rowIdx < colTasksL.length) {
+              kbMoveToStatus([colTasksL[rowIdx].id], newStatusL);
+            }
           }
           setColIdx(newColL);
           setRowIdx(0);
-          break;
         }
-        case "<": {
-          e.preventDefault();
-          if (visualMode) break;
-          if (colIdx <= 0) break;
+      } else if (e.key === SWAP_LEFT_KEY) {
+        e.preventDefault();
+        if (!visualMode && colIdx > 0) {
           setColumns((prev) => {
             const next = [...prev];
             [next[colIdx - 1], next[colIdx]] = [next[colIdx], next[colIdx - 1]];
             return next;
           });
           setColIdx((c) => c - 1);
-          break;
         }
-        case ">": {
-          e.preventDefault();
-          if (visualMode) break;
-          if (colIdx >= columns.length - 1) break;
+      } else if (e.key === SWAP_RIGHT_KEY) {
+        e.preventDefault();
+        if (!visualMode && colIdx < columns.length - 1) {
           setColumns((prev) => {
             const next = [...prev];
             [next[colIdx], next[colIdx + 1]] = [next[colIdx + 1], next[colIdx]];
             return next;
           });
           setColIdx((c) => c + 1);
-          break;
         }
-        case "e": {
-          e.preventDefault();
-          const colTasks = getColTasks(colIdx);
-          if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
-            nav.pushJump();
-            panel.toggle(colTasks[rowIdx].id);
-          } else {
-            panel.create();
-          }
-          break;
+      } else if (e.key === EDIT_KEY) {
+        e.preventDefault();
+        const colTasks = getColTasks(colIdx);
+        if (kbActive && colTasks.length > 0 && rowIdx < colTasks.length) {
+          nav.pushJump();
+          panel.toggle(colTasks[rowIdx].id);
+        } else {
+          panel.create();
         }
-        case "w":
-        case "i":
-        case "b":
-        case "x": {
-          e.preventDefault();
-          if (!kbActive && selectedIds.size === 0) break;
+      } else if (STATUS_FOR_KEY[e.key]) {
+        e.preventDefault();
+        if (kbActive || selectedIds.size > 0) {
           const newStatus = STATUS_FOR_KEY[e.key];
-          if (!newStatus) break;
-          if (selectedIds.size > 0) {
-            kbMoveToStatus([...selectedIds], newStatus);
-            setSelectedIds(new Set());
-            setVisualMode(false);
-          } else {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length === 0 || rowIdx >= colTasks.length) break;
-            kbMoveToStatus([colTasks[rowIdx].id], newStatus);
-          }
-          const targetCol = columns.findIndex((c) => c.status === newStatus);
-          if (targetCol !== -1) {
-            setColIdx(targetCol);
-            setRowIdx(0);
-          }
-          break;
-        }
-        case "W":
-        case "I":
-        case "B":
-        case "X": {
-          e.preventDefault();
-          const jumpIdx = COLUMN_HINTS.indexOf(e.key);
-          if (jumpIdx !== -1 && jumpIdx < columns.length) {
-            setKbActive(true);
-            setColIdx(jumpIdx);
-            setRowIdx(0);
-          }
-          break;
-        }
-        case "v": {
-          e.preventDefault();
-          if (visualMode) setVisualMode(false);
-          if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              const id = colTasks[rowIdx].id;
-              setSelectedIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(id)) next.delete(id);
-                else next.add(id);
-                return next;
-              });
+          if (newStatus) {
+            if (selectedIds.size > 0) {
+              kbMoveToStatus([...selectedIds], newStatus);
+              setSelectedIds(new Set());
+              setVisualMode(false);
+            } else {
+              const colTasks = getColTasks(colIdx);
+              if (colTasks.length > 0 && rowIdx < colTasks.length) {
+                kbMoveToStatus([colTasks[rowIdx].id], newStatus);
+              }
+            }
+            const targetCol = columns.findIndex((c) => c.status === newStatus);
+            if (targetCol !== -1) {
+              setColIdx(targetCol);
+              setRowIdx(0);
             }
           }
-          break;
         }
-        case "V": {
-          e.preventDefault();
-          if (visualMode) {
-            setVisualMode(false);
-            setSelectedIds(new Set());
-          } else if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              setVisualMode(true);
-              visualAnchor.current = rowIdx;
-              setSelectedIds(new Set([colTasks[rowIdx].id]));
-            }
+      } else if (COLUMN_HINTS.includes(e.key)) {
+        e.preventDefault();
+        const jumpIdx = COLUMN_HINTS.indexOf(e.key);
+        if (jumpIdx !== -1 && jumpIdx < columns.length) {
+          setKbActive(true);
+          setColIdx(jumpIdx);
+          setRowIdx(0);
+        }
+      } else if (e.key === TOGGLE_SELECT_KEY) {
+        e.preventDefault();
+        if (visualMode) setVisualMode(false);
+        if (kbActive) {
+          const colTasks = getColTasks(colIdx);
+          if (colTasks.length > 0 && rowIdx < colTasks.length) {
+            const id = colTasks[rowIdx].id;
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              if (next.has(id)) next.delete(id);
+              else next.add(id);
+              return next;
+            });
           }
-          break;
         }
-        case "d": {
-          e.preventDefault();
-          if (selectedIds.size > 0) {
-            kbDelete([...selectedIds]);
-            setSelectedIds(new Set());
-            setVisualMode(false);
-          } else {
-            const parsedCount = rawCount ? Number.parseInt(rawCount, 10) : null;
-            pendingOp.current = { key: "d", preCount: parsedCount };
-            opTimer.current = setTimeout(() => {
-              pendingOp.current = null;
-              opTimer.current = null;
-            }, 500);
+      } else if (e.key === VISUAL_MODE_KEY) {
+        e.preventDefault();
+        if (visualMode) {
+          setVisualMode(false);
+          setSelectedIds(new Set());
+        } else if (kbActive) {
+          const colTasks = getColTasks(colIdx);
+          if (colTasks.length > 0 && rowIdx < colTasks.length) {
+            setVisualMode(true);
+            visualAnchor.current = rowIdx;
+            setSelectedIds(new Set([colTasks[rowIdx].id]));
           }
-          break;
         }
-        case "/": {
-          e.preventDefault();
-          setSearchActive(true);
-          requestAnimationFrame(() => searchRef.current?.focus());
-          break;
+      } else if (e.key === DELETE_KEY) {
+        e.preventDefault();
+        if (selectedIds.size > 0) {
+          kbDelete([...selectedIds]);
+          setSelectedIds(new Set());
+          setVisualMode(false);
+        } else {
+          const parsedCount = rawCount ? Number.parseInt(rawCount, 10) : null;
+          pendingOp.current = { key: DELETE_KEY, preCount: parsedCount };
+          opTimer.current = setTimeout(() => {
+            pendingOp.current = null;
+            opTimer.current = null;
+          }, 500);
         }
-        case "Escape": {
-          if (searchActive) {
-            setSearchQuery("");
-            setSearchActive(false);
-          } else if (visualMode) {
-            setVisualMode(false);
-            setSelectedIds(new Set());
-          } else {
-            setKbActive(false);
-            setColIdx(0);
-            setRowIdx(0);
-          }
-          break;
+      } else if (e.key === SEARCH_KEY) {
+        e.preventDefault();
+        setSearchActive(true);
+        requestAnimationFrame(() => searchRef.current?.focus());
+      } else if (e.key === ESCAPE_KEY) {
+        if (searchActive) {
+          setSearchQuery("");
+          setSearchActive(false);
+        } else if (visualMode) {
+          setVisualMode(false);
+          setSelectedIds(new Set());
+        } else {
+          setKbActive(false);
+          setColIdx(0);
+          setRowIdx(0);
         }
       }
     },

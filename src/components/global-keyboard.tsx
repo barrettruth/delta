@@ -8,13 +8,14 @@ import { useCommandBar } from "@/contexts/command-bar";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const VIEW_KEYS: Record<string, string> = {
-  Q: "/",
-  K: "/kanban",
-  C: "/calendar",
-  S: "/settings",
+  [getKeymap("global.queue").key]: "/",
+  [getKeymap("global.kanban").key]: "/kanban",
+  [getKeymap("global.calendar").key]: "/calendar",
+  [getKeymap("global.settings").key]: "/settings",
 };
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -49,22 +50,20 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      if (e.ctrlKey) {
-        if (e.key === "o") {
-          e.preventDefault();
-          jumpBack();
-          return;
-        }
-        if (e.key === "i") {
-          e.preventDefault();
-          jumpForward();
-          return;
-        }
-        if (e.key === "6") {
-          e.preventDefault();
-          goAlternate();
-          return;
-        }
+      if (matchesEvent("nav.jump_back", e)) {
+        e.preventDefault();
+        jumpBack();
+        return;
+      }
+      if (matchesEvent("nav.jump_forward", e)) {
+        e.preventDefault();
+        jumpForward();
+        return;
+      }
+      if (matchesEvent("nav.alternate", e)) {
+        e.preventDefault();
+        goAlternate();
+        return;
       }
 
       if (pendingG.current) {
@@ -102,7 +101,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       }
 
       if (
-        e.key === "g" &&
+        e.key === getKeymap("global.help").triggerKey &&
         !e.shiftKey &&
         !e.ctrlKey &&
         !e.metaKey &&
@@ -117,13 +116,20 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      if (e.key === "-" && !document.querySelector("[role=dialog]")) {
+      if (
+        e.key === getKeymap("global.toggle_sidebar").key &&
+        !document.querySelector("[role=dialog]")
+      ) {
         e.preventDefault();
         toggleSidebar();
         return;
       }
 
-      if (e.key === "q" && !e.ctrlKey && !e.metaKey) {
+      if (
+        e.key === getKeymap("global.logout").key &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
         e.preventDefault();
         fetch("/api/auth/logout", { method: "POST" }).then(() => {
           router.push("/login");
@@ -131,20 +137,28 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      if (e.key === "w" && pathname !== "/calendar" && pathname !== "/kanban") {
+      if (
+        e.key === getKeymap("global.calendar_week").key &&
+        pathname !== "/calendar" &&
+        pathname !== "/kanban"
+      ) {
         e.preventDefault();
         pushJump();
         router.push("/calendar?mode=week");
         return;
       }
-      if (e.key === "m" && pathname !== "/calendar" && pathname !== "/kanban") {
+      if (
+        e.key === getKeymap("global.calendar_month").key &&
+        pathname !== "/calendar" &&
+        pathname !== "/kanban"
+      ) {
         e.preventDefault();
         pushJump();
         router.push("/calendar?mode=month");
         return;
       }
 
-      if (e.key === "u" && !e.ctrlKey && !e.metaKey) {
+      if (e.key === getKeymap("global.undo").key && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         performUndo();
         return;

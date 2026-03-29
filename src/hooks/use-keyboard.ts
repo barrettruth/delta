@@ -2,15 +2,38 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Task, TaskStatus } from "@/core/types";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
+const DELETE_KEY = getKeymap("queue.delete").triggerKey;
+const PENDING_KEY = getKeymap("queue.set_pending").triggerKey;
+const WIP_KEY = getKeymap("queue.set_wip").triggerKey;
+const BLOCKED_KEY = getKeymap("queue.set_blocked").triggerKey;
+const COMPLETE_KEY = getKeymap("queue.complete").triggerKey;
+
 const STATUS_OPS: Record<string, TaskStatus> = {
-  p: "pending",
-  w: "wip",
-  b: "blocked",
+  [PENDING_KEY]: "pending",
+  [WIP_KEY]: "wip",
+  [BLOCKED_KEY]: "blocked",
 };
 
-const OP_KEYS = new Set(["d", "p", "w", "b", "x"]);
+const OP_KEYS = new Set([
+  DELETE_KEY,
+  PENDING_KEY,
+  WIP_KEY,
+  BLOCKED_KEY,
+  COMPLETE_KEY,
+]);
+
+const MOVE_DOWN_KEY = getKeymap("queue.move_down").triggerKey;
+const MOVE_UP_KEY = getKeymap("queue.move_up").triggerKey;
+const JUMP_BOTTOM_KEY = getKeymap("queue.jump_bottom").triggerKey;
+const JUMP_TOP_KEY = getKeymap("queue.jump_top").triggerKey;
+const EDIT_KEY = getKeymap("queue.edit").triggerKey;
+const TOGGLE_SELECT_KEY = getKeymap("queue.toggle_select").triggerKey;
+const VISUAL_MODE_KEY = getKeymap("queue.visual_mode").triggerKey;
+const ESCAPE_KEY = getKeymap("queue.escape").triggerKey;
+const G_PREFIX = JUMP_TOP_KEY[0];
 
 interface KeyboardActions {
   tasks: Task[];
@@ -50,30 +73,27 @@ function resolveMotion(
   motionCount: number | null,
   preCount: number,
 ): [number, number] | null {
-  switch (key) {
-    case "j": {
-      const n = preCount * (motionCount ?? 1);
-      return [cursor, Math.min(cursor + n, taskCount - 1)];
-    }
-    case "k": {
-      const n = preCount * (motionCount ?? 1);
-      return [Math.max(cursor - n, 0), cursor];
-    }
-    case "G": {
-      const target =
-        motionCount != null
-          ? Math.min(motionCount - 1, taskCount - 1)
-          : taskCount - 1;
-      return [Math.min(cursor, target), Math.max(cursor, target)];
-    }
-    case "gg": {
-      const target =
-        motionCount != null ? Math.min(motionCount - 1, taskCount - 1) : 0;
-      return [Math.min(cursor, target), Math.max(cursor, target)];
-    }
-    default:
-      return null;
+  if (key === MOVE_DOWN_KEY) {
+    const n = preCount * (motionCount ?? 1);
+    return [cursor, Math.min(cursor + n, taskCount - 1)];
   }
+  if (key === MOVE_UP_KEY) {
+    const n = preCount * (motionCount ?? 1);
+    return [Math.max(cursor - n, 0), cursor];
+  }
+  if (key === JUMP_BOTTOM_KEY) {
+    const target =
+      motionCount != null
+        ? Math.min(motionCount - 1, taskCount - 1)
+        : taskCount - 1;
+    return [Math.min(cursor, target), Math.max(cursor, target)];
+  }
+  if (key === JUMP_TOP_KEY) {
+    const target =
+      motionCount != null ? Math.min(motionCount - 1, taskCount - 1) : 0;
+    return [Math.min(cursor, target), Math.max(cursor, target)];
+  }
+  return null;
 }
 
 export function useKeyboard(actions: KeyboardActions) {
@@ -119,9 +139,9 @@ export function useKeyboard(actions: KeyboardActions) {
 
   const applyOp = useCallback((op: string, ids: number[]) => {
     if (ids.length === 0) return;
-    if (op === "d") {
+    if (op === DELETE_KEY) {
       actionsRef.current.onDelete(ids);
-    } else if (op === "x") {
+    } else if (op === COMPLETE_KEY) {
       actionsRef.current.onComplete(ids);
     } else {
       const status = STATUS_OPS[op];
@@ -160,7 +180,7 @@ export function useKeyboard(actions: KeyboardActions) {
           clearTimeout(opMotionGTimer.current);
           opMotionGTimer.current = null;
         }
-        if (e.key === "g") {
+        if (e.key === G_PREFIX) {
           e.preventDefault();
           const target =
             motionCount != null
@@ -215,7 +235,7 @@ export function useKeyboard(actions: KeyboardActions) {
           return;
         }
 
-        if (e.key === "g") {
+        if (e.key === G_PREFIX) {
           e.preventDefault();
           pendingOpMotionG.current = { op, preCount: pre, motionCount };
           opMotionGTimer.current = setTimeout(() => {
@@ -225,7 +245,11 @@ export function useKeyboard(actions: KeyboardActions) {
           return;
         }
 
-        if (e.key === "G" || e.key === "j" || e.key === "k") {
+        if (
+          e.key === JUMP_BOTTOM_KEY ||
+          e.key === MOVE_DOWN_KEY ||
+          e.key === MOVE_UP_KEY
+        ) {
           e.preventDefault();
           const range = resolveMotion(
             e.key,
@@ -245,7 +269,7 @@ export function useKeyboard(actions: KeyboardActions) {
           return;
         }
 
-        if (e.key === "Escape") {
+        if (e.key === ESCAPE_KEY) {
           e.preventDefault();
           return;
         }
@@ -260,7 +284,7 @@ export function useKeyboard(actions: KeyboardActions) {
           clearTimeout(gTimer.current);
           gTimer.current = null;
         }
-        if (e.key === "g") {
+        if (e.key === G_PREFIX) {
           e.preventDefault();
           if (tasks.length > 0) {
             actionsRef.current.onJump?.();
@@ -280,7 +304,10 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      if (e.ctrlKey && (e.key === "d" || e.key === "u")) {
+      if (
+        matchesEvent("queue.half_page_down", e) ||
+        matchesEvent("queue.half_page_up", e)
+      ) {
         e.preventDefault();
         countBuf.current = "";
         if (tasks.length === 0) return;
@@ -292,7 +319,10 @@ export function useKeyboard(actions: KeyboardActions) {
         const viewportRows = container
           ? Math.max(1, Math.floor(container.clientHeight / avgRowHeight / 2))
           : 10;
-        const delta = e.key === "d" ? viewportRows : -viewportRows;
+        const delta =
+          e.key === getKeymap("queue.half_page_down").key
+            ? viewportRows
+            : -viewportRows;
         setCursor((i) => Math.max(0, Math.min(i + delta, tasks.length - 1)));
         return;
       }
@@ -331,82 +361,65 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      switch (e.key) {
-        case "g": {
-          e.preventDefault();
-          pendingG.current = count;
-          gTimer.current = setTimeout(() => {
-            pendingG.current = false;
-            gTimer.current = null;
-          }, 500);
-          break;
+      if (e.key === G_PREFIX && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        pendingG.current = count;
+        gTimer.current = setTimeout(() => {
+          pendingG.current = false;
+          gTimer.current = null;
+        }, 500);
+      } else if (e.key === JUMP_BOTTOM_KEY) {
+        e.preventDefault();
+        if (tasks.length > 0) {
+          actionsRef.current.onJump?.();
+          setCursor(
+            count !== null
+              ? Math.max(0, Math.min(count - 1, tasks.length - 1))
+              : tasks.length - 1,
+          );
         }
-        case "G": {
-          e.preventDefault();
-          if (tasks.length > 0) {
-            actionsRef.current.onJump?.();
-            setCursor(
-              count !== null
-                ? Math.max(0, Math.min(count - 1, tasks.length - 1))
-                : tasks.length - 1,
-            );
-          }
-          break;
+      } else if (e.key === MOVE_DOWN_KEY) {
+        e.preventDefault();
+        if (tasks.length === 0) return;
+        setCursor((i) => Math.min(i + n, tasks.length - 1));
+      } else if (e.key === MOVE_UP_KEY) {
+        e.preventDefault();
+        if (tasks.length === 0) return;
+        setCursor((i) => Math.max(i - n, 0));
+      } else if (e.key === EDIT_KEY) {
+        e.preventDefault();
+        if (cursor >= 0 && cursor < tasks.length) {
+          onSelect(tasks[cursor]);
+        } else {
+          onCreate?.();
         }
-        case "j": {
-          e.preventDefault();
-          if (tasks.length === 0) break;
-          setCursor((i) => Math.min(i + n, tasks.length - 1));
-          break;
+      } else if (e.key === TOGGLE_SELECT_KEY) {
+        e.preventDefault();
+        if (visualMode) {
+          setVisualMode(false);
         }
-        case "k": {
-          e.preventDefault();
-          if (tasks.length === 0) break;
-          setCursor((i) => Math.max(i - n, 0));
-          break;
+        if (cursor >= 0 && cursor < tasks.length) {
+          toggleSelect(tasks[cursor].id);
         }
-        case "e": {
-          e.preventDefault();
-          if (cursor >= 0 && cursor < tasks.length) {
-            onSelect(tasks[cursor]);
-          } else {
-            onCreate?.();
-          }
-          break;
+      } else if (e.key === VISUAL_MODE_KEY) {
+        e.preventDefault();
+        if (visualMode) {
+          setVisualMode(false);
+          setSelectedIds(new Set());
+        } else if (cursor >= 0) {
+          setVisualMode(true);
+          visualAnchor.current = cursor;
+          setSelectedIds(new Set([tasks[cursor].id]));
         }
-        case "v": {
-          e.preventDefault();
-          if (visualMode) {
-            setVisualMode(false);
-          }
-          if (cursor >= 0 && cursor < tasks.length) {
-            toggleSelect(tasks[cursor].id);
-          }
-          break;
-        }
-        case "V": {
-          e.preventDefault();
-          if (visualMode) {
-            setVisualMode(false);
-            setSelectedIds(new Set());
-          } else if (cursor >= 0) {
-            setVisualMode(true);
-            visualAnchor.current = cursor;
-            setSelectedIds(new Set([tasks[cursor].id]));
-          }
-          break;
-        }
-        case "Escape": {
-          if (visualMode) {
-            setVisualMode(false);
-            setSelectedIds(new Set());
-          } else if (selectedIds.size > 0) {
-            setSelectedIds(new Set());
-          } else {
-            setCursor(-1);
-            onDeselect();
-          }
-          break;
+      } else if (e.key === ESCAPE_KEY) {
+        if (visualMode) {
+          setVisualMode(false);
+          setSelectedIds(new Set());
+        } else if (selectedIds.size > 0) {
+          setSelectedIds(new Set());
+        } else {
+          setCursor(-1);
+          onDeselect();
         }
       }
     },
