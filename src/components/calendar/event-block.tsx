@@ -72,7 +72,7 @@ export function EventBlock({
       data-event-end={task.endAt ?? ""}
       data-event-start-min={startMin}
       data-event-end-min={endMin}
-      className={`group/event absolute z-10 overflow-hidden ${height < 25 ? "px-1 py-0" : "px-1.5 py-1"} text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left ${height < 25 ? "flex items-center gap-1" : "flex flex-col gap-0.5 justify-start"} ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
+      className={`group/event absolute z-10 overflow-hidden ${height < 25 ? "px-1 py-0" : "px-1.5 py-1"} text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left ${height < 25 ? "flex items-center justify-between gap-1" : "flex flex-col gap-0.5 justify-start"} ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -94,11 +94,11 @@ export function EventBlock({
     >
       {height < 25 ? (
         <>
-          <span className="font-medium truncate text-[10px]">
+          <span className="font-medium truncate text-[10px] inline-flex items-center min-w-0">
             {isRecurring && <span className="mr-0.5 shrink-0">&#x21BB;</span>}
-            {task.description}
+            <span className="truncate">{task.description}</span>
           </span>
-          <span className="shrink-0 text-muted-foreground text-[9px]">
+          <span className="shrink-0 text-muted-foreground text-[9px] inline-flex items-center">
             {formatTime(start)}
           </span>
         </>

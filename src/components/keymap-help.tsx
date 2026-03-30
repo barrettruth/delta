@@ -104,7 +104,7 @@ export function KeymapHelp({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup
-          className="fixed inset-8 z-50 mx-auto max-w-2xl flex flex-col border border-border bg-card duration-100 outline-none overflow-auto data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[80vh] flex flex-col border border-border bg-card duration-100 outline-none overflow-auto data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           onKeyDown={(e) => {
             if (capturingId) return;
             if (e.key === "q") {
