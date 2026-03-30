@@ -519,6 +519,13 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     section: "calendar",
     label: "Delete event",
   },
+  {
+    id: "calendar.actions",
+    key: "a",
+    triggerKey: "a",
+    section: "calendar",
+    label: "Calendar management",
+  },
 
   {
     id: "nav.jump_back",
@@ -600,7 +607,6 @@ export function matchesEvent(id: string, e: KeyboardEvent): boolean {
 }
 
 export function formatKey(def: KeymapDef): string {
-  const displayKey = def.triggerKey;
   if (def.modifiers?.length) {
     const mods = def.modifiers.map((m) => {
       if (m === "ctrl") return "C";
@@ -773,6 +779,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       row("calendar.today", "t", "Jump to today"),
       row("calendar.toggle_allday", "E", "Toggle all-day bar"),
       row("calendar.delete", "dd", "Delete event"),
+      row("calendar.actions", "ga", "Calendar management"),
     ],
   },
   {

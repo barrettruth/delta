@@ -27,21 +27,6 @@ interface ConnectedAccount {
   createdAt: string;
 }
 
-interface IntegrationSummary {
-  provider: string;
-  enabled: number;
-  metadata: Record<string, unknown> | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-type GeoProvider = "photon" | "mapbox" | "google_maps";
-const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
-  { id: "photon", label: "photon" },
-  { id: "mapbox", label: "mapbox" },
-  { id: "google_maps", label: "google maps" },
-];
-
 export function SettingsView({
   username,
   passkeys: initialPasskeys,
@@ -49,8 +34,6 @@ export function SettingsView({
   recoveryCodesRemaining: initialRecoveryRemaining,
   connectedAccounts: initialConnectedAccounts,
   enabledProviders,
-  integrations: initialIntegrations,
-  keymapOverrides: _keymapOverrides,
 }: {
   username: string;
   passkeys: Passkey[];
@@ -58,8 +41,6 @@ export function SettingsView({
   recoveryCodesRemaining: number;
   connectedAccounts: ConnectedAccount[];
   enabledProviders: string[];
-  integrations: IntegrationSummary[];
-  keymapOverrides: Record<string, string>;
 }) {
   const router = useRouter();
   const statusBar = useStatusBar();
@@ -88,16 +69,6 @@ export function SettingsView({
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [invites, setInvites] = useState<InviteLinkRow[]>([]);
   const [invitesLoaded, setInvitesLoaded] = useState(false);
-  const [integrations, setIntegrations] = useState(initialIntegrations);
-  const [geoProvider, setGeoProvider] = useState<GeoProvider>(() => {
-    if (initialIntegrations.find((i) => i.provider === "google_maps"))
-      return "google_maps";
-    if (initialIntegrations.find((i) => i.provider === "mapbox"))
-      return "mapbox";
-    return "photon";
-  });
-  const [geoKeyInput, setGeoKeyInput] = useState("");
-  const [geoExpanded, setGeoExpanded] = useState(false);
   async function handleAddPasskey() {
     try {
       const optionsRes = await fetch("/api/auth/webauthn/register");
@@ -219,82 +190,6 @@ export function SettingsView({
   async function handleCopyInviteUrl(token: string) {
     await navigator.clipboard.writeText(getInviteUrl(token));
     statusBar.message("copied to clipboard");
-  }
-
-  async function handleSelectGeoProvider(id: GeoProvider) {
-    if (id === "photon") {
-      for (const p of ["mapbox", "google_maps"]) {
-        const exists = integrations.find((i) => i.provider === p);
-        if (exists) {
-          await fetch(`/api/settings/integrations/${p}`, { method: "DELETE" });
-          setIntegrations((prev) => prev.filter((i) => i.provider !== p));
-        }
-      }
-      setGeoProvider("photon");
-      setGeoExpanded(false);
-      statusBar.message("geocoding set to photon");
-      return;
-    }
-    const existing = integrations.find((i) => i.provider === id);
-    if (existing) {
-      const other = id === "mapbox" ? "google_maps" : "mapbox";
-      const otherExists = integrations.find((i) => i.provider === other);
-      if (otherExists) {
-        await fetch(`/api/settings/integrations/${other}`, {
-          method: "DELETE",
-        });
-        setIntegrations((prev) => prev.filter((i) => i.provider !== other));
-      }
-      setGeoProvider(id);
-      setGeoExpanded(false);
-      const label = GEO_PROVIDERS.find((p) => p.id === id)?.label ?? id;
-      statusBar.message(`geocoding set to ${label}`);
-      return;
-    }
-    setGeoExpanded(true);
-    setGeoKeyInput("");
-    setGeoProvider(id);
-  }
-
-  async function handleSaveGeoKey() {
-    if (!geoKeyInput.trim()) {
-      statusBar.error("api key cannot be empty");
-      return;
-    }
-    const res = await fetch("/api/settings/integrations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: geoProvider,
-        tokens: { api_key: geoKeyInput.trim() },
-      }),
-    });
-    if (!res.ok) {
-      statusBar.error("failed to save api key");
-      return;
-    }
-    const other = geoProvider === "mapbox" ? "google_maps" : "mapbox";
-    const otherExists = integrations.find((i) => i.provider === other);
-    if (otherExists) {
-      await fetch(`/api/settings/integrations/${other}`, { method: "DELETE" });
-      setIntegrations((prev) => prev.filter((i) => i.provider !== other));
-    }
-    const data = await res.json();
-    setIntegrations((prev) => [
-      ...prev.filter((i) => i.provider !== geoProvider),
-      {
-        provider: data.provider,
-        enabled: data.enabled,
-        metadata: data.metadata,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-      },
-    ]);
-    setGeoExpanded(false);
-    setGeoKeyInput("");
-    const label =
-      GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
-    statusBar.message(`geocoding set to ${label}`);
   }
 
   useEffect(() => {
@@ -508,49 +403,6 @@ export function SettingsView({
               muted
               onClick={handleGenerateInvite}
             />
-          )}
-        </Section>
-
-        <Section title="geocoding">
-          {GEO_PROVIDERS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="flex items-center w-full text-sm py-2 md:py-1 px-2 min-w-0 hover:bg-accent/50 cursor-pointer"
-              onClick={() => handleSelectGeoProvider(p.id)}
-            >
-              <span
-                className={`flex-1 text-left truncate min-w-0 ${geoProvider === p.id ? "text-foreground" : "text-muted-foreground"}`}
-              >
-                {p.label}
-              </span>
-            </button>
-          ))}
-          {geoExpanded && (
-            <div className="flex gap-2 ml-4 mt-1 mb-2">
-              <Input
-                value={geoKeyInput}
-                onChange={(e) => setGeoKeyInput(e.target.value)}
-                placeholder="api key"
-                autoFocus
-                className="h-7 text-sm flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveGeoKey();
-                  if (e.key === "Escape") {
-                    setGeoExpanded(false);
-                    setGeoKeyInput("");
-                  }
-                }}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveGeoKey}
-                className="h-7 text-xs"
-              >
-                save
-              </Button>
-            </div>
           )}
         </Section>
       </div>

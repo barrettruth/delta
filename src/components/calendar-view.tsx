@@ -49,6 +49,7 @@ export function CalendarView({
   defaultViewMode = "week",
   feedToken = null,
   gcalStatus = { connected: false, lastSyncTime: null },
+  geoProvider = "photon",
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
@@ -56,6 +57,7 @@ export function CalendarView({
   defaultViewMode?: ViewMode;
   feedToken?: string | null;
   gcalStatus?: { connected: boolean; lastSyncTime: string | null };
+  geoProvider?: string;
 }) {
   const nav = useNavigation();
   const statusBar = useStatusBar();
@@ -75,6 +77,7 @@ export function CalendarView({
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
   const [allDayExpanded, setAllDayExpanded] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, { startAt?: string; endAt?: string }>
   >(new Map());
@@ -658,6 +661,14 @@ export function CalendarView({
           weekScrollRef.current.scrollTop = hour * HOUR_HEIGHT;
           return;
         }
+        const actionsKey =
+          keymaps.getResolvedKeymap("calendar.actions").triggerKey;
+        if (e.key === actionsKey) {
+          e.preventDefault();
+          setActionsOpen(true);
+          countBuf.current = "";
+          return;
+        }
         countBuf.current = "";
         return;
       }
@@ -831,6 +842,11 @@ export function CalendarView({
           <CalendarActionsPopover
             feedToken={feedToken}
             gcalStatus={gcalStatus}
+            initialGeoProvider={
+              geoProvider as "photon" | "mapbox" | "google_maps"
+            }
+            open={actionsOpen}
+            onOpenChange={setActionsOpen}
           />
         </div>
       </div>

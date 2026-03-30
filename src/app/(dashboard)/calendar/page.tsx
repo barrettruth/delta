@@ -55,6 +55,12 @@ export default async function CalendarPage({
       }
     : { connected: false, lastSyncTime: null };
 
+  const geoProvider = getIntegrationConfig(db, user.id, "google_maps")
+    ? "google_maps"
+    : getIntegrationConfig(db, user.id, "mapbox")
+      ? "mapbox"
+      : "photon";
+
   return (
     <CalendarView
       tasks={tasks}
@@ -63,6 +69,7 @@ export default async function CalendarPage({
       defaultViewMode={defaultViewMode}
       feedToken={feedToken}
       gcalStatus={gcalStatus}
+      geoProvider={geoProvider}
     />
   );
 }
