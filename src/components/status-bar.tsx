@@ -178,7 +178,7 @@ export function StatusBar() {
 
   if (commandBar.active) {
     return (
-      <div className="h-7 shrink-0 border-t border-border bg-background flex items-center px-2 md:px-4 font-mono text-[13px] text-foreground overflow-hidden">
+      <div className="h-7 shrink-0 border-t border-border bg-muted flex items-center px-2 md:px-4 font-mono text-[13px] text-foreground overflow-hidden">
         <span className="shrink-0">:</span>
         <input
           ref={inputRef}
@@ -202,7 +202,7 @@ export function StatusBar() {
   }
 
   return (
-    <div className="h-7 shrink-0 border-t border-border bg-background flex items-center justify-between px-2 md:px-4 font-mono text-[13px] text-muted-foreground overflow-hidden">
+    <div className="h-7 shrink-0 border-t border-border bg-muted flex items-center justify-between px-2 md:px-4 font-mono text-[13px] text-muted-foreground overflow-hidden">
       <div className="truncate">
         {state.primary !== "" ? (
           state.primaryType === "error" ? (
