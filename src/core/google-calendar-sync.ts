@@ -17,12 +17,13 @@ import {
   upsertIntegrationConfig,
 } from "./integration-config";
 import { createTask, updateTask } from "./task";
-import type { Db, Task, UpdateTaskInput } from "./types";
+import type { ConflictResolution, Db, Task, UpdateTaskInput } from "./types";
 
 interface SyncMetadata {
   syncToken?: string;
   lastSyncTime?: string;
   calendarId?: string;
+  conflictResolution?: ConflictResolution;
   [key: string]: unknown;
 }
 
@@ -90,10 +91,11 @@ function mergeFields(
   googleInput: Partial<UpdateTaskInput>,
   existingTask: Task,
   googleUpdated: string | undefined,
+  strategy: ConflictResolution = "lww",
 ): Partial<UpdateTaskInput> {
+  if (strategy === "delta_wins") return {};
+
   const merged: Partial<UpdateTaskInput> = {};
-  const googleTime = googleUpdated ? new Date(googleUpdated).getTime() : 0;
-  const taskTime = new Date(existingTask.updatedAt).getTime();
 
   const fieldKeys = [
     "description",
@@ -116,6 +118,13 @@ function mergeFields(
 
     if (googleValue === taskValue) continue;
 
+    if (strategy === "google_wins") {
+      (merged as Record<string, unknown>)[key] = googleValue;
+      continue;
+    }
+
+    const googleTime = googleUpdated ? new Date(googleUpdated).getTime() : 0;
+    const taskTime = new Date(existingTask.updatedAt).getTime();
     if (googleTime >= taskTime) {
       (merged as Record<string, unknown>)[key] = googleValue;
     }
@@ -129,6 +138,7 @@ async function pullEvents(
   userId: number,
   accessToken: string,
   calendarId: string,
+  strategy: ConflictResolution,
   syncToken?: string,
 ): Promise<{
   nextSyncToken?: string;
@@ -162,7 +172,12 @@ async function pullEvents(
 
     if (existing) {
       const trackedInput = getTrackedFields(input as Record<string, unknown>);
-      const merged = mergeFields(trackedInput, existing, event.updated);
+      const merged = mergeFields(
+        trackedInput,
+        existing,
+        event.updated,
+        strategy,
+      );
 
       if (Object.keys(merged).length > 0) {
         updateTask(db, existing.id, merged);
@@ -185,8 +200,11 @@ async function pushEvents(
   userId: number,
   accessToken: string,
   calendarId: string,
+  strategy: ConflictResolution,
   lastSyncTime?: string,
 ): Promise<number> {
+  if (strategy === "google_wins") return 0;
+
   const conditions = [eq(tasks.userId, userId), isNotNull(tasks.startAt)];
 
   if (lastSyncTime) {
@@ -211,9 +229,7 @@ async function pushEvents(
         await deleteCalendarEvent(accessToken, calendarId, gcalId);
         updateTask(db, task.id, { externalId: null });
         pushed++;
-      } catch {
-        /* keep externalId so we retry next sync */
-      }
+      } catch {}
       continue;
     }
 
@@ -222,9 +238,7 @@ async function pushEvents(
       try {
         await updateCalendarEvent(accessToken, calendarId, gcalId, eventBody);
         pushed++;
-      } catch {
-        /* noop */
-      }
+      } catch {}
       continue;
     }
 
@@ -238,9 +252,7 @@ async function pushEvents(
         );
         updateTask(db, task.id, { externalId: `gcal:${created.id}` });
         pushed++;
-      } catch {
-        /* noop */
-      }
+      } catch {}
     }
   }
 
@@ -277,6 +289,8 @@ export async function syncGoogleCalendar(
     saveMetadata(db, userId, metadata, tokens);
   }
 
+  const strategy: ConflictResolution = metadata.conflictResolution ?? "lww";
+
   let syncToken = metadata.syncToken;
   let totalPulled = 0;
 
@@ -285,6 +299,7 @@ export async function syncGoogleCalendar(
     userId,
     accessToken,
     calendarId,
+    strategy,
     syncToken,
   );
 
@@ -294,6 +309,7 @@ export async function syncGoogleCalendar(
       userId,
       accessToken,
       calendarId,
+      strategy,
       undefined,
     );
     syncToken = retryResult.nextSyncToken;
@@ -308,6 +324,7 @@ export async function syncGoogleCalendar(
     userId,
     accessToken,
     calendarId,
+    strategy,
     metadata.lastSyncTime,
   );
 
