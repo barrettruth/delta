@@ -1,5 +1,18 @@
 "use client";
 
+import {
+  CheckSquare,
+  Code,
+  Link as LinkIcon,
+  List,
+  ListNumbers,
+  Quotes,
+  TextB,
+  TextHOne,
+  TextHThree,
+  TextHTwo,
+  TextItalic,
+} from "@phosphor-icons/react";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
@@ -7,19 +20,6 @@ import TaskList from "@tiptap/extension-task-list";
 import type { JSONContent } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import {
-  Bold,
-  CheckSquare,
-  Code,
-  Heading1,
-  Heading2,
-  Heading3,
-  Italic,
-  Link2,
-  List,
-  ListOrdered,
-  Quote,
-} from "lucide-react";
 import { useCallback, useEffect } from "react";
 import CodeBlockShiki from "tiptap-extension-code-block-shiki";
 import { Button } from "@/components/ui/button";
@@ -177,7 +177,7 @@ export function TiptapEditor({
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={editor.isActive("bold") ? "bg-muted" : ""}
         >
-          <Bold className="size-3.5" />
+          <TextB className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -186,7 +186,7 @@ export function TiptapEditor({
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={editor.isActive("italic") ? "bg-muted" : ""}
         >
-          <Italic className="size-3.5" />
+          <TextItalic className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -197,7 +197,7 @@ export function TiptapEditor({
           }
           className={editor.isActive("heading", { level: 1 }) ? "bg-muted" : ""}
         >
-          <Heading1 className="size-3.5" />
+          <TextHOne className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -208,7 +208,7 @@ export function TiptapEditor({
           }
           className={editor.isActive("heading", { level: 2 }) ? "bg-muted" : ""}
         >
-          <Heading2 className="size-3.5" />
+          <TextHTwo className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -219,7 +219,7 @@ export function TiptapEditor({
           }
           className={editor.isActive("heading", { level: 3 }) ? "bg-muted" : ""}
         >
-          <Heading3 className="size-3.5" />
+          <TextHThree className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -237,7 +237,7 @@ export function TiptapEditor({
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={editor.isActive("orderedList") ? "bg-muted" : ""}
         >
-          <ListOrdered className="size-3.5" />
+          <ListNumbers className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -255,7 +255,7 @@ export function TiptapEditor({
           onClick={setLink}
           className={editor.isActive("link") ? "bg-muted" : ""}
         >
-          <Link2 className="size-3.5" />
+          <LinkIcon className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -273,7 +273,7 @@ export function TiptapEditor({
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={editor.isActive("blockquote") ? "bg-muted" : ""}
         >
-          <Quote className="size-3.5" />
+          <Quotes className="size-3.5" />
         </Button>
       </div>
       <EditorContent editor={editor} />

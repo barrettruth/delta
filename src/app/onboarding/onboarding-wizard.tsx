@@ -1,6 +1,7 @@
 "use client";
 
-import { Calendar, Columns3, List } from "lucide-react";
+import type { Icon } from "@phosphor-icons/react";
+import { Calendar, Columns, List } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ const STORAGE_KEY = "delta:onboarding";
 const VIEW_OPTIONS: {
   id: DefaultView;
   label: string;
-  icon: typeof List;
+  icon: Icon;
   blurb: string;
 }[] = [
   {
@@ -36,7 +37,7 @@ const VIEW_OPTIONS: {
   {
     id: "kanban",
     label: "kanban",
-    icon: Columns3,
+    icon: Columns,
     blurb:
       "Columns by status. Drag tasks between Waiting, In Progress, Blocked, and Done.",
   },

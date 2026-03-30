@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Video } from "lucide-react";
+import { MapPin, VideoCamera } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -751,7 +751,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                                 </span>
                               )}
                               {task.meetingUrl && (
-                                <Video className="w-3 h-3 shrink-0 text-muted-foreground" />
+                                <VideoCamera className="w-3 h-3 shrink-0 text-muted-foreground" />
                               )}
                               {task.due && (
                                 <span className="text-xs text-muted-foreground ml-auto tabular-nums">

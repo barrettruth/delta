@@ -1,6 +1,12 @@
 "use client";
 
-import { Circle, CircleCheck, Clock, Loader2, Trash2 } from "lucide-react";
+import {
+  CheckCircle,
+  Circle,
+  Clock,
+  SpinnerGap,
+  Trash,
+} from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import {
   completeTaskAction,
@@ -18,10 +24,10 @@ import { formatDate } from "@/lib/utils";
 
 const statusIcon: Record<TaskStatus, React.ReactNode> = {
   pending: <Circle className="size-4 text-status-pending" />,
-  wip: <Loader2 className="size-4 text-status-wip" />,
-  done: <CircleCheck className="size-4 text-status-done" />,
+  wip: <SpinnerGap className="size-4 text-status-wip" />,
+  done: <CheckCircle className="size-4 text-status-done" />,
   blocked: <Clock className="size-4 text-status-blocked" />,
-  cancelled: <Trash2 className="size-4 text-status-cancelled" />,
+  cancelled: <Trash className="size-4 text-status-cancelled" />,
 };
 
 export function TaskList({ tasks }: { tasks: Task[] }) {

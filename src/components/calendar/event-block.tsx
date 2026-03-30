@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Video, X } from "lucide-react";
+import { MapPin, VideoCamera, X } from "@phosphor-icons/react";
 import type { Task } from "@/core/types";
 import type { Continuation } from "@/lib/calendar-utils";
 import {
@@ -119,7 +119,7 @@ export function EventBlock({
               <MapPin className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
             )}
             {height < 45 && task.meetingUrl && (
-              <Video className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+              <VideoCamera className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
             )}
           </span>
           {height >= 30 && (
@@ -142,7 +142,7 @@ export function EventBlock({
               className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-foreground"
               onClick={(e) => e.stopPropagation()}
             >
-              <Video className="w-2.5 h-2.5 shrink-0" />
+              <VideoCamera className="w-2.5 h-2.5 shrink-0" />
             </a>
           )}
         </>
