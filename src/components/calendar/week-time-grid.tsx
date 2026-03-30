@@ -306,9 +306,6 @@ export function WeekTimeGrid({
                         ? categoryColors[entry.task.category]
                         : undefined
                     }
-                    onClick={(t) => {
-                      onTaskClick(t);
-                    }}
                     onDelete={onDeleteTask}
                     isDragging={interaction.draggingTaskId === entry.task.id}
                     continuation={entry.continuation}
