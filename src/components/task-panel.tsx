@@ -9,10 +9,8 @@ import {
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { ResizeHandle } from "@/components/resize-handle";
-import { RRulePicker } from "@/components/rrule-picker";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -81,8 +79,9 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [locationIdx, setLocationIdx] = useState(-1);
-  const [rruleDialogOpen, setRruleDialogOpen] = useState(false);
+  const [recurrenceFocused, setRecurrenceFocused] = useState(false);
   const notesRef = useRef<string | null>(null);
+  const pendingYRef = useRef(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const prevTaskIdRef = useRef<number | null>(null);
 
@@ -332,6 +331,24 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     }
   }
 
+  const handleShare = useCallback(async () => {
+    if (!task?.startAt) return;
+    try {
+      const res = await fetch(`/api/events/${task.id}/share`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        statusBar.error(data.error ?? "failed to share");
+        return;
+      }
+      await navigator.clipboard.writeText(data.url);
+      statusBar.message("share link copied");
+    } catch {
+      statusBar.error("failed to share");
+    }
+  }, [task, statusBar]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (keymaps.resolvedMatchesEvent("task_detail.save", e.nativeEvent)) {
@@ -364,8 +381,36 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         handleCreate();
         return;
       }
+
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+      if (!isInput && e.key === "y" && mode === "edit") {
+        e.preventDefault();
+        if (pendingYRef.current) {
+          pendingYRef.current = false;
+          handleShare();
+        } else {
+          pendingYRef.current = true;
+          setTimeout(() => {
+            pendingYRef.current = false;
+          }, 500);
+        }
+        return;
+      }
     },
-    [mode, task, saveTask, panel, handleCreate, description, keymaps],
+    [
+      mode,
+      task,
+      saveTask,
+      panel,
+      handleCreate,
+      handleShare,
+      description,
+      keymaps,
+    ],
   );
 
   useEffect(() => {
@@ -422,17 +467,30 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
               &larr; back
             </button>
           )}
-          <input
-            ref={titleRef}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full text-base font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
-            placeholder={mode === "create" ? "New task..." : "Task description"}
-          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={titleRef}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="flex-1 text-base font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+              placeholder={
+                mode === "create" ? "New task..." : "Task description"
+              }
+            />
+            {mode === "edit" && task?.startAt && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground shrink-0 px-1"
+                onClick={handleShare}
+              >
+                &#x2197;
+              </button>
+            )}
+          </div>
         </div>
 
         {mode === "create" && preFill && (preFill.startAt || preFill.due) && (
-          <div className="flex gap-2 px-4 pb-2 text-[10px] text-muted-foreground">
+          <div className="flex gap-2 px-4 pb-2 text-xs text-muted-foreground">
             {preFill.startAt && (
               <span>
                 {formatTime(new Date(preFill.startAt))}
@@ -445,29 +503,27 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         )}
 
         <div className="grid grid-cols-[4rem_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 border-b border-border/40">
-          <span className="text-xs text-muted-foreground/60">status</span>
-          {mode === "edit" && task ? (
-            <Select
-              value={task.status}
-              onValueChange={(v) => v && handleStatusChange(v)}
-            >
-              <SelectTrigger size="sm" className="h-7 text-xs w-full">
-                <SelectValue>
-                  {STATUS_LABELS[task.status as TaskStatus]}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                {TASK_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_LABELS[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <span className="text-xs text-muted-foreground/50 h-7 flex items-center">
-              pending
-            </span>
+          {mode === "edit" && task && (
+            <>
+              <span className="text-xs text-muted-foreground/60">status</span>
+              <Select
+                value={task.status}
+                onValueChange={(v) => v && handleStatusChange(v)}
+              >
+                <SelectTrigger size="sm" className="h-7 text-xs w-full">
+                  <SelectValue>
+                    {STATUS_LABELS[task.status as TaskStatus]}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  {TASK_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {STATUS_LABELS[s]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
           )}
 
           <span className="text-xs text-muted-foreground/60">category</span>
@@ -506,155 +562,153 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           </div>
 
           <span className="text-xs text-muted-foreground/60">due</span>
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-2 items-center">
             <Input
               type="datetime-local"
               value={due}
               onChange={(e) => setDue(e.target.value)}
-              className="h-7 text-xs flex-1"
+              className="h-7 text-xs w-1/2"
             />
-            <span className="text-xs text-muted-foreground/60 shrink-0">
-              repeat
-            </span>
-            {mode === "edit" && task?.recurringTaskId ? (
-              <span className="text-xs text-muted-foreground/60 h-7 flex items-center">
-                recurring instance
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="text-xs text-left h-7 flex items-center px-2 border border-transparent hover:border-border transition-colors shrink-0"
-                onClick={() => setRruleDialogOpen(true)}
-              >
-                {rruleHuman ?? "none"}
-              </button>
-            )}
+            <Input
+              value={
+                recurrenceFocused
+                  ? (recurrence ?? "")
+                  : (rruleHuman ?? recurrence ?? "")
+              }
+              onChange={(e) => setRecurrence(e.target.value || null)}
+              onFocus={() => setRecurrenceFocused(true)}
+              onBlur={() => setRecurrenceFocused(false)}
+              placeholder="repeat..."
+              disabled={mode === "edit" && !!task?.recurringTaskId}
+              className="h-7 text-xs w-1/2"
+            />
           </div>
 
           <span className="text-xs text-muted-foreground/60">location</span>
-          <div className="relative">
-            <Input
-              value={location}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (detectMeetingPlatform(val)) {
-                  setMeetingUrl(val);
-                  setLocation("");
-                } else {
-                  setLocation(val);
-                }
-                setLocationLat(null);
-                setLocationLon(null);
-                setShowLocationSuggestions(true);
-                setLocationIdx(-1);
-              }}
-              onFocus={() => setShowLocationSuggestions(true)}
-              onBlur={() =>
-                setTimeout(() => setShowLocationSuggestions(false), 150)
-              }
-              onKeyDown={(e) => {
-                const allItems = [
-                  ...filteredLocations,
-                  ...locationResults.map((r) => r.displayName),
-                ];
-                if (!showLocationSuggestions || allItems.length === 0) return;
-                if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setLocationIdx((prev) =>
-                    prev < allItems.length - 1 ? prev + 1 : 0,
-                  );
-                } else if (
-                  (e.ctrlKey && e.key === "p") ||
-                  e.key === "ArrowUp"
-                ) {
-                  e.preventDefault();
-                  setLocationIdx((prev) =>
-                    prev > 0 ? prev - 1 : allItems.length - 1,
-                  );
-                } else if (e.key === "Enter" && locationIdx >= 0) {
-                  e.preventDefault();
-                  setLocation(allItems[locationIdx]);
-                  const geoIdx = locationIdx - filteredLocations.length;
-                  if (geoIdx >= 0 && locationResults[geoIdx]) {
-                    setLocationLat(locationResults[geoIdx].lat);
-                    setLocationLon(locationResults[geoIdx].lon);
+          <div className="flex gap-2 items-start">
+            <div className="relative w-1/2">
+              <Input
+                value={location}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (detectMeetingPlatform(val)) {
+                    setMeetingUrl(val);
+                    setLocation("");
                   } else {
-                    setLocationLat(null);
-                    setLocationLon(null);
+                    setLocation(val);
                   }
-                  setShowLocationSuggestions(false);
+                  setLocationLat(null);
+                  setLocationLon(null);
+                  setShowLocationSuggestions(true);
                   setLocationIdx(-1);
-                } else if (e.key === "Escape") {
-                  setShowLocationSuggestions(false);
-                  setLocationIdx(-1);
+                }}
+                onFocus={() => setShowLocationSuggestions(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowLocationSuggestions(false), 150)
                 }
-              }}
-              className="h-7 text-xs"
-            />
-            {showLocationSuggestions &&
-              (filteredLocations.length > 0 || locationResults.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
-                  {filteredLocations.map((l, i) => (
-                    <button
-                      key={l}
-                      type="button"
-                      className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setLocation(l);
-                        setShowLocationSuggestions(false);
-                        setLocationIdx(-1);
-                      }}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                  {filteredLocations.length > 0 &&
-                    locationResults.length > 0 && (
-                      <div className="border-t border-border/40 my-1" />
-                    )}
-                  {locationResults.map((r, i) => {
-                    const idx = filteredLocations.length + i;
-                    return (
+                onKeyDown={(e) => {
+                  const allItems = [
+                    ...filteredLocations,
+                    ...locationResults.map((r) => r.displayName),
+                  ];
+                  if (!showLocationSuggestions || allItems.length === 0) return;
+                  if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setLocationIdx((prev) =>
+                      prev < allItems.length - 1 ? prev + 1 : 0,
+                    );
+                  } else if (
+                    (e.ctrlKey && e.key === "p") ||
+                    e.key === "ArrowUp"
+                  ) {
+                    e.preventDefault();
+                    setLocationIdx((prev) =>
+                      prev > 0 ? prev - 1 : allItems.length - 1,
+                    );
+                  } else if (e.key === "Enter" && locationIdx >= 0) {
+                    e.preventDefault();
+                    setLocation(allItems[locationIdx]);
+                    const geoIdx = locationIdx - filteredLocations.length;
+                    if (geoIdx >= 0 && locationResults[geoIdx]) {
+                      setLocationLat(locationResults[geoIdx].lat);
+                      setLocationLon(locationResults[geoIdx].lon);
+                    } else {
+                      setLocationLat(null);
+                      setLocationLon(null);
+                    }
+                    setShowLocationSuggestions(false);
+                    setLocationIdx(-1);
+                  } else if (e.key === "Escape") {
+                    setShowLocationSuggestions(false);
+                    setLocationIdx(-1);
+                  }
+                }}
+                className="h-7 text-xs"
+              />
+              {showLocationSuggestions &&
+                (filteredLocations.length > 0 ||
+                  locationResults.length > 0) && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
+                    {filteredLocations.map((l, i) => (
                       <button
-                        key={r.displayName}
+                        key={l}
                         type="button"
-                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
+                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setLocation(r.displayName);
-                          setLocationLat(r.lat);
-                          setLocationLon(r.lon);
+                          setLocation(l);
                           setShowLocationSuggestions(false);
                           setLocationIdx(-1);
                         }}
                       >
-                        {r.displayName}
+                        {l}
                       </button>
-                    );
-                  })}
-                </div>
+                    ))}
+                    {filteredLocations.length > 0 &&
+                      locationResults.length > 0 && (
+                        <div className="border-t border-border/40 my-1" />
+                      )}
+                    {locationResults.map((r, i) => {
+                      const idx = filteredLocations.length + i;
+                      return (
+                        <button
+                          key={r.displayName}
+                          type="button"
+                          className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocation(r.displayName);
+                            setLocationLat(r.lat);
+                            setLocationLon(r.lon);
+                            setShowLocationSuggestions(false);
+                            setLocationIdx(-1);
+                          }}
+                        >
+                          {r.displayName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+            </div>
+            <div className="flex items-center gap-1 w-1/2">
+              <Input
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="link"
+                className="h-7 text-xs flex-1"
+              />
+              {detectedPlatform && (
+                <a
+                  href={meetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center h-7 px-2 text-xs hover:bg-accent transition-colors border border-transparent shrink-0"
+                >
+                  Join
+                </a>
               )}
-          </div>
-
-          <span className="text-xs text-muted-foreground/60">meeting</span>
-          <div className="flex items-center gap-1">
-            <Input
-              value={meetingUrl}
-              onChange={(e) => setMeetingUrl(e.target.value)}
-              placeholder="link"
-              className="h-7 text-xs flex-1"
-            />
-            {detectedPlatform && (
-              <a
-                href={meetingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center h-7 px-2 text-xs hover:bg-accent transition-colors border border-transparent shrink-0"
-              >
-                Join
-              </a>
-            )}
+            </div>
           </div>
         </div>
 
@@ -678,35 +732,10 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             >
               save
             </Button>
-            {task.startAt && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={async () => {
-                  try {
-                    const res = await fetch(`/api/events/${task.id}/share`, {
-                      method: "POST",
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                      statusBar.error(data.error ?? "failed to share");
-                      return;
-                    }
-                    await navigator.clipboard.writeText(data.url);
-                    statusBar.message("share link copied");
-                  } catch {
-                    statusBar.error("failed to share");
-                  }
-                }}
-              >
-                &#x2197;
-              </Button>
-            )}
             <Button
               variant="destructive"
               size="sm"
-              className="shrink-0"
+              className="flex-1"
               onClick={handleDelete}
             >
               delete
@@ -714,19 +743,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           </div>
         )}
       </div>
-
-      <Dialog open={rruleDialogOpen} onOpenChange={setRruleDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Recurrence</DialogTitle>
-          <RRulePicker
-            value={recurrence}
-            recurMode={recurMode}
-            onChange={setRecurrence}
-            onRecurModeChange={setRecurMode}
-            alwaysShowMode
-          />
-        </DialogContent>
-      </Dialog>
 
       <RecurrenceStrategyDialog
         open={!!recurrenceDelete.pending}
