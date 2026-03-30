@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useStatusBar } from "@/contexts/status-bar";
 import { commandRegistry } from "@/core/commands";
@@ -34,6 +34,20 @@ export function KeymapHelp({
   const filteredSections = HELP_SECTIONS.filter((s) =>
     visibleSections.includes(s.section),
   );
+
+  const scopedIds = useMemo(
+    () =>
+      DEFAULT_KEYMAPS.filter(
+        (d) => visibleSections.includes(d.section) && d.configurable !== false,
+      ).map((d) => d.id),
+    [visibleSections],
+  );
+  const hasOverrides = scopedIds.some((id) => id in keymaps.overrides);
+
+  const handleResetAll = useCallback(async () => {
+    await keymaps.resetSection(scopedIds);
+    statusBar.message("keymaps reset to defaults");
+  }, [keymaps, scopedIds, statusBar]);
 
   useEffect(() => {
     if (!open) {
@@ -101,7 +115,20 @@ export function KeymapHelp({
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-border/40">
             <span className="text-sm font-medium">Keyboard Shortcuts</span>
-            <kbd className="text-[10px] text-muted-foreground">q to close</kbd>
+            <span className="flex items-center gap-3">
+              {hasOverrides && (
+                <button
+                  type="button"
+                  className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={handleResetAll}
+                >
+                  reset to defaults
+                </button>
+              )}
+              <kbd className="text-[10px] text-muted-foreground">
+                q to close
+              </kbd>
+            </span>
           </div>
           <div className="grid grid-cols-2 gap-6 p-6 overflow-auto">
             {filteredSections.map((section) => (

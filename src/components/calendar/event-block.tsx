@@ -72,7 +72,7 @@ export function EventBlock({
       data-event-end={task.endAt ?? ""}
       data-event-start-min={startMin}
       data-event-end-min={endMin}
-      className={`group/event absolute z-10 overflow-hidden px-1.5 py-1 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left flex flex-col gap-0.5 justify-start ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
+      className={`group/event absolute z-10 overflow-hidden ${height < 25 ? "px-1 py-0" : "px-1.5 py-1"} text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left ${height < 25 ? "flex items-center gap-1" : "flex flex-col gap-0.5 justify-start"} ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -92,42 +92,60 @@ export function EventBlock({
         onClick(task);
       }}
     >
-      <span className="font-medium truncate flex items-center gap-0.5 text-[11px]">
-        {isRecurring && (
-          <span className="mr-0.5 shrink-0" role="img" aria-label="recurring">
-            &#x21BB;
+      {height < 25 ? (
+        <>
+          <span className="font-medium truncate text-[10px]">
+            {isRecurring && <span className="mr-0.5 shrink-0">&#x21BB;</span>}
+            {task.description}
           </span>
-        )}
-        <span className="truncate">{task.description}</span>
-        {height < 40 && task.location && (
-          <MapPin className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
-        )}
-        {height < 45 && task.meetingUrl && (
-          <Video className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
-        )}
-      </span>
-      {height >= 30 && (
-        <span className="truncate block text-muted-foreground">
-          {formatTime(start)}
-          {end ? `\u2013${formatTime(end)}` : ""}
-        </span>
-      )}
-      {height >= 40 && task.location && (
-        <span className="truncate flex items-center gap-0.5 text-[9px] text-muted-foreground">
-          <MapPin className="w-2.5 h-2.5 shrink-0" />
-          {task.location}
-        </span>
-      )}
-      {height >= 45 && task.meetingUrl && (
-        <a
-          href={task.meetingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-foreground"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Video className="w-2.5 h-2.5 shrink-0" />
-        </a>
+          <span className="shrink-0 text-muted-foreground text-[9px]">
+            {formatTime(start)}
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="font-medium truncate flex items-center gap-0.5 text-[11px]">
+            {isRecurring && (
+              <span
+                className="mr-0.5 shrink-0"
+                role="img"
+                aria-label="recurring"
+              >
+                &#x21BB;
+              </span>
+            )}
+            <span className="truncate">{task.description}</span>
+            {height < 40 && task.location && (
+              <MapPin className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+            )}
+            {height < 45 && task.meetingUrl && (
+              <Video className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+            )}
+          </span>
+          {height >= 30 && (
+            <span className="truncate block text-muted-foreground">
+              {formatTime(start)}
+              {end ? `\u2013${formatTime(end)}` : ""}
+            </span>
+          )}
+          {height >= 40 && task.location && (
+            <span className="truncate flex items-center gap-0.5 text-[9px] text-muted-foreground">
+              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              {task.location}
+            </span>
+          )}
+          {height >= 45 && task.meetingUrl && (
+            <a
+              href={task.meetingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-foreground"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Video className="w-2.5 h-2.5 shrink-0" />
+            </a>
+          )}
+        </>
       )}
       {onDelete && (
         <div
