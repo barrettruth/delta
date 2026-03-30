@@ -58,6 +58,9 @@ export function StatusBar() {
       saveTask: () => {
         window.dispatchEvent(new Event("command-save-task"));
       },
+      discardTask: () => {
+        window.dispatchEvent(new Event("command-discard-task"));
+      },
       importIcal: () => fileRef.current?.click(),
       exportIcal: () => {
         window.location.href = "/api/export/ical";

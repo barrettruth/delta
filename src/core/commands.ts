@@ -28,6 +28,7 @@ export interface CommandContext {
     close: () => void;
   };
   saveTask: () => void;
+  discardTask: () => void;
   importIcal: () => void;
   exportIcal: () => void;
   syncGoogle: () => void;
@@ -123,10 +124,17 @@ export const commandRegistry: CommandDefinition[] = [
   {
     name: "quit",
     aliases: ["q"],
-    description: "Logout",
+    description: "Close panel or logout",
     category: "general",
     expectedArgs: [],
-    execute: (_args, ctx) => ctx.logout(),
+    execute: (_args, ctx) => {
+      if (ctx.taskPanel.isOpen) {
+        ctx.discardTask();
+        ctx.taskPanel.close();
+      } else {
+        ctx.logout();
+      }
+    },
   },
   {
     name: "write",

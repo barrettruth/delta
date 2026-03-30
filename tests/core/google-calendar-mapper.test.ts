@@ -36,6 +36,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     externalSource: null,
     locationLat: null,
     locationLon: null,
+    sourceEventId: null,
+    sourceUserId: null,
     ...overrides,
   };
 }

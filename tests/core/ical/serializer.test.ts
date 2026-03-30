@@ -31,6 +31,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     originalStartAt: null,
     externalId: null,
     externalSource: null,
+    sourceEventId: null,
+    sourceUserId: null,
     ...overrides,
   };
 }

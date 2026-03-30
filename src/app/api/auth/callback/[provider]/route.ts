@@ -186,7 +186,20 @@ export async function GET(
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/setup-2fa`);
+    const shareToken = cookieStore.get("share_token")?.value;
+    if (shareToken) {
+      try {
+        const { acceptShareLink } = await import("@/core/event-share");
+        acceptShareLink(db, user.id, shareToken);
+      } catch {}
+      cookieStore.delete("share_token");
+    }
+
+    return NextResponse.redirect(
+      shareToken
+        ? `${OAUTH_REDIRECT_BASE}/calendar`
+        : `${OAUTH_REDIRECT_BASE}/setup-2fa`,
+    );
   } catch {
     return NextResponse.redirect(
       `${OAUTH_REDIRECT_BASE}/login?error=oauth_failed`,

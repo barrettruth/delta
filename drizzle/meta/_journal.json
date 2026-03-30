@@ -169,6 +169,13 @@
       "when": 1774915200010,
       "tag": "0023_keymap_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1774915200011,
+      "tag": "0024_event_share_links",
+      "breakpoints": true
     }
   ]
 }

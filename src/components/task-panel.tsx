@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
+import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import { rruleToText } from "@/core/recurrence";
@@ -47,6 +48,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
   const undo = useUndo();
   const keymaps = useKeymaps();
+  const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
   const {
     isOpen,
@@ -372,6 +374,27 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     }
   }, [isOpen, mode, task, panel]);
 
+  useEffect(() => {
+    function onSave() {
+      if (mode === "edit" && task) {
+        saveTask(task.id);
+        statusBar.message("saved");
+      } else if (mode === "create") {
+        handleCreate();
+      }
+    }
+    function onDiscard() {
+      prevTaskIdRef.current = null;
+      panel.close();
+    }
+    window.addEventListener("command-save-task", onSave);
+    window.addEventListener("command-discard-task", onDiscard);
+    return () => {
+      window.removeEventListener("command-save-task", onSave);
+      window.removeEventListener("command-discard-task", onDiscard);
+    };
+  }, [mode, task, saveTask, handleCreate, panel, statusBar]);
+
   const isMobile = useIsMobile();
 
   if (!isOpen) return null;
@@ -646,11 +669,44 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
         </div>
 
         {mode === "edit" && task && (
-          <div className="px-4 py-3 border-t border-border/40">
+          <div className="flex gap-2 px-4 py-3 border-t border-border/40">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => saveTask(task.id)}
+            >
+              save
+            </Button>
+            {task.startAt && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/events/${task.id}/share`, {
+                      method: "POST",
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      statusBar.error(data.error ?? "failed to share");
+                      return;
+                    }
+                    await navigator.clipboard.writeText(data.url);
+                    statusBar.message("share link copied");
+                  } catch {
+                    statusBar.error("failed to share");
+                  }
+                }}
+              >
+                &#x2197;
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="sm"
-              className="w-full"
+              className="shrink-0"
               onClick={handleDelete}
             >
               delete

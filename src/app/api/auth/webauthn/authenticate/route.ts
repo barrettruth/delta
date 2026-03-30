@@ -57,7 +57,19 @@ export async function POST(request: Request) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return NextResponse.json({ success: true });
+    const shareToken = cookieStore.get("share_token")?.value;
+    if (shareToken) {
+      try {
+        const { acceptShareLink } = await import("@/core/event-share");
+        acceptShareLink(db, result.userId, shareToken);
+      } catch {}
+      cookieStore.delete("share_token");
+    }
+
+    return NextResponse.json({
+      success: true,
+      redirect: shareToken ? "/calendar" : undefined,
+    });
   } catch {
     return NextResponse.json(
       { error: "Authentication failed" },

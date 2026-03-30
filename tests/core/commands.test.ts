@@ -125,6 +125,7 @@ describe("executeCommand", () => {
         close: () => {},
       },
       saveTask: () => {},
+      discardTask: () => {},
       importIcal: () => {},
       exportIcal: () => {},
       syncGoogle: () => {},

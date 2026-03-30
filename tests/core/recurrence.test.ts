@@ -152,6 +152,8 @@ describe("getNextTaskData", () => {
     originalStartAt: null,
     externalId: null,
     externalSource: null,
+    sourceEventId: null,
+    sourceUserId: null,
   };
 
   it("returns null for non-recurring task", () => {

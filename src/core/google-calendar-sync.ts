@@ -209,11 +209,11 @@ async function pushEvents(
     if (gcalId && task.status === "cancelled") {
       try {
         await deleteCalendarEvent(accessToken, calendarId, gcalId);
+        updateTask(db, task.id, { externalId: null });
         pushed++;
       } catch {
-        /* noop */
+        /* keep externalId so we retry next sync */
       }
-      updateTask(db, task.id, { externalId: null });
       continue;
     }
 
