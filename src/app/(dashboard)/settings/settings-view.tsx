@@ -203,7 +203,7 @@ export function SettingsView({
   }, [showRecoveryCodes]);
 
   return (
-    <div className="flex-1 overflow-y-auto flex justify-center">
+    <div className="flex-1 overflow-y-auto flex items-center justify-center">
       <div className="w-full max-w-md px-4 py-4 md:p-6">
         <Section title="account">
           <Row label="username" value={username} />

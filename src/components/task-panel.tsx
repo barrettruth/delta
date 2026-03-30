@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPin } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -584,7 +585,10 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             />
           </div>
 
-          <span className="text-xs text-muted-foreground/60">location</span>
+          <span className="text-xs text-muted-foreground/60 inline-flex items-center gap-1">
+            <MapPin size={12} weight="bold" />
+            location
+          </span>
           <div className="flex gap-2 items-start">
             <div className="relative w-1/2">
               <Input
