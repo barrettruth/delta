@@ -13,7 +13,6 @@ import { categoryColors } from "@/db/schema";
 
 const viewRoutes: Record<ViewType, string> = {
   queue: "/",
-  list: "/",
   kanban: "/kanban",
   calendar: "/calendar",
 };
@@ -38,7 +37,6 @@ export default async function QueuePage({
 
   if (
     settings.defaultView !== "queue" &&
-    settings.defaultView !== "list" &&
     !params.category &&
     !params.status &&
     !params.date

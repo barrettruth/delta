@@ -9,7 +9,7 @@ export interface UrgencyWeights {
   blocking: number;
 }
 
-export type ViewType = "queue" | "list" | "kanban" | "calendar";
+export type ViewType = "queue" | "kanban" | "calendar";
 export interface UserSettings {
   defaultCategory: string;
   defaultView: ViewType;
@@ -19,7 +19,7 @@ export interface UserSettings {
 
 export const DEFAULT_SETTINGS: UserSettings = {
   defaultCategory: "Todo",
-  defaultView: "list",
+  defaultView: "queue",
   showCompletedTasks: true,
   urgencyWeights: {
     due: 12,
