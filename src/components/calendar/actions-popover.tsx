@@ -340,14 +340,7 @@ export function CalendarActionsPopover({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className="text-lg text-muted-foreground px-1 cursor-pointer hover:text-foreground leading-none"
-          />
-        }
-      >
+      <PopoverTrigger className="text-lg text-muted-foreground px-1 cursor-pointer hover:text-foreground leading-none">
         ≡
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
