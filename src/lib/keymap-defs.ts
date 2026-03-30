@@ -632,7 +632,7 @@ export function formatKey(def: KeymapDef): string {
     return `<${mods.join("-")}-${def.triggerKey}>`;
   }
   if (def.triggerKey === "Escape") return "<Esc>";
-  if (def.triggerKey === "Enter") return "<Enter>";
+  if (def.triggerKey === "Enter") return "<CR>";
   return def.triggerKey;
 }
 
@@ -809,7 +809,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     rows: [
       row("task_detail.save", "<C-s>", "Save"),
       row("task_detail.close", "<Esc>", "Close"),
-      row("task_detail.create", "<Enter>", "Create (in new task mode)"),
+      row("task_detail.create", "<CR>", "Create (in new task mode)"),
       row("task_detail.yank_link", "yy", "Copy share link"),
     ],
   },
