@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPinSimple, VideoCamera, X } from "@phosphor-icons/react";
+import { useRef } from "react";
 import type { Task } from "@/core/types";
 import type { Continuation } from "@/lib/calendar-utils";
 import {
@@ -35,6 +36,7 @@ export function EventBlock({
   overrideEndMin?: number;
   isRecurring?: boolean;
 }) {
+  const downPos = useRef<{ x: number; y: number } | null>(null);
   const start = task.startAt ? new Date(task.startAt) : null;
   const end = task.endAt ? new Date(task.endAt) : null;
   if (!start) return null;
@@ -87,8 +89,18 @@ export function EventBlock({
           ? { borderBottom: "none" }
           : {}),
       }}
+      onPointerDown={(e) => {
+        downPos.current = { x: e.clientX, y: e.clientY };
+      }}
       onClick={(e) => {
         e.stopPropagation();
+        if (isDragging) return;
+        const dp = downPos.current;
+        if (dp) {
+          const dx = e.clientX - dp.x;
+          const dy = e.clientY - dp.y;
+          if (dx * dx + dy * dy > 25) return;
+        }
         onClick(task);
       }}
     >
