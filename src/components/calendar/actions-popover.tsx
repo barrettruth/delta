@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -362,38 +362,39 @@ export function CalendarActionsPopover({
               geocoding
             </div>
             {geoItems.map((item, i) => (
-              <MenuRow
-                key={item.id}
-                item={item}
-                focused={focusIdx === globalIndex(geoItems, i)}
-              />
-            ))}
-            {geoKeyTarget && (
-              <div className="flex gap-2 px-2 py-1">
-                <Input
-                  value={geoKeyInput}
-                  onChange={(e) => setGeoKeyInput(e.target.value)}
-                  placeholder="api key"
-                  autoFocus
-                  className="h-7 text-sm flex-1"
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") handleSaveGeoKey();
-                    if (e.key === "Escape") {
-                      setGeoKeyTarget(null);
-                      setGeoKeyInput("");
-                    }
-                  }}
+              <React.Fragment key={item.id}>
+                <MenuRow
+                  item={item}
+                  focused={focusIdx === globalIndex(geoItems, i)}
                 />
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground hover:text-foreground px-2"
-                  onClick={handleSaveGeoKey}
-                >
-                  save
-                </button>
-              </div>
-            )}
+                {geoKeyTarget === item.id.replace("geo-", "") && (
+                  <div className="flex gap-2 px-2 py-1">
+                    <Input
+                      value={geoKeyInput}
+                      onChange={(e) => setGeoKeyInput(e.target.value)}
+                      placeholder="api key"
+                      autoFocus
+                      className="h-7 text-sm flex-1"
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") handleSaveGeoKey();
+                        if (e.key === "Escape") {
+                          setGeoKeyTarget(null);
+                          setGeoKeyInput("");
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground px-2"
+                      onClick={handleSaveGeoKey}
+                    >
+                      save
+                    </button>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
 
           <div className="border-t border-border" />
