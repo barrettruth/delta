@@ -316,6 +316,15 @@ export function findOrCreateUserFromOAuth(
 ): { user: typeof users.$inferSelect; isNew: boolean } {
   const existing = findAccountByProvider(db, provider, providerUser.id);
   if (existing) {
+    db.update(accounts)
+      .set({
+        name: providerUser.name ?? existing.accounts.name,
+        email: providerUser.email || existing.accounts.email,
+        accessToken: tokens.accessToken ?? existing.accounts.accessToken,
+        refreshToken: tokens.refreshToken ?? existing.accounts.refreshToken,
+      })
+      .where(eq(accounts.id, existing.accounts.id))
+      .run();
     return { user: existing.users, isNew: false };
   }
 
