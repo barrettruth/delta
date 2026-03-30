@@ -281,18 +281,23 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     const trimmed = description.trim();
     if (!trimmed) return;
 
+    const dueIso = due ? new Date(due).toISOString() : undefined;
+    const startAt = dueIso ?? preFill?.startAt;
+    const endAt = dueIso ? undefined : preFill?.endAt;
+    const allDay = dueIso ? undefined : preFill?.allDay;
+
     const result = await createTaskAction({
       description: trimmed,
       category: category || undefined,
-      due: due ? new Date(due).toISOString() : undefined,
+      due: dueIso,
       notes: notesRef.current || undefined,
       location: location || undefined,
       locationLat: location && locationLat != null ? locationLat : undefined,
       locationLon: location && locationLon != null ? locationLon : undefined,
       meetingUrl: meetingUrl || undefined,
-      startAt: preFill?.startAt,
-      endAt: preFill?.endAt,
-      allDay: preFill?.allDay,
+      startAt,
+      endAt,
+      allDay,
       timezone: preFill?.timezone,
       recurrence: recurrence || undefined,
       recurMode: recurrence ? recurMode : undefined,
