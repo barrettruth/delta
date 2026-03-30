@@ -48,7 +48,12 @@ export function expandInstances(
 ): ExpandedInstance[] {
   if (!master.recurrence) return [];
 
-  const set = buildRRuleSet(master);
+  let set: RRuleSet;
+  try {
+    set = buildRRuleSet(master);
+  } catch {
+    return [];
+  }
   const dates = set.between(rangeStart, rangeEnd, true);
 
   const duration =
