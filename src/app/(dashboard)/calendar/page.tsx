@@ -47,13 +47,15 @@ export default async function CalendarPage({
   const feedToken = getFeedToken(db, user.id);
 
   const gcalConfig = getIntegrationConfig(db, user.id, "google_calendar");
+  const gcalMetadata = gcalConfig?.metadata as Record<string, unknown> | null;
   const gcalStatus = gcalConfig
     ? {
         connected: gcalConfig.enabled === 1,
-        lastSyncTime: (gcalConfig.metadata as Record<string, unknown> | null)
-          ?.lastSyncTime as string | null,
+        lastSyncTime: gcalMetadata?.lastSyncTime as string | null,
       }
     : { connected: false, lastSyncTime: null };
+  const conflictResolution =
+    (gcalMetadata?.conflictResolution as string) ?? "lww";
 
   const geoProvider = getIntegrationConfig(db, user.id, "google_maps")
     ? "google_maps"
@@ -70,6 +72,7 @@ export default async function CalendarPage({
       feedToken={feedToken}
       gcalStatus={gcalStatus}
       geoProvider={geoProvider}
+      conflictResolution={conflictResolution}
     />
   );
 }

@@ -73,3 +73,5 @@ export interface TaskFilters {
   sortBy?: "due" | "createdAt" | "order";
   sortOrder?: "asc" | "desc";
 }
+
+export type ConflictResolution = "lww" | "google_wins" | "delta_wins";

@@ -16,11 +16,18 @@ interface GcalStatus {
 }
 
 type GeoProvider = "photon" | "mapbox" | "google_maps";
+type ConflictResolution = "lww" | "google_wins" | "delta_wins";
 
 const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
   { id: "photon", label: "photon" },
   { id: "mapbox", label: "mapbox" },
   { id: "google_maps", label: "google maps" },
+];
+
+const CONFLICT_STRATEGIES: { id: ConflictResolution; label: string }[] = [
+  { id: "lww", label: "last write wins" },
+  { id: "google_wins", label: "google wins" },
+  { id: "delta_wins", label: "delta wins" },
 ];
 
 function formatRelativeTime(iso: string): string {
@@ -48,12 +55,14 @@ export function CalendarActionsPopover({
   feedToken: initialFeedToken,
   gcalStatus: initialGcalStatus,
   initialGeoProvider = "photon",
+  initialConflictResolution = "lww",
   open,
   onOpenChange,
 }: {
   feedToken: string | null;
   gcalStatus: GcalStatus;
   initialGeoProvider?: GeoProvider;
+  initialConflictResolution?: ConflictResolution;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -68,6 +77,9 @@ export function CalendarActionsPopover({
     useState<GeoProvider>(initialGeoProvider);
   const [geoKeyInput, setGeoKeyInput] = useState("");
   const [geoKeyTarget, setGeoKeyTarget] = useState<GeoProvider | null>(null);
+  const [conflictResolution, setConflictResolution] =
+    useState<ConflictResolution>(initialConflictResolution);
+  const [feedCopied, setFeedCopied] = useState(false);
   const [focusIdx, setFocusIdx] = useState(0);
   const countBuf = useRef("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,18 +121,22 @@ export function CalendarActionsPopover({
     const res = await fetch("/api/calendar/feed", { method: "POST" });
     const data = await res.json();
     setFeedToken(data.token);
-    statusBar.message("feed url generated");
+    await navigator.clipboard.writeText(getFeedUrl(data.token));
+    setFeedCopied(true);
+    statusBar.message("feed url generated and copied");
   }
 
   async function handleRevokeFeed() {
     await fetch("/api/calendar/feed", { method: "DELETE" });
     setFeedToken(null);
+    setFeedCopied(false);
     statusBar.message("feed url revoked");
   }
 
   async function handleCopyFeedUrl() {
     if (!feedToken) return;
     await navigator.clipboard.writeText(getFeedUrl(feedToken));
+    setFeedCopied(true);
     statusBar.message("copied to clipboard");
   }
 
@@ -169,7 +185,7 @@ export function CalendarActionsPopover({
       }
       setGeoProvider("photon");
       setGeoKeyTarget(null);
-      statusBar.message("geocoding set to photon");
+      statusBar.message("location api set to photon");
       return;
     }
     setGeoKeyTarget(id);
@@ -200,7 +216,22 @@ export function CalendarActionsPopover({
     setGeoKeyInput("");
     const label =
       GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
-    statusBar.message(`geocoding set to ${label}`);
+    statusBar.message(`location api set to ${label}`);
+  }
+
+  async function handleSelectConflictResolution(id: ConflictResolution) {
+    const res = await fetch("/api/settings/integrations/google_calendar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ metadata: { conflictResolution: id } }),
+    });
+    if (!res.ok) {
+      statusBar.error("failed to update sync strategy");
+      return;
+    }
+    setConflictResolution(id);
+    const label = CONFLICT_STRATEGIES.find((s) => s.id === id)?.label ?? id;
+    statusBar.message(`sync strategy set to ${label}`);
   }
 
   const items: MenuItem[] = [];
@@ -234,6 +265,17 @@ export function CalendarActionsPopover({
     });
   }
 
+  if (gcalStatus.connected) {
+    for (const s of CONFLICT_STRATEGIES) {
+      items.push({
+        id: `conflict-${s.id}`,
+        label: s.label,
+        muted: conflictResolution !== s.id,
+        onSelect: () => handleSelectConflictResolution(s.id),
+      });
+    }
+  }
+
   for (const p of GEO_PROVIDERS) {
     items.push({
       id: `geo-${p.id}`,
@@ -244,21 +286,25 @@ export function CalendarActionsPopover({
   }
 
   if (feedToken) {
-    items.push({
-      id: "feed-copy",
-      label: "copy feed",
-      onSelect: handleCopyFeedUrl,
-    });
-    items.push({
-      id: "feed-revoke",
-      label: "revoke feed",
-      muted: true,
-      prefix: { text: "-", className: "text-destructive" },
-      onSelect: handleRevokeFeed,
-    });
+    if (feedCopied) {
+      items.push({
+        id: "feed-toggle",
+        label: "revoke feed",
+        muted: true,
+        prefix: { text: "-", className: "text-destructive" },
+        onSelect: handleRevokeFeed,
+      });
+    } else {
+      items.push({
+        id: "feed-toggle",
+        label: "copy feed",
+        prefix: { text: "+", className: "text-status-done" },
+        onSelect: handleCopyFeedUrl,
+      });
+    }
   } else {
     items.push({
-      id: "feed-generate",
+      id: "feed-toggle",
       label: "generate feed",
       muted: true,
       prefix: { text: "+", className: "text-status-done" },
@@ -287,6 +333,7 @@ export function CalendarActionsPopover({
       countBuf.current = "";
       setGeoKeyTarget(null);
       setGeoKeyInput("");
+      setFeedCopied(false);
     }
   }, [open]);
 
@@ -329,6 +376,7 @@ export function CalendarActionsPopover({
   }, [open, focusIdx, geoKeyTarget, onOpenChange]);
 
   const gcalItems = items.filter((i) => i.id.startsWith("gcal-"));
+  const conflictItems = items.filter((i) => i.id.startsWith("conflict-"));
   const geoItems = items.filter((i) => i.id.startsWith("geo-"));
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));
   const ioItems = items.filter((i) => i.id === "export" || i.id === "import");
@@ -355,11 +403,29 @@ export function CalendarActionsPopover({
             ))}
           </div>
 
+          {conflictItems.length > 0 && (
+            <>
+              <div className="border-t border-border" />
+              <div className="flex flex-col p-1">
+                <div className="text-[10px] text-muted-foreground px-2 py-0.5">
+                  sync strategy
+                </div>
+                {conflictItems.map((item, i) => (
+                  <MenuRow
+                    key={item.id}
+                    item={item}
+                    focused={focusIdx === globalIndex(conflictItems, i)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="border-t border-border" />
 
           <div className="flex flex-col p-1">
             <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              geocoding
+              location API
             </div>
             {geoItems.map((item, i) => (
               <React.Fragment key={item.id}>

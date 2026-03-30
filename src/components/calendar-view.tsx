@@ -50,6 +50,7 @@ export function CalendarView({
   feedToken = null,
   gcalStatus = { connected: false, lastSyncTime: null },
   geoProvider = "photon",
+  conflictResolution = "lww",
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
@@ -58,6 +59,7 @@ export function CalendarView({
   feedToken?: string | null;
   gcalStatus?: { connected: boolean; lastSyncTime: string | null };
   geoProvider?: string;
+  conflictResolution?: string;
 }) {
   const nav = useNavigation();
   const statusBar = useStatusBar();
@@ -844,6 +846,9 @@ export function CalendarView({
             gcalStatus={gcalStatus}
             initialGeoProvider={
               geoProvider as "photon" | "mapbox" | "google_maps"
+            }
+            initialConflictResolution={
+              conflictResolution as "lww" | "google_wins" | "delta_wins"
             }
             open={actionsOpen}
             onOpenChange={setActionsOpen}
