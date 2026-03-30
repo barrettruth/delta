@@ -63,6 +63,18 @@ export default async function CalendarPage({
       ? "mapbox"
       : "photon";
 
+  let nlpActiveProvider: "anthropic" | "openai" | null = null;
+  let nlpActiveModel = "";
+  for (const p of ["anthropic", "openai"] as const) {
+    const cfg = getIntegrationConfig(db, user.id, `nlp_${p}`);
+    if (cfg?.enabled === 1) {
+      nlpActiveProvider = p;
+      const meta = cfg.metadata as Record<string, unknown> | null;
+      nlpActiveModel = (meta?.model as string) ?? "";
+      break;
+    }
+  }
+
   return (
     <CalendarView
       tasks={tasks}
@@ -73,6 +85,8 @@ export default async function CalendarPage({
       gcalStatus={gcalStatus}
       geoProvider={geoProvider}
       conflictResolution={conflictResolution}
+      nlpProvider={nlpActiveProvider}
+      nlpModel={nlpActiveModel}
     />
   );
 }

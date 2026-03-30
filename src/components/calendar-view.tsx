@@ -51,6 +51,8 @@ export function CalendarView({
   gcalStatus = { connected: false, lastSyncTime: null },
   geoProvider = "photon",
   conflictResolution = "lww",
+  nlpProvider = null,
+  nlpModel = "",
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
@@ -60,6 +62,8 @@ export function CalendarView({
   gcalStatus?: { connected: boolean; lastSyncTime: string | null };
   geoProvider?: string;
   conflictResolution?: string;
+  nlpProvider?: "anthropic" | "openai" | null;
+  nlpModel?: string;
 }) {
   const nav = useNavigation();
   const statusBar = useStatusBar();
@@ -850,6 +854,8 @@ export function CalendarView({
             initialConflictResolution={
               conflictResolution as "lww" | "google_wins" | "delta_wins"
             }
+            initialNlpProvider={nlpProvider}
+            initialNlpModel={nlpModel}
             open={actionsOpen}
             onOpenChange={setActionsOpen}
           />

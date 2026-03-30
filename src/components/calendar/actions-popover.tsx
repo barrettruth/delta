@@ -9,6 +9,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
+import type { NlpProvider } from "@/lib/nlp-models";
+import { NLP_MODELS } from "@/lib/nlp-models";
 
 interface GcalStatus {
   connected: boolean;
@@ -28,6 +30,12 @@ const CONFLICT_STRATEGIES: { id: ConflictResolution; label: string }[] = [
   { id: "lww", label: "last write wins" },
   { id: "google_wins", label: "google wins" },
   { id: "delta_wins", label: "delta wins" },
+];
+
+const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
+  { id: "builtin", label: "built-in" },
+  { id: "anthropic", label: "anthropic" },
+  { id: "openai", label: "openai" },
 ];
 
 function formatRelativeTime(iso: string): string {
@@ -56,6 +64,8 @@ export function CalendarActionsPopover({
   gcalStatus: initialGcalStatus,
   initialGeoProvider = "photon",
   initialConflictResolution = "lww",
+  initialNlpProvider = null,
+  initialNlpModel = "",
   open,
   onOpenChange,
 }: {
@@ -63,6 +73,8 @@ export function CalendarActionsPopover({
   gcalStatus: GcalStatus;
   initialGeoProvider?: GeoProvider;
   initialConflictResolution?: ConflictResolution;
+  initialNlpProvider?: NlpProvider | null;
+  initialNlpModel?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -80,6 +92,12 @@ export function CalendarActionsPopover({
   const [conflictResolution, setConflictResolution] =
     useState<ConflictResolution>(initialConflictResolution);
   const [feedCopied, setFeedCopied] = useState(false);
+  const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
+    initialNlpProvider ?? "builtin",
+  );
+  const [nlpModel, setNlpModel] = useState(initialNlpModel);
+  const [nlpKeyInput, setNlpKeyInput] = useState("");
+  const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
   const [focusIdx, setFocusIdx] = useState(0);
   const countBuf = useRef("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -234,6 +252,48 @@ export function CalendarActionsPopover({
     statusBar.message(`sync strategy set to ${label}`);
   }
 
+  async function handleSelectNlpProvider(id: "builtin" | NlpProvider) {
+    if (id === "builtin") {
+      await fetch("/api/settings/nlp", { method: "DELETE" });
+      setNlpActive("builtin");
+      setNlpKeyTarget(null);
+      setNlpModel("");
+      statusBar.message("recurrence parsing set to built-in");
+      return;
+    }
+    setNlpActive(id);
+    setNlpModel(NLP_MODELS[id][0].id);
+    setNlpKeyTarget(id);
+    setNlpKeyInput("");
+  }
+
+  async function handleSaveNlpKey() {
+    if (!nlpKeyInput.trim()) {
+      statusBar.error("api key cannot be empty");
+      return;
+    }
+    const provider = nlpKeyTarget;
+    if (!provider) return;
+    const res = await fetch("/api/settings/nlp", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        llmProvider: provider,
+        model: nlpModel,
+        apiKey: nlpKeyInput.trim(),
+      }),
+    });
+    if (!res.ok) {
+      statusBar.error("failed to save nlp config");
+      return;
+    }
+    setNlpKeyTarget(null);
+    setNlpKeyInput("");
+    statusBar.message(
+      `recurrence parsing set to ${provider} ${NLP_MODELS[provider].find((m) => m.id === nlpModel)?.label ?? nlpModel}`,
+    );
+  }
+
   const items: MenuItem[] = [];
 
   if (gcalStatus.connected) {
@@ -285,6 +345,15 @@ export function CalendarActionsPopover({
     });
   }
 
+  for (const p of NLP_PROVIDERS_LIST) {
+    items.push({
+      id: `nlp-${p.id}`,
+      label: p.label,
+      muted: nlpActive !== p.id,
+      onSelect: () => handleSelectNlpProvider(p.id),
+    });
+  }
+
   if (feedToken) {
     if (feedCopied) {
       items.push({
@@ -333,6 +402,8 @@ export function CalendarActionsPopover({
       countBuf.current = "";
       setGeoKeyTarget(null);
       setGeoKeyInput("");
+      setNlpKeyTarget(null);
+      setNlpKeyInput("");
       setFeedCopied(false);
     }
   }, [open]);
@@ -340,7 +411,7 @@ export function CalendarActionsPopover({
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
-      if (geoKeyTarget) return;
+      if (geoKeyTarget || nlpKeyTarget) return;
       const cur = itemsRef.current;
 
       if (e.key >= "0" && e.key <= "9") {
@@ -373,11 +444,12 @@ export function CalendarActionsPopover({
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [open, focusIdx, geoKeyTarget, onOpenChange]);
+  }, [open, focusIdx, geoKeyTarget, nlpKeyTarget, onOpenChange]);
 
   const gcalItems = items.filter((i) => i.id.startsWith("gcal-"));
   const conflictItems = items.filter((i) => i.id.startsWith("conflict-"));
   const geoItems = items.filter((i) => i.id.startsWith("geo-"));
+  const nlpItems = items.filter((i) => i.id.startsWith("nlp-"));
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));
   const ioItems = items.filter((i) => i.id === "export" || i.id === "import");
 
@@ -457,6 +529,63 @@ export function CalendarActionsPopover({
                     >
                       save
                     </button>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <div className="border-t border-border" />
+
+          <div className="flex flex-col p-1">
+            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
+              recurrence parsing
+            </div>
+            {nlpItems.map((item, i) => (
+              <React.Fragment key={item.id}>
+                <MenuRow
+                  item={item}
+                  focused={focusIdx === globalIndex(nlpItems, i)}
+                />
+                {nlpKeyTarget === item.id.replace("nlp-", "") && (
+                  <div className="flex flex-col gap-1 px-2 py-1">
+                    <div className="flex gap-1">
+                      {NLP_MODELS[nlpKeyTarget as NlpProvider].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className={`px-1.5 py-0.5 text-[10px] border border-border ${nlpModel === m.id ? "text-foreground bg-accent" : "text-muted-foreground"}`}
+                          onClick={() => setNlpModel(m.id)}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={nlpKeyInput}
+                        onChange={(e) => setNlpKeyInput(e.target.value)}
+                        placeholder="api key"
+                        type="password"
+                        autoFocus
+                        className="h-7 text-sm flex-1"
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") handleSaveNlpKey();
+                          if (e.key === "Escape") {
+                            setNlpKeyTarget(null);
+                            setNlpKeyInput("");
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-foreground px-2"
+                        onClick={handleSaveNlpKey}
+                      >
+                        save
+                      </button>
+                    </div>
                   </div>
                 )}
               </React.Fragment>
