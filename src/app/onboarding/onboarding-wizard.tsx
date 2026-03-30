@@ -427,35 +427,32 @@ export function OnboardingWizard({
                 const selected = defaultView === opt.id;
                 const focused = focusIdx === i;
                 return (
-                  <div key={opt.id}>
-                    <button
-                      type="button"
-                      className={`flex items-center gap-3 w-full px-3 py-2 text-xs transition-colors ${
-                        focused ? "bg-accent" : selected ? "bg-accent/50" : ""
-                      }`}
-                      onClick={() => {
-                        setDefaultView(opt.id);
-                        setFocusIdx(i);
-                      }}
-                      onMouseEnter={() => setFocusIdx(i)}
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`flex items-center gap-3 w-full px-3 py-2 text-xs transition-colors ${
+                      focused ? "bg-accent" : selected ? "bg-accent/50" : ""
+                    }`}
+                    onClick={() => {
+                      setDefaultView(opt.id);
+                      setFocusIdx(i);
+                    }}
+                    onMouseEnter={() => setFocusIdx(i)}
+                  >
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span
+                      className={
+                        selected ? "text-foreground" : "text-muted-foreground"
+                      }
                     >
-                      <Icon className="size-4 shrink-0 text-muted-foreground" />
-                      <span
-                        className={
-                          selected ? "text-foreground" : "text-muted-foreground"
-                        }
-                      >
-                        {opt.label}
-                      </span>
-                    </button>
-                    {focused && (
-                      <div className="px-3 pb-2 text-[10px] text-muted-foreground leading-relaxed">
-                        {opt.blurb}
-                      </div>
-                    )}
-                  </div>
+                      {opt.label}
+                    </span>
+                  </button>
                 );
               })}
+            </div>
+            <div className="text-[10px] text-muted-foreground leading-relaxed h-8">
+              {VIEW_OPTIONS[focusIdx]?.blurb}
             </div>
 
             <Input
@@ -529,47 +526,51 @@ export function OnboardingWizard({
                 const selected = geoProvider === opt.id;
                 const focused = focusIdx === globalIdx;
                 return (
-                  <div key={opt.id}>
-                    <button
-                      type="button"
-                      className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
-                        focused ? "bg-accent" : ""
-                      }`}
-                      onClick={() => {
-                        setFocusIdx(globalIdx);
-                        setGeoProvider(opt.id);
-                        if (!opt.needsKey) setGeoApiKey("");
-                      }}
-                      onMouseEnter={() => setFocusIdx(globalIdx)}
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
+                      focused ? "bg-accent" : ""
+                    }`}
+                    onClick={() => {
+                      setFocusIdx(globalIdx);
+                      setGeoProvider(opt.id);
+                      if (!opt.needsKey) setGeoApiKey("");
+                    }}
+                    onMouseEnter={() => setFocusIdx(globalIdx)}
+                  >
+                    <span
+                      className={
+                        selected ? "text-foreground" : "text-muted-foreground"
+                      }
                     >
-                      <span
-                        className={
-                          selected ? "text-foreground" : "text-muted-foreground"
-                        }
-                      >
-                        {opt.label}
-                      </span>
-                    </button>
-                    {focused && (
-                      <div className="px-3 pb-2 text-[10px] text-muted-foreground leading-relaxed">
-                        {opt.blurb}
-                      </div>
-                    )}
-                    {selected && opt.needsKey && focused && (
-                      <div className="px-3 pb-2">
-                        <Input
-                          value={geoApiKey}
-                          onChange={(e) => setGeoApiKey(e.target.value)}
-                          placeholder="api key"
-                          autoFocus
-                          className="h-7 text-xs"
-                          onKeyDown={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    )}
-                  </div>
+                      {opt.label}
+                    </span>
+                  </button>
                 );
               })}
+              {(() => {
+                const focusedGeo = GEO_OPTIONS[focusIdx - 1];
+                const blurb = focusedGeo?.blurb;
+                return focusIdx >= 1 &&
+                  focusIdx < 1 + GEO_OPTIONS.length &&
+                  blurb ? (
+                  <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
+                    {blurb}
+                  </div>
+                ) : null;
+              })()}
+              {GEO_OPTIONS.find((o) => o.id === geoProvider)?.needsKey && (
+                <div className="px-3 pb-2">
+                  <Input
+                    value={geoApiKey}
+                    onChange={(e) => setGeoApiKey(e.target.value)}
+                    placeholder="api key"
+                    className="h-7 text-xs"
+                    onKeyDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col border border-border">
@@ -580,82 +581,90 @@ export function OnboardingWizard({
                 const globalIdx = 1 + GEO_OPTIONS.length + i;
                 const selected = nlpProvider === opt.id;
                 const focused = focusIdx === globalIdx;
-                const models =
-                  opt.id === "anthropic"
-                    ? ANTHROPIC_MODELS
-                    : opt.id === "openai"
-                      ? OPENAI_MODELS
-                      : [];
                 return (
-                  <div key={opt.id}>
-                    <button
-                      type="button"
-                      className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
-                        focused ? "bg-accent" : ""
-                      }`}
-                      onClick={() => {
-                        setFocusIdx(globalIdx);
-                        setNlpProvider(opt.id);
-                        if (opt.needsKey) {
-                          const m =
-                            opt.id === "anthropic"
-                              ? ANTHROPIC_MODELS
-                              : OPENAI_MODELS;
-                          setNlpModel(m[0].id);
-                        } else {
-                          setNlpApiKey("");
-                          setNlpModel("");
-                        }
-                      }}
-                      onMouseEnter={() => setFocusIdx(globalIdx)}
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
+                      focused ? "bg-accent" : ""
+                    }`}
+                    onClick={() => {
+                      setFocusIdx(globalIdx);
+                      setNlpProvider(opt.id);
+                      if (opt.needsKey) {
+                        const m =
+                          opt.id === "anthropic"
+                            ? ANTHROPIC_MODELS
+                            : OPENAI_MODELS;
+                        setNlpModel(m[0].id);
+                      } else {
+                        setNlpApiKey("");
+                        setNlpModel("");
+                      }
+                    }}
+                    onMouseEnter={() => setFocusIdx(globalIdx)}
+                  >
+                    <span
+                      className={
+                        selected ? "text-foreground" : "text-muted-foreground"
+                      }
                     >
-                      <span
-                        className={
-                          selected ? "text-foreground" : "text-muted-foreground"
-                        }
-                      >
-                        {opt.label}
-                      </span>
-                    </button>
-                    {focused && (
-                      <div className="px-3 pb-2 text-[10px] text-muted-foreground leading-relaxed">
-                        {opt.blurb}
-                      </div>
-                    )}
-                    {selected && opt.needsKey && focused && (
-                      <div className="px-3 pb-2 flex flex-col gap-2">
-                        <div className="flex gap-1">
-                          {models.map((m) => (
-                            <button
-                              key={m.id}
-                              type="button"
-                              className={`px-2 py-0.5 text-[10px] border border-border transition-colors ${
-                                nlpModel === m.id
-                                  ? "text-foreground bg-accent"
-                                  : "text-muted-foreground"
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setNlpModel(m.id);
-                              }}
-                            >
-                              {m.label}
-                            </button>
-                          ))}
-                        </div>
-                        <Input
-                          value={nlpApiKey}
-                          onChange={(e) => setNlpApiKey(e.target.value)}
-                          placeholder="api key"
-                          autoFocus
-                          className="h-7 text-xs"
-                          onKeyDown={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    )}
-                  </div>
+                      {opt.label}
+                    </span>
+                  </button>
                 );
               })}
+              {(() => {
+                const nlpStart = 1 + GEO_OPTIONS.length;
+                const focusedNlp = NLP_OPTIONS[focusIdx - nlpStart];
+                return focusIdx >= nlpStart &&
+                  focusIdx < nlpStart + NLP_OPTIONS.length &&
+                  focusedNlp ? (
+                  <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
+                    {focusedNlp.blurb}
+                  </div>
+                ) : null;
+              })()}
+              {(() => {
+                const selectedOpt = NLP_OPTIONS.find(
+                  (o) => o.id === nlpProvider,
+                );
+                if (!selectedOpt?.needsKey) return null;
+                const models =
+                  nlpProvider === "anthropic"
+                    ? ANTHROPIC_MODELS
+                    : OPENAI_MODELS;
+                return (
+                  <div className="px-3 pb-2 flex flex-col gap-2">
+                    <div className="flex gap-1">
+                      {models.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className={`px-2 py-0.5 text-[10px] border border-border transition-colors ${
+                            nlpModel === m.id
+                              ? "text-foreground bg-accent"
+                              : "text-muted-foreground"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setNlpModel(m.id);
+                          }}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Input
+                      value={nlpApiKey}
+                      onChange={(e) => setNlpApiKey(e.target.value)}
+                      placeholder="api key"
+                      className="h-7 text-xs"
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                );
+              })()}
             </div>
 
             {gcalConnected && (
@@ -669,36 +678,41 @@ export function OnboardingWizard({
                   const selected = conflictResolution === opt.id;
                   const focused = focusIdx === globalIdx;
                   return (
-                    <div key={opt.id}>
-                      <button
-                        type="button"
-                        className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
-                          focused ? "bg-accent" : ""
-                        }`}
-                        onClick={() => {
-                          setFocusIdx(globalIdx);
-                          setConflictResolution(opt.id);
-                        }}
-                        onMouseEnter={() => setFocusIdx(globalIdx)}
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
+                        focused ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setFocusIdx(globalIdx);
+                        setConflictResolution(opt.id);
+                      }}
+                      onMouseEnter={() => setFocusIdx(globalIdx)}
+                    >
+                      <span
+                        className={
+                          selected ? "text-foreground" : "text-muted-foreground"
+                        }
                       >
-                        <span
-                          className={
-                            selected
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {opt.label}
-                        </span>
-                      </button>
-                      {focused && (
-                        <div className="px-3 pb-2 text-[10px] text-muted-foreground leading-relaxed">
-                          {opt.blurb}
-                        </div>
-                      )}
-                    </div>
+                        {opt.label}
+                      </span>
+                    </button>
                   );
                 })}
+                {(() => {
+                  const conflictStart =
+                    1 + GEO_OPTIONS.length + NLP_OPTIONS.length;
+                  const focusedConflict =
+                    CONFLICT_OPTIONS[focusIdx - conflictStart];
+                  return focusIdx >= conflictStart &&
+                    focusIdx < conflictStart + CONFLICT_OPTIONS.length &&
+                    focusedConflict ? (
+                    <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
+                      {focusedConflict.blurb}
+                    </div>
+                  ) : null;
+                })()}
               </div>
             )}
 
