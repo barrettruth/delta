@@ -14,3 +14,11 @@ export const NLP_MODELS = {
 export type NlpProvider = keyof typeof NLP_MODELS;
 export type NlpModelId<P extends NlpProvider> =
   (typeof NLP_MODELS)[P][number]["id"];
+
+export interface NlpModelDef {
+  id: string;
+  label: string;
+}
+
+export const ANTHROPIC_MODELS: NlpModelDef[] = [...NLP_MODELS.anthropic];
+export const OPENAI_MODELS: NlpModelDef[] = [...NLP_MODELS.openai];

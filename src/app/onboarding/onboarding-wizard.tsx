@@ -14,10 +14,12 @@ import {
   isBrowserReserved,
   isModifierOnly,
 } from "@/lib/keymap-defs";
+import { ANTHROPIC_MODELS, OPENAI_MODELS } from "@/lib/nlp-models";
 
 type Step = 1 | 2 | 3;
 type DefaultView = "queue" | "kanban" | "calendar";
 type GeoProvider = "photon" | "mapbox" | "google_maps";
+type OnboardingNlpProvider = "builtin" | "anthropic" | "openai";
 
 const STORAGE_KEY = "delta:onboarding";
 
@@ -79,6 +81,35 @@ const GEO_OPTIONS: {
   },
 ];
 
+const NLP_OPTIONS: {
+  id: OnboardingNlpProvider;
+  label: string;
+  blurb: string;
+  needsKey: boolean;
+}[] = [
+  {
+    id: "builtin",
+    label: "built-in",
+    blurb:
+      "Rule-based parsing for dates and recurrence. No external API calls. Works offline.",
+    needsKey: false,
+  },
+  {
+    id: "anthropic",
+    label: "anthropic",
+    blurb:
+      "Use Anthropic's Claude models for natural language parsing. Requires an API key from console.anthropic.com.",
+    needsKey: true,
+  },
+  {
+    id: "openai",
+    label: "openai",
+    blurb:
+      "Use OpenAI's GPT models for natural language parsing. Requires an API key from platform.openai.com.",
+    needsKey: true,
+  },
+];
+
 const CONFLICT_OPTIONS: {
   id: ConflictResolution;
   label: string;
@@ -129,9 +160,13 @@ const CURATED_KEYS = [
 export function OnboardingWizard({
   gcalConnected: initialGcalConnected,
   initialGeoProvider,
+  initialNlpProvider,
+  initialNlpModel,
 }: {
   gcalConnected: boolean;
   initialGeoProvider: GeoProvider;
+  initialNlpProvider: OnboardingNlpProvider;
+  initialNlpModel: string;
 }) {
   const router = useRouter();
 
@@ -142,6 +177,10 @@ export function OnboardingWizard({
   const [geoProvider, setGeoProvider] =
     useState<GeoProvider>(initialGeoProvider);
   const [geoApiKey, setGeoApiKey] = useState("");
+  const [nlpProvider, setNlpProvider] =
+    useState<OnboardingNlpProvider>(initialNlpProvider);
+  const [nlpApiKey, setNlpApiKey] = useState("");
+  const [nlpModel, setNlpModel] = useState(initialNlpModel);
   const [conflictResolution, setConflictResolution] =
     useState<ConflictResolution>("lww");
   const [keymapOverrides, setKeymapOverrides] = useState<
@@ -162,6 +201,9 @@ export function OnboardingWizard({
         if (state.defaultCategory) setDefaultCategory(state.defaultCategory);
         if (state.geoProvider) setGeoProvider(state.geoProvider);
         if (state.geoApiKey) setGeoApiKey(state.geoApiKey);
+        if (state.nlpProvider) setNlpProvider(state.nlpProvider);
+        if (state.nlpApiKey) setNlpApiKey(state.nlpApiKey);
+        if (state.nlpModel) setNlpModel(state.nlpModel);
         setGcalConnected(initialGcalConnected);
       } catch {}
       sessionStorage.removeItem(STORAGE_KEY);
@@ -183,10 +225,21 @@ export function OnboardingWizard({
         defaultCategory,
         geoProvider,
         geoApiKey,
+        nlpProvider,
+        nlpApiKey,
+        nlpModel,
       }),
     );
     window.location.href = "/api/auth/google?scope=calendar.events";
-  }, [defaultView, defaultCategory, geoProvider, geoApiKey]);
+  }, [
+    defaultView,
+    defaultCategory,
+    geoProvider,
+    geoApiKey,
+    nlpProvider,
+    nlpApiKey,
+    nlpModel,
+  ]);
 
   async function handleFinish() {
     setSubmitting(true);
@@ -199,6 +252,9 @@ export function OnboardingWizard({
           defaultCategory,
           geoProvider,
           geoApiKey: geoApiKey || undefined,
+          nlpProvider,
+          nlpApiKey: nlpApiKey || undefined,
+          nlpModel: nlpModel || undefined,
           conflictResolution: gcalConnected ? conflictResolution : undefined,
           keymapOverrides:
             Object.keys(keymapOverrides).length > 0
@@ -222,6 +278,7 @@ export function OnboardingWizard({
   const step2ItemCount = (() => {
     let count = 1;
     count += GEO_OPTIONS.length;
+    count += NLP_OPTIONS.length;
     if (gcalConnected) count += CONFLICT_OPTIONS.length;
     return count;
   })();
@@ -241,6 +298,21 @@ export function OnboardingWizard({
         return;
       }
       offset += GEO_OPTIONS.length;
+      if (idx < offset + NLP_OPTIONS.length) {
+        const nlpIdx = idx - offset;
+        const opt = NLP_OPTIONS[nlpIdx];
+        setNlpProvider(opt.id);
+        if (opt.needsKey) {
+          const models =
+            opt.id === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;
+          setNlpModel(models[0].id);
+        } else {
+          setNlpApiKey("");
+          setNlpModel("");
+        }
+        return;
+      }
+      offset += NLP_OPTIONS.length;
       if (gcalConnected && idx < offset + CONFLICT_OPTIONS.length) {
         setConflictResolution(CONFLICT_OPTIONS[idx - offset].id);
       }
@@ -500,13 +572,100 @@ export function OnboardingWizard({
               })}
             </div>
 
+            <div className="flex flex-col border border-border">
+              <div className="text-[10px] text-muted-foreground px-3 py-1">
+                NLP provider
+              </div>
+              {NLP_OPTIONS.map((opt, i) => {
+                const globalIdx = 1 + GEO_OPTIONS.length + i;
+                const selected = nlpProvider === opt.id;
+                const focused = focusIdx === globalIdx;
+                const models =
+                  opt.id === "anthropic"
+                    ? ANTHROPIC_MODELS
+                    : opt.id === "openai"
+                      ? OPENAI_MODELS
+                      : [];
+                return (
+                  <div key={opt.id}>
+                    <button
+                      type="button"
+                      className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
+                        focused ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setFocusIdx(globalIdx);
+                        setNlpProvider(opt.id);
+                        if (opt.needsKey) {
+                          const m =
+                            opt.id === "anthropic"
+                              ? ANTHROPIC_MODELS
+                              : OPENAI_MODELS;
+                          setNlpModel(m[0].id);
+                        } else {
+                          setNlpApiKey("");
+                          setNlpModel("");
+                        }
+                      }}
+                      onMouseEnter={() => setFocusIdx(globalIdx)}
+                    >
+                      <span
+                        className={
+                          selected ? "text-foreground" : "text-muted-foreground"
+                        }
+                      >
+                        {opt.label}
+                      </span>
+                    </button>
+                    {focused && (
+                      <div className="px-3 pb-2 text-[10px] text-muted-foreground leading-relaxed">
+                        {opt.blurb}
+                      </div>
+                    )}
+                    {selected && opt.needsKey && focused && (
+                      <div className="px-3 pb-2 flex flex-col gap-2">
+                        <div className="flex gap-1">
+                          {models.map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              className={`px-2 py-0.5 text-[10px] border border-border transition-colors ${
+                                nlpModel === m.id
+                                  ? "text-foreground bg-accent"
+                                  : "text-muted-foreground"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNlpModel(m.id);
+                              }}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                        <Input
+                          value={nlpApiKey}
+                          onChange={(e) => setNlpApiKey(e.target.value)}
+                          placeholder="api key"
+                          autoFocus
+                          className="h-7 text-xs"
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             {gcalConnected && (
               <div className="flex flex-col border border-border">
                 <div className="text-[10px] text-muted-foreground px-3 py-1">
                   sync strategy
                 </div>
                 {CONFLICT_OPTIONS.map((opt, i) => {
-                  const globalIdx = 1 + GEO_OPTIONS.length + i;
+                  const globalIdx =
+                    1 + GEO_OPTIONS.length + NLP_OPTIONS.length + i;
                   const selected = conflictResolution === opt.id;
                   const focused = focusIdx === globalIdx;
                   return (
