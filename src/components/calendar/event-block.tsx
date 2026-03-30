@@ -72,7 +72,7 @@ export function EventBlock({
       data-event-end={task.endAt ?? ""}
       data-event-start-min={startMin}
       data-event-end-min={endMin}
-      className={`group/event absolute z-10 overflow-hidden px-1.5 py-0.5 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left flex flex-col justify-start ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
+      className={`group/event absolute z-10 overflow-hidden px-1.5 py-1 text-[10px] leading-tight border-l-2 transition-colors hover:brightness-90 cursor-pointer text-left flex flex-col gap-0.5 justify-start ${statusColor(task)} ${isDragging ? "opacity-20" : ""}`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -92,7 +92,7 @@ export function EventBlock({
         onClick(task);
       }}
     >
-      <span className="font-medium truncate flex items-center gap-0.5">
+      <span className="font-medium truncate flex items-center gap-0.5 text-[11px]">
         {isRecurring && (
           <span className="mr-0.5 shrink-0" role="img" aria-label="recurring">
             &#x21BB;
