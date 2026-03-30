@@ -133,7 +133,7 @@ export function AllDayBar({
                 <button
                   type="button"
                   key={span.task.id}
-                  className="absolute text-[10px] leading-tight truncate px-1.5 py-0.5 border border-border/30 hover:brightness-90 transition-colors cursor-pointer"
+                  className="absolute text-[10px] leading-tight truncate px-1.5 py-0.5 border border-border/30 hover:brightness-90 transition-colors cursor-pointer text-left"
                   style={{
                     top: `${rowIdx * rowHeight}px`,
                     height: `${rowHeight - 2}px`,

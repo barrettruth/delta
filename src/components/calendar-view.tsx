@@ -85,7 +85,7 @@ export function CalendarView({
   const [allDayExpanded, setAllDayExpanded] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
-    Map<number, { startAt?: string; endAt?: string }>
+    Map<number, { startAt?: string; endAt?: string; deleted?: true }>
   >(new Map());
 
   const virtualMetaRef = useRef(
@@ -282,6 +282,7 @@ export function CalendarView({
       if (!task.startAt || task.allDay === 1) continue;
 
       const update = optimisticUpdates.get(task.id);
+      if (update?.deleted) continue;
       const pending = pendingEdits.get(task.id);
       const merged =
         update || pending ? { ...task, ...pending, ...update } : task;
@@ -289,6 +290,7 @@ export function CalendarView({
     }
 
     for (const master of masters) {
+      if (optimisticUpdates.get(master.id)?.deleted) continue;
       const exceptions = exceptionsMap.get(master.id) ?? [];
       const instances = expandInstances(
         master,
@@ -335,8 +337,11 @@ export function CalendarView({
   }, [tasks, optimisticUpdates, pendingEdits, weekAnchor, weekEnd]);
 
   const allDayTasks = useMemo(() => {
-    return tasks.filter((t) => t.allDay === 1 && t.startAt);
-  }, [tasks]);
+    return tasks.filter(
+      (t) =>
+        t.allDay === 1 && t.startAt && !optimisticUpdates.get(t.id)?.deleted,
+    );
+  }, [tasks, optimisticUpdates]);
 
   const createPreview = useMemo(() => {
     if (
@@ -510,6 +515,11 @@ export function CalendarView({
         return;
       }
 
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(target.id, { deleted: true });
+        return next;
+      });
       undo.push({
         id: `delete-${Date.now()}-${target.id}`,
         op: "delete",
