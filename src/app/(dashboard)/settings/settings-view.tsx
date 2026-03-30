@@ -125,12 +125,6 @@ export function SettingsView({
     statusBar.message(`${SECTION_LABELS[section].toLowerCase()} keymaps reset`);
   }
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
-
   async function handleAddPasskey() {
     try {
       const optionsRes = await fetch("/api/auth/webauthn/register");
@@ -345,7 +339,6 @@ export function SettingsView({
       <div className="w-full max-w-md px-4 py-4 md:p-6">
         <Section title="account">
           <Row label="username" value={username} />
-          <Row label="logout" action onClick={handleLogout} />
         </Section>
 
         <Section title="connected accounts">

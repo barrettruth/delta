@@ -242,7 +242,7 @@ function HelpKeyRow({
         <span className="shrink-0 min-w-16 flex items-center gap-1">
           <button
             type="button"
-            className="hover:bg-accent/50 cursor-pointer"
+            className="cursor-pointer"
             onClick={() => onStartCapture(captureId)}
           >
             <kbd

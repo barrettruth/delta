@@ -55,7 +55,7 @@ export function MonthGrid({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 flex-1 auto-rows-fr overflow-auto">
+      <div className="grid grid-cols-7 flex-1 auto-rows-fr overflow-hidden">
         {cells.map((cell) => {
           if (cell.day === null) {
             return (
