@@ -176,6 +176,13 @@
       "when": 1774915200011,
       "tag": "0024_event_share_links",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1774915200012,
+      "tag": "0025_onboarding_completed",
+      "breakpoints": true
     }
   ]
 }

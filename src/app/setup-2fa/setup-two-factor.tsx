@@ -102,7 +102,7 @@ export function SetupTwoFactor({ username: _username }: { username: string }) {
   }
 
   function handleFinish() {
-    router.push("/");
+    router.push("/onboarding");
     router.refresh();
   }
 

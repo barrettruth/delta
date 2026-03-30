@@ -17,6 +17,7 @@ export const users = sqliteTable("users", {
   totpEnabled: integer("totp_enabled").default(0),
   calendarFeedToken: text("calendar_feed_token").unique(),
   keymapOverrides: text("keymap_overrides"),
+  onboardingCompleted: integer("onboarding_completed").default(0),
   createdAt: text("created_at").notNull(),
 });
 

@@ -27,6 +27,7 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
+  if (!user.onboardingCompleted) redirect("/onboarding");
 
   const allTasks = listTasks(db, user.id);
   const categories = [
