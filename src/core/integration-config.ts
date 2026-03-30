@@ -116,6 +116,26 @@ export function upsertIntegrationConfig(
   };
 }
 
+export function setIntegrationEnabled(
+  db: Db,
+  userId: number,
+  provider: string,
+  enabled: number,
+): boolean {
+  const result = db
+    .update(integrationConfigs)
+    .set({ enabled, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(integrationConfigs.userId, userId),
+        eq(integrationConfigs.provider, provider),
+      ),
+    )
+    .run();
+
+  return result.changes > 0;
+}
+
 export function deleteIntegrationConfig(
   db: Db,
   userId: number,

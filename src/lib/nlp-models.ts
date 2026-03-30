@@ -10,3 +10,7 @@ export const NLP_MODELS = {
     { id: "gpt-5", label: "GPT-5" },
   ],
 } as const;
+
+export type NlpProvider = keyof typeof NLP_MODELS;
+export type NlpModelId<P extends NlpProvider> =
+  (typeof NLP_MODELS)[P][number]["id"];

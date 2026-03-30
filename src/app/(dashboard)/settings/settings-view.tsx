@@ -10,7 +10,15 @@ import {
 } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStatusBar } from "@/contexts/status-bar";
+import { NLP_MODELS, type NlpProvider } from "@/lib/nlp-models";
 
 interface Passkey {
   id: number;
@@ -27,6 +35,14 @@ interface ConnectedAccount {
   createdAt: string;
 }
 
+interface NlpConfig {
+  activeProvider: NlpProvider | null;
+  anthropicModel: string;
+  openaiModel: string;
+  anthropicConfigured: boolean;
+  openaiConfigured: boolean;
+}
+
 export function SettingsView({
   username,
   passkeys: initialPasskeys,
@@ -34,6 +50,7 @@ export function SettingsView({
   recoveryCodesRemaining: initialRecoveryRemaining,
   connectedAccounts: initialConnectedAccounts,
   enabledProviders,
+  nlpConfig: initialNlpConfig,
 }: {
   username: string;
   passkeys: Passkey[];
@@ -41,6 +58,7 @@ export function SettingsView({
   recoveryCodesRemaining: number;
   connectedAccounts: ConnectedAccount[];
   enabledProviders: string[];
+  nlpConfig: NlpConfig;
 }) {
   const router = useRouter();
   const statusBar = useStatusBar();
@@ -69,6 +87,124 @@ export function SettingsView({
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [invites, setInvites] = useState<InviteLinkRow[]>([]);
   const [invitesLoaded, setInvitesLoaded] = useState(false);
+
+  const [nlpMode, setNlpMode] = useState<"builtin" | "llm">(
+    initialNlpConfig.activeProvider ? "llm" : "builtin",
+  );
+  const [nlpActiveProvider, setNlpActiveProvider] =
+    useState<NlpProvider | null>(initialNlpConfig.activeProvider);
+  const [nlpAnthropicModel, setNlpAnthropicModel] = useState(
+    initialNlpConfig.anthropicModel,
+  );
+  const [nlpOpenaiModel, setNlpOpenaiModel] = useState(
+    initialNlpConfig.openaiModel,
+  );
+  const [nlpApiKey, setNlpApiKey] = useState("");
+  const [nlpAnthropicConfigured, setNlpAnthropicConfigured] = useState(
+    initialNlpConfig.anthropicConfigured,
+  );
+  const [nlpOpenaiConfigured, setNlpOpenaiConfigured] = useState(
+    initialNlpConfig.openaiConfigured,
+  );
+
+  async function handleSetBuiltinMode() {
+    const res = await fetch("/api/settings/nlp", { method: "DELETE" });
+    if (!res.ok) {
+      statusBar.error("failed to switch to built-in mode");
+      return;
+    }
+    setNlpMode("builtin");
+    setNlpActiveProvider(null);
+    setNlpAnthropicConfigured(false);
+    setNlpOpenaiConfigured(false);
+    setNlpApiKey("");
+    statusBar.message("switched to built-in parsing");
+  }
+
+  async function handleSelectNlpProvider(provider: NlpProvider) {
+    const isConfigured =
+      provider === "anthropic" ? nlpAnthropicConfigured : nlpOpenaiConfigured;
+
+    if (isConfigured) {
+      const res = await fetch("/api/settings/nlp", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+      });
+      if (!res.ok) {
+        statusBar.error("failed to switch provider");
+        return;
+      }
+    }
+
+    setNlpMode("llm");
+    setNlpActiveProvider(provider);
+    setNlpApiKey("");
+
+    if (isConfigured) {
+      statusBar.message(`switched to ${provider}`);
+    }
+  }
+
+  async function handleSaveNlpConfig() {
+    if (!nlpActiveProvider) return;
+
+    const model =
+      nlpActiveProvider === "anthropic" ? nlpAnthropicModel : nlpOpenaiModel;
+
+    const body: Record<string, string> = { provider: nlpActiveProvider, model };
+    if (nlpApiKey) {
+      body.apiKey = nlpApiKey;
+    }
+
+    const res = await fetch("/api/settings/nlp", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      statusBar.error(data.error ?? "failed to save nlp config");
+      return;
+    }
+
+    if (nlpActiveProvider === "anthropic") {
+      setNlpAnthropicConfigured(true);
+    } else {
+      setNlpOpenaiConfigured(true);
+    }
+    setNlpApiKey("");
+    statusBar.message(`${nlpActiveProvider} config saved`);
+  }
+
+  async function handleNlpModelChange(provider: NlpProvider, model: string) {
+    if (provider === "anthropic") {
+      setNlpAnthropicModel(model);
+    } else {
+      setNlpOpenaiModel(model);
+    }
+
+    const isConfigured =
+      provider === "anthropic" ? nlpAnthropicConfigured : nlpOpenaiConfigured;
+    if (!isConfigured) return;
+
+    const res = await fetch("/api/settings/nlp", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider, model }),
+    });
+
+    if (!res.ok) {
+      statusBar.error("failed to update model");
+      return;
+    }
+
+    statusBar.message(
+      `model set to ${NLP_MODELS[provider].find((m) => m.id === model)?.label ?? model}`,
+    );
+  }
+
   async function handleAddPasskey() {
     try {
       const optionsRes = await fetch("/api/auth/webauthn/register");
@@ -403,6 +539,123 @@ export function SettingsView({
               muted
               onClick={handleGenerateInvite}
             />
+          )}
+        </Section>
+
+        <Section title="recurrence parsing">
+          <Row
+            label="built-in only"
+            value={nlpMode === "builtin" ? "active" : ""}
+            action
+            onClick={handleSetBuiltinMode}
+          />
+          <Row
+            label="llm-assisted"
+            value={nlpMode === "llm" ? "active" : ""}
+            action
+            onClick={() => {
+              if (nlpMode !== "llm") {
+                setNlpMode("llm");
+                if (!nlpActiveProvider) setNlpActiveProvider("anthropic");
+              }
+            }}
+          />
+
+          {nlpMode === "llm" && (
+            <div className="mt-3 space-y-3">
+              <div className="flex items-center gap-2 px-2">
+                {(["anthropic", "openai"] as const).map((p) => {
+                  const isActive = nlpActiveProvider === p;
+                  const isConfigured =
+                    p === "anthropic"
+                      ? nlpAnthropicConfigured
+                      : nlpOpenaiConfigured;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      className={`flex-1 border px-2 py-1.5 text-sm transition-colors cursor-pointer ${
+                        isActive
+                          ? "border-foreground text-foreground"
+                          : "border-border text-muted-foreground hover:border-foreground/50"
+                      }`}
+                      onClick={() => handleSelectNlpProvider(p)}
+                    >
+                      <span>{p}</span>
+                      {isConfigured && (
+                        <span className="ml-1.5 text-xs text-status-done">
+                          {isActive ? "active" : "configured"}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {nlpActiveProvider && (
+                <div className="space-y-2 px-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-12 shrink-0">
+                      model
+                    </span>
+                    <Select
+                      value={
+                        nlpActiveProvider === "anthropic"
+                          ? nlpAnthropicModel
+                          : nlpOpenaiModel
+                      }
+                      onValueChange={(val) => {
+                        if (nlpActiveProvider && val)
+                          handleNlpModelChange(nlpActiveProvider, val);
+                      }}
+                    >
+                      <SelectTrigger size="sm" className="h-7 text-sm flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {NLP_MODELS[nlpActiveProvider].map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-12 shrink-0">
+                      key
+                    </span>
+                    <Input
+                      type="password"
+                      value={nlpApiKey}
+                      onChange={(e) => setNlpApiKey(e.target.value)}
+                      placeholder={
+                        (
+                          nlpActiveProvider === "anthropic"
+                            ? nlpAnthropicConfigured
+                            : nlpOpenaiConfigured
+                        )
+                          ? "••••••••"
+                          : "api key"
+                      }
+                      className="h-7 text-sm flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveNlpConfig();
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveNlpConfig}
+                      className="h-7 text-xs"
+                    >
+                      save
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </Section>
       </div>
