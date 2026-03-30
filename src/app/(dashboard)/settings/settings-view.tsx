@@ -542,7 +542,7 @@ export function SettingsView({
           )}
         </Section>
 
-        <Section title="recurrence parsing">
+        <Section title="recurrence API">
           <Row
             label="built-in only"
             value={nlpMode === "builtin" ? "active" : ""}

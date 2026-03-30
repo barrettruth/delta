@@ -258,7 +258,7 @@ export function CalendarActionsPopover({
       setNlpActive("builtin");
       setNlpKeyTarget(null);
       setNlpModel("");
-      statusBar.message("recurrence parsing set to built-in");
+      statusBar.message("recurrence API set to built-in");
       return;
     }
     setNlpActive(id);
@@ -290,7 +290,7 @@ export function CalendarActionsPopover({
     setNlpKeyTarget(null);
     setNlpKeyInput("");
     statusBar.message(
-      `recurrence parsing set to ${provider} ${NLP_MODELS[provider].find((m) => m.id === nlpModel)?.label ?? nlpModel}`,
+      `recurrence API set to ${provider} ${NLP_MODELS[provider].find((m) => m.id === nlpModel)?.label ?? nlpModel}`,
     );
   }
 
@@ -539,7 +539,7 @@ export function CalendarActionsPopover({
 
           <div className="flex flex-col p-1">
             <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              recurrence parsing
+              recurrence API
             </div>
             {nlpItems.map((item, i) => (
               <React.Fragment key={item.id}>
