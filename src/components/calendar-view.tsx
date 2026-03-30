@@ -870,6 +870,15 @@ export function CalendarView({
           categoryColors={categoryColors}
           onTaskClick={(task) => {
             nav.pushJump();
+            const meta = virtualMetaRef.current.get(task.id);
+            if (meta) {
+              materializeInstanceAction(meta.masterId, meta.instanceDate).then(
+                (result) => {
+                  if ("data" in result) panel.toggle(result.data.id);
+                },
+              );
+              return;
+            }
             panel.toggle(task.id);
           }}
         />

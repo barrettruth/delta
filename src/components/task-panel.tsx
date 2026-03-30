@@ -1,6 +1,5 @@
 "use client";
 
-import { MapPinSimple } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -168,11 +167,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       (l) => l.toLowerCase().includes(lower) && l !== location,
     );
   }, [allLocations, location]);
-
-  const detectedPlatform = useMemo(
-    () => (meetingUrl ? detectMeetingPlatform(meetingUrl) : null),
-    [meetingUrl],
-  );
 
   const handleRecurrenceBlur = useCallback(async () => {
     setRecurrenceFocused(false);
@@ -510,7 +504,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             {mode === "edit" && task?.startAt && (
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-foreground shrink-0 px-1.5 py-0.5 border border-border hover:border-foreground/30 transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground shrink-0 px-1.5 py-0.5 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
                 onClick={handleShare}
               >
                 &#x2197;
@@ -608,140 +602,121 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
               onChange={(e) => setRecurrence(e.target.value || null)}
               onFocus={() => setRecurrenceFocused(true)}
               onBlur={handleRecurrenceBlur}
-              placeholder="repeat..."
+              placeholder="enter recurrence..."
               disabled={mode === "edit" && !!task?.recurringTaskId}
               className="h-7 text-xs w-1/2"
             />
           </div>
 
-          <span className="text-xs text-muted-foreground/60 inline-flex items-center gap-1">
-            <MapPinSimple size={12} weight="bold" />
-            location
-          </span>
-          <div className="flex gap-2 items-start">
-            <div className="relative w-1/2">
-              <Input
-                value={location}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (detectMeetingPlatform(val)) {
-                    setMeetingUrl(val);
-                    setLocation("");
-                  } else {
-                    setLocation(val);
-                  }
-                  setLocationLat(null);
-                  setLocationLon(null);
-                  setShowLocationSuggestions(true);
-                  setLocationIdx(-1);
-                }}
-                onFocus={() => setShowLocationSuggestions(true)}
-                onBlur={() =>
-                  setTimeout(() => setShowLocationSuggestions(false), 150)
+          <span className="text-xs text-muted-foreground/60">location</span>
+          <div className="relative">
+            <Input
+              value={location || meetingUrl}
+              placeholder="address or meeting link"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (detectMeetingPlatform(val)) {
+                  setMeetingUrl(val);
+                  setLocation("");
+                } else {
+                  setLocation(val);
+                  setMeetingUrl("");
                 }
-                onKeyDown={(e) => {
-                  const allItems = [
-                    ...filteredLocations,
-                    ...locationResults.map((r) => r.displayName),
-                  ];
-                  if (!showLocationSuggestions || allItems.length === 0) return;
-                  if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setLocationIdx((prev) =>
-                      prev < allItems.length - 1 ? prev + 1 : 0,
-                    );
-                  } else if (
-                    (e.ctrlKey && e.key === "p") ||
-                    e.key === "ArrowUp"
-                  ) {
-                    e.preventDefault();
-                    setLocationIdx((prev) =>
-                      prev > 0 ? prev - 1 : allItems.length - 1,
-                    );
-                  } else if (e.key === "Enter" && locationIdx >= 0) {
-                    e.preventDefault();
-                    setLocation(allItems[locationIdx]);
-                    const geoIdx = locationIdx - filteredLocations.length;
-                    if (geoIdx >= 0 && locationResults[geoIdx]) {
-                      setLocationLat(locationResults[geoIdx].lat);
-                      setLocationLon(locationResults[geoIdx].lon);
-                    } else {
-                      setLocationLat(null);
-                      setLocationLon(null);
-                    }
-                    setShowLocationSuggestions(false);
-                    setLocationIdx(-1);
-                  } else if (e.key === "Escape") {
-                    setShowLocationSuggestions(false);
-                    setLocationIdx(-1);
+                setLocationLat(null);
+                setLocationLon(null);
+                setShowLocationSuggestions(true);
+                setLocationIdx(-1);
+              }}
+              onFocus={() => setShowLocationSuggestions(true)}
+              onBlur={() =>
+                setTimeout(() => setShowLocationSuggestions(false), 150)
+              }
+              onKeyDown={(e) => {
+                const allItems = [
+                  ...filteredLocations,
+                  ...locationResults.map((r) => r.displayName),
+                ];
+                if (!showLocationSuggestions || allItems.length === 0) return;
+                if ((e.ctrlKey && e.key === "n") || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setLocationIdx((prev) =>
+                    prev < allItems.length - 1 ? prev + 1 : 0,
+                  );
+                } else if (
+                  (e.ctrlKey && e.key === "p") ||
+                  e.key === "ArrowUp"
+                ) {
+                  e.preventDefault();
+                  setLocationIdx((prev) =>
+                    prev > 0 ? prev - 1 : allItems.length - 1,
+                  );
+                } else if (e.key === "Enter" && locationIdx >= 0) {
+                  e.preventDefault();
+                  setLocation(allItems[locationIdx]);
+                  setMeetingUrl("");
+                  const geoIdx = locationIdx - filteredLocations.length;
+                  if (geoIdx >= 0 && locationResults[geoIdx]) {
+                    setLocationLat(locationResults[geoIdx].lat);
+                    setLocationLon(locationResults[geoIdx].lon);
+                  } else {
+                    setLocationLat(null);
+                    setLocationLon(null);
                   }
-                }}
-                className="h-7 text-xs"
-              />
-              {showLocationSuggestions &&
-                (filteredLocations.length > 0 ||
-                  locationResults.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
-                    {filteredLocations.map((l, i) => (
+                  setShowLocationSuggestions(false);
+                  setLocationIdx(-1);
+                } else if (e.key === "Escape") {
+                  setShowLocationSuggestions(false);
+                  setLocationIdx(-1);
+                }
+              }}
+              className="h-7 text-xs"
+            />
+            {showLocationSuggestions &&
+              (filteredLocations.length > 0 || locationResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
+                  {filteredLocations.map((l, i) => (
+                    <button
+                      key={l}
+                      type="button"
+                      className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setLocation(l);
+                        setMeetingUrl("");
+                        setShowLocationSuggestions(false);
+                        setLocationIdx(-1);
+                      }}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                  {filteredLocations.length > 0 &&
+                    locationResults.length > 0 && (
+                      <div className="border-t border-border/40 my-1" />
+                    )}
+                  {locationResults.map((r, i) => {
+                    const idx = filteredLocations.length + i;
+                    return (
                       <button
-                        key={l}
+                        key={r.displayName}
                         type="button"
-                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === i ? "bg-accent" : "hover:bg-accent"}`}
+                        className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setLocation(l);
+                          setLocation(r.displayName);
+                          setMeetingUrl("");
+                          setLocationLat(r.lat);
+                          setLocationLon(r.lon);
                           setShowLocationSuggestions(false);
                           setLocationIdx(-1);
                         }}
                       >
-                        {l}
+                        {r.displayName}
                       </button>
-                    ))}
-                    {filteredLocations.length > 0 &&
-                      locationResults.length > 0 && (
-                        <div className="border-t border-border/40 my-1" />
-                      )}
-                    {locationResults.map((r, i) => {
-                      const idx = filteredLocations.length + i;
-                      return (
-                        <button
-                          key={r.displayName}
-                          type="button"
-                          className={`w-full px-2 py-1 text-xs text-left transition-colors ${locationIdx === idx ? "bg-accent" : "hover:bg-accent"}`}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setLocation(r.displayName);
-                            setLocationLat(r.lat);
-                            setLocationLon(r.lon);
-                            setShowLocationSuggestions(false);
-                            setLocationIdx(-1);
-                          }}
-                        >
-                          {r.displayName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-            </div>
-            <div className="flex items-center gap-1 w-1/2">
-              <Input
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="link"
-                className="h-7 text-xs flex-1"
-              />
-              {detectedPlatform && (
-                <a
-                  href={meetingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center h-7 px-2 text-xs hover:bg-accent transition-colors border border-transparent shrink-0"
-                >
-                  Join
-                </a>
+                    );
+                  })}
+                </div>
               )}
-            </div>
           </div>
         </div>
 
@@ -761,7 +736,10 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
               variant="outline"
               size="sm"
               className="flex-1 border-primary text-primary hover:bg-primary/10"
-              onClick={() => saveTask(task.id)}
+              onClick={() => {
+                saveTask(task.id);
+                statusBar.message("saved");
+              }}
             >
               save
             </Button>
