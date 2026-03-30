@@ -385,20 +385,7 @@ export function QueueView({
                       }}
                     >
                       {task.category && <span># {task.category}</span>}
-                      {task.category && task.due && <span>&middot;</span>}
-                      {task.due && (
-                        <span
-                          className={cn(
-                            "tabular-nums",
-                            isOverdue(task.due) && "text-destructive",
-                          )}
-                        >
-                          {formatRelativeDate(new Date(task.due))}
-                        </span>
-                      )}
-                      {task.location && (task.category || task.due) && (
-                        <span>&middot;</span>
-                      )}
+                      {task.location && task.category && <span>&middot;</span>}
                       {task.location && (
                         <span className="inline-flex items-center gap-0.5 truncate max-w-[20ch]">
                           <MapPin className="w-3 h-3 shrink-0" />
@@ -407,6 +394,16 @@ export function QueueView({
                       )}
                       {task.meetingUrl && (
                         <Video className="w-3 h-3 shrink-0" />
+                      )}
+                      {task.due && (
+                        <span
+                          className={cn(
+                            "tabular-nums ml-auto",
+                            isOverdue(task.due) && "text-destructive",
+                          )}
+                        >
+                          {formatRelativeDate(new Date(task.due))}
+                        </span>
                       )}
                     </div>
                   )}

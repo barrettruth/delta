@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -35,6 +34,16 @@ function formatRelativeTime(iso: string): string {
   return `${days}d ago`;
 }
 
+interface MenuItem {
+  id: string;
+  label: string;
+  muted?: boolean;
+  prefix?: { text: string; className: string };
+  suffix?: string;
+  disabled?: boolean;
+  onSelect: () => void;
+}
+
 export function CalendarActionsPopover({
   feedToken: initialFeedToken,
   gcalStatus: initialGcalStatus,
@@ -58,7 +67,10 @@ export function CalendarActionsPopover({
   const [geoProvider, setGeoProvider] =
     useState<GeoProvider>(initialGeoProvider);
   const [geoKeyInput, setGeoKeyInput] = useState("");
-  const [geoExpanded, setGeoExpanded] = useState(false);
+  const [geoKeyTarget, setGeoKeyTarget] = useState<GeoProvider | null>(null);
+  const [focusIdx, setFocusIdx] = useState(0);
+  const countBuf = useRef("");
+  const containerRef = useRef<HTMLDivElement>(null);
 
   async function handleImport() {
     const file = fileRef.current?.files?.[0];
@@ -156,11 +168,11 @@ export function CalendarActionsPopover({
         await fetch(`/api/settings/integrations/${p}`, { method: "DELETE" });
       }
       setGeoProvider("photon");
-      setGeoExpanded(false);
+      setGeoKeyTarget(null);
       statusBar.message("geocoding set to photon");
       return;
     }
-    setGeoExpanded(true);
+    setGeoKeyTarget(id);
     setGeoKeyInput("");
     setGeoProvider(id);
   }
@@ -184,160 +196,187 @@ export function CalendarActionsPopover({
     }
     const other = geoProvider === "mapbox" ? "google_maps" : "mapbox";
     await fetch(`/api/settings/integrations/${other}`, { method: "DELETE" });
-    setGeoExpanded(false);
+    setGeoKeyTarget(null);
     setGeoKeyInput("");
     const label =
       GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
     statusBar.message(`geocoding set to ${label}`);
   }
 
+  const items: MenuItem[] = [];
+
+  if (gcalStatus.connected) {
+    items.push({
+      id: "gcal-disconnect",
+      label: "disconnect",
+      muted: true,
+      prefix: { text: "-", className: "text-destructive" },
+      onSelect: handleDisconnectGcal,
+    });
+    items.push({
+      id: "gcal-sync",
+      label: syncing ? "syncing..." : "sync now",
+      disabled: syncing,
+      suffix: gcalStatus.lastSyncTime
+        ? formatRelativeTime(gcalStatus.lastSyncTime)
+        : undefined,
+      onSelect: handleSync,
+    });
+  } else {
+    items.push({
+      id: "gcal-connect",
+      label: "connect google calendar",
+      muted: true,
+      prefix: { text: "+", className: "text-status-done" },
+      onSelect: () => {
+        window.location.href = "/api/auth/google?scope=calendar.events";
+      },
+    });
+  }
+
+  for (const p of GEO_PROVIDERS) {
+    items.push({
+      id: `geo-${p.id}`,
+      label: p.label,
+      muted: geoProvider !== p.id,
+      onSelect: () => handleSelectGeoProvider(p.id),
+    });
+  }
+
+  if (feedToken) {
+    items.push({
+      id: "feed-copy",
+      label: "copy feed",
+      onSelect: handleCopyFeedUrl,
+    });
+    items.push({
+      id: "feed-revoke",
+      label: "revoke feed",
+      muted: true,
+      prefix: { text: "-", className: "text-destructive" },
+      onSelect: handleRevokeFeed,
+    });
+  } else {
+    items.push({
+      id: "feed-generate",
+      label: "generate feed",
+      muted: true,
+      prefix: { text: "+", className: "text-status-done" },
+      onSelect: handleGenerateFeed,
+    });
+  }
+
+  items.push({
+    id: "export",
+    label: "export .ics",
+    onSelect: handleExport,
+  });
+  items.push({
+    id: "import",
+    label: importing ? "importing..." : "import .ics",
+    disabled: importing,
+    onSelect: () => fileRef.current?.click(),
+  });
+
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  useEffect(() => {
+    if (open) {
+      setFocusIdx(0);
+      countBuf.current = "";
+      setGeoKeyTarget(null);
+      setGeoKeyInput("");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e: KeyboardEvent) {
+      if (geoKeyTarget) return;
+      const cur = itemsRef.current;
+
+      if (e.key >= "0" && e.key <= "9") {
+        countBuf.current += e.key;
+        e.preventDefault();
+        return;
+      }
+
+      const count = Math.max(1, Number.parseInt(countBuf.current, 10) || 1);
+      countBuf.current = "";
+
+      if (e.key === "j") {
+        e.preventDefault();
+        setFocusIdx((prev) => Math.min(prev + count, cur.length - 1));
+      } else if (e.key === "k") {
+        e.preventDefault();
+        setFocusIdx((prev) => Math.max(prev - count, 0));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const item = cur[focusIdx];
+        if (item && !item.disabled) item.onSelect();
+      } else if (e.key === "Escape" || e.key === "q") {
+        e.preventDefault();
+        onOpenChange?.(false);
+      } else if (e.key === "g") {
+        setFocusIdx(0);
+      } else if (e.key === "G") {
+        setFocusIdx(cur.length - 1);
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [open, focusIdx, geoKeyTarget, onOpenChange]);
+
+  const gcalItems = items.filter((i) => i.id.startsWith("gcal-"));
+  const geoItems = items.filter((i) => i.id.startsWith("geo-"));
+  const feedItems = items.filter((i) => i.id.startsWith("feed-"));
+  const ioItems = items.filter((i) => i.id === "export" || i.id === "import");
+
+  function globalIndex(sectionItems: MenuItem[], localIdx: number): number {
+    const item = sectionItems[localIdx];
+    return items.findIndex((i) => i.id === item.id);
+  }
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
         render={
-          <Button
-            variant="ghost"
-            size="xs"
-            className="text-xs text-muted-foreground"
+          <button
+            type="button"
+            className="text-lg text-muted-foreground px-1 cursor-pointer hover:text-foreground leading-none"
           />
         }
       >
         ≡
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
-        <div className="flex flex-col">
-          <div className="flex flex-col gap-0.5 p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExport}
-              className="h-7 text-xs w-full justify-start"
-            >
-              export .ics
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs w-full justify-start"
-              onClick={() => fileRef.current?.click()}
-              disabled={importing}
-            >
-              {importing ? "importing..." : "import .ics"}
-            </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".ics"
-              className="hidden"
-              onChange={() => handleImport()}
-            />
+        <div ref={containerRef} className="flex flex-col">
+          <div className="flex flex-col p-1">
+            {gcalItems.map((item, i) => (
+              <MenuRow
+                key={item.id}
+                item={item}
+                focused={focusIdx === globalIndex(gcalItems, i)}
+              />
+            ))}
           </div>
 
           <div className="border-t border-border" />
 
-          <div className="flex flex-col gap-0.5 p-2">
-            {feedToken ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyFeedUrl}
-                  className="h-7 text-xs w-full justify-start"
-                >
-                  copy feed url
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRevokeFeed}
-                  className="h-7 text-xs w-full justify-start text-muted-foreground"
-                >
-                  <span className="text-destructive">-</span> revoke
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleGenerateFeed}
-                className="h-7 text-xs w-full justify-start text-muted-foreground"
-              >
-                <span className="text-status-done">+</span> generate feed url
-              </Button>
-            )}
-          </div>
-
-          <div className="border-t border-border" />
-
-          <div className="flex flex-col gap-0.5 p-2">
-            {gcalStatus.connected ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDisconnectGcal}
-                  className="h-7 text-xs w-full justify-start text-muted-foreground"
-                >
-                  <span className="text-destructive">-</span> disconnect
-                </Button>
-                {gcalStatus.lastSyncTime && (
-                  <div className="h-7 text-xs w-full flex items-center px-2 text-muted-foreground">
-                    synced {formatRelativeTime(gcalStatus.lastSyncTime)}
-                  </div>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className="h-7 text-xs w-full justify-start"
-                >
-                  {syncing ? "syncing..." : "sync now"}
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  window.location.href =
-                    "/api/auth/google?scope=calendar.events";
-                }}
-                className="h-7 text-xs w-full justify-start text-muted-foreground"
-              >
-                <span className="text-status-done">+</span> connect google
-                calendar
-              </Button>
-            )}
-          </div>
-
-          <div className="border-t border-border" />
-
-          <div className="flex flex-col gap-0.5 p-2">
-            <div className="text-[10px] text-muted-foreground px-2 mb-0.5">
+          <div className="flex flex-col p-1">
+            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
               geocoding
             </div>
-            {GEO_PROVIDERS.map((p) => (
-              <Button
-                key={p.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleSelectGeoProvider(p.id)}
-                className="h-7 text-xs w-full justify-start"
-              >
-                <span
-                  className={
-                    geoProvider === p.id
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }
-                >
-                  {p.label}
-                </span>
-              </Button>
+            {geoItems.map((item, i) => (
+              <MenuRow
+                key={item.id}
+                item={item}
+                focused={focusIdx === globalIndex(geoItems, i)}
+              />
             ))}
-            {geoExpanded && (
-              <div className="flex gap-2 px-2 mt-1">
+            {geoKeyTarget && (
+              <div className="flex gap-2 px-2 py-1">
                 <Input
                   value={geoKeyInput}
                   onChange={(e) => setGeoKeyInput(e.target.value)}
@@ -345,26 +384,87 @@ export function CalendarActionsPopover({
                   autoFocus
                   className="h-7 text-sm flex-1"
                   onKeyDown={(e) => {
+                    e.stopPropagation();
                     if (e.key === "Enter") handleSaveGeoKey();
                     if (e.key === "Escape") {
-                      setGeoExpanded(false);
+                      setGeoKeyTarget(null);
                       setGeoKeyInput("");
                     }
                   }}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground px-2"
                   onClick={handleSaveGeoKey}
-                  className="h-7 text-xs"
                 >
                   save
-                </Button>
+                </button>
               </div>
             )}
           </div>
+
+          <div className="border-t border-border" />
+
+          <div className="flex flex-col p-1">
+            {feedItems.map((item, i) => (
+              <MenuRow
+                key={item.id}
+                item={item}
+                focused={focusIdx === globalIndex(feedItems, i)}
+              />
+            ))}
+          </div>
+
+          <div className="border-t border-border" />
+
+          <div className="flex flex-col p-1">
+            {ioItems.map((item, i) => (
+              <MenuRow
+                key={item.id}
+                item={item}
+                focused={focusIdx === globalIndex(ioItems, i)}
+              />
+            ))}
+          </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".ics"
+            className="hidden"
+            onChange={() => handleImport()}
+          />
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function MenuRow({ item, focused }: { item: MenuItem; focused: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={item.disabled}
+      onClick={item.onSelect}
+      className={`flex items-center w-full text-xs h-7 px-2 cursor-pointer ${
+        focused ? "bg-accent" : "hover:bg-accent/50"
+      } ${item.disabled ? "opacity-50" : ""}`}
+    >
+      {item.prefix && (
+        <span className={`${item.prefix.className} mr-1`}>
+          {item.prefix.text}
+        </span>
+      )}
+      <span
+        className={item.muted ? "text-muted-foreground" : "text-foreground"}
+      >
+        {item.label}
+      </span>
+      {item.suffix && (
+        <span className="ml-auto text-muted-foreground text-[10px]">
+          {item.suffix}
+        </span>
+      )}
+    </button>
   );
 }
