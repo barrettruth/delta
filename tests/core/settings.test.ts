@@ -28,7 +28,7 @@ describe("updateSettings", () => {
   it("persists and returns merged settings", () => {
     const updated = updateSettings(db, userId, { defaultCategory: "Work" });
     expect(updated.defaultCategory).toBe("Work");
-    expect(updated.defaultView).toBe("list");
+    expect(updated.defaultView).toBe("queue");
     expect(updated.urgencyWeights).toEqual(DEFAULT_SETTINGS.urgencyWeights);
 
     const fetched = getSettings(db, userId);
