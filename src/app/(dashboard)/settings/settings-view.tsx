@@ -381,8 +381,17 @@ export function SettingsView({
         </Section>
 
         <Section title="security">
-          <div className="mb-1">
+          <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-muted-foreground">passkeys</span>
+            {!showAddPasskey && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground cursor-pointer"
+                onClick={() => setShowAddPasskey(true)}
+              >
+                +
+              </button>
+            )}
           </div>
           {passkeys.map((pk) => (
             <Row
@@ -393,7 +402,7 @@ export function SettingsView({
               onClick={() => handleRemovePasskey(pk.id)}
             />
           ))}
-          {showAddPasskey ? (
+          {showAddPasskey && (
             <div className="flex gap-2 ml-4 mb-2">
               <Input
                 value={passkeyName}
@@ -415,13 +424,6 @@ export function SettingsView({
                 add
               </Button>
             </div>
-          ) : (
-            <Row
-              label="  + add passkey"
-              action
-              muted
-              onClick={() => setShowAddPasskey(true)}
-            />
           )}
 
           {showTotpSetup ? (
