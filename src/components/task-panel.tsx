@@ -4,13 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   createTaskAction,
-  deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { ResizeHandle } from "@/components/resize-handle";
 import { TiptapEditor } from "@/components/tiptap-editor";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -23,7 +21,6 @@ import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
-import { useUndo } from "@/contexts/undo";
 import { rruleToText } from "@/core/recurrence";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
@@ -44,7 +41,6 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const nav = useNavigation();
-  const undo = useUndo();
   const keymaps = useKeymaps();
   const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
@@ -318,33 +314,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     preFill,
     panel,
   ]);
-
-  const handleDelete = useCallback(() => {
-    if (!task) return;
-    if (
-      (task.recurrence || task.recurringTaskId) &&
-      recurrenceDelete.requestDelete(task)
-    ) {
-      return;
-    }
-    undo.push({
-      id: `delete-${Date.now()}-${task.id}`,
-      op: "delete",
-      label: "1 task deleted",
-      mutations: [
-        {
-          taskId: task.id,
-          restore: {
-            status: (task.status as TaskStatus) ?? "pending",
-            completedAt: task.completedAt ?? null,
-          },
-        },
-      ],
-      timestamp: Date.now(),
-    });
-    deleteTaskAction(task.id);
-    panel.close();
-  }, [task, recurrenceDelete, undo, panel]);
 
   async function handleStatusChange(status: string) {
     if (!task) return;
@@ -729,30 +698,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             }}
           />
         </div>
-
-        {mode === "edit" && task && (
-          <div className="flex gap-2 px-4 py-3 border-t border-border/40">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 border-primary text-primary hover:bg-primary/10"
-              onClick={() => {
-                saveTask(task.id);
-                statusBar.message("saved");
-              }}
-            >
-              save
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="flex-1"
-              onClick={handleDelete}
-            >
-              delete
-            </Button>
-          </div>
-        )}
       </div>
 
       <RecurrenceStrategyDialog
