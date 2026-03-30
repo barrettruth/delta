@@ -174,6 +174,35 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     [meetingUrl],
   );
 
+  const handleRecurrenceBlur = useCallback(async () => {
+    setRecurrenceFocused(false);
+    if (
+      !recurrence ||
+      recurrence.startsWith("RRULE:") ||
+      recurrence.startsWith("FREQ=")
+    )
+      return;
+    try {
+      const res = await fetch("/api/nlp/parse-recurrence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: recurrence }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        statusBar.error(data.error ?? "could not parse recurrence");
+        return;
+      }
+      const data = await res.json();
+      if (data.rrule) {
+        setRecurrence(data.rrule);
+        statusBar.message(`parsed: ${data.humanText}`);
+      }
+    } catch {
+      statusBar.error("failed to parse recurrence");
+    }
+  }, [recurrence, statusBar]);
+
   const rruleHuman = useMemo(() => {
     if (!recurrence) return null;
     try {
@@ -578,7 +607,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
               }
               onChange={(e) => setRecurrence(e.target.value || null)}
               onFocus={() => setRecurrenceFocused(true)}
-              onBlur={() => setRecurrenceFocused(false)}
+              onBlur={handleRecurrenceBlur}
               placeholder="repeat..."
               disabled={mode === "edit" && !!task?.recurringTaskId}
               className="h-7 text-xs w-1/2"
