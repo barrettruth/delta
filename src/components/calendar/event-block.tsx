@@ -93,7 +93,15 @@ export function EventBlock({
         <>
           <span className="font-medium truncate text-[10px] inline-flex items-center min-w-0">
             {isRecurring && <span className="mr-0.5 shrink-0">&#x21BB;</span>}
-            <span className="truncate">{task.description}</span>
+            <span
+              className={
+                task.status === "done" || task.status === "cancelled"
+                  ? "truncate line-through"
+                  : "truncate"
+              }
+            >
+              {task.description}
+            </span>
           </span>
           <span className="shrink-0 text-muted-foreground text-[9px] inline-flex items-center">
             {formatTime(start)}
@@ -111,7 +119,15 @@ export function EventBlock({
                 &#x21BB;
               </span>
             )}
-            <span className="truncate">{task.description}</span>
+            <span
+              className={
+                task.status === "done" || task.status === "cancelled"
+                  ? "truncate line-through"
+                  : "truncate"
+              }
+            >
+              {task.description}
+            </span>
             {height < 40 && task.location && (
               <MapPinSimple className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
             )}

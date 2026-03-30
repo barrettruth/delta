@@ -91,10 +91,10 @@ export function getUserTimezone(): string {
 }
 
 export function statusColor(task: Task): string {
-  if (task.status === "done") return "text-status-done line-through";
+  if (task.status === "done") return "text-status-done";
   if (task.status === "blocked") return "text-status-blocked";
   if (task.status === "wip") return "text-status-wip";
-  if (task.status === "cancelled") return "text-status-cancelled line-through";
+  if (task.status === "cancelled") return "text-status-cancelled";
   return "text-foreground";
 }
 
