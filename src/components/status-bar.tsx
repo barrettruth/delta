@@ -202,14 +202,14 @@ export function StatusBar() {
   }
 
   return (
-    <div className="h-7 shrink-0 border-t border-border bg-background flex items-center justify-between px-2 md:px-4 font-mono text-[13px] text-foreground/60 overflow-hidden">
+    <div className="h-7 shrink-0 border-t border-border bg-background flex items-center justify-between px-2 md:px-4 font-mono text-[13px] text-muted-foreground overflow-hidden">
       <div className="truncate">
         {state.primary !== "" ? (
           state.primaryType === "error" ? (
             <span className="text-destructive">{state.primary}</span>
           ) : state.primaryType === "undo" ? (
             <span>
-              <span className="text-foreground/30">u</span>
+              <span className="text-line-nr">u</span>
               {"  "}
               {state.primary}
             </span>
@@ -217,14 +217,14 @@ export function StatusBar() {
             <span>{state.primary}</span>
           )
         ) : state.idleLeft !== "" ? (
-          <span className="text-foreground/30">{state.idleLeft}</span>
+          <span className="text-line-nr">{state.idleLeft}</span>
         ) : null}
       </div>
-      <div className="text-foreground/40">
+      <div className="text-line-nr">
         {state.operation !== "" ? (
           <span>{state.operation}</span>
         ) : state.idleRight !== "" ? (
-          <span className="text-foreground/30">{state.idleRight}</span>
+          <span className="text-line-nr">{state.idleRight}</span>
         ) : null}
       </div>
       <input
