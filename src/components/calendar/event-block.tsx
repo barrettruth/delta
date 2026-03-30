@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, VideoCamera, X } from "@phosphor-icons/react";
+import { MapPinSimple, VideoCamera, X } from "@phosphor-icons/react";
 import type { Task } from "@/core/types";
 import type { Continuation } from "@/lib/calendar-utils";
 import {
@@ -116,7 +116,7 @@ export function EventBlock({
             )}
             <span className="truncate">{task.description}</span>
             {height < 40 && task.location && (
-              <MapPin className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+              <MapPinSimple className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
             )}
             {height < 45 && task.meetingUrl && (
               <VideoCamera className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
@@ -130,7 +130,7 @@ export function EventBlock({
           )}
           {height >= 40 && task.location && (
             <span className="truncate flex items-center gap-0.5 text-[9px] text-muted-foreground">
-              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              <MapPinSimple className="w-2.5 h-2.5 shrink-0" />
               {task.location}
             </span>
           )}

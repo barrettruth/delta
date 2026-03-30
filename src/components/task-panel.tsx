@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin } from "@phosphor-icons/react";
+import { ArrowClockwise, MapPinSimple } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -591,7 +591,13 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             )}
           </div>
 
-          <span className="text-xs text-muted-foreground/60">due</span>
+          <span className="text-xs text-muted-foreground/60 inline-flex items-center gap-3">
+            due
+            <span className="inline-flex items-center gap-1">
+              <ArrowClockwise size={12} weight="bold" />
+              recurrence
+            </span>
+          </span>
           <div className="flex gap-2 items-center">
             <Input
               type="datetime-local"
@@ -615,7 +621,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           </div>
 
           <span className="text-xs text-muted-foreground/60 inline-flex items-center gap-1">
-            <MapPin size={12} weight="bold" />
+            <MapPinSimple size={12} weight="bold" />
             location
           </span>
           <div className="flex gap-2 items-start">

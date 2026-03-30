@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, VideoCamera } from "@phosphor-icons/react";
+import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -388,7 +388,7 @@ export function QueueView({
                       {task.location && task.category && <span>&middot;</span>}
                       {task.location && (
                         <span className="inline-flex items-center gap-0.5 truncate max-w-[20ch]">
-                          <MapPin className="w-3 h-3 shrink-0" />
+                          <MapPinSimple className="w-3 h-3 shrink-0" />
                           {task.location}
                         </span>
                       )}
