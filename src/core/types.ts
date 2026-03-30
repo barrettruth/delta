@@ -75,3 +75,6 @@ export interface TaskFilters {
 }
 
 export type ConflictResolution = "lww" | "google_wins" | "delta_wins";
+
+export type NlpSource = "local" | "anthropic" | "openai";
+export type NlpProvider = "anthropic" | "openai";
