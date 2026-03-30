@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowClockwise, MapPinSimple } from "@phosphor-icons/react";
+import { MapPinSimple } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -510,7 +510,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             {mode === "edit" && task?.startAt && (
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-foreground shrink-0 px-1"
+                className="text-xs text-muted-foreground hover:text-foreground shrink-0 px-1.5 py-0.5 border border-border hover:border-foreground/30 transition-colors"
                 onClick={handleShare}
               >
                 &#x2197;
@@ -591,13 +591,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             )}
           </div>
 
-          <span className="text-xs text-muted-foreground/60 inline-flex items-center gap-3">
-            due
-            <span className="inline-flex items-center gap-1">
-              <ArrowClockwise size={12} weight="bold" />
-              recurrence
-            </span>
-          </span>
+          <span className="text-xs text-muted-foreground/60">due</span>
           <div className="flex gap-2 items-center">
             <Input
               type="datetime-local"
@@ -766,7 +760,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 border-primary text-primary hover:bg-primary/10"
               onClick={() => saveTask(task.id)}
             >
               save
