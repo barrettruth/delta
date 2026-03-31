@@ -51,7 +51,7 @@ export function CalendarView({
   feedToken = null,
   gcalStatus = { connected: false, lastSyncTime: null },
   geoProvider = "photon",
-  conflictResolution = "lww",
+  conflictResolution = "google_wins",
   syncInterval: initialSyncInterval = 5,
   nlpProvider = null,
 }: {

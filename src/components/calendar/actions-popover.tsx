@@ -27,9 +27,9 @@ const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
 ];
 
 const CONFLICT_STRATEGIES: { id: ConflictResolution; label: string }[] = [
-  { id: "lww", label: "last write wins" },
   { id: "google_wins", label: "google wins" },
   { id: "delta_wins", label: "delta wins" },
+  { id: "lww", label: "last write wins" },
 ];
 
 type SyncInterval = 5 | 15 | 30;
