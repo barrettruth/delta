@@ -397,7 +397,7 @@ export function CalendarActionsPopover({
       muted: true,
       prefix: { text: "+", className: "text-status-done" },
       onSelect: () => {
-        window.location.href = "/api/auth/google?scope=calendar.events";
+        window.location.href = "/api/auth/google?scope=calendar";
       },
     });
   }

@@ -117,11 +117,7 @@ export async function GET(
           );
         }
 
-        if (
-          extraScopes.includes(
-            "https://www.googleapis.com/auth/calendar.events",
-          )
-        ) {
+        if (extraScopes.includes("https://www.googleapis.com/auth/calendar")) {
           upsertIntegrationConfig(db, currentUser.id, "google_calendar", {});
         }
 

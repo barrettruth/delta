@@ -13,7 +13,7 @@ const OAUTH_REDIRECT_BASE =
   process.env.OAUTH_REDIRECT_BASE_URL ?? "http://localhost:3000";
 
 const SCOPE_MAP: Record<string, string> = {
-  "calendar.events": "https://www.googleapis.com/auth/calendar.events",
+  calendar: "https://www.googleapis.com/auth/calendar",
 };
 
 export async function GET(

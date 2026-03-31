@@ -240,7 +240,7 @@ export function OnboardingWizard({
         nlpModel,
       }),
     );
-    window.location.href = "/api/auth/google?scope=calendar.events";
+    window.location.href = "/api/auth/google?scope=calendar";
   }, [
     defaultView,
     defaultCategory,
