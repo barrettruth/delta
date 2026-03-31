@@ -108,7 +108,7 @@ function authHelp(): string {
 Token storage precedence:
    1. DELTA_TOKEN env var
    2. OS keyring (macOS Keychain, GNOME Keyring, KDE Wallet)
-   3. ~/.config/delta/credentials.json (0600, fallback)
+   3. $XDG_DATA_HOME/delta/credentials.json (0600, fallback)
 
 Other commands:
    delta auth status            Show current user and method

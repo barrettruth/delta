@@ -373,7 +373,7 @@ All date and datetime flags accept the following formats:
 
 ### Config file
 
-Location: `~/.config/delta/config.toml`
+Location: `$XDG_CONFIG_HOME/delta/config.toml` (default: `~/.config/delta/config.toml`)
 
 Example:
 
@@ -385,10 +385,16 @@ Configuration values are resolved in order of decreasing priority:
 
 1. Command-line flags (`--server`, `--json`, etc.)
 2. Environment variables (`DELTA_SERVER`, `DELTA_TOKEN`, `NO_COLOR`)
-3. Config file (`~/.config/delta/config.toml`)
+3. Config file
 4. Built-in defaults
 
 ### Environment variables
+
+* `XDG_CONFIG_HOME`:
+  Base directory for config files (default: `~/.config`).
+
+* `XDG_DATA_HOME`:
+  Base directory for data files including credentials (default: `~/.local/share`).
 
 * `DELTA_SERVER`:
   Server URL (default: `https://delta.barrettruth.com`).
@@ -405,7 +411,7 @@ Token precedence (highest to lowest):
 
 1. `DELTA_TOKEN` environment variable
 2. OS keyring (macOS Keychain, GNOME Keyring, KDE Wallet)
-3. `~/.config/delta/credentials.json` (file permissions 0600, fallback)
+3. `$XDG_DATA_HOME/delta/credentials.json` (default: `~/.local/share/delta/credentials.json`, permissions 0600)
 
 ## EXIT CODES
 

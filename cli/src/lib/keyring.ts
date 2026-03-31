@@ -5,7 +5,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { credentialsPath, ensureConfigDir } from "./paths.js";
+import { credentialsPath, ensureDataDir } from "./paths.js";
 
 interface CredentialsFile {
   token: string;
@@ -26,7 +26,7 @@ export function getToken(): string | null {
 }
 
 export function setToken(token: string): void {
-  ensureConfigDir();
+  ensureDataDir();
   const data: CredentialsFile = { token };
   writeFileSync(credentialsPath, JSON.stringify(data, null, 2), {
     mode: 0o600,
