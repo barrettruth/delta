@@ -1028,7 +1028,7 @@ export function CalendarView({
         <div className="flex-1 flex justify-end gap-1">
           <CalendarActionsPopover
             feedToken={feedToken}
-            gcalStatus={gcalStatus}
+            gcalConnected={gcalStatus.connected}
             open={actionsOpen}
             onOpenChange={setActionsOpen}
           />

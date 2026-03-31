@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowsClockwise } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -9,28 +10,24 @@ import {
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
 
-interface GcalStatus {
-  connected: boolean;
-  lastSyncTime: string | null;
-}
-
 interface MenuItem {
   id: string;
   label: string;
   muted?: boolean;
   prefix?: { text: string; className: string };
+  icon?: React.ReactNode;
   disabled?: boolean;
   onSelect: () => void;
 }
 
 export function CalendarActionsPopover({
   feedToken: initialFeedToken,
-  gcalStatus: initialGcalStatus,
+  gcalConnected = false,
   open,
   onOpenChange,
 }: {
   feedToken: string | null;
-  gcalStatus: GcalStatus;
+  gcalConnected?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -39,7 +36,6 @@ export function CalendarActionsPopover({
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [feedToken, setFeedToken] = useState(initialFeedToken);
-  const [gcalStatus, setGcalStatus] = useState(initialGcalStatus);
   const [focusIdx, setFocusIdx] = useState(0);
   const countBuf = useRef("");
 
@@ -95,18 +91,6 @@ export function CalendarActionsPopover({
     statusBar.message("feed url revoked");
   }
 
-  async function handleDisconnectGcal() {
-    const res = await fetch("/api/settings/integrations/google_calendar", {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      statusBar.error("failed to disconnect");
-      return;
-    }
-    setGcalStatus({ connected: false, lastSyncTime: null });
-    statusBar.message("google calendar disconnected");
-  }
-
   async function handleSyncNow() {
     statusBar.setOperation("syncing...");
     try {
@@ -129,28 +113,12 @@ export function CalendarActionsPopover({
 
   const items: MenuItem[] = [];
 
-  if (gcalStatus.connected) {
+  if (gcalConnected) {
     items.push({
       id: "gcal-sync",
       label: "sync now",
+      icon: <ArrowsClockwise size={12} />,
       onSelect: handleSyncNow,
-    });
-    items.push({
-      id: "gcal-disconnect",
-      label: "disconnect google calendar",
-      muted: true,
-      prefix: { text: "-", className: "text-destructive" },
-      onSelect: handleDisconnectGcal,
-    });
-  } else {
-    items.push({
-      id: "gcal-connect",
-      label: "connect google calendar",
-      muted: true,
-      prefix: { text: "+", className: "text-status-done" },
-      onSelect: () => {
-        window.location.href = "/api/auth/google?scope=calendar";
-      },
     });
   }
 
@@ -243,7 +211,7 @@ export function CalendarActionsPopover({
     return () => window.removeEventListener("keydown", handleKey);
   }, [open, focusIdx, onOpenChange]);
 
-  const gcalItems = items.filter((i) => i.id.startsWith("gcal-"));
+  const syncItem = items.find((i) => i.id === "gcal-sync");
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));
   const ioItems = items.filter((i) => i.id === "export" || i.id === "import");
   const settingsItem = items.find((i) => i.id === "settings");
@@ -260,18 +228,17 @@ export function CalendarActionsPopover({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="flex flex-col">
-          <div className="flex flex-col p-1">
-            {gcalItems.map((item, i) => (
-              <MenuRow
-                key={item.id}
-                item={item}
-                focused={focusIdx === globalIndex(gcalItems, i)}
-              />
-            ))}
-          </div>
-
-          <div className="border-t border-border" />
-
+          {syncItem && (
+            <>
+              <div className="flex flex-col p-1">
+                <MenuRow
+                  item={syncItem}
+                  focused={focusIdx === items.indexOf(syncItem)}
+                />
+              </div>
+              <div className="border-t border-border" />
+            </>
+          )}
           <div className="flex flex-col p-1">
             <div className="text-[10px] text-muted-foreground px-2 py-0.5">
               CalDAV feed
@@ -334,6 +301,9 @@ function MenuRow({ item, focused }: { item: MenuItem; focused: boolean }) {
         focused ? "bg-accent" : "hover:bg-accent/50"
       } ${item.disabled ? "opacity-50" : ""}`}
     >
+      {item.icon && (
+        <span className="text-muted-foreground mr-1.5">{item.icon}</span>
+      )}
       {item.prefix && (
         <span className={`${item.prefix.className} mr-1`}>
           {item.prefix.text}
