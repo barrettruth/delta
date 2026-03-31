@@ -54,7 +54,6 @@ export function CalendarView({
   conflictResolution = "lww",
   syncInterval: initialSyncInterval = 5,
   nlpProvider = null,
-  nlpModel = "",
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
@@ -66,7 +65,6 @@ export function CalendarView({
   conflictResolution?: string;
   syncInterval?: number;
   nlpProvider?: "anthropic" | "openai" | null;
-  nlpModel?: string;
 }) {
   const router = useRouter();
   const nav = useNavigation();
@@ -1001,7 +999,6 @@ export function CalendarView({
             syncInterval={syncInterval}
             onSyncIntervalChange={setSyncInterval}
             initialNlpProvider={nlpProvider}
-            initialNlpModel={nlpModel}
             open={actionsOpen}
             onOpenChange={setActionsOpen}
           />
@@ -1029,6 +1026,10 @@ export function CalendarView({
             panel.toggle(task.id);
           }}
           onAllDayMove={handleAllDayMove}
+          onEmptyClick={(dayIndex) => {
+            const date = addDays(weekAnchor, dayIndex);
+            panel.create(buildDayPreFill(date));
+          }}
         />
       )}
 

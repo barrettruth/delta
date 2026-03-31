@@ -109,6 +109,7 @@ export function AllDayBar({
   onTaskClick,
   onAllDayMove,
   onToggleExpand,
+  onEmptyClick,
 }: {
   weekStart: Date;
   allDayTasks: Task[];
@@ -117,6 +118,7 @@ export function AllDayBar({
   onTaskClick: (task: Task) => void;
   onAllDayMove?: (taskId: number, dayOffset: number) => void;
   onToggleExpand?: () => void;
+  onEmptyClick?: (dayIndex: number) => void;
 }) {
   const spans = useMemo(
     () => computeSpans(allDayTasks, weekStart),
@@ -202,6 +204,17 @@ export function AllDayBar({
       if (!wasDrag && taskId !== null) {
         const task = allDayTasks.find((t) => t.id === taskId);
         if (task) onTaskClick(task);
+        return;
+      }
+
+      if (!wasDrag && taskId === null) {
+        const container = containerRef.current;
+        if (container && onEmptyClick) {
+          const rect = container.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const dayIndex = Math.min(6, Math.max(0, Math.floor((x / rect.width) * 7)));
+          onEmptyClick(dayIndex);
+        }
         return;
       }
 
