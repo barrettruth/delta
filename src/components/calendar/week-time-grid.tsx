@@ -202,16 +202,13 @@ export function WeekTimeGrid({
             return (
               <div
                 key={formatDateKey(date)}
-                className={`flex flex-col items-center py-2 border-l border-border/30 ${isToday ? "bg-primary/10" : ""}`}
+                className="flex flex-col items-center py-2 border-l border-border/30"
               >
                 <span className="text-xs text-muted-foreground">
                   {DAY_NAMES[idx]}
                 </span>
                 <span
-                  className={`text-sm font-semibold mt-0.5 inline-flex items-center justify-center ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-                  style={
-                    isToday ? { width: "24px", height: "24px" } : undefined
-                  }
+                  className={`text-sm font-semibold mt-0.5 ${isToday ? "text-primary" : "text-foreground"}`}
                 >
                   {date.getDate()}
                 </span>

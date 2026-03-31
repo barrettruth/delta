@@ -83,8 +83,8 @@ export function MonthGrid({
           return (
             <div
               key={cell.key}
-              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 ${isToday ? "outline outline-1 -outline-offset-1 outline-primary/50" : ""} ${isPast ? "opacity-50" : ""}`}
-              style={!isToday ? blend : undefined}
+              className={`flex flex-col p-1.5 text-left transition-colors border-b border-r border-border/30 hover:bg-accent/50 ${isPast ? "opacity-50" : ""}`}
+              style={blend}
             >
               <span
                 className={`text-xs font-medium mb-1 ${
