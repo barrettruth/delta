@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
+import { registerTaskCommands } from "./task.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -41,17 +42,7 @@ program
   });
 
 const task = new Command("task").description("Task CRUD and status changes");
-task.command("list").description("List tasks with filters");
-task.command("add").description("Create a task");
-task.command("edit").description("Update a task");
-task.command("done").description("Complete task(s)");
-task.command("delete").description("Soft-delete task(s)");
-task.command("wip").description("Set task(s) to wip");
-task.command("block").description("Set task(s) to blocked");
-task.command("pending").description("Set task(s) to pending");
-task.action(() => {
-  task.commands.find((c) => c.name() === "list")?.parse(process.argv);
-});
+registerTaskCommands(task);
 
 const cat = new Command("cat").description("List categories with task counts");
 
