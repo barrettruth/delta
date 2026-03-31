@@ -90,20 +90,17 @@ export function StatusBar() {
   }, [commandBar, buildContext, statusBar]);
 
   const handleTab = useCallback(() => {
-    const parts = commandBar.input.split(/\s+/);
-    const prefix = parts[0] || "";
-    if (!prefix) return;
+    const input = commandBar.input;
+    if (!input) return;
 
-    const matches = getCompletions(prefix, commandRegistry);
+    const matches = getCompletions(input, commandRegistry);
     if (matches.length === 0) return;
     if (matches.length === 1) {
-      const rest = parts.slice(1).join(" ");
-      commandBar.setInput(matches[0] + (rest ? ` ${rest}` : ""));
+      commandBar.setInput(matches[0]);
     } else {
       const common = longestCommonPrefix(matches);
-      if (common.length > prefix.length) {
-        const rest = parts.slice(1).join(" ");
-        commandBar.setInput(common + (rest ? ` ${rest}` : ""));
+      if (common.length > input.length) {
+        commandBar.setInput(common);
       }
     }
   }, [commandBar]);

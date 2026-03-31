@@ -165,6 +165,10 @@ export function KeymapHelp({
                     cmd.aliases.length > 0
                       ? ` (${cmd.aliases.map((a: string) => `:${a}`).join(", ")})`
                       : "";
+                  const args =
+                    cmd.expectedArgs && cmd.expectedArgs.length > 0
+                      ? ` [${cmd.expectedArgs.join("|")}]`
+                      : "";
                   return (
                     <div
                       key={cmd.name}
@@ -172,6 +176,7 @@ export function KeymapHelp({
                     >
                       <kbd className="text-xs text-foreground shrink-0 min-w-16">
                         :{cmd.name}
+                        {args}
                         {aliases}
                       </kbd>
                       <span className="text-xs text-muted-foreground text-right">

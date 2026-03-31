@@ -194,10 +194,13 @@ export const commandRegistry: CommandDefinition[] = [
   {
     name: "calendar",
     aliases: ["cal"],
-    description: "Navigate to calendar",
+    description: "Navigate to calendar or manage events",
     category: "navigation",
-    expectedArgs: ["week", "month"],
+    expectedArgs: ["week", "month", "import", "export", "sync"],
     execute: (args, ctx) => {
+      if (args[0] === "import") return ctx.importIcal();
+      if (args[0] === "export") return ctx.exportIcal();
+      if (args[0] === "sync") return ctx.syncGoogle();
       if (args[0]) {
         ctx.router.push(`/calendar?mode=${args[0]}`);
       } else {
@@ -212,30 +215,6 @@ export const commandRegistry: CommandDefinition[] = [
     category: "navigation",
     expectedArgs: [],
     execute: (_args, ctx) => ctx.router.push("/settings"),
-  },
-  {
-    name: "import",
-    aliases: [],
-    description: "Open .ics file picker",
-    category: "calendar",
-    expectedArgs: [],
-    execute: (_args, ctx) => ctx.importIcal(),
-  },
-  {
-    name: "export",
-    aliases: [],
-    description: "Download .ics export",
-    category: "calendar",
-    expectedArgs: [],
-    execute: (_args, ctx) => ctx.exportIcal(),
-  },
-  {
-    name: "sync",
-    aliases: [],
-    description: "Trigger Google Calendar sync",
-    category: "calendar",
-    expectedArgs: [],
-    execute: (_args, ctx) => ctx.syncGoogle(),
   },
   {
     name: "help",
@@ -268,6 +247,21 @@ export function getCompletions(
   registry: CommandDefinition[],
 ): string[] {
   if (!input) return [];
+
+  const parts = input.split(/\s+/);
+  if (parts.length >= 2) {
+    const cmdName = parts[0];
+    const argPrefix = parts[1];
+    const resolved = resolveCommand(cmdName, registry);
+    if (typeof resolved !== "string" && resolved.expectedArgs) {
+      return resolved.expectedArgs
+        .filter((a) => a.startsWith(argPrefix))
+        .map((a) => `${resolved.name} ${a}`)
+        .sort();
+    }
+    return [];
+  }
+
   const candidates: string[] = [];
   for (const cmd of registry) {
     if (cmd.name.startsWith(input)) candidates.push(cmd.name);
