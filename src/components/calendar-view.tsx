@@ -337,10 +337,15 @@ export function CalendarView({
   }, [tasks, optimisticUpdates, pendingEdits, weekAnchor, weekEnd]);
 
   const allDayTasks = useMemo(() => {
-    return tasks.filter(
-      (t) =>
-        t.allDay === 1 && t.startAt && !optimisticUpdates.get(t.id)?.deleted,
-    );
+    return tasks
+      .filter(
+        (t) =>
+          t.allDay === 1 && t.startAt && !optimisticUpdates.get(t.id)?.deleted,
+      )
+      .map((t) => {
+        const update = optimisticUpdates.get(t.id);
+        return update ? { ...t, ...update } : t;
+      });
   }, [tasks, optimisticUpdates]);
 
   const createPreview = useMemo(() => {
