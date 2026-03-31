@@ -31,7 +31,6 @@ export interface CommandContext {
   discardTask: () => void;
   importIcal: () => void;
   exportIcal: () => void;
-  syncGoogle: () => void;
   statusBar: {
     message: (text: string) => void;
     error: (text: string) => void;
@@ -196,11 +195,10 @@ export const commandRegistry: CommandDefinition[] = [
     aliases: ["cal"],
     description: "Navigate to calendar or manage events",
     category: "navigation",
-    expectedArgs: ["week", "month", "import", "export", "sync"],
+    expectedArgs: ["week", "month", "import", "export"],
     execute: (args, ctx) => {
       if (args[0] === "import") return ctx.importIcal();
       if (args[0] === "export") return ctx.exportIcal();
-      if (args[0] === "sync") return ctx.syncGoogle();
       if (args[0]) {
         ctx.router.push(`/calendar?mode=${args[0]}`);
       } else {

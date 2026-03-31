@@ -94,7 +94,6 @@ export function CalendarActionsPopover({
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [feedToken, setFeedToken] = useState(initialFeedToken);
   const [gcalStatus, setGcalStatus] = useState(initialGcalStatus);
   const [geoProvider, setGeoProvider] =
@@ -177,32 +176,6 @@ export function CalendarActionsPopover({
     }
     setGcalStatus({ connected: false, lastSyncTime: null });
     statusBar.message("google calendar disconnected");
-  }
-
-  async function handleSync() {
-    setSyncing(true);
-    statusBar.setOperation("syncing...");
-    try {
-      const res = await fetch("/api/calendar/sync", { method: "POST" });
-      const data = await res.json();
-      statusBar.clearOperation();
-      if (!res.ok) {
-        statusBar.error(data.error ?? "sync failed");
-        return;
-      }
-      const total = data.pulled + data.pushed;
-      statusBar.message(`synced ${total} events`);
-      setGcalStatus({
-        connected: true,
-        lastSyncTime: new Date().toISOString(),
-      });
-      router.refresh();
-    } catch (e) {
-      statusBar.clearOperation();
-      statusBar.error(e instanceof Error ? e.message : "sync failed");
-    } finally {
-      setSyncing(false);
-    }
   }
 
   async function handleSelectGeoProvider(id: GeoProvider) {
@@ -380,15 +353,6 @@ export function CalendarActionsPopover({
       muted: true,
       prefix: { text: "-", className: "text-destructive" },
       onSelect: handleDisconnectGcal,
-    });
-    items.push({
-      id: "gcal-sync",
-      label: syncing ? "syncing..." : "sync now",
-      disabled: syncing,
-      suffix: gcalStatus.lastSyncTime
-        ? formatRelativeTime(gcalStatus.lastSyncTime)
-        : undefined,
-      onSelect: handleSync,
     });
   } else {
     items.push({

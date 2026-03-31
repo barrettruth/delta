@@ -65,9 +65,6 @@ export function StatusBar() {
       exportIcal: () => {
         window.location.href = "/api/export/ical";
       },
-      syncGoogle: () => {
-        statusBar.message("sync not configured");
-      },
       statusBar: {
         message: statusBar.message,
         error: statusBar.error,
