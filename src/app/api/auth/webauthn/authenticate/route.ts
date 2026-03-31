@@ -62,7 +62,9 @@ export async function POST(request: Request) {
       try {
         const { acceptShareLink } = await import("@/core/event-share");
         acceptShareLink(db, result.userId, shareToken);
-      } catch {}
+      } catch (err) {
+        console.error("[webauthn] share link accept failed", err);
+      }
       cookieStore.delete("share_token");
     }
 

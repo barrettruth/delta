@@ -47,7 +47,9 @@ export async function POST(req: Request) {
         "@/core/integration-config"
       );
       deleteIntegrationConfig(db, user.id, other);
-    } catch {}
+    } catch (err) {
+      console.error("[onboarding] delete geo config failed", err);
+    }
   }
 
   if (body.nlpProvider && body.nlpProvider !== "builtin" && body.nlpApiKey) {
@@ -66,7 +68,9 @@ export async function POST(req: Request) {
         "@/core/integration-config"
       );
       deleteIntegrationConfig(db, user.id, other);
-    } catch {}
+    } catch (err) {
+      console.error("[onboarding] delete nlp config failed", err);
+    }
   }
 
   if (body.conflictResolution) {

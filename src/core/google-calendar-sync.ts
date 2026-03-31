@@ -229,7 +229,9 @@ async function pushEvents(
         await deleteCalendarEvent(accessToken, calendarId, gcalId);
         updateTask(db, task.id, { externalId: null });
         pushed++;
-      } catch {}
+      } catch (err) {
+        console.error("[gcal sync] delete failed", task.id, err);
+      }
       continue;
     }
 
@@ -238,7 +240,9 @@ async function pushEvents(
       try {
         await updateCalendarEvent(accessToken, calendarId, gcalId, eventBody);
         pushed++;
-      } catch {}
+      } catch (err) {
+        console.error("[gcal sync] update failed", task.id, err);
+      }
       continue;
     }
 
@@ -252,7 +256,9 @@ async function pushEvents(
         );
         updateTask(db, task.id, { externalId: `gcal:${created.id}` });
         pushed++;
-      } catch {}
+      } catch (err) {
+        console.error("[gcal sync] create failed", task.id, err);
+      }
     }
   }
 

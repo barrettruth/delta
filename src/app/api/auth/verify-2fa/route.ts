@@ -106,7 +106,9 @@ export async function POST(request: Request) {
     try {
       const { acceptShareLink } = await import("@/core/event-share");
       acceptShareLink(db, userId, shareToken);
-    } catch {}
+    } catch (err) {
+      console.error("[verify-2fa] share link accept failed", err);
+    }
     cookieStore.delete("share_token");
   }
 

@@ -191,7 +191,9 @@ export async function GET(
       try {
         const { acceptShareLink } = await import("@/core/event-share");
         acceptShareLink(db, user.id, shareToken);
-      } catch {}
+      } catch (err) {
+        console.error("[oauth callback] share link accept failed", err);
+      }
       cookieStore.delete("share_token");
     }
 
@@ -200,7 +202,8 @@ export async function GET(
         ? `${OAUTH_REDIRECT_BASE}/calendar`
         : `${OAUTH_REDIRECT_BASE}/setup-2fa`,
     );
-  } catch {
+  } catch (err) {
+    console.error("[oauth callback]", err);
     return NextResponse.redirect(
       `${OAUTH_REDIRECT_BASE}/login?error=oauth_failed`,
     );
