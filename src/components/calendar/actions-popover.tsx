@@ -339,7 +339,7 @@ export function CalendarActionsPopover({
   if (gcalStatus.connected) {
     items.push({
       id: "gcal-disconnect",
-      label: "disconnect",
+      label: "disconnect google calendar",
       muted: true,
       prefix: { text: "-", className: "text-destructive" },
       onSelect: handleDisconnectGcal,
