@@ -82,6 +82,7 @@ export function CalendarView({
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [today, setToday] = useState<Date | null>(null);
+  const [allDayVisible, setAllDayVisible] = useState(true);
   const [allDayExpanded, setAllDayExpanded] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
@@ -815,7 +816,10 @@ export function CalendarView({
       if (e.key === alldayKey && viewMode === "week") {
         e.preventDefault();
         countBuf.current = "";
-        setAllDayExpanded((prev) => !prev);
+        setAllDayVisible((prev) => {
+          if (prev) setAllDayExpanded(false);
+          return !prev;
+        });
         return;
       }
 
@@ -930,11 +934,12 @@ export function CalendarView({
         </div>
       </div>
 
-      {viewMode === "week" && allDayTasks.length > 0 && (
+      {viewMode === "week" && allDayVisible && allDayTasks.length > 0 && (
         <AllDayBar
           weekStart={weekAnchor}
           allDayTasks={allDayTasks}
           expanded={allDayExpanded}
+          onToggleExpand={() => setAllDayExpanded((prev) => !prev)}
           categoryColors={categoryColors}
           onTaskClick={(task) => {
             nav.pushJump();

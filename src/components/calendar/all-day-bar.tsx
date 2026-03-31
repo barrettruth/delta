@@ -108,6 +108,7 @@ export function AllDayBar({
   categoryColors,
   onTaskClick,
   onAllDayMove,
+  onToggleExpand,
 }: {
   weekStart: Date;
   allDayTasks: Task[];
@@ -115,6 +116,7 @@ export function AllDayBar({
   categoryColors: Record<string, string>;
   onTaskClick: (task: Task) => void;
   onAllDayMove?: (taskId: number, dayOffset: number) => void;
+  onToggleExpand?: () => void;
 }) {
   const spans = useMemo(
     () => computeSpans(allDayTasks, weekStart),
@@ -219,8 +221,9 @@ export function AllDayBar({
     ? computePerDayHidden(rows, maxVisible)
     : null;
   const rowHeight = 22;
-  const badgeHeight = hasOverflow ? 16 : 0;
-  const contentHeight = visibleRows.length * rowHeight + badgeHeight;
+  const showCollapse = expanded && rows.length > MAX_COLLAPSED_ROWS;
+  const footerHeight = hasOverflow || showCollapse ? 16 : 0;
+  const contentHeight = visibleRows.length * rowHeight + footerHeight;
   const needsScroll = expanded && rows.length > MAX_EXPANDED_ROWS;
 
   return (
@@ -239,7 +242,7 @@ export function AllDayBar({
           style={
             needsScroll
               ? {
-                  height: `${MAX_EXPANDED_ROWS * rowHeight + badgeHeight}px`,
+                  height: `${MAX_EXPANDED_ROWS * rowHeight + footerHeight}px`,
                   overflowY: "auto",
                 }
               : { height: `${contentHeight}px` }
@@ -283,13 +286,30 @@ export function AllDayBar({
               style={{ top: `${visibleRows.length * rowHeight}px` }}
             >
               {hiddenPerDay.map((count, col) => (
-                <div
+                <button
+                  type="button"
                   key={col}
-                  className="flex-1 text-center text-[10px] text-muted-foreground leading-[16px]"
+                  className={`flex-1 text-center text-[10px] leading-[16px] ${count > 0 ? "text-muted-foreground hover:text-foreground cursor-pointer" : ""}`}
+                  onClick={count > 0 ? onToggleExpand : undefined}
+                  tabIndex={count > 0 ? 0 : -1}
                 >
                   {count > 0 ? `+${count}` : ""}
-                </div>
+                </button>
               ))}
+            </div>
+          )}
+          {expanded && rows.length > MAX_COLLAPSED_ROWS && (
+            <div
+              className="absolute left-0 right-0 flex"
+              style={{ top: `${visibleRows.length * rowHeight}px` }}
+            >
+              <button
+                type="button"
+                className="flex-1 text-center text-[10px] text-muted-foreground hover:text-foreground cursor-pointer leading-[16px]"
+                onClick={onToggleExpand}
+              >
+                &#x25B4;
+              </button>
             </div>
           )}
         </div>
