@@ -98,6 +98,8 @@ export function CalendarActionsPopover({
   const [nlpModel, setNlpModel] = useState(initialNlpModel);
   const [nlpKeyInput, setNlpKeyInput] = useState("");
   const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
+  const [geoKeyTesting, setGeoKeyTesting] = useState(false);
+  const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
   const [focusIdx, setFocusIdx] = useState(0);
   const countBuf = useRef("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -211,6 +213,32 @@ export function CalendarActionsPopover({
     setGeoProvider(id);
   }
 
+  async function handleTestGeoKey() {
+    if (!geoKeyInput.trim()) return;
+    setGeoKeyTesting(true);
+    try {
+      const res = await fetch("/api/settings/integrations/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: geoProvider,
+          apiKey: geoKeyInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        statusBar.message("key is valid");
+        await handleSaveGeoKey();
+      } else {
+        statusBar.error(data.error ?? "invalid key");
+      }
+    } catch {
+      statusBar.error("connection failed");
+    } finally {
+      setGeoKeyTesting(false);
+    }
+  }
+
   async function handleSaveGeoKey() {
     if (!geoKeyInput.trim()) {
       statusBar.error("api key cannot be empty");
@@ -265,6 +293,33 @@ export function CalendarActionsPopover({
     setNlpModel(NLP_MODELS[id][0].id);
     setNlpKeyTarget(id);
     setNlpKeyInput("");
+  }
+
+  async function handleTestNlpKey() {
+    if (!nlpKeyInput.trim() || !nlpKeyTarget) return;
+    setNlpKeyTesting(true);
+    try {
+      const res = await fetch("/api/settings/integrations/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: nlpKeyTarget,
+          apiKey: nlpKeyInput.trim(),
+          model: nlpModel || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        statusBar.message("key is valid");
+        await handleSaveNlpKey();
+      } else {
+        statusBar.error(data.error ?? "invalid key");
+      }
+    } catch {
+      statusBar.error("connection failed");
+    } finally {
+      setNlpKeyTesting(false);
+    }
   }
 
   async function handleSaveNlpKey() {
@@ -515,13 +570,21 @@ export function CalendarActionsPopover({
                       className="h-7 text-sm flex-1"
                       onKeyDown={(e) => {
                         e.stopPropagation();
-                        if (e.key === "Enter") handleSaveGeoKey();
+                        if (e.key === "Enter") handleTestGeoKey();
                         if (e.key === "Escape") {
                           setGeoKeyTarget(null);
                           setGeoKeyInput("");
                         }
                       }}
                     />
+                    <button
+                      type="button"
+                      disabled={geoKeyTesting || !geoKeyInput.trim()}
+                      className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                      onClick={handleTestGeoKey}
+                    >
+                      {geoKeyTesting ? "..." : "test"}
+                    </button>
                     <button
                       type="button"
                       className="text-xs text-muted-foreground hover:text-foreground px-2"
@@ -571,13 +634,21 @@ export function CalendarActionsPopover({
                         className="h-7 text-sm flex-1"
                         onKeyDown={(e) => {
                           e.stopPropagation();
-                          if (e.key === "Enter") handleSaveNlpKey();
+                          if (e.key === "Enter") handleTestNlpKey();
                           if (e.key === "Escape") {
                             setNlpKeyTarget(null);
                             setNlpKeyInput("");
                           }
                         }}
                       />
+                      <button
+                        type="button"
+                        disabled={nlpKeyTesting || !nlpKeyInput.trim()}
+                        className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                        onClick={handleTestNlpKey}
+                      >
+                        {nlpKeyTesting ? "..." : "test"}
+                      </button>
                       <button
                         type="button"
                         className="text-xs text-muted-foreground hover:text-foreground px-2"
