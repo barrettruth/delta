@@ -1,4 +1,4 @@
-import type { Command } from "commander";
+import { Command } from "commander";
 
 function bashScript(): string {
   return `#!/bin/bash

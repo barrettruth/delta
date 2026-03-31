@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { registerAuth } from "./auth.js";
 import { registerCatCommand } from "./cat.js";
@@ -18,13 +15,7 @@ import { configure } from "./lib/output.js";
 import { registerShareCommand } from "./share.js";
 import { registerSyncCommand } from "./sync.js";
 import { registerTaskCommands } from "./task.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkg = JSON.parse(
-  readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
-) as {
-  version: string;
-};
+const pkg = require("../package.json") as { version: string };
 
 const program = new Command();
 
