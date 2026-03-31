@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
+import { registerAuth } from "./auth.js";
 import { registerHelp } from "./help.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
@@ -59,11 +60,7 @@ cron.action(() => {
   cron.commands.find((c) => c.name() === "list")?.parse(process.argv);
 });
 
-const auth = new Command("auth").description("Authentication");
-auth.command("login").description("Authenticate with the server");
-auth.command("logout").description("Clear stored credentials");
-auth.command("status").description("Show current user and auth method");
-auth.command("token").description("Display or manage API token");
+registerAuth(program);
 
 const sync = new Command("sync").description("Trigger Google Calendar sync");
 
@@ -117,7 +114,6 @@ completion.command("fish").description("Output fish completions");
 program.addCommand(task);
 program.addCommand(cat);
 program.addCommand(cron);
-program.addCommand(auth);
 program.addCommand(sync);
 program.addCommand(feed);
 program.addCommand(imp);
