@@ -1,0 +1,225 @@
+name: CLI Release
+
+on:
+  push:
+    tags:
+      - "cli-v*"
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: Version bump type
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: cli-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install CLI dependencies
+        working-directory: cli
+        run: bun install --frozen-lockfile
+
+      - name: Build CLI
+        working-directory: cli
+        run: bun run build:local
+
+      - name: Build man page
+        working-directory: cli
+        run: bun run build:man
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./cli/package.json').version")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${GITHUB_REF_NAME}"
+          if [ "$TAG" != "cli-v${VERSION}" ]; then
+            echo "Tag ${TAG} does not match package version ${VERSION}"
+            exit 1
+          fi
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+      ref: ${{ steps.commit.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.CI_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Calculate next version
+        id: version
+        env:
+          VERSION_BUMP: ${{ github.event.inputs.version_bump || 'patch' }}
+        run: |
+          git fetch origin main --tags
+          NEW_VERSION="$(./scripts/version/next-version.sh cli "$VERSION_BUMP")"
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "New version: ${NEW_VERSION}"
+
+      - name: Bump CLI version
+        run: |
+          node -e "const fs=require('fs');const path='cli/package.json';const pkg=JSON.parse(fs.readFileSync(path,'utf8'));pkg.version='${{ steps.version.outputs.new_version }}';fs.writeFileSync(path,JSON.stringify(pkg,null,2)+'\n');"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and tag
+        id: commit
+        run: |
+          VERSION="${{ steps.version.outputs.new_version }}"
+          TAG="cli-v${VERSION}"
+
+          git add cli/package.json
+
+          if git diff --cached --quiet; then
+            echo "No version file changes to commit"
+          else
+            git commit -m "chore(cli): release v${VERSION} [skip ci]"
+            git fetch origin main --tags
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}$"; then
+            echo "Tag already exists on origin: ${TAG}"
+          else
+            git tag -a "${TAG}" -m "CLI v${VERSION}"
+            git push origin "${TAG}"
+          fi
+
+          echo "ref=${TAG}" >> "$GITHUB_OUTPUT"
+
+  npm-publish:
+    runs-on: ubuntu-latest
+    needs: [build, release]
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.ref != '' && needs.release.outputs.ref || github.ref }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install CLI dependencies
+        working-directory: cli
+        run: bun install --frozen-lockfile
+
+      - name: Build CLI
+        working-directory: cli
+        run: bun run build:local
+
+      - name: Build man page
+        working-directory: cli
+        run: bun run build:man
+
+      - name: Check if version already published
+        id: published
+        run: |
+          VERSION=$(node -p "require('./cli/package.json').version")
+          if npm view @barrettruth/delta-cli@${VERSION} version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.published.outputs.published != 'true'
+        working-directory: cli
+        run: npm publish --access public --provenance
+
+  npm-publish-tag:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/cli-v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install CLI dependencies
+        working-directory: cli
+        run: bun install --frozen-lockfile
+
+      - name: Build CLI
+        working-directory: cli
+        run: bun run build:local
+
+      - name: Build man page
+        working-directory: cli
+        run: bun run build:man
+
+      - name: Check if version already published
+        id: published
+        run: |
+          VERSION=$(node -p "require('./cli/package.json').version")
+          if npm view @barrettruth/delta-cli@${VERSION} version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.published.outputs.published != 'true'
+        working-directory: cli
+        run: npm publish --access public --provenance

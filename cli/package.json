@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/barrettruth/delta"
+    "url": "git+https://github.com/barrettruth/delta.git"
   },
   "keywords": [
     "delta",
