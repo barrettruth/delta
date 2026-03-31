@@ -1,27 +1,18 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { validateSession } from "@/core/auth";
 import {
   getEnabledProviders,
   type OAuthProvider,
   unlinkAccount,
 } from "@/core/oauth";
 import { db } from "@/db";
+import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ provider: string }> },
 ) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  const user = validateSession(db, sessionId);
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
 
   const { provider } = await params;
   const enabled = getEnabledProviders(db);

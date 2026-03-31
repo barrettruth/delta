@@ -1,24 +1,18 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { validateSession } from "@/core/auth";
 import {
   generateRegistration,
   removeCredential,
   verifyAndSaveRegistration,
 } from "@/core/webauthn";
 import { db } from "@/db";
+import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
 
-  const user = validateSession(db, sessionId);
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const cookieStore = await cookies();
 
   const options = await generateRegistration(db, user.id, user.username);
 
@@ -34,17 +28,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
+
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  const user = validateSession(db, sessionId);
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
   const challenge = cookieStore.get("webauthn_challenge")?.value;
   cookieStore.delete("webauthn_challenge");
 
@@ -74,16 +61,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  const user = validateSession(db, sessionId);
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
 
   const url = new URL(request.url);
   const id = url.searchParams.get("id");

@@ -4,13 +4,11 @@ import { createSession } from "@/core/auth";
 import { verifyRecoveryCode } from "@/core/recovery";
 import { getTotpSecret, verifyTotpToken } from "@/core/totp";
 import { db } from "@/db";
+import { getClientIp } from "@/lib/auth-middleware";
 import { isRateLimited, recordAttempt } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
+  const ip = getClientIp(request);
 
   if (isRateLimited(ip)) {
     return NextResponse.json(

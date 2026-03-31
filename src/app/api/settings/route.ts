@@ -1,7 +1,5 @@
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { validateSession } from "@/core/auth";
 import {
   getSettings,
   type UserSettings,
@@ -9,27 +7,18 @@ import {
 } from "@/core/settings";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-
-async function getUser() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) return null;
-  return validateSession(db, sessionId);
-}
+import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
 
 export async function GET() {
-  const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
+
   return NextResponse.json(getSettings(db, user.id));
 }
 
 export async function PATCH(request: Request) {
-  const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
 
   const body = await request.json();
   const { username: newUsername, ...partial } =
