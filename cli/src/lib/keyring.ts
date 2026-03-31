@@ -1,20 +1,14 @@
 import {
   chmodSync,
   existsSync,
-  mkdirSync,
   readFileSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { credentialsPath, ensureConfigDir } from "./paths.js";
 
 interface CredentialsFile {
   token: string;
-}
-
-function credentialsPath(): string {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
-  return join(home, ".config", "delta", "credentials.json");
 }
 
 export function getToken(): string | null {
@@ -22,32 +16,26 @@ export function getToken(): string | null {
     return process.env.DELTA_TOKEN;
   }
 
-  const path = credentialsPath();
-  if (!existsSync(path)) {
+  if (!existsSync(credentialsPath)) {
     return null;
   }
 
-  const raw = readFileSync(path, "utf-8");
+  const raw = readFileSync(credentialsPath, "utf-8");
   const data = JSON.parse(raw) as CredentialsFile;
   return data.token ?? null;
 }
 
 export function setToken(token: string): void {
-  const path = credentialsPath();
-  const dir = dirname(path);
-
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-
+  ensureConfigDir();
   const data: CredentialsFile = { token };
-  writeFileSync(path, JSON.stringify(data, null, 2), { mode: 0o600 });
-  chmodSync(path, 0o600);
+  writeFileSync(credentialsPath, JSON.stringify(data, null, 2), {
+    mode: 0o600,
+  });
+  chmodSync(credentialsPath, 0o600);
 }
 
 export function clearToken(): void {
-  const path = credentialsPath();
-  if (existsSync(path)) {
-    unlinkSync(path);
+  if (existsSync(credentialsPath)) {
+    unlinkSync(credentialsPath);
   }
 }

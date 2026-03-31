@@ -69,11 +69,11 @@ export function formatJson(
   let output = data;
 
   if (fields && Array.isArray(output)) {
-    output = (output as Record<string, unknown>[]).map((item) => {
+    output = output.map((item: Record<string, unknown>) => {
       const filtered: Record<string, unknown> = {};
       for (const field of fields) {
-        if (field in (item as Record<string, unknown>)) {
-          filtered[field] = (item as Record<string, unknown>)[field];
+        if (field in item) {
+          filtered[field] = item[field];
         }
       }
       return filtered;

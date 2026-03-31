@@ -1,26 +1,18 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parse, stringify } from "smol-toml";
+import { configPath, ensureConfigDir } from "./paths.js";
 
 export interface DeltaConfig {
   server?: string;
 }
 
-function configDir(): string {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
-  return join(home, ".config", "delta");
-}
-
-function configPath(): string {
-  return join(configDir(), "config.toml");
-}
+export const DEFAULT_SERVER = "https://delta.barrettruth.com";
 
 export function readConfig(): DeltaConfig {
-  const path = configPath();
   const config: DeltaConfig = {};
 
-  if (existsSync(path)) {
-    const raw = readFileSync(path, "utf-8");
+  if (existsSync(configPath)) {
+    const raw = readFileSync(configPath, "utf-8");
     const parsed = parse(raw);
     if (typeof parsed.server === "string") {
       config.server = parsed.server;
@@ -35,13 +27,7 @@ export function readConfig(): DeltaConfig {
 }
 
 export function writeConfig(config: DeltaConfig): void {
-  const path = configPath();
-  const dir = dirname(path);
-
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-
+  ensureConfigDir();
   const toml = stringify(config as Record<string, unknown>);
-  writeFileSync(path, toml, { mode: 0o644 });
+  writeFileSync(configPath, toml, { mode: 0o644 });
 }

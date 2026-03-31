@@ -1,4 +1,4 @@
-import { readConfig } from "./config.js";
+import { DEFAULT_SERVER, readConfig } from "./config.js";
 import { getToken } from "./keyring.js";
 
 export class DeltaClientError extends Error {
@@ -108,15 +108,17 @@ export class DeltaClient {
   }
 }
 
-export function createClient(): DeltaClient {
+export function getServerUrl(): string {
   const config = readConfig();
-  const token = getToken();
+  return config.server ?? DEFAULT_SERVER;
+}
 
-  const server = config.server ?? "https://delta.barrettruth.com";
+export function createClient(): DeltaClient {
+  const token = getToken();
 
   if (!token) {
     throw new Error("Not authenticated. Run `delta auth login` first.");
   }
 
-  return new DeltaClient(server, token);
+  return new DeltaClient(getServerUrl(), token);
 }

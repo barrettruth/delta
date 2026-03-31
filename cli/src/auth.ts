@@ -1,7 +1,11 @@
 import { createInterface } from "node:readline";
 import { Command } from "commander";
-import { createClient, DeltaClient, DeltaClientError } from "./lib/client.js";
-import { readConfig } from "./lib/config.js";
+import {
+  createClient,
+  DeltaClient,
+  DeltaClientError,
+  getServerUrl,
+} from "./lib/client.js";
 import { clearToken, getToken, setToken } from "./lib/keyring.js";
 
 interface MeResponse {
@@ -13,11 +17,6 @@ interface MeResponse {
 
 interface RegenerateResponse {
   token: string;
-}
-
-function getServerUrl(): string {
-  const config = readConfig();
-  return config.server ?? "https://delta.barrettruth.com";
 }
 
 function getTokenSource(): "env" | "file" | null {
@@ -40,8 +39,7 @@ function prompt(question: string): Promise<string> {
 }
 
 async function validateToken(token: string): Promise<MeResponse> {
-  const server = getServerUrl();
-  const client = new DeltaClient(server, token);
+  const client = new DeltaClient(getServerUrl(), token);
   return client.get<MeResponse>("/api/auth/me");
 }
 

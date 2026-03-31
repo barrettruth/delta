@@ -96,39 +96,35 @@ export function registerTaskCommands(task: Command): void {
       });
     });
 
-  task
-    .command("add")
-    .description("Create a task")
-    .argument("<description>", "Task description")
-    .action(async (description: string, opts: Record<string, unknown>) => {
-      const client = createClient();
-      const body = buildTaskBody(opts);
-      body.description = description;
+  addTaskFlags(
+    task
+      .command("add")
+      .description("Create a task")
+      .argument("<description>", "Task description"),
+  ).action(async (description: string, opts: Record<string, unknown>) => {
+    const client = createClient();
+    const body = buildTaskBody(opts);
+    body.description = description;
 
-      const created = await client.post<TaskResponse>("/api/tasks", body);
-      process.stdout.write(`created #${created.id} ${created.description}\n`);
-    });
+    const created = await client.post<TaskResponse>("/api/tasks", body);
+    process.stdout.write(`created #${created.id} ${created.description}\n`);
+  });
 
-  addTaskFlags(task.commands.find((c) => c.name() === "add") as Command);
+  addTaskFlags(
+    task
+      .command("edit")
+      .description("Update a task")
+      .argument("<id>", "Task ID")
+      .option("--scope <scope>", "Recurrence edit scope (this | future | all)"),
+  ).action(async (id: string, opts: Record<string, unknown>) => {
+    const client = createClient();
+    const { scope, ...rest } = opts;
+    const body = buildTaskBody(rest);
+    const path = scope ? `/api/tasks/${id}?scope=${scope}` : `/api/tasks/${id}`;
 
-  task
-    .command("edit")
-    .description("Update a task")
-    .argument("<id>", "Task ID")
-    .option("--scope <scope>", "Recurrence edit scope (this | future | all)")
-    .action(async (id: string, opts: Record<string, unknown>) => {
-      const client = createClient();
-      const { scope, ...rest } = opts;
-      const body = buildTaskBody(rest);
-      const path = scope
-        ? `/api/tasks/${id}?scope=${scope}`
-        : `/api/tasks/${id}`;
-
-      await client.patch<TaskResponse>(path, body);
-      process.stdout.write(`updated #${id}\n`);
-    });
-
-  addTaskFlags(task.commands.find((c) => c.name() === "edit") as Command);
+    await client.patch<TaskResponse>(path, body);
+    process.stdout.write(`updated #${id}\n`);
+  });
 
   task
     .command("done")
@@ -156,41 +152,23 @@ export function registerTaskCommands(task: Command): void {
       }
     });
 
-  task
-    .command("wip")
-    .description("Set task(s) to wip")
-    .argument("<ids...>", "Task ID(s)")
-    .action(async (ids: string[]) => {
-      const client = createClient();
-      for (const id of ids) {
-        await client.patch(`/api/tasks/${id}`, { status: "wip" });
-        process.stdout.write(`wip #${id}\n`);
-      }
-    });
-
-  task
-    .command("block")
-    .description("Set task(s) to blocked")
-    .argument("<ids...>", "Task ID(s)")
-    .action(async (ids: string[]) => {
-      const client = createClient();
-      for (const id of ids) {
-        await client.patch(`/api/tasks/${id}`, { status: "blocked" });
-        process.stdout.write(`blocked #${id}\n`);
-      }
-    });
-
-  task
-    .command("pending")
-    .description("Set task(s) to pending")
-    .argument("<ids...>", "Task ID(s)")
-    .action(async (ids: string[]) => {
-      const client = createClient();
-      for (const id of ids) {
-        await client.patch(`/api/tasks/${id}`, { status: "pending" });
-        process.stdout.write(`pending #${id}\n`);
-      }
-    });
+  for (const [verb, status, label] of [
+    ["wip", "wip", "wip"],
+    ["block", "blocked", "blocked"],
+    ["pending", "pending", "pending"],
+  ] as const) {
+    task
+      .command(verb)
+      .description(`Set task(s) to ${status}`)
+      .argument("<ids...>", "Task ID(s)")
+      .action(async (ids: string[]) => {
+        const client = createClient();
+        for (const id of ids) {
+          await client.patch(`/api/tasks/${id}`, { status });
+          process.stdout.write(`${label} #${id}\n`);
+        }
+      });
+  }
 
   task.action(() => {
     task.commands.find((c) => c.name() === "list")?.parse(process.argv);
