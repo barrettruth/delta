@@ -272,7 +272,7 @@ export function OnboardingWizard({
     try {
       const result = await testApiKey(geoProvider, geoApiKey.trim());
       setGeoKeyStatus(result.valid ? "valid" : "invalid");
-      if (!result.valid) setGeoKeyError(result.error ?? "invalid key");
+      if (!result.valid) setGeoKeyError(result.error ?? "invalid api key");
     } catch {
       setGeoKeyStatus("invalid");
       setGeoKeyError("connection failed");
@@ -293,7 +293,7 @@ export function OnboardingWizard({
         nlpModel || undefined,
       );
       setNlpKeyStatus(result.valid ? "valid" : "invalid");
-      if (!result.valid) setNlpKeyError(result.error ?? "invalid key");
+      if (!result.valid) setNlpKeyError(result.error ?? "invalid api key");
     } catch {
       setNlpKeyStatus("invalid");
       setNlpKeyError("connection failed");

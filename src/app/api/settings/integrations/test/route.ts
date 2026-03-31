@@ -28,10 +28,9 @@ async function testAnthropic(
     }),
   });
   if (res.ok) return null;
-  if (res.status === 401) return "invalid API key";
-  if (res.status === 403) return "API key lacks permission";
-  const body = await res.json().catch(() => null);
-  return body?.error?.message ?? `API returned ${res.status}`;
+  if (res.status === 401 || res.status === 403) return "invalid api key";
+  if (res.status === 429) return "rate limited — try again shortly";
+  return `unexpected error (${res.status})`;
 }
 
 async function testOpenai(
@@ -51,10 +50,9 @@ async function testOpenai(
     }),
   });
   if (res.ok) return null;
-  if (res.status === 401) return "invalid API key";
-  if (res.status === 403) return "API key lacks permission";
-  const body = await res.json().catch(() => null);
-  return body?.error?.message ?? `API returned ${res.status}`;
+  if (res.status === 401 || res.status === 403) return "invalid api key";
+  if (res.status === 429) return "rate limited — try again shortly";
+  return `unexpected error (${res.status})`;
 }
 
 async function testMapbox(apiKey: string): Promise<string | null> {
@@ -62,18 +60,18 @@ async function testMapbox(apiKey: string): Promise<string | null> {
     `https://api.mapbox.com/geocoding/v5/mapbox.places/test.json?access_token=${encodeURIComponent(apiKey)}&limit=1`,
   );
   if (res.ok) return null;
-  if (res.status === 401 || res.status === 403) return "invalid access token";
-  return `API returned ${res.status}`;
+  if (res.status === 401 || res.status === 403) return "invalid api key";
+  if (res.status === 429) return "rate limited — try again shortly";
+  return `unexpected error (${res.status})`;
 }
 
 async function testGoogleMaps(apiKey: string): Promise<string | null> {
   const res = await fetch(
     `https://maps.googleapis.com/maps/api/geocode/json?address=test&key=${encodeURIComponent(apiKey)}`,
   );
-  if (!res.ok) return `API returned ${res.status}`;
+  if (!res.ok) return `unexpected error (${res.status})`;
   const body = await res.json();
-  if (body.status === "REQUEST_DENIED")
-    return body.error_message ?? "invalid API key";
+  if (body.status === "REQUEST_DENIED") return "invalid api key";
   return null;
 }
 

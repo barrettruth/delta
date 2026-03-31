@@ -230,7 +230,7 @@ export function CalendarActionsPopover({
         statusBar.message("key is valid");
         await handleSaveGeoKey();
       } else {
-        statusBar.error(data.error ?? "invalid key");
+        statusBar.error(data.error ?? "invalid api key");
       }
     } catch {
       statusBar.error("connection failed");
@@ -313,7 +313,7 @@ export function CalendarActionsPopover({
         statusBar.message("key is valid");
         await handleSaveNlpKey();
       } else {
-        statusBar.error(data.error ?? "invalid key");
+        statusBar.error(data.error ?? "invalid api key");
       }
     } catch {
       statusBar.error("connection failed");
