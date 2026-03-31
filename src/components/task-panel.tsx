@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -477,10 +478,10 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             {mode === "edit" && task?.startAt && (
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-foreground shrink-0 px-1.5 py-0.5 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+                className="text-muted-foreground hover:text-foreground shrink-0 p-1 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
                 onClick={handleShare}
               >
-                &#x2197;
+                <Copy size={14} />
               </button>
             )}
           </div>
