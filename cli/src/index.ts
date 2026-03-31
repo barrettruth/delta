@@ -4,9 +4,13 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { registerAuth } from "./auth.js";
 import { registerCompletionCommands } from "./completion.js";
+import { registerExportCommand } from "./export.js";
+import { registerFeedCommands } from "./feed.js";
 import { registerHelp } from "./help.js";
+import { registerImportCommand } from "./import.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
+import { registerSyncCommand } from "./sync.js";
 import { registerTaskCommands } from "./task.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -62,21 +66,10 @@ cron.action(() => {
 });
 
 registerAuth(program);
-
-const sync = new Command("sync").description("Trigger Google Calendar sync");
-
-const feed = new Command("feed").description("iCal feed management");
-feed.command("generate").description("Generate/regenerate feed URL");
-feed.command("revoke").description("Revoke feed URL");
-feed.action(() => {
-  process.stdout.write("Feed status\n");
-});
-
-const imp = new Command("import").description(
-  "Import from iCal or other sources",
-);
-
-const exp = new Command("export").description("Export as iCal");
+registerSyncCommand(program);
+registerFeedCommands(program);
+registerImportCommand(program);
+registerExportCommand(program);
 
 const invite = new Command("invite").description("Invite link management");
 invite.command("list").description("List invite links");
@@ -108,10 +101,6 @@ integration.action(() => {
 program.addCommand(task);
 program.addCommand(cat);
 program.addCommand(cron);
-program.addCommand(sync);
-program.addCommand(feed);
-program.addCommand(imp);
-program.addCommand(exp);
 program.addCommand(invite);
 program.addCommand(share);
 program.addCommand(config);
