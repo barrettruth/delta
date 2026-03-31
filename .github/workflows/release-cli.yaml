@@ -179,9 +179,8 @@ jobs:
       - name: Publish to npm
         if: steps.published.outputs.published != 'true'
         working-directory: cli
-        env:
-          NODE_AUTH_TOKEN: ""
         run: |
+          unset NODE_AUTH_TOKEN
           npm config delete //registry.npmjs.org/:_authToken
           npm publish --access public --provenance
 
