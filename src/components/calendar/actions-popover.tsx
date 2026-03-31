@@ -200,7 +200,7 @@ export function CalendarActionsPopover({
       }
       setGeoProvider("photon");
       setGeoKeyTarget(null);
-      statusBar.message("location api set to photon");
+      statusBar.message("geocoding set to photon");
       return;
     }
     setGeoKeyTarget(id);
@@ -257,7 +257,7 @@ export function CalendarActionsPopover({
     setGeoKeyInput("");
     const label =
       GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
-    statusBar.message(`location api set to ${label}`);
+    statusBar.message(`geocoding set to ${label}`);
   }
 
   async function handleSelectConflictResolution(id: ConflictResolution) {
@@ -281,7 +281,7 @@ export function CalendarActionsPopover({
       setNlpActive("builtin");
       setNlpKeyTarget(null);
       setNlpModel("");
-      statusBar.message("recurrence API set to built-in");
+      statusBar.message("NLP set to built-in");
       return;
     }
     setNlpActive(id);
@@ -340,7 +340,7 @@ export function CalendarActionsPopover({
     setNlpKeyTarget(null);
     setNlpKeyInput("");
     statusBar.message(
-      `recurrence API set to ${provider} ${NLP_MODELS[provider].find((m) => m.id === nlpModel)?.label ?? nlpModel}`,
+      `NLP set to ${provider} ${NLP_MODELS[provider].find((m) => m.id === nlpModel)?.label ?? nlpModel}`,
     );
   }
 
@@ -542,7 +542,7 @@ export function CalendarActionsPopover({
 
           <div className="flex flex-col p-1">
             <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              location API
+              geocoding
             </div>
             {geoItems.map((item, i) => (
               <React.Fragment key={item.id}>
@@ -585,7 +585,7 @@ export function CalendarActionsPopover({
 
           <div className="flex flex-col p-1">
             <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              recurrence API
+              NLP
             </div>
             {nlpItems.map((item, i) => (
               <React.Fragment key={item.id}>

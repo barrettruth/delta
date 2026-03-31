@@ -589,7 +589,7 @@ export function OnboardingWizard({
 
             <div className="flex flex-col border border-border">
               <div className="text-[10px] text-muted-foreground px-3 py-1">
-                location API
+                geocoding
               </div>
               {GEO_OPTIONS.map((opt, i) => {
                 const globalIdx = 1 + i;
@@ -675,7 +675,7 @@ export function OnboardingWizard({
 
             <div className="flex flex-col border border-border">
               <div className="text-[10px] text-muted-foreground px-3 py-1">
-                NLP provider
+                NLP
               </div>
               {NLP_OPTIONS.map((opt, i) => {
                 const globalIdx = 1 + GEO_OPTIONS.length + i;
