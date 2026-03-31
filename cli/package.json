@@ -17,7 +17,7 @@
     "task-manager"
   ],
   "bin": {
-    "delta": "./dist/delta.js"
+    "delta": "dist/delta.js"
   },
   "man": [
     "./man/delta.1"
