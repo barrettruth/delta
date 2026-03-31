@@ -6,7 +6,9 @@
   "bin": {
     "delta": "./dist/delta"
   },
-  "man": ["./man/delta.1"],
+  "man": [
+    "./man/delta.1"
+  ],
   "scripts": {
     "build:man": "marked-man man/delta.1.md --version 0.1.0 --section 1 > man/delta.1",
     "build": "bun run build:man && bun build src/index.ts --compile --outfile dist/delta",

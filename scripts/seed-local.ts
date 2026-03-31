@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "../src/db/schema";
-import { tasks, categoryColors } from "../src/db/schema";
+import { categoryColors, tasks } from "../src/db/schema";
 
 const dbPath = process.env.DATABASE_URL ?? "./data/delta.db";
 const userId = Number(process.argv[2] || 2);
@@ -43,7 +43,8 @@ const seedTasks = [
     locationLat: 40.7128,
     locationLon: -74.006,
     meetingUrl: "https://meet.google.com/abc-defg-hij",
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Discuss sprint progress and blockers."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Discuss sprint progress and blockers."}]}]}',
     order: 1,
   },
   {
@@ -56,7 +57,8 @@ const seedTasks = [
     allDay: 0,
     timezone: tz,
     location: "Home office",
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Run full CI suite, tag release, push to staging."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Run full CI suite, tag release, push to staging."}]}]}',
     order: 2,
   },
   {
@@ -69,7 +71,8 @@ const seedTasks = [
     allDay: 0,
     timezone: tz,
     meetingUrl: "https://github.com/barrettruth/delta/pull/142",
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Blocked on CI green. PWA manifest needs testing."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Blocked on CI green. PWA manifest needs testing."}]}]}',
     order: 3,
   },
   {
@@ -98,7 +101,8 @@ const seedTasks = [
     location: "Trader Joe's, Union Square",
     locationLat: 40.7359,
     locationLon: -73.9911,
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Eggs, bread, coffee, olive oil, parmesan."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Eggs, bread, coffee, olive oil, parmesan."}]}]}',
     order: 5,
   },
   {
@@ -111,7 +115,8 @@ const seedTasks = [
     allDay: 1,
     timezone: tz,
     meetingUrl: "https://zoom.us/j/123456789",
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Q1 review and Q2 planning."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Q1 review and Q2 planning."}]}]}',
     order: 6,
   },
   {
@@ -134,7 +139,8 @@ const seedTasks = [
     endAt: iso(dayOffset(4), 23, 59),
     allDay: 1,
     timezone: tz,
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Call at 6pm. Gift shipped already."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Call at 6pm. Gift shipped already."}]}]}',
     order: 8,
   },
   {
@@ -161,7 +167,8 @@ const seedTasks = [
     allDay: 0,
     timezone: tz,
     location: "Home",
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Consistency and consensus chapter. Take notes on Raft."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Consistency and consensus chapter. Take notes on Raft."}]}]}',
     order: 10,
   },
   {
@@ -222,7 +229,8 @@ const seedTasks = [
     endAt: iso(dayOffset(3), 16, 0),
     allDay: 0,
     timezone: tz,
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Outline done. Need to write the flake.nix walkthrough section."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Outline done. Need to write the flake.nix walkthrough section."}]}]}',
     order: 15,
   },
   {
@@ -249,7 +257,8 @@ const seedTasks = [
     allDay: 1,
     timezone: tz,
     location: "Office, 5th floor",
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Theme: developer tooling. Team with Sarah and James."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Theme: developer tooling. Team with Sarah and James."}]}]}',
     order: 17,
   },
   {
@@ -288,7 +297,8 @@ const seedTasks = [
     endAt: iso(dayOffset(4), 17, 0),
     allDay: 0,
     timezone: tz,
-    notes: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"3-step wizard: view pref, integrations, keymaps. No summary step."}]}]}',
+    notes:
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"3-step wizard: view pref, integrations, keymaps. No summary step."}]}]}',
     order: 20,
   },
 ];
@@ -339,5 +349,7 @@ for (const c of colors) {
     .run();
 }
 
-console.log(`Inserted ${inserted} tasks and ${colors.length} category colors for user ${userId}`);
+console.log(
+  `Inserted ${inserted} tasks and ${colors.length} category colors for user ${userId}`,
+);
 sqlite.close();
