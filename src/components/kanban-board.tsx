@@ -104,11 +104,6 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countBuf = useRef("");
 
-  useEffect(() => {
-    const left = visualMode ? "-- VISUAL --" : "-- KANBAN --";
-    statusBar.setIdle(left, "");
-  }, [visualMode, statusBar.setIdle]);
-
   const kbDelete = useCallback(
     (ids: number[]) => {
       if (ids.length === 1) {
@@ -214,6 +209,18 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   }, [tasks, searchQuery]);
 
   const grouped = useMemo(() => groupByStatus(filteredTasks), [filteredTasks]);
+
+  useEffect(() => {
+    const left = visualMode ? "-- VISUAL --" : "-- KANBAN --";
+    const counts = columns
+      .map((col) => {
+        const n = (grouped[col.status] ?? []).length;
+        return n > 0 ? `${n}${col.status[0].toUpperCase()}` : "";
+      })
+      .filter(Boolean)
+      .join(" ");
+    statusBar.setIdle(left, counts);
+  }, [visualMode, statusBar.setIdle, grouped, columns]);
 
   const getColTasks = useCallback(
     (ci: number) => grouped[columns[ci].status] ?? [],
