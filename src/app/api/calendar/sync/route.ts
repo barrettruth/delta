@@ -11,6 +11,7 @@ export async function POST() {
     const result = await syncGoogleCalendar(db, user.id);
     return NextResponse.json(result);
   } catch (e) {
+    console.error("[calendar sync]", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "sync failed" },
       { status: 500 },

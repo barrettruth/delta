@@ -128,31 +128,41 @@ export function CalendarView({
     nav.saveViewState("cal:viewMode", viewMode);
   }, [viewMode, nav]);
 
+  const statusBarRef = useRef(statusBar);
+  statusBarRef.current = statusBar;
+
   useEffect(() => {
     if (!gcalStatus.connected || syncInterval === 0) return;
     let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
     async function sync() {
       try {
-        statusBar.setOperation("syncing...");
+        statusBarRef.current.setOperation("syncing...");
         const res = await fetch("/api/calendar/sync", { method: "POST" });
-        statusBar.clearOperation();
-        if (res.ok && !cancelled) {
+        statusBarRef.current.clearOperation();
+        if (!res.ok) {
+          if (intervalId) clearInterval(intervalId);
+          return;
+        }
+        if (!cancelled) {
           const data = await res.json();
           const total = (data.pulled ?? 0) + (data.pushed ?? 0);
-          if (total > 0) statusBar.message(`synced ${total} events`);
+          if (total > 0) statusBarRef.current.message(`synced ${total} events`);
           router.refresh();
         }
       } catch {
-        statusBar.clearOperation();
+        statusBarRef.current.clearOperation();
+        if (intervalId) clearInterval(intervalId);
       }
     }
     sync();
-    const id = setInterval(sync, syncInterval * 60 * 1000);
+    intervalId = setInterval(sync, syncInterval * 60 * 1000);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [gcalStatus.connected, syncInterval, router, statusBar]);
+  }, [gcalStatus.connected, syncInterval, router]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
