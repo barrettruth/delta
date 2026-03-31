@@ -298,7 +298,7 @@ describe("parseRecurrenceLlm", () => {
     const callBody = JSON.parse(
       (mockFetch.mock.calls[0][1] as RequestInit).body as string,
     );
-    expect(callBody.model).toBe("claude-haiku-4-5-20251001");
+    expect(callBody.model).toBe("claude-haiku-4-5-latest");
   });
 
   it("uses specified model when provided", async () => {

@@ -45,7 +45,6 @@ function getTaskDimming(status: string): string {
 
 export function QueueView({
   tasks,
-  categoryColors,
   categoryFilter,
 }: {
   tasks: RankedTask[];

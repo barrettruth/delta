@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteTaskAction,
@@ -20,7 +21,6 @@ import { expandInstances } from "@/core/recurrence-expansion";
 import type { Task, TaskStatus } from "@/core/types";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { useRecurrenceEdit } from "@/hooks/use-recurrence-edit";
-import { useRouter } from "next/navigation";
 import type { TimedEntry } from "@/lib/calendar-utils";
 import {
   addDays,

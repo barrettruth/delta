@@ -119,7 +119,11 @@ export function AllDayBar({
   categoryColors: Record<string, string>;
   onTaskClick: (task: Task) => void;
   onAllDayMove?: (taskId: number, dayOffset: number) => void;
-  onAllDayResize?: (taskId: number, startOffset: number, endOffset: number) => void;
+  onAllDayResize?: (
+    taskId: number,
+    startOffset: number,
+    endOffset: number,
+  ) => void;
   onToggleExpand?: () => void;
   onEmptyClick?: (dayIndex: number) => void;
 }) {
@@ -189,10 +193,16 @@ export function AllDayBar({
     const colOffset = Math.round(dx / d.colWidth);
 
     if (d.edge === "start") {
-      const clamped = Math.max(-d.startCol, Math.min(d.endCol - d.startCol, colOffset));
+      const clamped = Math.max(
+        -d.startCol,
+        Math.min(d.endCol - d.startCol, colOffset),
+      );
       setDragOffset(clamped);
     } else if (d.edge === "end") {
-      const clamped = Math.max(d.startCol - d.endCol, Math.min(6 - d.endCol, colOffset));
+      const clamped = Math.max(
+        d.startCol - d.endCol,
+        Math.min(6 - d.endCol, colOffset),
+      );
       setDragOffset(clamped);
     } else {
       const clamped = Math.max(-d.startCol, Math.min(6 - d.endCol, colOffset));
@@ -213,9 +223,15 @@ export function AllDayBar({
       let clampedOffset = 0;
       if (d.taskId !== null) {
         if (d.edge === "start") {
-          clampedOffset = Math.max(-d.startCol, Math.min(d.endCol - d.startCol, offset));
+          clampedOffset = Math.max(
+            -d.startCol,
+            Math.min(d.endCol - d.startCol, offset),
+          );
         } else if (d.edge === "end") {
-          clampedOffset = Math.max(d.startCol - d.endCol, Math.min(6 - d.endCol, offset));
+          clampedOffset = Math.max(
+            d.startCol - d.endCol,
+            Math.min(6 - d.endCol, offset),
+          );
         } else {
           clampedOffset = Math.max(-d.startCol, Math.min(6 - d.endCol, offset));
         }
@@ -240,7 +256,10 @@ export function AllDayBar({
         if (container && onEmptyClick) {
           const rect = container.getBoundingClientRect();
           const x = e.clientX - rect.left;
-          const dayIndex = Math.min(6, Math.max(0, Math.floor((x / rect.width) * 7)));
+          const dayIndex = Math.min(
+            6,
+            Math.max(0, Math.floor((x / rect.width) * 7)),
+          );
           onEmptyClick(dayIndex);
         }
         return;
@@ -308,7 +327,10 @@ export function AllDayBar({
               if (isDragging) {
                 if (resizeEdge === "start") startCol += dragOffset;
                 else if (resizeEdge === "end") endCol += dragOffset;
-                else { startCol += dragOffset; endCol += dragOffset; }
+                else {
+                  startCol += dragOffset;
+                  endCol += dragOffset;
+                }
               }
               return (
                 <button

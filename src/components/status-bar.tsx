@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useCommandBar } from "@/contexts/command-bar";
 import { useStatusBar } from "@/contexts/status-bar";
@@ -169,7 +169,6 @@ export function StatusBar() {
       if (fileRef.current) fileRef.current.value = "";
     }
   }
-
 
   if (commandBar.active) {
     return (

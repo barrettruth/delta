@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
 import type { NlpProvider } from "@/lib/nlp-models";
-import { NLP_MODEL } from "@/lib/nlp-models";
 
 interface GcalStatus {
   connected: boolean;
@@ -44,17 +43,6 @@ const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
   { id: "anthropic", label: "anthropic" },
   { id: "openai", label: "openai" },
 ];
-
-function formatRelativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 interface MenuItem {
   id: string;
