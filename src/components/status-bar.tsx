@@ -170,10 +170,6 @@ export function StatusBar() {
     }
   }
 
-  const timezone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-    [],
-  );
 
   if (commandBar.active) {
     return (
@@ -225,7 +221,6 @@ export function StatusBar() {
         ) : state.idleRight !== "" ? (
           <span>{state.idleRight}</span>
         ) : null}
-        <span>{timezone}</span>
       </div>
       <input
         ref={fileRef}

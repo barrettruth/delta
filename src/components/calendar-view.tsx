@@ -1018,10 +1018,12 @@ export function CalendarView({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: headerTitle kept to preserve deps array size
   useEffect(() => {
-    const right =
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const eventLabel =
       visibleEventCount > 0
         ? `${visibleEventCount} event${visibleEventCount !== 1 ? "s" : ""}`
         : "";
+    const right = [eventLabel, tz].filter(Boolean).join("  ");
     statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, right);
   }, [viewMode, headerTitle, visibleEventCount, statusBar.setIdle]);
 
