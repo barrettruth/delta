@@ -25,7 +25,7 @@ const VIEW_KEYMAP_IDS: {
   href: string;
   keymapId: string;
 }[] = [
-  { label: "Queue", href: "/", keymapId: "global.queue" },
+  { label: "Queue", href: "/?view=queue", keymapId: "global.queue" },
   { label: "Kanban", href: "/kanban", keymapId: "global.kanban" },
   { label: "Calendar", href: "/calendar", keymapId: "global.calendar" },
 ];
@@ -66,7 +66,11 @@ export function AppSidebar({
                 <SidebarMenuItem key={view.href}>
                   <SidebarMenuButton
                     render={<Link href={view.href} />}
-                    isActive={pathname === view.href}
+                    isActive={
+                      view.href.startsWith("/?")
+                        ? pathname === "/"
+                        : pathname === view.href
+                    }
                     onClick={() => nav.pushJump()}
                   >
                     <span className="flex-1">{view.label}</span>

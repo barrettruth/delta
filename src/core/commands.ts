@@ -181,7 +181,7 @@ export const commandRegistry: CommandDefinition[] = [
     description: "Navigate to queue",
     category: "navigation",
     expectedArgs: [],
-    execute: (_args, ctx) => ctx.router.push("/"),
+    execute: (_args, ctx) => ctx.router.push("/?view=queue"),
   },
   {
     name: "kanban",

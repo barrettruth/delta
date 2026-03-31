@@ -25,6 +25,7 @@ export default async function QueuePage({
     status?: string;
     date?: string;
     showDone?: string;
+    view?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -39,7 +40,8 @@ export default async function QueuePage({
     settings.defaultView !== "queue" &&
     !params.category &&
     !params.status &&
-    !params.date
+    !params.date &&
+    !params.view
   ) {
     redirect(viewRoutes[settings.defaultView]);
   }

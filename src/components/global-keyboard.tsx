@@ -29,7 +29,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
 
   const viewKeys = useMemo(() => {
     const map: Record<string, string> = {};
-    map[keymaps.getResolvedKeymap("global.queue").triggerKey] = "/";
+    map[keymaps.getResolvedKeymap("global.queue").triggerKey] = "/?view=queue";
     map[keymaps.getResolvedKeymap("global.kanban").triggerKey] = "/kanban";
     map[keymaps.getResolvedKeymap("global.calendar").triggerKey] = "/calendar";
     map[keymaps.getResolvedKeymap("global.settings").triggerKey] = "/settings";

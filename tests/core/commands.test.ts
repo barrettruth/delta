@@ -295,7 +295,7 @@ describe("executeCommand", () => {
       },
     });
     executeCommand("queue", commandRegistry, ctx);
-    expect(pushed).toBe("/");
+    expect(pushed).toBe("/?view=queue");
   });
 
   it("navigates to kanban on :kanban", () => {
