@@ -32,7 +32,7 @@
   "scripts": {
     "build": "bun run build.ts",
     "build:local": "bun build src/index.ts --compile --outfile dist/delta",
-    "build:npm": "bun build src/index.ts --outfile dist/delta.js --target node && node -e \"const fs=require('fs');const f='dist/delta.js';fs.writeFileSync(f,'#!/usr/bin/env node\\n'+fs.readFileSync(f))\"",
+    "build:npm": "bun build src/index.ts --outfile dist/delta.js --target node && node -e \"const fs=require('fs');const f='dist/delta.js';fs.writeFileSync(f,'#!/usr/bin/env node\\n'+fs.readFileSync(f));fs.chmodSync(f,0o755)\"",
     "build:man": "npx marked-man man/delta.1.md --version 0.1.0 --section 1 > man/delta.1",
     "prepublishOnly": "bun run build:man",
     "dev": "bun run src/index.ts"
