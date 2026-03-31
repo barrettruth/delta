@@ -354,22 +354,31 @@ export function OnboardingWizard({
       let offset = 1;
       if (idx < offset + GEO_OPTIONS.length) {
         const geoIdx = idx - offset;
-        setGeoProvider(GEO_OPTIONS[geoIdx].id);
-        if (!GEO_OPTIONS[geoIdx].needsKey) setGeoApiKey("");
+        const newGeo = GEO_OPTIONS[geoIdx];
+        if (newGeo.id !== geoProvider) {
+          setGeoProvider(newGeo.id);
+          setGeoKeyStatus(null);
+          setGeoKeyError("");
+          if (!newGeo.needsKey) setGeoApiKey("");
+        }
         return;
       }
       offset += GEO_OPTIONS.length;
       if (idx < offset + NLP_OPTIONS.length) {
         const nlpIdx = idx - offset;
         const opt = NLP_OPTIONS[nlpIdx];
-        setNlpProvider(opt.id);
-        if (opt.needsKey) {
-          const models =
-            opt.id === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;
-          setNlpModel(models[0].id);
-        } else {
-          setNlpApiKey("");
-          setNlpModel("");
+        if (opt.id !== nlpProvider) {
+          setNlpProvider(opt.id);
+          setNlpKeyStatus(null);
+          setNlpKeyError("");
+          if (opt.needsKey) {
+            const models =
+              opt.id === "anthropic" ? ANTHROPIC_MODELS : OPENAI_MODELS;
+            setNlpModel(models[0].id);
+          } else {
+            setNlpApiKey("");
+            setNlpModel("");
+          }
         }
         return;
       }
@@ -378,7 +387,7 @@ export function OnboardingWizard({
         setConflictResolution(CONFLICT_OPTIONS[idx - offset].id);
       }
     },
-    [gcalConnected, handleGcalConnect],
+    [gcalConnected, handleGcalConnect, geoProvider, nlpProvider],
   );
 
   useEffect(() => {
@@ -595,8 +604,12 @@ export function OnboardingWizard({
                     }`}
                     onClick={() => {
                       setFocusIdx(globalIdx);
-                      setGeoProvider(opt.id);
-                      if (!opt.needsKey) setGeoApiKey("");
+                      if (opt.id !== geoProvider) {
+                        setGeoProvider(opt.id);
+                        setGeoKeyStatus(null);
+                        setGeoKeyError("");
+                        if (!opt.needsKey) setGeoApiKey("");
+                      }
                     }}
                     onMouseEnter={() => setFocusIdx(globalIdx)}
                   >
@@ -677,16 +690,20 @@ export function OnboardingWizard({
                     }`}
                     onClick={() => {
                       setFocusIdx(globalIdx);
-                      setNlpProvider(opt.id);
-                      if (opt.needsKey) {
-                        const m =
-                          opt.id === "anthropic"
-                            ? ANTHROPIC_MODELS
-                            : OPENAI_MODELS;
-                        setNlpModel(m[0].id);
-                      } else {
-                        setNlpApiKey("");
-                        setNlpModel("");
+                      if (opt.id !== nlpProvider) {
+                        setNlpProvider(opt.id);
+                        setNlpKeyStatus(null);
+                        setNlpKeyError("");
+                        if (opt.needsKey) {
+                          const m =
+                            opt.id === "anthropic"
+                              ? ANTHROPIC_MODELS
+                              : OPENAI_MODELS;
+                          setNlpModel(m[0].id);
+                        } else {
+                          setNlpApiKey("");
+                          setNlpModel("");
+                        }
                       }
                     }}
                     onMouseEnter={() => setFocusIdx(globalIdx)}
@@ -842,6 +859,12 @@ export function OnboardingWizard({
                 variant="outline"
                 size="sm"
                 className="flex-1"
+                disabled={
+                  (GEO_OPTIONS.find((o) => o.id === geoProvider)?.needsKey &&
+                    geoKeyStatus !== "valid") ||
+                  (NLP_OPTIONS.find((o) => o.id === nlpProvider)?.needsKey &&
+                    nlpKeyStatus !== "valid")
+                }
                 onClick={() => setStep(3)}
               >
                 next

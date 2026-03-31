@@ -583,14 +583,7 @@ export function CalendarActionsPopover({
                       className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
                       onClick={handleTestGeoKey}
                     >
-                      {geoKeyTesting ? "..." : "test"}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground px-2"
-                      onClick={handleSaveGeoKey}
-                    >
-                      save
+                      {geoKeyTesting ? "..." : "test & save"}
                     </button>
                   </div>
                 )}
@@ -647,14 +640,7 @@ export function CalendarActionsPopover({
                         className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
                         onClick={handleTestNlpKey}
                       >
-                        {nlpKeyTesting ? "..." : "test"}
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-muted-foreground hover:text-foreground px-2"
-                        onClick={handleSaveNlpKey}
-                      >
-                        save
+                        {nlpKeyTesting ? "..." : "test & save"}
                       </button>
                     </div>
                   </div>
