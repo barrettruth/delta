@@ -146,18 +146,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
 
-      - name: Update npm
-        run: npm install -g npm@latest
+      - name: Configure npm for OIDC
+        run: |
+          npm install -g npm@latest
+          npm config set registry https://registry.npmjs.org/
 
       - name: Install CLI dependencies
         working-directory: cli
         run: bun install --frozen-lockfile
 
-      - name: Build CLI
+      - name: Build for npm
         working-directory: cli
-        run: bun run build:local
+        run: bun run build:npm
 
       - name: Build man page
         working-directory: cli
@@ -192,18 +193,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
 
-      - name: Update npm
-        run: npm install -g npm@latest
+      - name: Configure npm for OIDC
+        run: |
+          npm install -g npm@latest
+          npm config set registry https://registry.npmjs.org/
 
       - name: Install CLI dependencies
         working-directory: cli
         run: bun install --frozen-lockfile
 
-      - name: Build CLI
+      - name: Build for npm
         working-directory: cli
-        run: bun run build:local
+        run: bun run build:npm
 
       - name: Build man page
         working-directory: cli
