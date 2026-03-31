@@ -908,8 +908,8 @@ export function CalendarView({
       : formatMonthTitle(monthStart);
 
   useEffect(() => {
-    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, headerTitle);
-  }, [viewMode, headerTitle, statusBar.setIdle]);
+    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, "");
+  }, [viewMode, statusBar.setIdle]);
 
   return (
     <div className="flex flex-col h-full">
