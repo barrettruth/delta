@@ -54,24 +54,7 @@ export default async function CalendarPage({
         lastSyncTime: gcalMetadata?.lastSyncTime as string | null,
       }
     : { connected: false, lastSyncTime: null };
-  const conflictResolution =
-    (gcalMetadata?.conflictResolution as string) ?? "google_wins";
   const syncInterval = (gcalMetadata?.syncInterval as number) ?? 5;
-
-  const geoProvider = getIntegrationConfig(db, user.id, "google_maps")
-    ? "google_maps"
-    : getIntegrationConfig(db, user.id, "mapbox")
-      ? "mapbox"
-      : "photon";
-
-  let nlpActiveProvider: "anthropic" | "openai" | null = null;
-  for (const p of ["anthropic", "openai"] as const) {
-    const cfg = getIntegrationConfig(db, user.id, `nlp_${p}`);
-    if (cfg?.enabled === 1) {
-      nlpActiveProvider = p;
-      break;
-    }
-  }
 
   return (
     <CalendarView
@@ -81,10 +64,7 @@ export default async function CalendarPage({
       defaultViewMode={defaultViewMode}
       feedToken={feedToken}
       gcalStatus={gcalStatus}
-      geoProvider={geoProvider}
-      conflictResolution={conflictResolution}
       syncInterval={syncInterval}
-      nlpProvider={nlpActiveProvider}
     />
   );
 }

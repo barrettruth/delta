@@ -50,10 +50,7 @@ export function CalendarView({
   defaultViewMode = "week",
   feedToken = null,
   gcalStatus = { connected: false, lastSyncTime: null },
-  geoProvider = "photon",
-  conflictResolution = "google_wins",
-  syncInterval: initialSyncInterval = 5,
-  nlpProvider = null,
+  syncInterval = 5,
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
@@ -61,10 +58,7 @@ export function CalendarView({
   defaultViewMode?: ViewMode;
   feedToken?: string | null;
   gcalStatus?: { connected: boolean; lastSyncTime: string | null };
-  geoProvider?: string;
-  conflictResolution?: string;
   syncInterval?: number;
-  nlpProvider?: "anthropic" | "openai" | null;
 }) {
   const router = useRouter();
   const nav = useNavigation();
@@ -87,7 +81,6 @@ export function CalendarView({
   const [allDayVisible, setAllDayVisible] = useState(true);
   const [allDayExpanded, setAllDayExpanded] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [syncInterval, setSyncInterval] = useState(initialSyncInterval);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, { startAt?: string; endAt?: string; deleted?: true }>
   >(new Map());
@@ -1036,15 +1029,6 @@ export function CalendarView({
           <CalendarActionsPopover
             feedToken={feedToken}
             gcalStatus={gcalStatus}
-            initialGeoProvider={
-              geoProvider as "photon" | "mapbox" | "google_maps"
-            }
-            initialConflictResolution={
-              conflictResolution as "lww" | "google_wins" | "delta_wins"
-            }
-            syncInterval={syncInterval}
-            onSyncIntervalChange={setSyncInterval}
-            initialNlpProvider={nlpProvider}
             open={actionsOpen}
             onOpenChange={setActionsOpen}
           />

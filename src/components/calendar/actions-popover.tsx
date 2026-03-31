@@ -1,55 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useEffect, useRef, useState } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
-import type { NlpProvider } from "@/lib/nlp-models";
 
 interface GcalStatus {
   connected: boolean;
   lastSyncTime: string | null;
 }
 
-type GeoProvider = "photon" | "mapbox" | "google_maps";
-type ConflictResolution = "lww" | "google_wins" | "delta_wins";
-
-const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
-  { id: "photon", label: "photon" },
-  { id: "mapbox", label: "mapbox" },
-  { id: "google_maps", label: "google maps" },
-];
-
-const CONFLICT_STRATEGIES: { id: ConflictResolution; label: string }[] = [
-  { id: "google_wins", label: "google wins" },
-  { id: "delta_wins", label: "delta wins" },
-  { id: "lww", label: "last write wins" },
-];
-
-type SyncInterval = 5 | 15 | 30;
-const SYNC_INTERVALS: { id: SyncInterval; label: string }[] = [
-  { id: 5, label: "5 minutes" },
-  { id: 15, label: "15 minutes" },
-  { id: 30, label: "30 minutes" },
-];
-
-const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
-  { id: "builtin", label: "built-in" },
-  { id: "anthropic", label: "anthropic" },
-  { id: "openai", label: "openai" },
-];
-
 interface MenuItem {
   id: string;
   label: string;
   muted?: boolean;
   prefix?: { text: string; className: string };
-  suffix?: string;
   disabled?: boolean;
   onSelect: () => void;
 }
@@ -57,21 +26,11 @@ interface MenuItem {
 export function CalendarActionsPopover({
   feedToken: initialFeedToken,
   gcalStatus: initialGcalStatus,
-  initialGeoProvider = "photon",
-  initialConflictResolution = "lww",
-  syncInterval: currentSyncInterval = 5,
-  onSyncIntervalChange,
-  initialNlpProvider = null,
   open,
   onOpenChange,
 }: {
   feedToken: string | null;
   gcalStatus: GcalStatus;
-  initialGeoProvider?: GeoProvider;
-  initialConflictResolution?: ConflictResolution;
-  syncInterval?: number;
-  onSyncIntervalChange?: (interval: number) => void;
-  initialNlpProvider?: NlpProvider | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -81,22 +40,8 @@ export function CalendarActionsPopover({
   const [importing, setImporting] = useState(false);
   const [feedToken, setFeedToken] = useState(initialFeedToken);
   const [gcalStatus, setGcalStatus] = useState(initialGcalStatus);
-  const [geoProvider, setGeoProvider] =
-    useState<GeoProvider>(initialGeoProvider);
-  const [geoKeyInput, setGeoKeyInput] = useState("");
-  const [geoKeyTarget, setGeoKeyTarget] = useState<GeoProvider | null>(null);
-  const [conflictResolution, setConflictResolution] =
-    useState<ConflictResolution>(initialConflictResolution);
-  const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
-    initialNlpProvider ?? "builtin",
-  );
-  const [nlpKeyInput, setNlpKeyInput] = useState("");
-  const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
-  const [geoKeyTesting, setGeoKeyTesting] = useState(false);
-  const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
   const [focusIdx, setFocusIdx] = useState(0);
   const countBuf = useRef("");
-  const containerRef = useRef<HTMLDivElement>(null);
 
   async function handleImport() {
     const file = fileRef.current?.files?.[0];
@@ -162,169 +107,34 @@ export function CalendarActionsPopover({
     statusBar.message("google calendar disconnected");
   }
 
-  async function handleSelectGeoProvider(id: GeoProvider) {
-    if (id === "photon") {
-      for (const p of ["mapbox", "google_maps"]) {
-        await fetch(`/api/settings/integrations/${p}`, { method: "DELETE" });
-      }
-      setGeoProvider("photon");
-      setGeoKeyTarget(null);
-      statusBar.message("geocoding set to photon");
-      return;
-    }
-    setGeoKeyTarget(id);
-    setGeoKeyInput("");
-    setGeoProvider(id);
-  }
-
-  async function handleTestGeoKey() {
-    if (!geoKeyInput.trim()) return;
-    setGeoKeyTesting(true);
+  async function handleSyncNow() {
+    statusBar.setOperation("syncing...");
     try {
-      const res = await fetch("/api/settings/integrations/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: geoProvider,
-          apiKey: geoKeyInput.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        statusBar.message("key is valid");
-        await handleSaveGeoKey();
-      } else {
-        statusBar.error(data.error ?? "invalid api key");
+      const res = await fetch("/api/calendar/sync", { method: "POST" });
+      statusBar.clearOperation();
+      if (!res.ok) {
+        statusBar.error("sync failed");
+        return;
       }
-    } catch {
-      statusBar.error("connection failed");
-    } finally {
-      setGeoKeyTesting(false);
-    }
-  }
-
-  async function handleSaveGeoKey() {
-    if (!geoKeyInput.trim()) {
-      statusBar.error("api key cannot be empty");
-      return;
-    }
-    const res = await fetch("/api/settings/integrations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: geoProvider,
-        tokens: { api_key: geoKeyInput.trim() },
-      }),
-    });
-    if (!res.ok) {
-      statusBar.error("failed to save api key");
-      return;
-    }
-    const other = geoProvider === "mapbox" ? "google_maps" : "mapbox";
-    await fetch(`/api/settings/integrations/${other}`, { method: "DELETE" });
-    setGeoKeyTarget(null);
-    setGeoKeyInput("");
-    const label =
-      GEO_PROVIDERS.find((p) => p.id === geoProvider)?.label ?? geoProvider;
-    statusBar.message(`geocoding set to ${label}`);
-  }
-
-  async function handleSelectConflictResolution(id: ConflictResolution) {
-    const res = await fetch("/api/settings/integrations/google_calendar", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ metadata: { conflictResolution: id } }),
-    });
-    if (!res.ok) {
-      statusBar.error("failed to update sync strategy");
-      return;
-    }
-    setConflictResolution(id);
-    const label = CONFLICT_STRATEGIES.find((s) => s.id === id)?.label ?? id;
-    statusBar.message(`sync strategy set to ${label}`);
-  }
-
-  async function handleSelectSyncInterval(id: SyncInterval) {
-    const res = await fetch("/api/settings/integrations/google_calendar", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ metadata: { syncInterval: id } }),
-    });
-    if (!res.ok) {
-      statusBar.error("failed to update sync interval");
-      return;
-    }
-    onSyncIntervalChange?.(id);
-    const label = SYNC_INTERVALS.find((s) => s.id === id)?.label ?? `${id}m`;
-    statusBar.message(`sync interval set to ${label}`);
-  }
-
-  async function handleSelectNlpProvider(id: "builtin" | NlpProvider) {
-    if (id === "builtin") {
-      await fetch("/api/settings/nlp", { method: "DELETE" });
-      setNlpActive("builtin");
-      setNlpKeyTarget(null);
-      statusBar.message("NLP set to built-in");
-      return;
-    }
-    setNlpActive(id);
-    setNlpKeyTarget(id);
-    setNlpKeyInput("");
-  }
-
-  async function handleTestNlpKey() {
-    if (!nlpKeyInput.trim() || !nlpKeyTarget) return;
-    setNlpKeyTesting(true);
-    try {
-      const res = await fetch("/api/settings/integrations/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: nlpKeyTarget,
-          apiKey: nlpKeyInput.trim(),
-        }),
-      });
       const data = await res.json();
-      if (data.valid) {
-        statusBar.message("key is valid");
-        await handleSaveNlpKey();
-      } else {
-        statusBar.error(data.error ?? "invalid api key");
-      }
+      const total = (data.pulled ?? 0) + (data.pushed ?? 0);
+      if (total > 0) statusBar.message(`synced ${total} events`);
+      else statusBar.message("already up to date");
+      router.refresh();
     } catch {
-      statusBar.error("connection failed");
-    } finally {
-      setNlpKeyTesting(false);
+      statusBar.clearOperation();
+      statusBar.error("sync failed");
     }
-  }
-
-  async function handleSaveNlpKey() {
-    if (!nlpKeyInput.trim()) {
-      statusBar.error("api key cannot be empty");
-      return;
-    }
-    const provider = nlpKeyTarget;
-    if (!provider) return;
-    const res = await fetch("/api/settings/nlp", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider,
-        apiKey: nlpKeyInput.trim(),
-      }),
-    });
-    if (!res.ok) {
-      statusBar.error("failed to save nlp config");
-      return;
-    }
-    setNlpKeyTarget(null);
-    setNlpKeyInput("");
-    statusBar.message(`NLP set to ${provider}`);
   }
 
   const items: MenuItem[] = [];
 
   if (gcalStatus.connected) {
+    items.push({
+      id: "gcal-sync",
+      label: "sync now",
+      onSelect: handleSyncNow,
+    });
     items.push({
       id: "gcal-disconnect",
       label: "disconnect google calendar",
@@ -341,43 +151,6 @@ export function CalendarActionsPopover({
       onSelect: () => {
         window.location.href = "/api/auth/google?scope=calendar";
       },
-    });
-  }
-
-  if (gcalStatus.connected) {
-    for (const s of CONFLICT_STRATEGIES) {
-      items.push({
-        id: `conflict-${s.id}`,
-        label: s.label,
-        muted: conflictResolution !== s.id,
-        onSelect: () => handleSelectConflictResolution(s.id),
-      });
-    }
-    for (const s of SYNC_INTERVALS) {
-      items.push({
-        id: `sync-interval-${s.id}`,
-        label: s.label,
-        muted: currentSyncInterval !== s.id,
-        onSelect: () => handleSelectSyncInterval(s.id),
-      });
-    }
-  }
-
-  for (const p of GEO_PROVIDERS) {
-    items.push({
-      id: `geo-${p.id}`,
-      label: p.label,
-      muted: geoProvider !== p.id,
-      onSelect: () => handleSelectGeoProvider(p.id),
-    });
-  }
-
-  for (const p of NLP_PROVIDERS_LIST) {
-    items.push({
-      id: `nlp-${p.id}`,
-      label: p.label,
-      muted: nlpActive !== p.id,
-      onSelect: () => handleSelectNlpProvider(p.id),
     });
   }
 
@@ -416,6 +189,13 @@ export function CalendarActionsPopover({
     onSelect: () => fileRef.current?.click(),
   });
 
+  items.push({
+    id: "settings",
+    label: "integrations settings",
+    muted: true,
+    onSelect: () => router.push("/settings/integrations"),
+  });
+
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
@@ -423,17 +203,12 @@ export function CalendarActionsPopover({
     if (open) {
       setFocusIdx(0);
       countBuf.current = "";
-      setGeoKeyTarget(null);
-      setGeoKeyInput("");
-      setNlpKeyTarget(null);
-      setNlpKeyInput("");
     }
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
-      if (geoKeyTarget || nlpKeyTarget) return;
       const cur = itemsRef.current;
 
       if (e.key >= "0" && e.key <= "9") {
@@ -466,17 +241,12 @@ export function CalendarActionsPopover({
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [open, focusIdx, geoKeyTarget, nlpKeyTarget, onOpenChange]);
+  }, [open, focusIdx, onOpenChange]);
 
   const gcalItems = items.filter((i) => i.id.startsWith("gcal-"));
-  const conflictItems = items.filter((i) => i.id.startsWith("conflict-"));
-  const syncIntervalItems = items.filter((i) =>
-    i.id.startsWith("sync-interval-"),
-  );
-  const geoItems = items.filter((i) => i.id.startsWith("geo-"));
-  const nlpItems = items.filter((i) => i.id.startsWith("nlp-"));
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));
   const ioItems = items.filter((i) => i.id === "export" || i.id === "import");
+  const settingsItem = items.find((i) => i.id === "settings");
 
   function globalIndex(sectionItems: MenuItem[], localIdx: number): number {
     const item = sectionItems[localIdx];
@@ -489,7 +259,7 @@ export function CalendarActionsPopover({
         ≡
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
-        <div ref={containerRef} className="flex flex-col">
+        <div className="flex flex-col">
           <div className="flex flex-col p-1">
             {gcalItems.map((item, i) => (
               <MenuRow
@@ -497,129 +267,6 @@ export function CalendarActionsPopover({
                 item={item}
                 focused={focusIdx === globalIndex(gcalItems, i)}
               />
-            ))}
-          </div>
-
-          {conflictItems.length > 0 && (
-            <>
-              <div className="border-t border-border" />
-              <div className="flex flex-col p-1">
-                <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-                  sync strategy
-                </div>
-                {conflictItems.map((item, i) => (
-                  <MenuRow
-                    key={item.id}
-                    item={item}
-                    focused={focusIdx === globalIndex(conflictItems, i)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
-          {syncIntervalItems.length > 0 && (
-            <>
-              <div className="border-t border-border" />
-              <div className="flex flex-col p-1">
-                <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-                  sync interval
-                </div>
-                {syncIntervalItems.map((item, i) => (
-                  <MenuRow
-                    key={item.id}
-                    item={item}
-                    focused={focusIdx === globalIndex(syncIntervalItems, i)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
-          <div className="border-t border-border" />
-
-          <div className="flex flex-col p-1">
-            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              geocoding
-            </div>
-            {geoItems.map((item, i) => (
-              <React.Fragment key={item.id}>
-                <MenuRow
-                  item={item}
-                  focused={focusIdx === globalIndex(geoItems, i)}
-                />
-                {geoKeyTarget === item.id.replace("geo-", "") && (
-                  <div className="flex gap-2 px-2 py-1">
-                    <Input
-                      value={geoKeyInput}
-                      onChange={(e) => setGeoKeyInput(e.target.value)}
-                      placeholder="api key"
-                      autoFocus
-                      className="h-7 text-sm flex-1"
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") handleTestGeoKey();
-                        if (e.key === "Escape") {
-                          setGeoKeyTarget(null);
-                          setGeoKeyInput("");
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={geoKeyTesting || !geoKeyInput.trim()}
-                      className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
-                      onClick={handleTestGeoKey}
-                    >
-                      {geoKeyTesting ? "..." : "test & save"}
-                    </button>
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-
-          <div className="border-t border-border" />
-
-          <div className="flex flex-col p-1">
-            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              NLP
-            </div>
-            {nlpItems.map((item, i) => (
-              <React.Fragment key={item.id}>
-                <MenuRow
-                  item={item}
-                  focused={focusIdx === globalIndex(nlpItems, i)}
-                />
-                {nlpKeyTarget === item.id.replace("nlp-", "") && (
-                  <div className="flex gap-2 px-2 py-1">
-                    <Input
-                      value={nlpKeyInput}
-                      onChange={(e) => setNlpKeyInput(e.target.value)}
-                      placeholder="api key"
-                      type="password"
-                      autoFocus
-                      className="h-7 text-sm flex-1"
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") handleTestNlpKey();
-                        if (e.key === "Escape") {
-                          setNlpKeyTarget(null);
-                          setNlpKeyInput("");
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={nlpKeyTesting || !nlpKeyInput.trim()}
-                      className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
-                      onClick={handleTestNlpKey}
-                    >
-                      {nlpKeyTesting ? "..." : "test & save"}
-                    </button>
-                  </div>
-                )}
-              </React.Fragment>
             ))}
           </div>
 
@@ -651,6 +298,17 @@ export function CalendarActionsPopover({
                 focused={focusIdx === globalIndex(ioItems, i)}
               />
             ))}
+          </div>
+
+          <div className="border-t border-border" />
+
+          <div className="flex flex-col p-1">
+            {settingsItem && (
+              <MenuRow
+                item={settingsItem}
+                focused={focusIdx === items.indexOf(settingsItem)}
+              />
+            )}
           </div>
 
           <input
@@ -686,11 +344,6 @@ function MenuRow({ item, focused }: { item: MenuItem; focused: boolean }) {
       >
         {item.label}
       </span>
-      {item.suffix && (
-        <span className="ml-auto text-muted-foreground text-[10px]">
-          {item.suffix}
-        </span>
-      )}
     </button>
   );
 }
