@@ -202,7 +202,7 @@ export function WeekTimeGrid({
             return (
               <div
                 key={formatDateKey(date)}
-                className="flex flex-col items-center py-2 border-l border-border/30"
+                className={`flex flex-col items-center py-2 border-l border-border/30 ${isToday ? "bg-primary/5" : ""}`}
               >
                 <span className="text-xs text-muted-foreground">
                   {DAY_NAMES[idx]}
@@ -255,7 +255,7 @@ export function WeekTimeGrid({
               <div
                 key={key}
                 data-day-column={dayIdx}
-                className="relative border-l border-border/30 cursor-pointer touch-none"
+                className={`relative border-l border-border/30 cursor-pointer touch-none ${isToday ? "bg-primary/5" : ""}`}
                 style={{ height: `${totalHeight}px` }}
                 role="button"
                 tabIndex={0}
