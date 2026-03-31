@@ -3,13 +3,19 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { registerAuth } from "./auth.js";
+import { registerCatCommand } from "./cat.js";
 import { registerCompletionCommands } from "./completion.js";
+import { registerConfigCommands } from "./config-cmd.js";
+import { registerCronCommands } from "./cron.js";
 import { registerExportCommand } from "./export.js";
 import { registerFeedCommands } from "./feed.js";
 import { registerHelp } from "./help.js";
 import { registerImportCommand } from "./import.js";
+import { registerIntegrationCommands } from "./integration.js";
+import { registerInviteCommands } from "./invite.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
+import { registerShareCommand } from "./share.js";
 import { registerSyncCommand } from "./sync.js";
 import { registerTaskCommands } from "./task.js";
 
@@ -52,18 +58,10 @@ const task = new Command("task").description("Task CRUD and status changes");
 registerTaskCommands(task);
 
 const cat = new Command("cat").description("List categories with task counts");
+registerCatCommand(cat);
 
 const cron = new Command("cron").description("Automation management");
-cron.command("list").description("List automations");
-cron.command("add").description("Create automation");
-cron.command("edit").description("Update automation");
-cron.command("delete").description("Delete automation");
-cron.command("run").description("Trigger automation manually");
-cron.command("enable").description("Enable automation");
-cron.command("disable").description("Disable automation");
-cron.action(() => {
-  cron.commands.find((c) => c.name() === "list")?.parse(process.argv);
-});
+registerCronCommands(cron);
 
 registerAuth(program);
 registerSyncCommand(program);
@@ -72,31 +70,20 @@ registerImportCommand(program);
 registerExportCommand(program);
 
 const invite = new Command("invite").description("Invite link management");
-invite.command("list").description("List invite links");
-invite.command("create").description("Generate invite link");
-invite.action(() => {
-  invite.commands.find((c) => c.name() === "list")?.parse(process.argv);
-});
+registerInviteCommands(invite);
 
 const share = new Command("share").description(
   "Generate share link for a task",
 );
+registerShareCommand(share);
 
 const config = new Command("config").description("Settings management");
-config.command("get").description("Get a setting value");
-config.command("set").description("Set a setting value");
-config.action(() => {
-  process.stdout.write("Config\n");
-});
+registerConfigCommands(config);
 
 const integration = new Command("integration").description(
   "Integration management",
 );
-integration.command("list").description("List configured integrations");
-integration.command("test").description("Test integration API key");
-integration.action(() => {
-  integration.commands.find((c) => c.name() === "list")?.parse(process.argv);
-});
+registerIntegrationCommands(integration);
 
 program.addCommand(task);
 program.addCommand(cat);

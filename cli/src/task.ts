@@ -170,6 +170,44 @@ export function registerTaskCommands(task: Command): void {
       });
   }
 
+  const dep = task.command("dep").description("Manage task dependencies");
+
+  dep
+    .command("add")
+    .description("Add dependency")
+    .argument("<id>", "Task ID")
+    .argument("<depends-on-id>", "Depends-on task ID")
+    .action(async (id: string, dependsOnId: string) => {
+      const client = createClient();
+      await client.post(`/api/tasks/${id}/deps`, {
+        depends_on_id: Number(dependsOnId),
+      });
+      process.stdout.write(`#${id} now depends on #${dependsOnId}\n`);
+    });
+
+  dep
+    .command("rm")
+    .description("Remove dependency")
+    .argument("<id>", "Task ID")
+    .argument("<depends-on-id>", "Depends-on task ID")
+    .action(async (id: string, dependsOnId: string) => {
+      const client = createClient();
+      await client.delete(`/api/tasks/${id}/deps/${dependsOnId}`);
+      process.stdout.write(`removed dependency #${dependsOnId} from #${id}\n`);
+    });
+
+  dep
+    .command("list")
+    .description("List dependencies for task")
+    .argument("<id>", "Task ID")
+    .action(async (id: string) => {
+      const client = createClient();
+      const deps = await client.get<TaskResponse[]>(`/api/tasks/${id}/deps`);
+      print(deps, {
+        columns: ["id", "description", "status"],
+      });
+    });
+
   task.action(() => {
     task.commands.find((c) => c.name() === "list")?.parse(process.argv);
   });
