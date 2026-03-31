@@ -32,6 +32,14 @@ const CONFLICT_STRATEGIES: { id: ConflictResolution; label: string }[] = [
   { id: "delta_wins", label: "delta wins" },
 ];
 
+type SyncInterval = 0 | 5 | 15 | 30;
+const SYNC_INTERVALS: { id: SyncInterval; label: string }[] = [
+  { id: 0, label: "manual only" },
+  { id: 5, label: "5 minutes" },
+  { id: 15, label: "15 minutes" },
+  { id: 30, label: "30 minutes" },
+];
+
 const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
   { id: "builtin", label: "built-in" },
   { id: "anthropic", label: "anthropic" },
@@ -64,6 +72,8 @@ export function CalendarActionsPopover({
   gcalStatus: initialGcalStatus,
   initialGeoProvider = "photon",
   initialConflictResolution = "lww",
+  syncInterval: currentSyncInterval = 5,
+  onSyncIntervalChange,
   initialNlpProvider = null,
   initialNlpModel = "",
   open,
@@ -73,6 +83,8 @@ export function CalendarActionsPopover({
   gcalStatus: GcalStatus;
   initialGeoProvider?: GeoProvider;
   initialConflictResolution?: ConflictResolution;
+  syncInterval?: number;
+  onSyncIntervalChange?: (interval: number) => void;
   initialNlpProvider?: NlpProvider | null;
   initialNlpModel?: string;
   open?: boolean;
@@ -275,6 +287,21 @@ export function CalendarActionsPopover({
     statusBar.message(`sync strategy set to ${label}`);
   }
 
+  async function handleSelectSyncInterval(id: SyncInterval) {
+    const res = await fetch("/api/settings/integrations/google_calendar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ metadata: { syncInterval: id } }),
+    });
+    if (!res.ok) {
+      statusBar.error("failed to update sync interval");
+      return;
+    }
+    onSyncIntervalChange?.(id);
+    const label = SYNC_INTERVALS.find((s) => s.id === id)?.label ?? `${id}m`;
+    statusBar.message(`sync interval set to ${label}`);
+  }
+
   async function handleSelectNlpProvider(id: "builtin" | NlpProvider) {
     if (id === "builtin") {
       await fetch("/api/settings/nlp", { method: "DELETE" });
@@ -382,6 +409,14 @@ export function CalendarActionsPopover({
         label: s.label,
         muted: conflictResolution !== s.id,
         onSelect: () => handleSelectConflictResolution(s.id),
+      });
+    }
+    for (const s of SYNC_INTERVALS) {
+      items.push({
+        id: `sync-interval-${s.id}`,
+        label: s.label,
+        muted: currentSyncInterval !== s.id,
+        onSelect: () => handleSelectSyncInterval(s.id),
       });
     }
   }
@@ -493,6 +528,9 @@ export function CalendarActionsPopover({
 
   const gcalItems = items.filter((i) => i.id.startsWith("gcal-"));
   const conflictItems = items.filter((i) => i.id.startsWith("conflict-"));
+  const syncIntervalItems = items.filter((i) =>
+    i.id.startsWith("sync-interval-"),
+  );
   const geoItems = items.filter((i) => i.id.startsWith("geo-"));
   const nlpItems = items.filter((i) => i.id.startsWith("nlp-"));
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));
@@ -532,6 +570,24 @@ export function CalendarActionsPopover({
                     key={item.id}
                     item={item}
                     focused={focusIdx === globalIndex(conflictItems, i)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {syncIntervalItems.length > 0 && (
+            <>
+              <div className="border-t border-border" />
+              <div className="flex flex-col p-1">
+                <div className="text-[10px] text-muted-foreground px-2 py-0.5">
+                  sync interval
+                </div>
+                {syncIntervalItems.map((item, i) => (
+                  <MenuRow
+                    key={item.id}
+                    item={item}
+                    focused={focusIdx === globalIndex(syncIntervalItems, i)}
                   />
                 ))}
               </div>

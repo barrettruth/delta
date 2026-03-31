@@ -56,6 +56,7 @@ export default async function CalendarPage({
     : { connected: false, lastSyncTime: null };
   const conflictResolution =
     (gcalMetadata?.conflictResolution as string) ?? "lww";
+  const syncInterval = (gcalMetadata?.syncInterval as number) ?? 5;
 
   const geoProvider = getIntegrationConfig(db, user.id, "google_maps")
     ? "google_maps"
@@ -85,6 +86,7 @@ export default async function CalendarPage({
       gcalStatus={gcalStatus}
       geoProvider={geoProvider}
       conflictResolution={conflictResolution}
+      syncInterval={syncInterval}
       nlpProvider={nlpActiveProvider}
       nlpModel={nlpActiveModel}
     />

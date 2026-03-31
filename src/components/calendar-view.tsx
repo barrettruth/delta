@@ -52,6 +52,7 @@ export function CalendarView({
   gcalStatus = { connected: false, lastSyncTime: null },
   geoProvider = "photon",
   conflictResolution = "lww",
+  syncInterval: initialSyncInterval = 5,
   nlpProvider = null,
   nlpModel = "",
 }: {
@@ -63,6 +64,7 @@ export function CalendarView({
   gcalStatus?: { connected: boolean; lastSyncTime: string | null };
   geoProvider?: string;
   conflictResolution?: string;
+  syncInterval?: number;
   nlpProvider?: "anthropic" | "openai" | null;
   nlpModel?: string;
 }) {
@@ -87,6 +89,7 @@ export function CalendarView({
   const [allDayVisible, setAllDayVisible] = useState(true);
   const [allDayExpanded, setAllDayExpanded] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [syncInterval, setSyncInterval] = useState(initialSyncInterval);
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, { startAt?: string; endAt?: string; deleted?: true }>
   >(new Map());
@@ -125,23 +128,31 @@ export function CalendarView({
     nav.saveViewState("cal:viewMode", viewMode);
   }, [viewMode, nav]);
 
-  const SYNC_INTERVAL = 5 * 60 * 1000;
   useEffect(() => {
-    if (!gcalStatus.connected) return;
+    if (!gcalStatus.connected || syncInterval === 0) return;
     let cancelled = false;
     async function sync() {
       try {
+        statusBar.setOperation("syncing...");
         const res = await fetch("/api/calendar/sync", { method: "POST" });
-        if (res.ok && !cancelled) router.refresh();
-      } catch {}
+        statusBar.clearOperation();
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          const total = (data.pulled ?? 0) + (data.pushed ?? 0);
+          if (total > 0) statusBar.message(`synced ${total} events`);
+          router.refresh();
+        }
+      } catch {
+        statusBar.clearOperation();
+      }
     }
     sync();
-    const id = setInterval(sync, SYNC_INTERVAL);
+    const id = setInterval(sync, syncInterval * 60 * 1000);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [gcalStatus.connected, router]);
+  }, [gcalStatus.connected, syncInterval, router, statusBar]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
@@ -977,6 +988,8 @@ export function CalendarView({
             initialConflictResolution={
               conflictResolution as "lww" | "google_wins" | "delta_wins"
             }
+            syncInterval={syncInterval}
+            onSyncIntervalChange={setSyncInterval}
             initialNlpProvider={nlpProvider}
             initialNlpModel={nlpModel}
             open={actionsOpen}
