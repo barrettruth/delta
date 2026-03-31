@@ -231,7 +231,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     if (mode === "edit" && t) {
       setDescription(t.description);
       setCategory(t.category ?? "");
-      setDue(t.due ? t.due.slice(0, 16) : "");
+      setDue(t.due ? t.due.slice(0, t.allDay === 1 ? 10 : 16) : "");
       setLocation(t.location ?? "");
       setLocationLat(t.locationLat ?? null);
       setLocationLon(t.locationLon ?? null);
@@ -242,7 +242,11 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     } else if (mode === "create") {
       setDescription("");
       setCategory(preFill?.category ?? "");
-      setDue(preFill?.startAt ? preFill.startAt.slice(0, 16) : "");
+      setDue(
+        preFill?.startAt
+          ? preFill.startAt.slice(0, preFill?.allDay === 1 ? 10 : 16)
+          : "",
+      );
       setLocation("");
       setLocationLat(null);
       setLocationLon(null);
@@ -557,7 +561,11 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           <span className="text-xs text-muted-foreground/60">due</span>
           <div className="flex gap-2 items-center">
             <Input
-              type="datetime-local"
+              type={
+                (mode === "edit" ? task?.allDay === 1 : preFill?.allDay === 1)
+                  ? "date"
+                  : "datetime-local"
+              }
               value={due}
               onChange={(e) => setDue(e.target.value)}
               className="h-7 text-xs w-1/2"

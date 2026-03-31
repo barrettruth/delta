@@ -430,6 +430,59 @@ export function CalendarView({
     [tasks, weekDays, recurrenceEdit],
   );
 
+  const handleAllDayMove = useCallback(
+    (taskId: number, dayOffset: number) => {
+      const meta = virtualMetaRef.current.get(taskId);
+      const task = meta
+        ? tasks.find((t) => t.id === meta.masterId)
+        : tasks.find((t) => t.id === taskId);
+      if (!task || !task.startAt) return;
+
+      const oldStart = new Date(task.startAt);
+      const newStart = addDays(oldStart, dayOffset);
+      newStart.setHours(
+        oldStart.getHours(),
+        oldStart.getMinutes(),
+        oldStart.getSeconds(),
+      );
+      const newStartAt = newStart.toISOString();
+
+      let newEndAt: string | null = null;
+      if (task.endAt) {
+        const oldEnd = new Date(task.endAt);
+        const newEnd = addDays(oldEnd, dayOffset);
+        newEnd.setHours(
+          oldEnd.getHours(),
+          oldEnd.getMinutes(),
+          oldEnd.getSeconds(),
+        );
+        newEndAt = newEnd.toISOString();
+      }
+
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(taskId, {
+          startAt: newStartAt,
+          ...(newEndAt !== null ? { endAt: newEndAt } : {}),
+        });
+        return next;
+      });
+
+      if (meta) {
+        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
+          startAt: newStartAt,
+          endAt: newEndAt,
+        });
+      } else {
+        updateTaskAction(taskId, {
+          startAt: newStartAt,
+          endAt: newEndAt,
+        });
+      }
+    },
+    [tasks, recurrenceEdit],
+  );
+
   const handleEventResize = useCallback(
     (taskId: number, newEndMinStr: string) => {
       const meta = virtualMetaRef.current.get(taskId);
@@ -891,6 +944,7 @@ export function CalendarView({
             }
             panel.toggle(task.id);
           }}
+          onAllDayMove={handleAllDayMove}
         />
       )}
 
