@@ -1,17 +1,41 @@
 {
   "name": "@barrettruth/delta-cli",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "description": "CLI client for the delta productivity platform",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/barrettruth/delta"
+  },
+  "keywords": [
+    "delta",
+    "cli",
+    "productivity",
+    "todo",
+    "task-manager"
+  ],
   "bin": {
     "delta": "./dist/delta"
   },
   "man": [
     "./man/delta.1"
   ],
+  "files": [
+    "dist/",
+    "man/",
+    "src/",
+    "package.json"
+  ],
+  "engines": {
+    "bun": ">=1.0.0"
+  },
   "scripts": {
-    "build:man": "marked-man man/delta.1.md --version 0.1.0 --section 1 > man/delta.1",
-    "build": "bun run build:man && bun build src/index.ts --compile --outfile dist/delta",
+    "build": "bun run build.ts",
+    "build:local": "bun build src/index.ts --compile --outfile dist/delta",
+    "build:man": "npx marked-man man/delta.1.md --version 0.1.0 --section 1 > man/delta.1",
+    "prepublishOnly": "bun run build:man",
     "dev": "bun run src/index.ts"
   },
   "dependencies": {
