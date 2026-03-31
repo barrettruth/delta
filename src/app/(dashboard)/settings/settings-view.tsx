@@ -2,7 +2,7 @@
 
 import { startRegistration } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   generateInviteAction,
   type InviteLinkRow,
@@ -63,9 +63,38 @@ export function SettingsView({
   const router = useRouter();
   const statusBar = useStatusBar();
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState("");
+
   useEffect(() => {
-    statusBar.setIdle("-- SETTINGS --", "");
-  }, [statusBar.setIdle]);
+    const container = scrollRef.current;
+    if (!container) return;
+    const headings = container.querySelectorAll<HTMLElement>("[data-section]");
+    if (headings.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(
+              (entry.target as HTMLElement).dataset.section ?? "",
+            );
+          }
+        }
+      },
+      { root: container, rootMargin: "0px 0px -80% 0px", threshold: 0 },
+    );
+
+    for (const h of headings) observer.observe(h);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const label = activeSection
+      ? `-- SETTINGS -- ${activeSection}`
+      : "-- SETTINGS --";
+    statusBar.setIdle(label, "");
+  }, [activeSection, statusBar.setIdle]);
 
   const [passkeys, setPasskeys] = useState(initialPasskeys);
   const [totpEnabled, setTotpEnabled] = useState(initialTotpEnabled);
@@ -339,7 +368,10 @@ export function SettingsView({
   }, [showRecoveryCodes]);
 
   return (
-    <div className="flex-1 overflow-y-auto flex items-center justify-center">
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto flex items-center justify-center"
+    >
       <div className="w-full max-w-md px-4 py-4 md:p-6">
         <Section title="account">
           <Row label="username" value={username} />
@@ -672,7 +704,10 @@ function Section({
 }) {
   return (
     <div className="pb-4 mb-4">
-      <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
+      <h2
+        data-section={title}
+        className="text-xs text-muted-foreground uppercase tracking-wider mb-3"
+      >
         {title}
       </h2>
       {children}

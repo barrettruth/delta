@@ -927,10 +927,40 @@ export function CalendarView({
       ? formatWeekRange(weekAnchor)
       : formatMonthTitle(monthStart);
 
+  const visibleEventCount = useMemo(() => {
+    if (viewMode === "week") {
+      let count = 0;
+      for (let d = 0; d < 7; d++) {
+        const key = formatDateKey(addDays(weekAnchor, d));
+        count += timedTasksByDate.get(key)?.length ?? 0;
+      }
+      count += allDayTasks.length;
+      return count;
+    }
+    let count = 0;
+    const gridStart = getWeekStart(monthStart);
+    for (let d = 0; d < 42; d++) {
+      const key = formatDateKey(addDays(gridStart, d));
+      count += tasksByDate.get(key)?.length ?? 0;
+    }
+    return count;
+  }, [
+    viewMode,
+    weekAnchor,
+    timedTasksByDate,
+    allDayTasks,
+    monthStart,
+    tasksByDate,
+  ]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: headerTitle kept to preserve deps array size
   useEffect(() => {
-    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, "");
-  }, [viewMode, headerTitle, statusBar.setIdle]);
+    const right =
+      visibleEventCount > 0
+        ? `${visibleEventCount} event${visibleEventCount !== 1 ? "s" : ""}`
+        : "";
+    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, right);
+  }, [viewMode, headerTitle, visibleEventCount, statusBar.setIdle]);
 
   return (
     <div className="flex flex-col h-full">
