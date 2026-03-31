@@ -20,6 +20,7 @@ import { expandInstances } from "@/core/recurrence-expansion";
 import type { Task, TaskStatus } from "@/core/types";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { useRecurrenceEdit } from "@/hooks/use-recurrence-edit";
+import { useRouter } from "next/navigation";
 import type { TimedEntry } from "@/lib/calendar-utils";
 import {
   addDays,
@@ -65,6 +66,7 @@ export function CalendarView({
   nlpProvider?: "anthropic" | "openai" | null;
   nlpModel?: string;
 }) {
+  const router = useRouter();
   const nav = useNavigation();
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
@@ -122,6 +124,24 @@ export function CalendarView({
   useEffect(() => {
     nav.saveViewState("cal:viewMode", viewMode);
   }, [viewMode, nav]);
+
+  const SYNC_INTERVAL = 5 * 60 * 1000;
+  useEffect(() => {
+    if (!gcalStatus.connected) return;
+    let cancelled = false;
+    async function sync() {
+      try {
+        const res = await fetch("/api/calendar/sync", { method: "POST" });
+        if (res.ok && !cancelled) router.refresh();
+      } catch {}
+    }
+    sync();
+    const id = setInterval(sync, SYNC_INTERVAL);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [gcalStatus.connected, router]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
