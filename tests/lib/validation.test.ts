@@ -1,53 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  sanitize,
-  validateCreateTask,
-  validateUpdateTask,
-} from "@/lib/validation";
-
-describe("sanitize", () => {
-  it("strips HTML tags", () => {
-    expect(sanitize("<script>alert('xss')</script>")).toBe("alert('xss')");
-  });
-
-  it("strips nested HTML", () => {
-    expect(sanitize("<b><i>text</i></b>")).toBe("text");
-  });
-
-  it("leaves plain text alone", () => {
-    expect(sanitize("hello world")).toBe("hello world");
-  });
-
-  it("handles empty string", () => {
-    expect(sanitize("")).toBe("");
-  });
-
-  it("strips self-closing tags", () => {
-    expect(sanitize("before<br/>after")).toBe("beforeafter");
-  });
-
-  it("strips deeply nested HTML tags", () => {
-    expect(sanitize("<div><span><b><i>deep</i></b></span></div>")).toBe("deep");
-  });
-
-  it("strips script tags with attributes", () => {
-    expect(sanitize('<script type="text/javascript">evil()</script>')).toBe(
-      "evil()",
-    );
-  });
-
-  it("strips tags with event handlers", () => {
-    expect(sanitize('<img src="x" onerror="alert(1)">')).toBe("");
-  });
-
-  it("preserves HTML entities", () => {
-    expect(sanitize("5 &gt; 3 &amp; 2 &lt; 4")).toBe("5 &gt; 3 &amp; 2 &lt; 4");
-  });
-
-  it("strips incomplete/malformed tags", () => {
-    expect(sanitize("text<br>more<hr>end")).toBe("textmoreend");
-  });
-});
+import { validateCreateTask, validateUpdateTask } from "@/lib/validation";
 
 describe("validateCreateTask", () => {
   it("accepts a valid task", () => {

@@ -38,10 +38,6 @@ export interface GoogleCalendar {
   primary?: boolean;
 }
 
-export interface GoogleCalendarList {
-  items?: GoogleCalendar[];
-}
-
 const BASE_URL = "https://www.googleapis.com/calendar/v3";
 
 export async function getGoogleAccessToken(
@@ -208,21 +204,6 @@ export async function deleteCalendarEvent(
   if (!res.ok && res.status !== 404 && res.status !== 410) {
     throw new Error(`Google Calendar delete event failed: ${res.status}`);
   }
-}
-
-export async function listCalendars(
-  accessToken: string,
-): Promise<GoogleCalendar[]> {
-  const res = await fetch(`${BASE_URL}/users/me/calendarList`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Google Calendar list calendars failed: ${res.status}`);
-  }
-
-  const data: GoogleCalendarList = await res.json();
-  return data.items ?? [];
 }
 
 export async function createCalendar(

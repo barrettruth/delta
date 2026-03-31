@@ -156,13 +156,6 @@ export function useKeyboard(actions: KeyboardActions) {
     return Number.parseInt(s, 10);
   }, []);
 
-  const consumeCountRaw = useCallback((): number | null => {
-    const s = countBuf.current;
-    countBuf.current = "";
-    if (!s) return null;
-    return Number.parseInt(s, 10);
-  }, []);
-
   const resolveMotion = useCallback(
     (
       key: string,
@@ -251,7 +244,7 @@ export function useKeyboard(actions: KeyboardActions) {
           return;
         }
 
-        const motionCount = consumeCountRaw();
+        const motionCount = consumeCount();
         pendingOp.current = null;
         if (opTimer.current) {
           clearTimeout(opTimer.current);
@@ -463,7 +456,6 @@ export function useKeyboard(actions: KeyboardActions) {
       toggleSelect,
       applyOp,
       consumeCount,
-      consumeCountRaw,
       resolveMotion,
       keymaps,
     ],

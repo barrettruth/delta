@@ -30,7 +30,7 @@ function isValidTimezone(value: string): boolean {
   }
 }
 
-export function sanitize(str: string): string {
+function sanitize(str: string): string {
   return str.replace(/<[^>]*>/g, "");
 }
 
