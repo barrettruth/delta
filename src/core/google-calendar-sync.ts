@@ -1,7 +1,6 @@
 import { and, eq, gt, isNotNull } from "drizzle-orm";
 import { tasks } from "@/db/schema";
 import {
-  createCalendar,
   createCalendarEvent,
   deleteCalendarEvent,
   getGoogleAccessToken,
@@ -289,8 +288,7 @@ export async function syncGoogleCalendar(
 
   let calendarId = metadata.calendarId;
   if (!calendarId) {
-    const calendar = await createCalendar(accessToken, "delta");
-    calendarId = calendar.id;
+    calendarId = "primary";
     metadata.calendarId = calendarId;
     saveMetadata(db, userId, metadata, tokens);
   }
