@@ -1,13 +1,6 @@
 "use client";
 
-import type { Icon } from "@phosphor-icons/react";
-import {
-  Calendar,
-  Columns,
-  Gear,
-  Lightning,
-  Palette,
-} from "@phosphor-icons/react";
+import { Gear, Palette } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -30,22 +23,11 @@ import { useNavigation } from "@/contexts/navigation";
 const VIEW_KEYMAP_IDS: {
   label: string;
   href: string;
-  icon: Icon;
   keymapId: string;
 }[] = [
-  { label: "Queue", href: "/", icon: Lightning, keymapId: "global.queue" },
-  {
-    label: "Kanban",
-    href: "/kanban",
-    icon: Columns,
-    keymapId: "global.kanban",
-  },
-  {
-    label: "Calendar",
-    href: "/calendar",
-    icon: Calendar,
-    keymapId: "global.calendar",
-  },
+  { label: "Queue", href: "/", keymapId: "global.queue" },
+  { label: "Kanban", href: "/kanban", keymapId: "global.kanban" },
+  { label: "Calendar", href: "/calendar", keymapId: "global.calendar" },
 ];
 
 export function AppSidebar({
@@ -87,7 +69,6 @@ export function AppSidebar({
                     isActive={pathname === view.href}
                     onClick={() => nav.pushJump()}
                   >
-                    <view.icon className="size-4" />
                     <span className="flex-1">{view.label}</span>
                     <kbd className="text-[10px] text-muted-foreground">
                       {keymaps.getResolvedKeymap(view.keymapId).triggerKey}
