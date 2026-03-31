@@ -26,31 +26,47 @@ function computeOverlapLayout(entries: TimedEntry[]): ColumnLayout[] {
 
   const sorted = [...entries].sort((a, b) => a.timeStartMin - b.timeStartMin);
 
-  const columns: { end: number; entry: TimedEntry }[][] = [];
+  const clusters: TimedEntry[][] = [];
+  let cluster: TimedEntry[] = [sorted[0]];
+  let clusterEnd = sorted[0].timeEndMin;
 
-  for (const entry of sorted) {
-    const start = entry.timeStartMin;
-    const end = entry.timeEndMin;
-
-    let placed = false;
-    for (let c = 0; c < columns.length; c++) {
-      const lastInCol = columns[c][columns[c].length - 1];
-      if (lastInCol.end <= start) {
-        columns[c].push({ end, entry });
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) {
-      columns.push([{ end, entry }]);
+  for (let i = 1; i < sorted.length; i++) {
+    const entry = sorted[i];
+    if (entry.timeStartMin < clusterEnd) {
+      cluster.push(entry);
+      clusterEnd = Math.max(clusterEnd, entry.timeEndMin);
+    } else {
+      clusters.push(cluster);
+      cluster = [entry];
+      clusterEnd = entry.timeEndMin;
     }
   }
+  clusters.push(cluster);
 
-  const totalColumns = columns.length;
   const result: ColumnLayout[] = [];
-  for (let c = 0; c < columns.length; c++) {
-    for (const item of columns[c]) {
-      result.push({ entry: item.entry, column: c, totalColumns });
+  for (const group of clusters) {
+    const columns: { end: number; entry: TimedEntry }[][] = [];
+
+    for (const entry of group) {
+      let placed = false;
+      for (let c = 0; c < columns.length; c++) {
+        const lastInCol = columns[c][columns[c].length - 1];
+        if (lastInCol.end <= entry.timeStartMin) {
+          columns[c].push({ end: entry.timeEndMin, entry });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push([{ end: entry.timeEndMin, entry }]);
+      }
+    }
+
+    const totalColumns = columns.length;
+    for (let c = 0; c < columns.length; c++) {
+      for (const item of columns[c]) {
+        result.push({ entry: item.entry, column: c, totalColumns });
+      }
     }
   }
   return result;
@@ -202,13 +218,13 @@ export function WeekTimeGrid({
             return (
               <div
                 key={formatDateKey(date)}
-                className={`flex flex-col items-center py-2 border-l border-border/30 ${isToday ? "bg-primary/5" : ""}`}
+                className="flex flex-col items-center py-2 border-l border-border/30"
               >
                 <span className="text-xs text-muted-foreground">
                   {DAY_NAMES[idx]}
                 </span>
                 <span
-                  className={`text-sm font-semibold mt-0.5 ${isToday ? "text-primary" : "text-foreground"}`}
+                  className={`text-sm mt-0.5 ${isToday ? "text-primary font-bold" : "text-foreground font-semibold"}`}
                 >
                   {date.getDate()}
                 </span>
@@ -255,7 +271,7 @@ export function WeekTimeGrid({
               <div
                 key={key}
                 data-day-column={dayIdx}
-                className={`relative border-l border-border/30 cursor-pointer touch-none ${isToday ? "bg-primary/5" : ""}`}
+                className="relative border-l border-border/30 cursor-pointer touch-none"
                 style={{ height: `${totalHeight}px` }}
                 role="button"
                 tabIndex={0}
