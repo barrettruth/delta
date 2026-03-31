@@ -80,25 +80,42 @@ export async function GET(
     if (extraScopes && isLinking) {
       const currentUser = await getAuthUser();
       if (currentUser) {
-        const tokenExpiresAt = tokens.expiresIn
-          ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
-          : undefined;
-
-        db.update(accounts)
-          .set({
-            accessToken: tokens.accessToken,
-            ...(tokens.refreshToken
-              ? { refreshToken: tokens.refreshToken }
-              : {}),
-            ...(tokenExpiresAt ? { tokenExpiresAt } : {}),
-          })
+        const existing = db
+          .select()
+          .from(accounts)
           .where(
             and(
               eq(accounts.userId, currentUser.id),
               eq(accounts.provider, provider),
             ),
           )
-          .run();
+          .get();
+
+        if (existing) {
+          const tokenExpiresAt = tokens.expiresIn
+            ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
+            : undefined;
+          db.update(accounts)
+            .set({
+              accessToken: tokens.accessToken,
+              ...(tokens.refreshToken
+                ? { refreshToken: tokens.refreshToken }
+                : {}),
+              ...(tokenExpiresAt ? { tokenExpiresAt } : {}),
+            })
+            .where(eq(accounts.id, existing.id))
+            .run();
+        } else {
+          linkAccount(
+            db,
+            currentUser.id,
+            provider as OAuthProvider,
+            providerUser.id,
+            tokens,
+            providerUser.email,
+            providerUser.name,
+          );
+        }
 
         if (
           extraScopes.includes(
