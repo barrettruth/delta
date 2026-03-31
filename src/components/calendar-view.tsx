@@ -907,9 +907,10 @@ export function CalendarView({
       ? formatWeekRange(weekAnchor)
       : formatMonthTitle(monthStart);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: headerTitle kept to preserve deps array size
   useEffect(() => {
     statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, "");
-  }, [viewMode, statusBar.setIdle]);
+  }, [viewMode, headerTitle, statusBar.setIdle]);
 
   return (
     <div className="flex flex-col h-full">
