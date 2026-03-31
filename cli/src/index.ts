@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { registerAuth } from "./auth.js";
+import { registerCompletionCommands } from "./completion.js";
 import { registerHelp } from "./help.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
@@ -104,13 +105,6 @@ integration.action(() => {
   integration.commands.find((c) => c.name() === "list")?.parse(process.argv);
 });
 
-const completion = new Command("completion").description(
-  "Shell completion generation",
-);
-completion.command("bash").description("Output bash completions");
-completion.command("zsh").description("Output zsh completions");
-completion.command("fish").description("Output fish completions");
-
 program.addCommand(task);
 program.addCommand(cat);
 program.addCommand(cron);
@@ -123,7 +117,7 @@ program.addCommand(share);
 program.addCommand(config);
 program.addCommand(integration);
 registerHelp(program);
-program.addCommand(completion);
+registerCompletionCommands(program);
 
 program.action(() => {
   task.commands.find((c) => c.name() === "list")?.parse(process.argv);
