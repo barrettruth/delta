@@ -21,33 +21,13 @@ import { useKeyboard } from "@/hooks/use-keyboard";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
 
-const STATUS_SIGIL: Record<TaskStatus, string> = {
-  pending: "\u00b7",
-  wip: "~",
-  done: "\u2713",
-  blocked: "\u00d7",
-  cancelled: "\u2013",
+const STATUS_BORDER: Record<TaskStatus, string> = {
+  pending: "border-l-status-pending",
+  wip: "border-l-status-wip",
+  done: "border-l-status-done",
+  blocked: "border-l-status-blocked",
+  cancelled: "border-l-status-cancelled",
 };
-
-const STATUS_COLOR: Record<TaskStatus, string> = {
-  pending: "text-status-pending",
-  wip: "text-status-wip",
-  done: "text-status-done",
-  blocked: "text-status-blocked",
-  cancelled: "text-status-cancelled",
-};
-
-function nextStatus(current: TaskStatus): TaskStatus {
-  const order: TaskStatus[] = [
-    "pending",
-    "wip",
-    "blocked",
-    "done",
-    "cancelled",
-  ];
-  const idx = order.indexOf(current);
-  return order[(idx + 1) % order.length];
-}
 
 function getRowClasses(isCursor: boolean, isSelected: boolean): string {
   if (isSelected && isCursor) return "border-primary bg-primary/15";
@@ -322,14 +302,10 @@ export function QueueView({
                     "w-full pl-2 pr-4 py-2.5 md:py-1.5 cursor-pointer text-left select-none border-l-2",
                     getRowClasses(isCursor, isSelected),
                     getTaskDimming(task.status),
+                    !isCursor &&
+                      !isSelected &&
+                      STATUS_BORDER[task.status as TaskStatus],
                   )}
-                  style={{
-                    borderLeftColor:
-                      isCursor || isSelected
-                        ? undefined
-                        : (categoryColors[task.category ?? ""] ??
-                          "transparent"),
-                  }}
                   onClick={(e) => handleRowClick(task, i, e)}
                   onKeyDown={() => {}}
                   tabIndex={0}
@@ -347,21 +323,6 @@ export function QueueView({
                     >
                       {getLineNumber(i, cursor)}
                     </span>
-                    <button
-                      type="button"
-                      className={`w-4 text-xs shrink-0 text-center hover:underline ${STATUS_COLOR[task.status as TaskStatus]}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const next = nextStatus(task.status as TaskStatus);
-                        if (next === "done") {
-                          completeTaskAction(task.id);
-                        } else {
-                          updateTaskAction(task.id, { status: next });
-                        }
-                      }}
-                    >
-                      {STATUS_SIGIL[task.status as TaskStatus]}
-                    </button>
                     <span
                       className={cn(
                         "text-sm truncate",
@@ -381,7 +342,7 @@ export function QueueView({
                     <div
                       className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
                       style={{
-                        paddingLeft: `calc(${gutterWidth}ch + 1.5rem)`,
+                        paddingLeft: `calc(${gutterWidth}ch + 0.5rem)`,
                       }}
                     >
                       {task.category && <span># {task.category}</span>}
