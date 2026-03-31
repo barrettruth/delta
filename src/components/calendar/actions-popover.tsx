@@ -91,7 +91,6 @@ export function CalendarActionsPopover({
   const [geoKeyTarget, setGeoKeyTarget] = useState<GeoProvider | null>(null);
   const [conflictResolution, setConflictResolution] =
     useState<ConflictResolution>(initialConflictResolution);
-  const [feedCopied, setFeedCopied] = useState(false);
   const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
     initialNlpProvider ?? "builtin",
   );
@@ -141,23 +140,19 @@ export function CalendarActionsPopover({
     const res = await fetch("/api/calendar/feed", { method: "POST" });
     const data = await res.json();
     setFeedToken(data.token);
-    await navigator.clipboard.writeText(getFeedUrl(data.token));
-    setFeedCopied(true);
-    statusBar.message("feed url generated and copied");
-  }
-
-  async function handleRevokeFeed() {
-    await fetch("/api/calendar/feed", { method: "DELETE" });
-    setFeedToken(null);
-    setFeedCopied(false);
-    statusBar.message("feed url revoked");
+    statusBar.message("feed url generated");
   }
 
   async function handleCopyFeedUrl() {
     if (!feedToken) return;
     await navigator.clipboard.writeText(getFeedUrl(feedToken));
-    setFeedCopied(true);
     statusBar.message("copied to clipboard");
+  }
+
+  async function handleRevokeFeed() {
+    await fetch("/api/calendar/feed", { method: "DELETE" });
+    setFeedToken(null);
+    statusBar.message("feed url revoked");
   }
 
   async function handleDisconnectGcal() {
@@ -410,25 +405,21 @@ export function CalendarActionsPopover({
   }
 
   if (feedToken) {
-    if (feedCopied) {
-      items.push({
-        id: "feed-toggle",
-        label: "revoke feed",
-        muted: true,
-        prefix: { text: "-", className: "text-destructive" },
-        onSelect: handleRevokeFeed,
-      });
-    } else {
-      items.push({
-        id: "feed-toggle",
-        label: "copy feed",
-        prefix: { text: "+", className: "text-status-done" },
-        onSelect: handleCopyFeedUrl,
-      });
-    }
+    items.push({
+      id: "feed-copy",
+      label: "copy feed url",
+      onSelect: handleCopyFeedUrl,
+    });
+    items.push({
+      id: "feed-revoke",
+      label: "revoke feed",
+      muted: true,
+      prefix: { text: "-", className: "text-destructive" },
+      onSelect: handleRevokeFeed,
+    });
   } else {
     items.push({
-      id: "feed-toggle",
+      id: "feed-generate",
       label: "generate feed",
       muted: true,
       prefix: { text: "+", className: "text-status-done" },
@@ -459,7 +450,6 @@ export function CalendarActionsPopover({
       setGeoKeyInput("");
       setNlpKeyTarget(null);
       setNlpKeyInput("");
-      setFeedCopied(false);
     }
   }, [open]);
 
@@ -652,6 +642,9 @@ export function CalendarActionsPopover({
           <div className="border-t border-border" />
 
           <div className="flex flex-col p-1">
+            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
+              CalDAV feed
+            </div>
             {feedItems.map((item, i) => (
               <MenuRow
                 key={item.id}
@@ -664,6 +657,9 @@ export function CalendarActionsPopover({
           <div className="border-t border-border" />
 
           <div className="flex flex-col p-1">
+            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
+              import / export
+            </div>
             {ioItems.map((item, i) => (
               <MenuRow
                 key={item.id}
