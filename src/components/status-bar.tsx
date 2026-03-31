@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useCommandBar } from "@/contexts/command-bar";
 import { useStatusBar } from "@/contexts/status-bar";
@@ -173,6 +173,11 @@ export function StatusBar() {
     }
   }
 
+  const timezone = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+    [],
+  );
+
   if (commandBar.active) {
     return (
       <div className="h-7 shrink-0 border-t border-border bg-background flex items-center px-2 md:px-4 font-mono text-[13px] text-foreground overflow-hidden">
@@ -217,12 +222,13 @@ export function StatusBar() {
           <span className="text-line-nr">{state.idleLeft}</span>
         ) : null}
       </div>
-      <div className="text-line-nr">
+      <div className="flex items-center gap-4 text-line-nr">
         {state.operation !== "" ? (
           <span>{state.operation}</span>
         ) : state.idleRight !== "" ? (
-          <span className="text-line-nr">{state.idleRight}</span>
+          <span>{state.idleRight}</span>
         ) : null}
+        <span>{timezone}</span>
       </div>
       <input
         ref={fileRef}
