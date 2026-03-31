@@ -8,6 +8,7 @@ const MAX_COLLAPSED_ROWS = 3;
 const MAX_EXPANDED_ROWS = 6;
 const MAX_LAYOUT_ROWS = 20;
 const DRAG_THRESHOLD = 5;
+const RESIZE_EDGE_PX = 6;
 
 interface AllDaySpan {
   task: Task;
@@ -108,6 +109,7 @@ export function AllDayBar({
   categoryColors,
   onTaskClick,
   onAllDayMove,
+  onAllDayResize,
   onToggleExpand,
   onEmptyClick,
 }: {
@@ -117,6 +119,7 @@ export function AllDayBar({
   categoryColors: Record<string, string>;
   onTaskClick: (task: Task) => void;
   onAllDayMove?: (taskId: number, dayOffset: number) => void;
+  onAllDayResize?: (taskId: number, startOffset: number, endOffset: number) => void;
   onToggleExpand?: () => void;
   onEmptyClick?: (dayIndex: number) => void;
 }) {
@@ -129,6 +132,7 @@ export function AllDayBar({
 
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
+  const [resizeEdge, setResizeEdge] = useState<"start" | "end" | null>(null);
   const dragRef = useRef({
     taskId: null as number | null,
     startCol: 0,
@@ -136,6 +140,7 @@ export function AllDayBar({
     startX: 0,
     didDrag: false,
     colWidth: 0,
+    edge: null as "start" | "end" | null,
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -149,6 +154,12 @@ export function AllDayBar({
       if (!container) return;
       const colWidth = container.offsetWidth / 7;
 
+      const btnRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const localX = e.clientX - btnRect.left;
+      let edge: "start" | "end" | null = null;
+      if (localX <= RESIZE_EDGE_PX) edge = "start";
+      else if (btnRect.width - localX <= RESIZE_EDGE_PX) edge = "end";
+
       dragRef.current = {
         taskId: span.task.id,
         startCol: span.startCol,
@@ -156,6 +167,7 @@ export function AllDayBar({
         startX: e.clientX,
         didDrag: false,
         colWidth,
+        edge,
       };
     },
     [],
@@ -171,14 +183,21 @@ export function AllDayBar({
     if (!d.didDrag) {
       d.didDrag = true;
       setDraggingId(d.taskId);
+      setResizeEdge(d.edge);
     }
 
     const colOffset = Math.round(dx / d.colWidth);
-    const clampedOffset = Math.max(
-      -d.startCol,
-      Math.min(6 - d.endCol, colOffset),
-    );
-    setDragOffset(clampedOffset);
+
+    if (d.edge === "start") {
+      const clamped = Math.max(-d.startCol, Math.min(d.endCol - d.startCol, colOffset));
+      setDragOffset(clamped);
+    } else if (d.edge === "end") {
+      const clamped = Math.max(d.startCol - d.endCol, Math.min(6 - d.endCol, colOffset));
+      setDragOffset(clamped);
+    } else {
+      const clamped = Math.max(-d.startCol, Math.min(6 - d.endCol, colOffset));
+      setDragOffset(clamped);
+    }
   }, []);
 
   const handlePointerUp = useCallback(
@@ -191,15 +210,24 @@ export function AllDayBar({
       const wasDrag = d.didDrag;
       const taskId = d.taskId;
       const offset = Math.round((e.clientX - d.startX) / d.colWidth);
-      const clampedOffset =
-        d.taskId !== null
-          ? Math.max(-d.startCol, Math.min(6 - d.endCol, offset))
-          : 0;
+      let clampedOffset = 0;
+      if (d.taskId !== null) {
+        if (d.edge === "start") {
+          clampedOffset = Math.max(-d.startCol, Math.min(d.endCol - d.startCol, offset));
+        } else if (d.edge === "end") {
+          clampedOffset = Math.max(d.startCol - d.endCol, Math.min(6 - d.endCol, offset));
+        } else {
+          clampedOffset = Math.max(-d.startCol, Math.min(6 - d.endCol, offset));
+        }
+      }
 
+      const edge = d.edge;
       dragRef.current.taskId = null;
       dragRef.current.didDrag = false;
+      dragRef.current.edge = null;
       setDraggingId(null);
       setDragOffset(0);
+      setResizeEdge(null);
 
       if (!wasDrag && taskId !== null) {
         const task = allDayTasks.find((t) => t.id === taskId);
@@ -218,11 +246,17 @@ export function AllDayBar({
         return;
       }
 
-      if (wasDrag && taskId !== null && clampedOffset !== 0) {
-        onAllDayMove?.(taskId, clampedOffset);
+      if (wasDrag && taskId !== null) {
+        if (edge === "start" && clampedOffset !== 0) {
+          onAllDayResize?.(taskId, clampedOffset, 0);
+        } else if (edge === "end" && clampedOffset !== 0) {
+          onAllDayResize?.(taskId, 0, clampedOffset);
+        } else if (!edge && clampedOffset !== 0) {
+          onAllDayMove?.(taskId, clampedOffset);
+        }
       }
     },
-    [allDayTasks, onTaskClick, onAllDayMove],
+    [allDayTasks, onTaskClick, onAllDayMove, onAllDayResize, onEmptyClick],
   );
 
   if (rows.length === 0) return null;
@@ -269,14 +303,18 @@ export function AllDayBar({
                 ? categoryColors[span.task.category]
                 : undefined;
               const isDragging = span.task.id === draggingId;
-              const offsetCols = isDragging ? dragOffset : 0;
-              const startCol = span.startCol + offsetCols;
-              const endCol = span.endCol + offsetCols;
+              let startCol = span.startCol;
+              let endCol = span.endCol;
+              if (isDragging) {
+                if (resizeEdge === "start") startCol += dragOffset;
+                else if (resizeEdge === "end") endCol += dragOffset;
+                else { startCol += dragOffset; endCol += dragOffset; }
+              }
               return (
                 <button
                   type="button"
                   key={span.task.id}
-                  className={`absolute text-[10px] leading-tight truncate px-1.5 py-0.5 border border-border/30 hover:brightness-90 transition-colors cursor-pointer text-left ${isDragging ? "opacity-70 z-20" : ""}`}
+                  className={`absolute text-[10px] leading-tight truncate px-1.5 py-0.5 border border-border/30 hover:brightness-90 transition-colors cursor-grab text-left ${isDragging ? "opacity-70 z-20" : ""}`}
                   style={{
                     top: `${rowIdx * rowHeight}px`,
                     height: `${rowHeight - 2}px`,
@@ -288,7 +326,9 @@ export function AllDayBar({
                   }}
                   onPointerDown={(e) => handlePointerDown(e, span)}
                 >
+                  <span className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize" />
                   {span.task.description}
+                  <span className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize" />
                 </button>
               );
             }),
