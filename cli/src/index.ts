@@ -15,6 +15,7 @@ import { configure } from "./lib/output.js";
 import { registerShareCommand } from "./share.js";
 import { registerSyncCommand } from "./sync.js";
 import { registerTaskCommands } from "./task.js";
+
 const pkg = require("../package.json") as { version: string };
 
 const program = new Command();
