@@ -189,6 +189,16 @@ export function OnboardingWizard({
   const [focusIdx, setFocusIdx] = useState(0);
   const [capturingId, setCapturingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [geoKeyTesting, setGeoKeyTesting] = useState(false);
+  const [geoKeyStatus, setGeoKeyStatus] = useState<"valid" | "invalid" | null>(
+    null,
+  );
+  const [geoKeyError, setGeoKeyError] = useState("");
+  const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
+  const [nlpKeyStatus, setNlpKeyStatus] = useState<"valid" | "invalid" | null>(
+    null,
+  );
+  const [nlpKeyError, setNlpKeyError] = useState("");
   const countBuf = useRef("");
 
   useEffect(() => {
@@ -240,6 +250,57 @@ export function OnboardingWizard({
     nlpApiKey,
     nlpModel,
   ]);
+
+  async function testApiKey(
+    provider: string,
+    apiKey: string,
+    model?: string,
+  ): Promise<{ valid: boolean; error?: string }> {
+    const res = await fetch("/api/settings/integrations/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider, apiKey, model }),
+    });
+    return res.json();
+  }
+
+  async function handleTestGeoKey() {
+    if (!geoApiKey.trim()) return;
+    setGeoKeyTesting(true);
+    setGeoKeyStatus(null);
+    setGeoKeyError("");
+    try {
+      const result = await testApiKey(geoProvider, geoApiKey.trim());
+      setGeoKeyStatus(result.valid ? "valid" : "invalid");
+      if (!result.valid) setGeoKeyError(result.error ?? "invalid key");
+    } catch {
+      setGeoKeyStatus("invalid");
+      setGeoKeyError("connection failed");
+    } finally {
+      setGeoKeyTesting(false);
+    }
+  }
+
+  async function handleTestNlpKey() {
+    if (!nlpApiKey.trim()) return;
+    setNlpKeyTesting(true);
+    setNlpKeyStatus(null);
+    setNlpKeyError("");
+    try {
+      const result = await testApiKey(
+        nlpProvider,
+        nlpApiKey.trim(),
+        nlpModel || undefined,
+      );
+      setNlpKeyStatus(result.valid ? "valid" : "invalid");
+      if (!result.valid) setNlpKeyError(result.error ?? "invalid key");
+    } catch {
+      setNlpKeyStatus("invalid");
+      setNlpKeyError("connection failed");
+    } finally {
+      setNlpKeyTesting(false);
+    }
+  }
 
   async function handleFinish() {
     setSubmitting(true);
@@ -561,14 +622,40 @@ export function OnboardingWizard({
                 ) : null;
               })()}
               {GEO_OPTIONS.find((o) => o.id === geoProvider)?.needsKey && (
-                <div className="px-3 pb-2">
-                  <Input
-                    value={geoApiKey}
-                    onChange={(e) => setGeoApiKey(e.target.value)}
-                    placeholder="api key"
-                    className="h-7 text-xs"
-                    onKeyDown={(e) => e.stopPropagation()}
-                  />
+                <div className="px-3 pb-2 flex flex-col gap-1">
+                  <div className="flex gap-2">
+                    <Input
+                      value={geoApiKey}
+                      onChange={(e) => {
+                        setGeoApiKey(e.target.value);
+                        setGeoKeyStatus(null);
+                        setGeoKeyError("");
+                      }}
+                      placeholder="api key"
+                      className="h-7 text-xs flex-1"
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") handleTestGeoKey();
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={geoKeyTesting || !geoApiKey.trim()}
+                      className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                      onClick={handleTestGeoKey}
+                    >
+                      {geoKeyTesting
+                        ? "..."
+                        : geoKeyStatus === "valid"
+                          ? "✓"
+                          : "test"}
+                    </button>
+                  </div>
+                  {geoKeyStatus === "invalid" && geoKeyError && (
+                    <span className="text-[10px] text-destructive">
+                      {geoKeyError}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -655,13 +742,39 @@ export function OnboardingWizard({
                         </button>
                       ))}
                     </div>
-                    <Input
-                      value={nlpApiKey}
-                      onChange={(e) => setNlpApiKey(e.target.value)}
-                      placeholder="api key"
-                      className="h-7 text-xs"
-                      onKeyDown={(e) => e.stopPropagation()}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        value={nlpApiKey}
+                        onChange={(e) => {
+                          setNlpApiKey(e.target.value);
+                          setNlpKeyStatus(null);
+                          setNlpKeyError("");
+                        }}
+                        placeholder="api key"
+                        className="h-7 text-xs flex-1"
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") handleTestNlpKey();
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={nlpKeyTesting || !nlpApiKey.trim()}
+                        className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                        onClick={handleTestNlpKey}
+                      >
+                        {nlpKeyTesting
+                          ? "..."
+                          : nlpKeyStatus === "valid"
+                            ? "✓"
+                            : "test"}
+                      </button>
+                    </div>
+                    {nlpKeyStatus === "invalid" && nlpKeyError && (
+                      <span className="text-[10px] text-destructive">
+                        {nlpKeyError}
+                      </span>
+                    )}
                   </div>
                 );
               })()}
