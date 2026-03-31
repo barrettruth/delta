@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
+import { registerHelp } from "./help.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
 import { registerTaskCommands } from "./task.js";
@@ -125,6 +126,7 @@ program.addCommand(invite);
 program.addCommand(share);
 program.addCommand(config);
 program.addCommand(integration);
+registerHelp(program);
 program.addCommand(completion);
 
 program.action(() => {

@@ -1,0 +1,824 @@
+.TH "" "1" "March 2026" "0.1.0"
+.SH "NAME"
+\fB\fR
+.P
+delta(1) \-\- CLI client for the delta productivity platform
+.SH SYNOPSIS
+.P
+\fBdelta\fP [\fB\-\-json\fP [fields]] [\fB\-\-jq\fP expr] [\fB\-q\fP|\fB\-\-quiet\fP] [\fB\-\-no\-color\fP] [\fB\-\-server\fP url] [\fB\-\-debug\fP] <command> [args] [flags] [filters]
+.SH DESCRIPTION
+.P
+\fBdelta\fR is a command\-line interface for managing tasks, calendar events,
+.br
+categories, automations, and integrations on the delta productivity platform\. It
+.br
+communicates with a delta server over HTTPS\.
+.P
+The CLI follows a noun\-verb grammar: \fBdelta <noun> <verb> [args] [\-\-flags] [filters]\fP\|\. Flags are used for writes, filters for reads\.
+.P
+Running \fBdelta\fP with no arguments is equivalent to \fBdelta task list\fP, showing
+.br
+pending tasks sorted by urgency\.
+.SH COMMANDS
+.SS delta task
+.P
+Task CRUD and status changes\. Running \fBdelta task\fP with no verb defaults to
+.br
+\fBdelta task list\fP\|\.
+
+.RS 1
+.IP \(bu 2
+\fBdelta task list\fP [\fB\-\-from\fP date] [\fB\-\-until\fP date] [filters]:
+.br
+List tasks\. Accepts filter expressions and date range flags\.
+.IP \(bu 2
+\fBdelta task add\fP description [flags]:
+.br
+Create a new task\. The description is a positional argument (quote multi\-word
+.br
+strings)\.
+.IP \(bu 2
+\fBdelta task edit\fP id [flags]:
+.br
+Update fields on an existing task\.
+.IP \(bu 2
+\fBdelta task done\fP id\.\.\.:
+.br
+Mark one or more tasks as complete\.
+.IP \(bu 2
+\fBdelta task delete\fP id\.\.\.:
+.br
+Soft\-delete (cancel) one or more tasks\. Bulk deletes require \fB\-y\fP or
+.br
+interactive confirmation\.
+.IP \(bu 2
+\fBdelta task wip\fP id\.\.\.:
+.br
+Set one or more tasks to wip status\.
+.IP \(bu 2
+\fBdelta task block\fP id\.\.\.:
+.br
+Set one or more tasks to blocked status\.
+.IP \(bu 2
+\fBdelta task pending\fP id\.\.\.:
+.br
+Set one or more tasks to pending status\.
+.IP \(bu 2
+\fBdelta task dep add\fP id depends\-on\-id:
+.br
+Add a dependency between two tasks\.
+.IP \(bu 2
+\fBdelta task dep rm\fP id depends\-on\-id:
+.br
+Remove a dependency between two tasks\.
+.IP \(bu 2
+\fBdelta task dep list\fP id:
+.br
+List dependencies for a task\.
+
+.RE
+.SS Task add/edit flags
+
+.RS 1
+.IP \(bu 2
+\fB\-d\fP, \fB\-\-due\fP date:
+.br
+Due date\. Accepts natural language (see DATE FORMATS) or ISO 8601\.
+.IP \(bu 2
+\fB\-c\fP, \fB\-\-category\fP name:
+.br
+Category name\. Categories are created implicitly\.
+.IP \(bu 2
+\fB\-p\fP, \fB\-\-priority\fP n:
+.br
+Priority level\. 0 = none, 1+ = ascending urgency\.
+.IP \(bu 2
+\fB\-\-start\fP datetime:
+.br
+Start time\. Creates a calendar event when used with \fB\-\-end\fP\|\.
+.IP \(bu 2
+\fB\-\-end\fP datetime:
+.br
+End time for calendar events\.
+.IP \(bu 2
+\fB\-\-all\-day\fP:
+.br
+Mark as an all\-day event\. Use with \fB\-\-due\fP (date only, no time)\.
+.IP \(bu 2
+\fB\-\-recurrence\fP text:
+.br
+Recurrence rule\. Accepts NLP text (e\.g\. "every monday") or raw RRULE\.
+.IP \(bu 2
+\fB\-\-recur\-mode\fP mode:
+.br
+Recurrence mode: \fBscheduled\fP or \fBcompletion\fP\|\.
+.IP \(bu 2
+\fB\-\-location\fP text:
+.br
+Location string\.
+.IP \(bu 2
+\fB\-\-meeting\fP url:
+.br
+Meeting URL\.
+.IP \(bu 2
+\fB\-\-notes\fP text:
+.br
+Plain text notes\. Pass \fB\-\fP to read from stdin\.
+.IP \(bu 2
+\fB\-\-status\fP status:
+.br
+Initial status (default: pending)\.
+
+.RE
+.SS Task edit\-only flags
+
+.RS 1
+.IP \(bu 2
+\fB\-\-scope\fP scope:
+.br
+Recurrence edit scope: \fBthis\fP, \fBfuture\fP, or \fBall\fP\|\. Required when editing a
+.br
+recurring task\. In interactive mode the CLI prompts if omitted; in
+.br
+non\-interactive mode it errors\.
+
+.RE
+.SS delta cat
+
+.RS 1
+.IP \(bu 2
+\fBdelta cat\fP:
+.br
+List all categories with their task counts\.
+
+.RE
+.SS delta cron
+.P
+Manage scheduled automations\. Running \fBdelta cron\fP with no verb defaults to
+.br
+\fBdelta cron list\fP\|\.
+
+.RS 1
+.IP \(bu 2
+\fBdelta cron list\fP:
+.br
+List all automations\.
+.IP \(bu 2
+\fBdelta cron add\fP [flags]:
+.br
+Create an automation\.
+.IP \(bu 2
+\fBdelta cron edit\fP id [flags]:
+.br
+Update an automation\.
+.IP \(bu 2
+\fBdelta cron delete\fP id:
+.br
+Delete an automation\.
+.IP \(bu 2
+\fBdelta cron run\fP id:
+.br
+Trigger an automation manually\.
+.IP \(bu 2
+\fBdelta cron enable\fP id:
+.br
+Enable a disabled automation\.
+.IP \(bu 2
+\fBdelta cron disable\fP id:
+.br
+Disable an automation\.
+
+.RE
+.SS Cron add/edit flags
+
+.RS 1
+.IP \(bu 2
+\fB\-\-name\fP name:
+.br
+Automation name\.
+.IP \(bu 2
+\fB\-\-schedule\fP cron\-expr:
+.br
+Cron expression (e\.g\. "0 9 * * 1" for every Monday at 9am)\.
+.IP \(bu 2
+\fB\-\-type\fP type:
+.br
+Recipe type: \fBgithub_issues\fP, \fBwebhook\fP, or \fBcustom\fP\|\.
+.IP \(bu 2
+\fB\-\-config\fP json:
+.br
+JSON configuration blob\. Pass \fB\-\fP to read from stdin\.
+
+.RE
+.SS delta auth
+.P
+Authentication commands\.
+
+.RS 1
+.IP \(bu 2
+\fBdelta auth login\fP:
+.br
+Start device flow authentication\. Opens a browser URL and waits for
+.br
+confirmation\.
+.IP \(bu 2
+\fBdelta auth login \-\-token\fP:
+.br
+Paste an API token directly (for headless/CI environments)\.
+.IP \(bu 2
+\fBdelta auth logout\fP:
+.br
+Clear stored credentials from keyring and credentials file\.
+.IP \(bu 2
+\fBdelta auth status\fP:
+.br
+Show the current authenticated user and auth method\.
+.IP \(bu 2
+\fBdelta auth token\fP:
+.br
+Display the current API token\.
+.IP \(bu 2
+\fBdelta auth token regenerate\fP:
+.br
+Regenerate the API token (invalidates the previous token)\.
+
+.RE
+.SS delta sync
+
+.RS 1
+.IP \(bu 2
+\fBdelta sync\fP:
+.br
+Trigger a Google Calendar synchronization\.
+
+.RE
+.SS delta feed
+.P
+iCal feed management\. Running \fBdelta feed\fP with no verb shows the current feed
+.br
+URL or status\.
+
+.RS 1
+.IP \(bu 2
+\fBdelta feed generate\fP:
+.br
+Generate or regenerate the iCal feed URL\.
+.IP \(bu 2
+\fBdelta feed revoke\fP:
+.br
+Revoke the current feed URL\.
+
+.RE
+.SS delta import
+
+.RS 1
+.IP \(bu 2
+\fBdelta import\fP file\.ics [\fB\-\-category\fP name]:
+.br
+Import events from an iCal file\. Optionally assign all imported events to a
+.br
+category\.
+.IP \(bu 2
+\fBdelta import taskwarrior\fP export\-file:
+.br
+Import tasks from a Taskwarrior JSON export\.
+.IP \(bu 2
+\fBdelta import pending\fP export\-file:
+.br
+Import tasks from a pending\.nvim export\.
+
+.RE
+.SS delta export
+
+.RS 1
+.IP \(bu 2
+\fBdelta export\fP [\fB\-\-from\fP date] [\fB\-\-until\fP date] [filters]:
+.br
+Export tasks and events as iCal to stdout\. Redirect to save:
+.br
+\fBdelta export > calendar\.ics\fP\|\.
+.IP \(bu 2
+\fBdelta export \-\-id\fP id:
+.br
+Export a single event as iCal\.
+
+.RE
+.SS delta config
+.P
+Settings management\. Running \fBdelta config\fP with no verb shows all settings\.
+
+.RS 1
+.IP \(bu 2
+\fBdelta config get\fP key:
+.br
+Get the value of a setting\.
+.IP \(bu 2
+\fBdelta config set\fP key value:
+.br
+Set a setting value\.
+
+.RE
+.P
+Valid keys: \fBdefault\-view\fP, \fBshow\-completed\fP, \fBurgency\-weights\fP,
+.br
+\fBconflict\-strategy\fP, \fBsync\-interval\fP, \fBgeo\-provider\fP\|\.
+.SS delta integration
+
+.RS 1
+.IP \(bu 2
+\fBdelta integration list\fP:
+.br
+List configured integrations\. Running \fBdelta integration\fP with no verb
+.br
+defaults to list\.
+.IP \(bu 2
+\fBdelta integration test\fP provider:
+.br
+Test an integration's API key validity\.
+
+.RE
+.SS delta invite
+.P
+Invite link management\. Running \fBdelta invite\fP with no verb defaults to
+.br
+\fBdelta invite list\fP\|\.
+
+.RS 1
+.IP \(bu 2
+\fBdelta invite list\fP:
+.br
+List invite links\.
+.IP \(bu 2
+\fBdelta invite create\fP:
+.br
+Generate a new invite link\.
+
+.RE
+.SS delta share
+
+.RS 1
+.IP \(bu 2
+\fBdelta share\fP task\-id:
+.br
+Generate or show the share link for a task\.
+
+.RE
+.SS delta completion
+
+.RS 1
+.IP \(bu 2
+\fBdelta completion bash\fP:
+.br
+Output bash shell completion script\.
+.IP \(bu 2
+\fBdelta completion zsh\fP:
+.br
+Output zsh shell completion script\.
+.IP \(bu 2
+\fBdelta completion fish\fP:
+.br
+Output fish shell completion script\.
+
+.RE
+.P
+Install example: \fBdelta completion zsh > ~/\.zfunc/_delta\fP
+.SS delta help
+
+.RS 1
+.IP \(bu 2
+\fBdelta help\fP:
+.br
+Show overview and command cheatsheet\. If running in a terminal and the man
+.br
+page is installed, opens \fBman delta\fP instead\.
+.IP \(bu 2
+\fBdelta help filters\fP:
+.br
+Show filter syntax reference\.
+.IP \(bu 2
+\fBdelta help dates\fP:
+.br
+Show date format reference\.
+.IP \(bu 2
+\fBdelta help auth\fP:
+.br
+Show authentication setup walkthrough\.
+.IP \(bu 2
+\fBdelta help examples\fP:
+.br
+Show workflow recipes and usage examples\.
+
+.RE
+.SH OPTIONS
+.P
+Universal flags accepted by every command:
+
+.RS 1
+.IP \(bu 2
+\fB\-h\fP, \fB\-\-help\fP:
+.br
+Show help for the current command\.
+.IP \(bu 2
+\fB\-\-json\fP [fields]:
+.br
+Output as JSON\. Optionally pass a comma\-separated list of fields to include\.
+.IP \(bu 2
+\fB\-\-jq\fP expr:
+.br
+Filter JSON output with a jq expression (implies \fB\-\-json\fP)\.
+.IP \(bu 2
+\fB\-q\fP, \fB\-\-quiet\fP:
+.br
+Quiet mode\. Print only IDs on list commands, nothing on success for mutations\.
+.IP \(bu 2
+\fB\-\-no\-color\fP:
+.br
+Disable colored output\. Also respected via the \fBNO_COLOR\fP environment
+.br
+variable\.
+.IP \(bu 2
+\fB\-\-server\fP url:
+.br
+Override the server URL\. Also settable via \fBDELTA_SERVER\fP environment variable
+.br
+or the config file\.
+.IP \(bu 2
+\fB\-\-debug\fP:
+.br
+Print HTTP requests and responses to stderr\.
+.IP \(bu 2
+\fB\-y\fP, \fB\-\-yes\fP:
+.br
+Skip confirmation prompts for destructive bulk operations\.
+
+.RE
+.SH FILTERS
+.P
+Filters use \fBkey:value\fP syntax and are passed as positional arguments to list
+.br
+commands\. Date\-type keys support \fB\|\.before\fP and \fB\|\.after\fP modifiers\.
+.SS Filter keys
+
+.RS 1
+.IP \(bu 2
+\fBstatus\fP:value:
+.br
+Filter by task status\. Values: \fBpending\fP, \fBwip\fP, \fBdone\fP, \fBblocked\fP,
+.br
+\fBcancelled\fP\|\.
+.IP \(bu 2
+\fBcategory\fP:name:
+.br
+Filter by category name\.
+.IP \(bu 2
+\fBpriority\fP:n:
+.br
+Filter by priority level\.
+.IP \(bu 2
+\fBdue\fP:date, \fBdue\.before\fP:date, \fBdue\.after\fP:date:
+.br
+Filter by due date, or tasks due before/after a date\.
+.IP \(bu 2
+\fBcreated\.before\fP:date, \fBcreated\.after\fP:date:
+.br
+Filter by creation date\.
+.IP \(bu 2
+\fBupdated\.before\fP:date, \fBupdated\.after\fP:date:
+.br
+Filter by last\-updated date\.
+.IP \(bu 2
+\fBsort\fP:field:
+.br
+Sort results\. Fields: \fBurgency\fP (default), \fBdue\fP, \fBcreated\fP, \fBpriority\fP\|\.
+.IP \(bu 2
+\fBlimit\fP:n:
+.br
+Maximum number of results to return\.
+
+.RE
+.SS Date range shorthand
+.P
+The \fB\-\-from\fP and \fB\-\-until\fP flags on \fBdelta task list\fP and \fBdelta export\fP are
+.br
+shorthand for date ranges on \fBstartAt\fP:
+.RS 2
+.nf
+delta task list \-\-from monday \-\-until friday
+.fi
+.RE
+.SH DATE FORMATS
+.P
+All date and datetime flags accept the following formats:
+.SS Relative dates
+
+.RS 1
+.IP \(bu 2
+\fBtoday\fP, \fBtomorrow\fP, \fByesterday\fP
+.IP \(bu 2
+Day names: \fBmonday\fP, \fBtuesday\fP, \fBwednesday\fP, \fBthursday\fP, \fBfriday\fP, \fBsaturday\fP,
+.br
+\fBsunday\fP (refers to the next occurrence)
+.IP \(bu 2
+\fBeow\fP (end of week), \fBeom\fP (end of month)
+.IP \(bu 2
+\fBnext week\fP, \fBnext month\fP
+
+.RE
+.SS Offset syntax
+
+.RS 1
+.IP \(bu 2
+\fB+3d\fP (3 days from now)
+.IP \(bu 2
+\fB+1w\fP (1 week from now)
+.IP \(bu 2
+\fB+2m\fP (2 months from now)
+
+.RE
+.SS ISO 8601
+
+.RS 1
+.IP \(bu 2
+Date: \fB2026\-04\-01\fP
+.IP \(bu 2
+Datetime: \fB2026\-04\-01T09:00:00\fP
+
+.RE
+.SH CONFIGURATION
+.SS Config file
+.P
+Location: \fB~/\.config/delta/config\.toml\fP
+.P
+Example:
+.RS 2
+.nf
+server = "https://delta\.barrettruth\.com"
+.fi
+.RE
+.SS Precedence
+.P
+Configuration values are resolved in order of decreasing priority:
+
+.RS 1
+.IP \(bu 2
+Command\-line flags (\fB\-\-server\fP, \fB\-\-json\fP, etc\.)
+.IP \(bu 2
+Environment variables (\fBDELTA_SERVER\fP, \fBDELTA_TOKEN\fP, \fBNO_COLOR\fP)
+.IP \(bu 2
+Config file (\fB~/\.config/delta/config\.toml\fP)
+.IP \(bu 2
+Built\-in defaults
+
+.RE
+.SS Environment variables
+
+.RS 1
+.IP \(bu 2
+\fBDELTA_SERVER\fP:
+.br
+Server URL (default: \fBhttps://delta\.barrettruth\.com\fP)\.
+.IP \(bu 2
+\fBDELTA_TOKEN\fP:
+.br
+API token\. Highest\-priority auth method\.
+.IP \(bu 2
+\fBNO_COLOR\fP:
+.br
+When set (any value), disables colored output\.
+
+.RE
+.SS Auth token storage
+.P
+Token precedence (highest to lowest):
+
+.RS 1
+.IP \(bu 2
+\fBDELTA_TOKEN\fP environment variable
+.IP \(bu 2
+OS keyring (macOS Keychain, GNOME Keyring, KDE Wallet)
+.IP \(bu 2
+\fB~/\.config/delta/credentials\.json\fP (file permissions 0600, fallback)
+
+.RE
+.SH EXIT CODES
+
+.RS 1
+.IP \(bu 2
+\fB0\fP:
+.br
+Success\.
+.IP \(bu 2
+\fB1\fP:
+.br
+Runtime or unknown error\.
+.IP \(bu 2
+\fB2\fP:
+.br
+Usage or validation error (bad arguments, missing required flags)\.
+.IP \(bu 2
+\fB3\fP:
+.br
+Resource not found\.
+.IP \(bu 2
+\fB4\fP:
+.br
+Unauthorized (missing or invalid credentials)\.
+
+.RE
+.SH EXAMPLES
+.SS Basic task operations
+.P
+Create a task with a due date and category:
+.RS 2
+.nf
+$ delta task add "Buy groceries" \-\-due tomorrow \-\-category personal
+.fi
+.RE
+.P
+Complete a task:
+.RS 2
+.nf
+$ delta task done 5
+.fi
+.RE
+.P
+Set multiple tasks to wip:
+.RS 2
+.nf
+$ delta task wip 3 7 12
+.fi
+.RE
+.P
+Edit a task's priority and due date:
+.RS 2
+.nf
+$ delta task edit 5 \-\-priority 2 \-\-due friday
+.fi
+.RE
+.P
+Delete (cancel) a task:
+.RS 2
+.nf
+$ delta task delete 5
+.fi
+.RE
+.SS Filtering tasks
+.P
+List tasks in a category:
+.RS 2
+.nf
+$ delta task list category:work
+.fi
+.RE
+.P
+List high\-priority tasks due before end of week:
+.RS 2
+.nf
+$ delta task list priority:2 due\.before:eow
+.fi
+.RE
+.P
+List tasks created in the last week, sorted by due date:
+.RS 2
+.nf
+$ delta task list created\.after:\-7d sort:due
+.fi
+.RE
+.P
+List tasks for a date range:
+.RS 2
+.nf
+$ delta task list \-\-from monday \-\-until friday status:pending
+.fi
+.RE
+.SS Calendar events
+.P
+Create an event with start and end times:
+.RS 2
+.nf
+$ delta task add "Team standup" \-\-start "2026\-04\-01T09:00" \-\-end "2026\-04\-01T09:30" \-\-category work
+.fi
+.RE
+.P
+Create an all\-day event:
+.RS 2
+.nf
+$ delta task add "Company holiday" \-\-due 2026\-04\-01 \-\-all\-day
+.fi
+.RE
+.P
+Create a recurring event:
+.RS 2
+.nf
+$ delta task add "Weekly review" \-\-start "monday 10:00" \-\-end "monday 11:00" \-\-recurrence "every monday"
+.fi
+.RE
+.P
+Edit a single instance of a recurring task:
+.RS 2
+.nf
+$ delta task edit 15 \-\-due tomorrow \-\-scope this
+.fi
+.RE
+.SS Piping and scripting
+.P
+Get IDs of completed tasks and delete them:
+.RS 2
+.nf
+$ delta task list \-q status:done | xargs delta task delete \-y
+.fi
+.RE
+.P
+JSON output for scripting:
+.RS 2
+.nf
+$ delta task list \-\-json id,description,status
+.fi
+.RE
+.P
+Filter JSON with jq:
+.RS 2
+.nf
+$ delta task list \-\-json \-\-jq '\.[]\.description'
+.fi
+.RE
+.P
+Export calendar to file:
+.RS 2
+.nf
+$ delta export \-\-from today \-\-until +2w > next\-two\-weeks\.ics
+.fi
+.RE
+.SS Auth setup
+.P
+Interactive device flow login:
+.RS 2
+.nf
+$ delta auth login
+.fi
+.RE
+.P
+Token\-based login for CI:
+.RS 2
+.nf
+$ export DELTA_TOKEN="your\-api\-token"
+$ delta task list
+.fi
+.RE
+.P
+Or paste a token directly:
+.RS 2
+.nf
+$ delta auth login \-\-token
+.fi
+.RE
+.P
+Check auth status:
+.RS 2
+.nf
+$ delta auth status
+.fi
+.RE
+.SS Configuration
+.P
+Set the server URL:
+.RS 2
+.nf
+$ delta config set server https://delta\.barrettruth\.com
+.fi
+.RE
+.P
+View all settings:
+.RS 2
+.nf
+$ delta config
+.fi
+.RE
+.SS Automations
+.P
+Create a cron job:
+.RS 2
+.nf
+$ delta cron add \-\-name "Sync GitHub issues" \-\-schedule "0 9 * * 1" \-\-type github_issues \-\-config '{"repo": "barrettruth/delta"}'
+.fi
+.RE
+.P
+List automations:
+.RS 2
+.nf
+$ delta cron list
+.fi
+.RE
+.P
+Trigger an automation manually:
+.RS 2
+.nf
+$ delta cron run 1
+.fi
+.RE
+.SH SEE ALSO
+.P
+Project: https://github.com/barrettruth/delta
+.P
+Web interface: https://delta.barrettruth.com
+
