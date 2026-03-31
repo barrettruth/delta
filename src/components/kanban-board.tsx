@@ -215,10 +215,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     const counts = columns
       .map((col) => {
         const n = (grouped[col.status] ?? []).length;
-        return n > 0 ? `${n}${col.status[0].toUpperCase()}` : "";
+        return n > 0 ? `${n} ${col.label}` : "";
       })
       .filter(Boolean)
-      .join(" ");
+      .join(" / ");
     statusBar.setIdle(left, counts);
   }, [visualMode, statusBar.setIdle, grouped, columns]);
 

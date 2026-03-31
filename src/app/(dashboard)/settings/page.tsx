@@ -7,7 +7,6 @@ import { remainingRecoveryCodeCount } from "@/core/recovery";
 import { userHasTotp } from "@/core/totp";
 import { getCredentialsForUser } from "@/core/webauthn";
 import { db } from "@/db";
-import { NLP_MODELS } from "@/lib/nlp-models";
 import { SettingsView } from "./settings-view";
 
 export default async function SettingsPage() {
@@ -38,10 +37,6 @@ export default async function SettingsPage() {
         : nlpOpenai?.enabled === 1
           ? ("openai" as const)
           : null,
-    anthropicModel:
-      (nlpAnthropic?.metadata?.model as string) ?? NLP_MODELS.anthropic[0].id,
-    openaiModel:
-      (nlpOpenai?.metadata?.model as string) ?? NLP_MODELS.openai[0].id,
     anthropicConfigured: !!nlpAnthropic,
     openaiConfigured: !!nlpOpenai,
   };

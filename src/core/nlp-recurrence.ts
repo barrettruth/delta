@@ -1,5 +1,5 @@
 import { RRule } from "rrule";
-import { NLP_MODELS } from "@/lib/nlp-models";
+import { NLP_MODEL } from "@/lib/nlp-models";
 import type { NlpProvider, NlpSource } from "./types";
 
 export interface NlpParseResult {
@@ -177,11 +177,7 @@ export async function parseRecurrenceLlm(
   referenceDate?: string,
 ): Promise<NlpParseResult | null> {
   const prompt = buildLlmPrompt(text, referenceDate);
-  const defaultModel =
-    config.provider === "anthropic"
-      ? NLP_MODELS.anthropic[0].id
-      : NLP_MODELS.openai[0].id;
-  const model = config.model ?? defaultModel;
+  const model = config.model ?? NLP_MODEL[config.provider];
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);

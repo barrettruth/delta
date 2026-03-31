@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
 import type { NlpProvider } from "@/lib/nlp-models";
-import { NLP_MODELS } from "@/lib/nlp-models";
+import { NLP_MODEL } from "@/lib/nlp-models";
 
 interface GcalStatus {
   connected: boolean;
@@ -32,9 +32,8 @@ const CONFLICT_STRATEGIES: { id: ConflictResolution; label: string }[] = [
   { id: "delta_wins", label: "delta wins" },
 ];
 
-type SyncInterval = 0 | 5 | 15 | 30;
+type SyncInterval = 5 | 15 | 30;
 const SYNC_INTERVALS: { id: SyncInterval; label: string }[] = [
-  { id: 0, label: "manual only" },
   { id: 5, label: "5 minutes" },
   { id: 15, label: "15 minutes" },
   { id: 30, label: "30 minutes" },
@@ -75,7 +74,6 @@ export function CalendarActionsPopover({
   syncInterval: currentSyncInterval = 5,
   onSyncIntervalChange,
   initialNlpProvider = null,
-  initialNlpModel = "",
   open,
   onOpenChange,
 }: {
@@ -86,7 +84,6 @@ export function CalendarActionsPopover({
   syncInterval?: number;
   onSyncIntervalChange?: (interval: number) => void;
   initialNlpProvider?: NlpProvider | null;
-  initialNlpModel?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -105,7 +102,6 @@ export function CalendarActionsPopover({
   const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
     initialNlpProvider ?? "builtin",
   );
-  const [nlpModel, setNlpModel] = useState(initialNlpModel);
   const [nlpKeyInput, setNlpKeyInput] = useState("");
   const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
   const [geoKeyTesting, setGeoKeyTesting] = useState(false);
@@ -280,12 +276,10 @@ export function CalendarActionsPopover({
       await fetch("/api/settings/nlp", { method: "DELETE" });
       setNlpActive("builtin");
       setNlpKeyTarget(null);
-      setNlpModel("");
       statusBar.message("NLP set to built-in");
       return;
     }
     setNlpActive(id);
-    setNlpModel(NLP_MODELS[id][0].id);
     setNlpKeyTarget(id);
     setNlpKeyInput("");
   }
@@ -300,7 +294,6 @@ export function CalendarActionsPopover({
         body: JSON.stringify({
           provider: nlpKeyTarget,
           apiKey: nlpKeyInput.trim(),
-          model: nlpModel || undefined,
         }),
       });
       const data = await res.json();
@@ -328,8 +321,7 @@ export function CalendarActionsPopover({
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        llmProvider: provider,
-        model: nlpModel,
+        provider,
         apiKey: nlpKeyInput.trim(),
       }),
     });
@@ -339,9 +331,7 @@ export function CalendarActionsPopover({
     }
     setNlpKeyTarget(null);
     setNlpKeyInput("");
-    statusBar.message(
-      `NLP set to ${provider} ${NLP_MODELS[provider].find((m) => m.id === nlpModel)?.label ?? nlpModel}`,
-    );
+    statusBar.message(`NLP set to ${provider}`);
   }
 
   const items: MenuItem[] = [];
@@ -614,45 +604,31 @@ export function CalendarActionsPopover({
                   focused={focusIdx === globalIndex(nlpItems, i)}
                 />
                 {nlpKeyTarget === item.id.replace("nlp-", "") && (
-                  <div className="flex flex-col gap-1 px-2 py-1">
-                    <div className="flex gap-1">
-                      {NLP_MODELS[nlpKeyTarget as NlpProvider].map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className={`px-1.5 py-0.5 text-[10px] border border-border ${nlpModel === m.id ? "text-foreground bg-accent" : "text-muted-foreground"}`}
-                          onClick={() => setNlpModel(m.id)}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={nlpKeyInput}
-                        onChange={(e) => setNlpKeyInput(e.target.value)}
-                        placeholder="api key"
-                        type="password"
-                        autoFocus
-                        className="h-7 text-sm flex-1"
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.key === "Enter") handleTestNlpKey();
-                          if (e.key === "Escape") {
-                            setNlpKeyTarget(null);
-                            setNlpKeyInput("");
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        disabled={nlpKeyTesting || !nlpKeyInput.trim()}
-                        className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
-                        onClick={handleTestNlpKey}
-                      >
-                        {nlpKeyTesting ? "..." : "test & save"}
-                      </button>
-                    </div>
+                  <div className="flex gap-2 px-2 py-1">
+                    <Input
+                      value={nlpKeyInput}
+                      onChange={(e) => setNlpKeyInput(e.target.value)}
+                      placeholder="api key"
+                      type="password"
+                      autoFocus
+                      className="h-7 text-sm flex-1"
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") handleTestNlpKey();
+                        if (e.key === "Escape") {
+                          setNlpKeyTarget(null);
+                          setNlpKeyInput("");
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={nlpKeyTesting || !nlpKeyInput.trim()}
+                      className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                      onClick={handleTestNlpKey}
+                    >
+                      {nlpKeyTesting ? "..." : "test & save"}
+                    </button>
                   </div>
                 )}
               </React.Fragment>

@@ -7,7 +7,7 @@ import {
 } from "@/core/integration-config";
 import { db } from "@/db";
 import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
-import { NLP_MODELS, type NlpProvider } from "@/lib/nlp-models";
+import { NLP_MODEL, type NlpProvider } from "@/lib/nlp-models";
 
 const NLP_PROVIDERS: NlpProvider[] = ["anthropic", "openai"];
 
@@ -35,7 +35,7 @@ export async function GET() {
     const configured = !!config;
     const model = config?.metadata?.model as string | null;
     result[`${p}Configured`] = configured;
-    result[`${p}Model`] = model ?? NLP_MODELS[p][0].id;
+    result[`${p}Model`] = model ?? NLP_MODEL[p];
     if (config?.enabled === 1) {
       result.activeProvider = p;
     }
@@ -49,10 +49,9 @@ export async function PUT(request: Request) {
   if (!user) return unauthorized();
 
   const body = await request.json();
-  const { provider, apiKey, model } = body as {
+  const { provider, apiKey } = body as {
     provider: string;
     apiKey?: string;
-    model?: string;
   };
 
   if (!provider || !isNlpProvider(provider)) {
@@ -60,16 +59,6 @@ export async function PUT(request: Request) {
       { error: "Invalid provider. Must be 'anthropic' or 'openai'." },
       { status: 400 },
     );
-  }
-
-  if (model) {
-    const validModels = NLP_MODELS[provider].map((m) => m.id);
-    if (!validModels.includes(model as (typeof validModels)[number])) {
-      return NextResponse.json(
-        { error: "Invalid model for provider." },
-        { status: 400 },
-      );
-    }
   }
 
   const key = nlpProviderKey(provider);
@@ -83,7 +72,7 @@ export async function PUT(request: Request) {
 
   const metadata = {
     ...(existing?.metadata ?? {}),
-    model: model ?? existing?.metadata?.model ?? NLP_MODELS[provider][0].id,
+    model: NLP_MODEL[provider],
   };
 
   upsertIntegrationConfig(db, user.id, key, tokens, metadata);
@@ -105,10 +94,7 @@ export async function PATCH(request: Request) {
   if (!user) return unauthorized();
 
   const body = await request.json();
-  const { provider, model } = body as {
-    provider: string;
-    model?: string;
-  };
+  const { provider } = body as { provider: string };
 
   if (!provider || !isNlpProvider(provider)) {
     return NextResponse.json({ error: "Invalid provider." }, { status: 400 });
@@ -122,18 +108,6 @@ export async function PATCH(request: Request) {
       { error: "Provider not configured." },
       { status: 404 },
     );
-  }
-
-  if (model) {
-    const validModels = NLP_MODELS[provider].map((m) => m.id);
-    if (!validModels.includes(model as (typeof validModels)[number])) {
-      return NextResponse.json(
-        { error: "Invalid model for provider." },
-        { status: 400 },
-      );
-    }
-    const metadata = { ...(existing.metadata ?? {}), model };
-    upsertIntegrationConfig(db, user.id, key, existing.tokens, metadata);
   }
 
   setIntegrationEnabled(db, user.id, key, 1);

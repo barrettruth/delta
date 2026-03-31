@@ -65,13 +65,10 @@ export default async function CalendarPage({
       : "photon";
 
   let nlpActiveProvider: "anthropic" | "openai" | null = null;
-  let nlpActiveModel = "";
   for (const p of ["anthropic", "openai"] as const) {
     const cfg = getIntegrationConfig(db, user.id, `nlp_${p}`);
     if (cfg?.enabled === 1) {
       nlpActiveProvider = p;
-      const meta = cfg.metadata as Record<string, unknown> | null;
-      nlpActiveModel = (meta?.model as string) ?? "";
       break;
     }
   }
@@ -88,7 +85,6 @@ export default async function CalendarPage({
       conflictResolution={conflictResolution}
       syncInterval={syncInterval}
       nlpProvider={nlpActiveProvider}
-      nlpModel={nlpActiveModel}
     />
   );
 }

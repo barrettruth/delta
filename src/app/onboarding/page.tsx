@@ -29,13 +29,10 @@ export default async function OnboardingPage() {
   }
 
   let nlpProvider: "builtin" | "anthropic" | "openai" = "builtin";
-  let nlpModel = "";
   for (const p of ["anthropic", "openai"] as const) {
     const config = getIntegrationConfig(db, user.id, `nlp_${p}`);
     if (config?.enabled === 1) {
       nlpProvider = p;
-      const meta = config.metadata as Record<string, unknown> | null;
-      nlpModel = (meta?.model as string) ?? "";
       break;
     }
   }
@@ -45,7 +42,6 @@ export default async function OnboardingPage() {
       gcalConnected={gcalConnected}
       initialGeoProvider={geoProvider}
       initialNlpProvider={nlpProvider}
-      initialNlpModel={nlpModel}
     />
   );
 }

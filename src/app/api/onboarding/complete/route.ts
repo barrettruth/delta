@@ -15,7 +15,6 @@ interface OnboardingPayload {
   geoApiKey?: string;
   nlpProvider?: "builtin" | "anthropic" | "openai";
   nlpApiKey?: string;
-  nlpModel?: string;
   conflictResolution?: ConflictResolution;
   keymapOverrides?: Record<string, string>;
 }
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
       user.id,
       provider,
       { api_key: body.nlpApiKey },
-      { model: body.nlpModel },
+      {},
     );
     const other =
       body.nlpProvider === "anthropic" ? "nlp_openai" : "nlp_anthropic";

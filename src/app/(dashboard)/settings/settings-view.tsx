@@ -10,15 +10,8 @@ import {
 } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useStatusBar } from "@/contexts/status-bar";
-import { NLP_MODELS, type NlpProvider } from "@/lib/nlp-models";
+import type { NlpProvider } from "@/lib/nlp-models";
 
 interface Passkey {
   id: number;
@@ -37,8 +30,6 @@ interface ConnectedAccount {
 
 interface NlpConfig {
   activeProvider: NlpProvider | null;
-  anthropicModel: string;
-  openaiModel: string;
   anthropicConfigured: boolean;
   openaiConfigured: boolean;
 }
@@ -122,12 +113,6 @@ export function SettingsView({
   );
   const [nlpActiveProvider, setNlpActiveProvider] =
     useState<NlpProvider | null>(initialNlpConfig.activeProvider);
-  const [nlpAnthropicModel, setNlpAnthropicModel] = useState(
-    initialNlpConfig.anthropicModel,
-  );
-  const [nlpOpenaiModel, setNlpOpenaiModel] = useState(
-    initialNlpConfig.openaiModel,
-  );
   const [nlpApiKey, setNlpApiKey] = useState("");
   const [nlpAnthropicConfigured, setNlpAnthropicConfigured] = useState(
     initialNlpConfig.anthropicConfigured,
@@ -178,10 +163,7 @@ export function SettingsView({
   async function handleSaveNlpConfig() {
     if (!nlpActiveProvider) return;
 
-    const model =
-      nlpActiveProvider === "anthropic" ? nlpAnthropicModel : nlpOpenaiModel;
-
-    const body: Record<string, string> = { provider: nlpActiveProvider, model };
+    const body: Record<string, string> = { provider: nlpActiveProvider };
     if (nlpApiKey) {
       body.apiKey = nlpApiKey;
     }
@@ -205,33 +187,6 @@ export function SettingsView({
     }
     setNlpApiKey("");
     statusBar.message(`${nlpActiveProvider} config saved`);
-  }
-
-  async function handleNlpModelChange(provider: NlpProvider, model: string) {
-    if (provider === "anthropic") {
-      setNlpAnthropicModel(model);
-    } else {
-      setNlpOpenaiModel(model);
-    }
-
-    const isConfigured =
-      provider === "anthropic" ? nlpAnthropicConfigured : nlpOpenaiConfigured;
-    if (!isConfigured) return;
-
-    const res = await fetch("/api/settings/nlp", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider, model }),
-    });
-
-    if (!res.ok) {
-      statusBar.error("failed to update model");
-      return;
-    }
-
-    statusBar.message(
-      `model set to ${NLP_MODELS[provider].find((m) => m.id === model)?.label ?? model}`,
-    );
   }
 
   async function handleAddPasskey() {
@@ -626,34 +581,6 @@ export function SettingsView({
 
               {nlpActiveProvider && (
                 <div className="space-y-2 px-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-12 shrink-0">
-                      model
-                    </span>
-                    <Select
-                      value={
-                        nlpActiveProvider === "anthropic"
-                          ? nlpAnthropicModel
-                          : nlpOpenaiModel
-                      }
-                      onValueChange={(val) => {
-                        if (nlpActiveProvider && val)
-                          handleNlpModelChange(nlpActiveProvider, val);
-                      }}
-                    >
-                      <SelectTrigger size="sm" className="h-7 text-sm flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {NLP_MODELS[nlpActiveProvider].map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground w-12 shrink-0">
                       key
