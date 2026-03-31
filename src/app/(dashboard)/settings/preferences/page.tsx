@@ -1,11 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AccountSection } from "@/components/settings/account-section";
+import { PreferencesSection } from "@/components/settings/preferences-section";
 import { validateSession } from "@/core/auth";
-import { getLinkedAccounts } from "@/core/oauth";
+import { getSettings } from "@/core/settings";
 import { db } from "@/db";
 
-export default async function SettingsAccountPage() {
+export default async function SettingsPreferencesPage() {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("session")?.value;
   if (!sessionId) redirect("/login");
@@ -13,12 +13,7 @@ export default async function SettingsAccountPage() {
   const user = validateSession(db, sessionId);
   if (!user) redirect("/login");
 
-  const connectedAccounts = getLinkedAccounts(db, user.id);
+  const settings = getSettings(db, user.id);
 
-  return (
-    <AccountSection
-      username={user.username}
-      connectedAccounts={connectedAccounts}
-    />
-  );
+  return <PreferencesSection settings={settings} />;
 }

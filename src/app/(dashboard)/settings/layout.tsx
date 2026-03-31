@@ -1,11 +1,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AccountSection } from "@/components/settings/account-section";
+import { SettingsSidebar } from "@/components/settings-sidebar";
 import { validateSession } from "@/core/auth";
-import { getLinkedAccounts } from "@/core/oauth";
 import { db } from "@/db";
 
-export default async function SettingsAccountPage() {
+export default async function SettingsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("session")?.value;
   if (!sessionId) redirect("/login");
@@ -13,12 +16,10 @@ export default async function SettingsAccountPage() {
   const user = validateSession(db, sessionId);
   if (!user) redirect("/login");
 
-  const connectedAccounts = getLinkedAccounts(db, user.id);
-
   return (
-    <AccountSection
-      username={user.username}
-      connectedAccounts={connectedAccounts}
-    />
+    <div className="flex h-full">
+      <SettingsSidebar username={user.username} />
+      <div className="flex-1 overflow-y-auto">{children}</div>
+    </div>
   );
 }
