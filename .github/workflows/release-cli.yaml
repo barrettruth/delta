@@ -182,10 +182,16 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Clear stale auth
+        run: |
+          npm config delete _auth 2>/dev/null || true
+          npm config delete //registry.npmjs.org/:_authToken 2>/dev/null || true
+          find /home/runner -name ".npmrc" -exec echo "Found: {}" \; -exec cat {} \; 2>/dev/null || true
+
       - name: Publish to npm
         if: steps.published.outputs.published != 'true'
         working-directory: cli
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --loglevel verbose
 
   npm-publish-tag:
     runs-on: ubuntu-latest
