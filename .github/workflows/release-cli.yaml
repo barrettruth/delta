@@ -166,8 +166,11 @@ jobs:
         run: |
           echo "npm version: $(npm --version)"
           echo "node version: $(node --version)"
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL set: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL != '' }}"
-          npm config list
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL: ${ACTIONS_ID_TOKEN_REQUEST_URL:-(not set)}"
+          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN length: ${#ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          env | grep -i "NPM\|NODE_AUTH\|ACTIONS_ID" || true
+          npm config ls -l 2>/dev/null | grep -i "auth\|registry\|provenance\|token" || true
+          cat ~/.npmrc 2>/dev/null || echo "no ~/.npmrc"
 
       - name: Check if version already published
         id: published
