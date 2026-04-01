@@ -148,11 +148,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Update npm
-        run: npm install -g npm@latest
+          node-version: "24"
 
       - name: Install CLI dependencies
         working-directory: cli
@@ -165,6 +161,13 @@ jobs:
       - name: Build man page
         working-directory: cli
         run: bun run build:man
+
+      - name: Debug OIDC
+        run: |
+          echo "npm version: $(npm --version)"
+          echo "node version: $(node --version)"
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL set: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL != '' }}"
+          npm config list
 
       - name: Check if version already published
         id: published
@@ -179,10 +182,7 @@ jobs:
       - name: Publish to npm
         if: steps.published.outputs.published != 'true'
         working-directory: cli
-        run: |
-          unset NODE_AUTH_TOKEN
-          npm config delete //registry.npmjs.org/:_authToken
-          npm publish --access public --provenance
+        run: npm publish --provenance --access public
 
   npm-publish-tag:
     runs-on: ubuntu-latest
@@ -200,11 +200,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Update npm
-        run: npm install -g npm@latest
+          node-version: "24"
 
       - name: Install CLI dependencies
         working-directory: cli
@@ -231,7 +227,4 @@ jobs:
       - name: Publish to npm
         if: steps.published.outputs.published != 'true'
         working-directory: cli
-        run: |
-          unset NODE_AUTH_TOKEN
-          npm config delete //registry.npmjs.org/:_authToken
-          npm publish --access public --provenance
+        run: npm publish --provenance --access public
