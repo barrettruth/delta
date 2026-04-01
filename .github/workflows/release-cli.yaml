@@ -162,16 +162,6 @@ jobs:
         working-directory: cli
         run: bun run build:man
 
-      - name: Debug OIDC
-        run: |
-          echo "npm version: $(npm --version)"
-          echo "node version: $(node --version)"
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL: ${ACTIONS_ID_TOKEN_REQUEST_URL:-(not set)}"
-          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN length: ${#ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
-          env | grep -i "NPM\|NODE_AUTH\|ACTIONS_ID" || true
-          npm config ls -l 2>/dev/null | grep -i "auth\|registry\|provenance\|token" || true
-          cat ~/.npmrc 2>/dev/null || echo "no ~/.npmrc"
-
       - name: Check if version already published
         id: published
         run: |
@@ -182,16 +172,10 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Clear stale auth
-        run: |
-          npm config delete _auth 2>/dev/null || true
-          npm config delete //registry.npmjs.org/:_authToken 2>/dev/null || true
-          find /home/runner -name ".npmrc" -exec echo "Found: {}" \; -exec cat {} \; 2>/dev/null || true
-
       - name: Publish to npm
         if: steps.published.outputs.published != 'true'
         working-directory: cli
-        run: npm publish --provenance --access public --loglevel verbose
+        run: npm publish --provenance --access public
 
   npm-publish-tag:
     runs-on: ubuntu-latest

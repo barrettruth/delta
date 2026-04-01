@@ -1,10 +1,6 @@
 {
   "name": "@barrettruth/delta",
-<<<<<<< HEAD
-  "version": "0.1.11",
-=======
   "version": "0.0.1",
->>>>>>> 4c92cb6 (fix(deploy): reset versioning)
   "private": false,
   "type": "module",
   "description": "CLI client for the delta productivity platform",
