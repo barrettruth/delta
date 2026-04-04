@@ -9,14 +9,14 @@ permissions:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, netcup, general]
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
       - run: nix develop --command biome check .
 
   typecheck:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, netcup, general]
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
@@ -24,7 +24,7 @@ jobs:
       - run: nix develop --command pnpm tsc --noEmit
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, netcup, general]
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
@@ -32,7 +32,7 @@ jobs:
       - run: nix develop --command pnpm vitest run --reporter=verbose --coverage.enabled --coverage.reporter=text
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, netcup, general]
     needs: [lint, typecheck, test]
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       - run: nix develop --command pnpm build
 
   release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, netcup, general]
     needs: build
     steps:
       - uses: actions/checkout@v4
