@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { tasks } from "@/db/schema";
 import { updateBlockedStatus } from "./dag";
 import { getNextTaskData } from "./recurrence";
+import { copyTaskReminders } from "./reminders/rules";
 import type {
   CreateTaskInput,
   Db,
@@ -148,6 +149,7 @@ export function completeTask(
     const nextData = getNextTaskData(task);
     if (nextData) {
       const spawned = createTask(db, userId, nextData);
+      copyTaskReminders(db, userId, task.id, spawned.id);
       spawnedTaskId = spawned.id;
     }
   }
