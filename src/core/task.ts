@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { tasks } from "@/db/schema";
 import { updateBlockedStatus } from "./dag";
 import { getNextTaskData } from "./recurrence";
+import { suppressPendingReminderDeliveriesForTask } from "./reminders/deliveries";
 import { copyTaskReminders } from "./reminders/rules";
 import type {
   CreateTaskInput,
@@ -124,7 +125,7 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
     input.status !== "cancelled" &&
     (existing.status === "done" || existing.status === "cancelled");
 
-  return db
+  const task = db
     .update(tasks)
     .set({
       ...input,
@@ -135,6 +136,12 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
     .where(eq(tasks.id, id))
     .returning()
     .get();
+
+  if (isCompleting) {
+    suppressPendingReminderDeliveriesForTask(db, id);
+  }
+
+  return task;
 }
 
 export function completeTask(
