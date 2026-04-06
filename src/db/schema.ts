@@ -122,6 +122,95 @@ export const userSettings = sqliteTable("user_settings", {
   settings: text("settings").notNull(),
 });
 
+export const reminderEndpoints = sqliteTable("reminder_endpoints", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  adapterKey: text("adapter_key", {
+    enum: [
+      "sms.twilio",
+      "signal.signal_cli",
+      "telegram.bot_api",
+      "discord.webhook",
+      "slack.webhook",
+    ],
+  }).notNull(),
+  label: text("label").notNull(),
+  encryptedTarget: text("encrypted_target").notNull(),
+  metadata: text("metadata"),
+  enabled: integer("enabled").notNull().default(1),
+  lastTestAt: text("last_test_at"),
+  lastTestStatus: text("last_test_status", { enum: ["ok", "failed"] }),
+  lastTestError: text("last_test_error"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const taskReminders = sqliteTable("task_reminders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  taskId: integer("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  endpointId: integer("endpoint_id")
+    .notNull()
+    .references(() => reminderEndpoints.id, { onDelete: "cascade" }),
+  anchor: text("anchor", { enum: ["due", "start"] }).notNull(),
+  offsetMinutes: integer("offset_minutes").notNull(),
+  allDayLocalTime: text("all_day_local_time"),
+  enabled: integer("enabled").notNull().default(1),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const reminderDeliveries = sqliteTable(
+  "reminder_deliveries",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    taskId: integer("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    taskReminderId: integer("task_reminder_id")
+      .notNull()
+      .references(() => taskReminders.id, { onDelete: "cascade" }),
+    endpointId: integer("endpoint_id")
+      .notNull()
+      .references(() => reminderEndpoints.id, { onDelete: "cascade" }),
+    adapterKey: text("adapter_key", {
+      enum: [
+        "sms.twilio",
+        "signal.signal_cli",
+        "telegram.bot_api",
+        "discord.webhook",
+        "slack.webhook",
+      ],
+    }).notNull(),
+    dedupeKey: text("dedupe_key").notNull(),
+    scheduledFor: text("scheduled_for").notNull(),
+    status: text("status", {
+      enum: ["pending", "sending", "sent", "failed", "dead", "suppressed"],
+    })
+      .notNull()
+      .default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: text("next_attempt_at"),
+    providerMessageId: text("provider_message_id"),
+    renderedBody: text("rendered_body"),
+    error: text("error"),
+    lastAttemptAt: text("last_attempt_at"),
+    sentAt: text("sent_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [unique().on(t.dedupeKey)],
+);
+
 export const inviteLinks = sqliteTable("invite_links", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   token: text("token").notNull().unique(),
