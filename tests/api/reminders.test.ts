@@ -42,6 +42,7 @@ import {
   GET as getReminderEndpointById,
   PATCH as patchReminderEndpointById,
 } from "@/app/api/reminders/endpoints/[id]/route";
+import { POST as postReminderEndpointTest } from "@/app/api/reminders/endpoints/[id]/test/route";
 import {
   POST as createReminderEndpointRoute,
   GET as listReminderEndpointsRoute,
@@ -263,6 +264,33 @@ describe("/api/reminders/endpoints/[id]", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
     expect(getReminderEndpoint(db, userId, endpoint.id)).toBeNull();
+  });
+
+  it("sends a reminder endpoint test and records test status", async () => {
+    const db = mockState.db as Db;
+    const userId = mockState.user?.id as number;
+    const endpoint = createReminderEndpoint(db, userId, {
+      adapterKey: "slack.webhook",
+      label: "Slack",
+      target: "https://slack.test/check",
+    });
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await postReminderEndpointTest(
+      buildRequest(`/api/reminders/endpoints/${endpoint.id}/test`, {
+        method: "POST",
+        body: { body: "API test" },
+      }),
+      { params: Promise.resolve({ id: String(endpoint.id) }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ ok: true, providerMessageId: null });
+    expect(getReminderEndpoint(db, userId, endpoint.id)?.lastTestStatus).toBe(
+      "ok",
+    );
   });
 });
 
