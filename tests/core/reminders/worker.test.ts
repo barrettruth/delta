@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 describe("runReminderWorker", () => {
-  it("enqueues due reminder deliveries", () => {
+  it("enqueues due reminder deliveries", async () => {
     const task = createTask(db, userId, {
       description: "Due soon",
       due: "2026-04-06T15:30:00.000Z",
@@ -43,7 +43,7 @@ describe("runReminderWorker", () => {
       offsetMinutes: -10,
     });
 
-    const result = runReminderWorker(db, {
+    const result = await runReminderWorker(db, {
       nowIso: "2026-04-06T15:20:00.000Z",
       userTimezoneResolver: () => "UTC",
     });
@@ -57,7 +57,7 @@ describe("runReminderWorker", () => {
     });
   });
 
-  it("does not enqueue future reminder deliveries", () => {
+  it("does not enqueue future reminder deliveries", async () => {
     const task = createTask(db, userId, {
       description: "Not due yet",
       due: "2026-04-06T15:30:00.000Z",
@@ -75,12 +75,42 @@ describe("runReminderWorker", () => {
       offsetMinutes: -10,
     });
 
-    const result = runReminderWorker(db, {
+    const result = await runReminderWorker(db, {
       nowIso: "2026-04-06T15:19:00.000Z",
       userTimezoneResolver: () => "UTC",
     });
 
     expect(result.enqueued).toHaveLength(0);
+  });
+
+  it("dispatches due webhook deliveries in the same worker run", async () => {
+    const task = createTask(db, userId, {
+      description: "Webhook due now",
+      due: "2026-04-06T15:30:00.000Z",
+    });
+    const endpoint = createReminderEndpoint(db, userId, {
+      adapterKey: "slack.webhook",
+      label: "Slack",
+      target: "https://slack.test/worker",
+    });
+
+    createTaskReminder(db, userId, {
+      taskId: task.id,
+      endpointId: endpoint.id,
+      anchor: "due",
+      offsetMinutes: -10,
+    });
+
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runReminderWorker(db, {
+      nowIso: "2026-04-06T15:20:00.000Z",
+      userTimezoneResolver: () => "UTC",
+    });
+
+    expect(result.enqueued).toHaveLength(1);
+    expect(getReminderDelivery(db, result.enqueued[0].id)?.status).toBe("sent");
   });
 });
 

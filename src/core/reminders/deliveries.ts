@@ -224,6 +224,25 @@ export function markReminderDeliveryFailed(
   return row ?? null;
 }
 
+export function markReminderDeliverySuppressed(
+  db: Db,
+  id: number,
+): ReminderDelivery | null {
+  const now = timestamp();
+  const row = db
+    .update(reminderDeliveries)
+    .set({
+      status: "suppressed",
+      nextAttemptAt: null,
+      updatedAt: now,
+    })
+    .where(eq(reminderDeliveries.id, id))
+    .returning()
+    .get();
+
+  return row ?? null;
+}
+
 export function suppressPendingReminderDeliveriesForTask(
   db: Db,
   taskId: number,
