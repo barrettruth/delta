@@ -41,6 +41,23 @@ describe("reminder transport form helpers", () => {
         systemConfigKey: "reminders.telegram.bot_api.bot_token",
       },
     ]);
+
+    expect(getReminderTransportFields("signal.signal_cli")).toEqual([
+      {
+        name: "account",
+        label: "account",
+        placeholder: "+15125550123",
+        inputType: "tel",
+        systemConfigKey: "reminders.signal.signal_cli.account",
+      },
+      {
+        name: "configPath",
+        label: "config path",
+        placeholder: "/var/lib/signal-cli",
+        inputType: "text",
+        systemConfigKey: "reminders.signal.signal_cli.config_path",
+      },
+    ]);
   });
 
   it("normalizes and validates reminder transport input", () => {
@@ -64,6 +81,19 @@ describe("reminder transport form helpers", () => {
         botToken: "   ",
       }),
     ).toEqual({ ok: false, error: "bot token is required" });
+
+    expect(
+      normalizeReminderTransportConfigValues("signal.signal_cli", {
+        account: " +15125550123 ",
+        configPath: " /var/lib/signal-cli ",
+      }),
+    ).toEqual({
+      ok: true,
+      values: {
+        account: "+15125550123",
+        configPath: "/var/lib/signal-cli",
+      },
+    });
 
     expect(
       normalizeReminderTransportConfigValues("telegram.bot_api", null),

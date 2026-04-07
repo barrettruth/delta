@@ -52,7 +52,7 @@ describe("reminder endpoint form helpers", () => {
           beta: true,
         },
       }),
-    ).toBe("beta · signal-cli is not available yet");
+    ).toBe("beta · requires signal-cli runtime on the server");
 
     expect(
       getReminderEndpointAdapterHint({

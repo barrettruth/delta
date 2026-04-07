@@ -123,7 +123,9 @@ describe("ReminderDeliveryLogSection", () => {
     expect(html).toContain("Slack Webhook");
     expect(html).toContain("Discord Webhook");
     expect(html).toContain("Signal CLI");
-    expect(html).toContain("signal-cli is not available in this environment");
+    expect(html).toContain(
+      "Signal remains beta and depends on a signal-cli account",
+    );
   });
 
   it("renders empty states when no deliveries exist yet", () => {

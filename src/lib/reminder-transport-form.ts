@@ -2,6 +2,7 @@ import type { ReminderAdapterKey } from "@/core/reminders/types";
 
 export const REMINDER_TRANSPORT_CONFIGURABLE_ADAPTER_KEYS = [
   "sms.twilio",
+  "signal.signal_cli",
   "telegram.bot_api",
 ] as const;
 
@@ -53,6 +54,22 @@ const REMINDER_TRANSPORT_FIELDS = {
       placeholder: "123456:ABCDEF",
       inputType: "password",
       systemConfigKey: "reminders.telegram.bot_api.bot_token",
+    },
+  ],
+  "signal.signal_cli": [
+    {
+      name: "account",
+      label: "account",
+      placeholder: "+15125550123",
+      inputType: "tel",
+      systemConfigKey: "reminders.signal.signal_cli.account",
+    },
+    {
+      name: "configPath",
+      label: "config path",
+      placeholder: "/var/lib/signal-cli",
+      inputType: "text",
+      systemConfigKey: "reminders.signal.signal_cli.config_path",
     },
   ],
 } satisfies Record<

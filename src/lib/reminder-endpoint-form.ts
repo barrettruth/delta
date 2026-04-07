@@ -39,7 +39,7 @@ export function getReminderEndpointAdapterHint(
   >,
 ): string | null {
   if (adapter.key === "signal.signal_cli") {
-    return "beta · signal-cli is not available yet";
+    return "beta · requires signal-cli runtime on the server";
   }
 
   if (adapter.configScope === "system") {
