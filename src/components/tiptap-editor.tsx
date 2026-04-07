@@ -20,7 +20,7 @@ import TaskList from "@tiptap/extension-task-list";
 import type { JSONContent } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect } from "react";
+import { memo, useCallback, useEffect } from "react";
 import CodeBlockShiki from "tiptap-extension-code-block-shiki";
 import { Button } from "@/components/ui/button";
 import "./tiptap-styles.css";
@@ -103,7 +103,7 @@ function parseContent(content: string | null): JSONContent | undefined {
   }
 }
 
-export function TiptapEditor({
+export const TiptapEditor = memo(function TiptapEditor({
   content,
   onChange,
 }: {
@@ -279,4 +279,4 @@ export function TiptapEditor({
       <EditorContent editor={editor} />
     </div>
   );
-}
+});

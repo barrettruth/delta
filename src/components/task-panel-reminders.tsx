@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,7 +39,7 @@ interface TaskPanelRemindersProps {
   onRemoveReminder: (clientId: string) => void;
 }
 
-export function TaskPanelReminders({
+export const TaskPanelReminders = memo(function TaskPanelReminders({
   allDay,
   endpoints,
   reminders,
@@ -137,9 +137,9 @@ export function TaskPanelReminders({
       </div>
     </div>
   );
-}
+});
 
-function ReminderEditorRow({
+const ReminderEditorRow = memo(function ReminderEditorRow({
   allDay,
   endpoints,
   reminder,
@@ -274,9 +274,9 @@ function ReminderEditorRow({
       </div>
     </div>
   );
-}
+});
 
-function AnchorSelect({
+const AnchorSelect = memo(function AnchorSelect({
   value,
   onValueChange,
 }: {
@@ -300,9 +300,9 @@ function AnchorSelect({
       </SelectContent>
     </Select>
   );
-}
+});
 
-function DirectionSelect({
+const DirectionSelect = memo(function DirectionSelect({
   value,
   onValueChange,
 }: {
@@ -327,4 +327,4 @@ function DirectionSelect({
       </SelectContent>
     </Select>
   );
-}
+});

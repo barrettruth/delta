@@ -190,6 +190,10 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
     remindersReadyRef.current = false;
   }, []);
 
+  const handleNotesChange = useCallback((json: string) => {
+    notesRef.current = json;
+  }, []);
+
   const loadReminderState = useCallback(
     async (panelMode: "edit" | "create", currentTaskId: number | null) => {
       const endpoints = await fetchJson<ReminderEndpointRecord[]>(
@@ -1098,9 +1102,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
           <TiptapEditor
             key={mode === "edit" ? task?.id : "create"}
             content={mode === "edit" ? (task?.notes ?? null) : null}
-            onChange={(json) => {
-              notesRef.current = json;
-            }}
+            onChange={handleNotesChange}
           />
         </div>
       </div>
