@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import {
   reminderDeliveries,
   reminderEndpoints,
@@ -7,9 +7,34 @@ import {
 } from "@/db/schema";
 import type { Db, Task } from "../types";
 import { resolveReminderSendTime } from "./schedule";
-import type { ReminderDelivery } from "./types";
+import type {
+  ReminderDelivery,
+  ReminderDeliveryStatus,
+  TaskReminder,
+} from "./types";
 
 export const MAX_REMINDER_ATTEMPTS = 5;
+
+export interface ReminderDeliveryLogFilters {
+  taskId?: number;
+  endpointId?: number;
+  status?: ReminderDeliveryStatus | ReminderDeliveryStatus[];
+}
+
+export interface ReminderDeliveryLogRecord extends ReminderDelivery {
+  task: Pick<
+    Task,
+    "id" | "description" | "status" | "due" | "startAt" | "allDay" | "timezone"
+  >;
+  endpoint: Pick<
+    typeof reminderEndpoints.$inferSelect,
+    "id" | "label" | "enabled"
+  >;
+  reminder: Pick<
+    TaskReminder,
+    "id" | "anchor" | "offsetMinutes" | "allDayLocalTime" | "enabled"
+  >;
+}
 
 function timestamp(): string {
   return new Date().toISOString();
@@ -57,6 +82,114 @@ export function getReminderDelivery(
     .get();
 
   return row ?? null;
+}
+
+function mapReminderDeliveryLogRow(row: {
+  delivery: ReminderDelivery;
+  task: Task;
+  endpoint: typeof reminderEndpoints.$inferSelect;
+  reminder: TaskReminder;
+}): ReminderDeliveryLogRecord {
+  return {
+    ...row.delivery,
+    task: {
+      id: row.task.id,
+      description: row.task.description,
+      status: row.task.status,
+      due: row.task.due,
+      startAt: row.task.startAt,
+      allDay: row.task.allDay,
+      timezone: row.task.timezone,
+    },
+    endpoint: {
+      id: row.endpoint.id,
+      label: row.endpoint.label,
+      enabled: row.endpoint.enabled,
+    },
+    reminder: {
+      id: row.reminder.id,
+      anchor: row.reminder.anchor,
+      offsetMinutes: row.reminder.offsetMinutes,
+      allDayLocalTime: row.reminder.allDayLocalTime,
+      enabled: row.reminder.enabled,
+    },
+  };
+}
+
+export function listReminderDeliveryLog(
+  db: Db,
+  userId: number,
+  filters: ReminderDeliveryLogFilters = {},
+): ReminderDeliveryLogRecord[] {
+  const conditions = [eq(reminderDeliveries.userId, userId)];
+
+  if (filters.taskId !== undefined) {
+    conditions.push(eq(reminderDeliveries.taskId, filters.taskId));
+  }
+
+  if (filters.endpointId !== undefined) {
+    conditions.push(eq(reminderDeliveries.endpointId, filters.endpointId));
+  }
+
+  if (filters.status) {
+    if (Array.isArray(filters.status)) {
+      conditions.push(inArray(reminderDeliveries.status, filters.status));
+    } else {
+      conditions.push(eq(reminderDeliveries.status, filters.status));
+    }
+  }
+
+  return db
+    .select({
+      delivery: reminderDeliveries,
+      task: tasks,
+      endpoint: reminderEndpoints,
+      reminder: taskReminders,
+    })
+    .from(reminderDeliveries)
+    .innerJoin(tasks, eq(reminderDeliveries.taskId, tasks.id))
+    .innerJoin(
+      reminderEndpoints,
+      eq(reminderDeliveries.endpointId, reminderEndpoints.id),
+    )
+    .innerJoin(
+      taskReminders,
+      eq(reminderDeliveries.taskReminderId, taskReminders.id),
+    )
+    .where(and(...conditions))
+    .orderBy(desc(reminderDeliveries.createdAt), desc(reminderDeliveries.id))
+    .all()
+    .map(mapReminderDeliveryLogRow);
+}
+
+export function getReminderDeliveryLogEntry(
+  db: Db,
+  userId: number,
+  id: number,
+): ReminderDeliveryLogRecord | null {
+  const row = db
+    .select({
+      delivery: reminderDeliveries,
+      task: tasks,
+      endpoint: reminderEndpoints,
+      reminder: taskReminders,
+    })
+    .from(reminderDeliveries)
+    .innerJoin(tasks, eq(reminderDeliveries.taskId, tasks.id))
+    .innerJoin(
+      reminderEndpoints,
+      eq(reminderDeliveries.endpointId, reminderEndpoints.id),
+    )
+    .innerJoin(
+      taskReminders,
+      eq(reminderDeliveries.taskReminderId, taskReminders.id),
+    )
+    .where(
+      and(eq(reminderDeliveries.userId, userId), eq(reminderDeliveries.id, id)),
+    )
+    .get();
+
+  return row ? mapReminderDeliveryLogRow(row) : null;
 }
 
 export function enqueueReminderDelivery(

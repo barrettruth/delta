@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  claimReminderDelivery,
+  enqueueReminderDelivery,
+  markReminderDeliveryFailed,
+  markReminderDeliverySent,
+  markReminderDeliverySuppressed,
+} from "@/core/reminders/deliveries";
+import {
   createReminderEndpoint,
   getReminderEndpoint,
 } from "@/core/reminders/endpoints";
@@ -37,6 +44,8 @@ vi.mock("@/lib/auth-middleware", () => ({
 }));
 
 import { GET as getReminderAdapters } from "@/app/api/reminders/adapters/route";
+import { GET as getReminderDeliveryById } from "@/app/api/reminders/deliveries/[id]/route";
+import { GET as listReminderDeliveriesRoute } from "@/app/api/reminders/deliveries/route";
 import {
   DELETE as deleteReminderEndpointById,
   GET as getReminderEndpointById,
@@ -76,6 +85,64 @@ function buildRequest(
     headers,
     body,
   });
+}
+
+function buildReminderTarget(
+  adapterKey:
+    | "sms.twilio"
+    | "telegram.bot_api"
+    | "slack.webhook"
+    | "discord.webhook"
+    | "signal.signal_cli",
+) {
+  if (adapterKey === "sms.twilio" || adapterKey === "signal.signal_cli") {
+    return "+15125550100";
+  }
+  if (adapterKey === "telegram.bot_api") return "123456";
+  return `https://${adapterKey.replace(".", "-")}.test/hook`;
+}
+
+function createReminderDeliveryFixture(
+  input: {
+    userId?: number;
+    adapterKey?:
+      | "sms.twilio"
+      | "telegram.bot_api"
+      | "slack.webhook"
+      | "discord.webhook"
+      | "signal.signal_cli";
+    taskDescription?: string;
+    endpointLabel?: string;
+  } = {},
+) {
+  const db = mockState.db as Db;
+  const userId = input.userId ?? (mockState.user?.id as number);
+  const adapterKey = input.adapterKey ?? "sms.twilio";
+  const task = createTask(db, userId, {
+    description: input.taskDescription ?? `Task for ${adapterKey}`,
+    due: "2026-04-06T15:30:00.000Z",
+  });
+  const endpoint = createReminderEndpoint(db, userId, {
+    adapterKey,
+    label: input.endpointLabel ?? adapterKey,
+    target: buildReminderTarget(adapterKey),
+  });
+  const reminder = createTaskReminder(db, userId, {
+    taskId: task.id,
+    endpointId: endpoint.id,
+    anchor: "due",
+    offsetMinutes: -15,
+  });
+  const delivery = enqueueReminderDelivery(db, {
+    userId,
+    taskId: task.id,
+    taskReminderId: reminder.id,
+    endpointId: endpoint.id,
+    adapterKey,
+    scheduledFor: "2026-04-06T15:15:00.000Z",
+  });
+
+  return { task, endpoint, reminder, delivery };
 }
 
 beforeEach(() => {
@@ -291,6 +358,337 @@ describe("/api/reminders/endpoints/[id]", () => {
     expect(getReminderEndpoint(db, userId, endpoint.id)?.lastTestStatus).toBe(
       "ok",
     );
+  });
+});
+
+describe("/api/reminders/deliveries", () => {
+  it("lists delivery log entries with sent, retry, dead, and suppressed payloads", async () => {
+    const db = mockState.db as Db;
+    const otherUser = createTestUser(db);
+
+    const sentFixture = createReminderDeliveryFixture({
+      adapterKey: "sms.twilio",
+      taskDescription: "Pay rent",
+      endpointLabel: "Phone",
+    });
+    const retryFixture = createReminderDeliveryFixture({
+      adapterKey: "telegram.bot_api",
+      taskDescription: "Reply in Telegram",
+      endpointLabel: "Telegram",
+    });
+    const deadFixture = createReminderDeliveryFixture({
+      adapterKey: "slack.webhook",
+      taskDescription: "Slack alert",
+      endpointLabel: "Slack",
+    });
+    const suppressedFixture = createReminderDeliveryFixture({
+      adapterKey: "discord.webhook",
+      taskDescription: "Discord alert",
+      endpointLabel: "Discord",
+    });
+
+    claimReminderDelivery(
+      db,
+      sentFixture.delivery.id,
+      "2026-04-06T15:16:00.000Z",
+    );
+    markReminderDeliverySent(db, sentFixture.delivery.id, {
+      providerMessageId: "msg_sent_1",
+      renderedBody: "Pay rent in 15 minutes",
+    });
+
+    claimReminderDelivery(
+      db,
+      retryFixture.delivery.id,
+      "2026-04-06T15:17:00.000Z",
+    );
+    markReminderDeliveryFailed(db, retryFixture.delivery.id, "temporary", true);
+
+    claimReminderDelivery(
+      db,
+      deadFixture.delivery.id,
+      "2026-04-06T15:18:00.000Z",
+    );
+    markReminderDeliveryFailed(db, deadFixture.delivery.id, "fatal", false);
+
+    markReminderDeliverySuppressed(db, suppressedFixture.delivery.id);
+
+    createReminderDeliveryFixture({
+      userId: otherUser.id,
+      adapterKey: "signal.signal_cli",
+      taskDescription: "Hidden other user delivery",
+      endpointLabel: "Other user",
+    });
+
+    const response = await listReminderDeliveriesRoute(
+      buildRequest("/api/reminders/deliveries"),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toHaveLength(4);
+    expect(body.map((entry: { id: number }) => entry.id)).toEqual([
+      suppressedFixture.delivery.id,
+      deadFixture.delivery.id,
+      retryFixture.delivery.id,
+      sentFixture.delivery.id,
+    ]);
+
+    expect(
+      body.find(
+        (entry: { id: number }) => entry.id === sentFixture.delivery.id,
+      ),
+    ).toMatchObject({
+      id: sentFixture.delivery.id,
+      status: "sent",
+      providerMessageId: "msg_sent_1",
+      renderedBody: "Pay rent in 15 minutes",
+      task: {
+        id: sentFixture.task.id,
+        description: "Pay rent",
+        due: "2026-04-06T15:30:00.000Z",
+      },
+      endpoint: {
+        id: sentFixture.endpoint.id,
+        label: "Phone",
+      },
+      reminder: {
+        id: sentFixture.reminder.id,
+        anchor: "due",
+        offsetMinutes: -15,
+      },
+    });
+
+    expect(
+      body.find(
+        (entry: { id: number }) => entry.id === retryFixture.delivery.id,
+      ),
+    ).toMatchObject({
+      id: retryFixture.delivery.id,
+      status: "failed",
+      error: "temporary",
+      nextAttemptAt: "2026-04-06T15:18:00.000Z",
+      task: {
+        id: retryFixture.task.id,
+        description: "Reply in Telegram",
+      },
+      endpoint: {
+        id: retryFixture.endpoint.id,
+        label: "Telegram",
+      },
+    });
+
+    expect(
+      body.find(
+        (entry: { id: number }) => entry.id === deadFixture.delivery.id,
+      ),
+    ).toMatchObject({
+      id: deadFixture.delivery.id,
+      status: "dead",
+      error: "fatal",
+      nextAttemptAt: null,
+      task: {
+        id: deadFixture.task.id,
+        description: "Slack alert",
+      },
+      endpoint: {
+        id: deadFixture.endpoint.id,
+        label: "Slack",
+      },
+    });
+
+    expect(
+      body.find(
+        (entry: { id: number }) => entry.id === suppressedFixture.delivery.id,
+      ),
+    ).toMatchObject({
+      id: suppressedFixture.delivery.id,
+      status: "suppressed",
+      nextAttemptAt: null,
+      task: {
+        id: suppressedFixture.task.id,
+        description: "Discord alert",
+      },
+      endpoint: {
+        id: suppressedFixture.endpoint.id,
+        label: "Discord",
+      },
+    });
+  });
+
+  it("filters delivery log entries by task, endpoint, and status", async () => {
+    const db = mockState.db as Db;
+    const userId = mockState.user?.id as number;
+    const sharedTask = createTask(db, userId, {
+      description: "Task A",
+      due: "2026-04-06T15:30:00.000Z",
+    });
+    const sharedEndpoint = createReminderEndpoint(db, userId, {
+      adapterKey: "sms.twilio",
+      label: "Endpoint A",
+      target: buildReminderTarget("sms.twilio"),
+    });
+    const sharedReminder = createTaskReminder(db, userId, {
+      taskId: sharedTask.id,
+      endpointId: sharedEndpoint.id,
+      anchor: "due",
+      offsetMinutes: -15,
+    });
+    const sentDelivery = enqueueReminderDelivery(db, {
+      userId,
+      taskId: sharedTask.id,
+      taskReminderId: sharedReminder.id,
+      endpointId: sharedEndpoint.id,
+      adapterKey: "sms.twilio",
+      scheduledFor: "2026-04-06T15:15:00.000Z",
+    });
+    const retryDelivery = enqueueReminderDelivery(db, {
+      userId,
+      taskId: sharedTask.id,
+      taskReminderId: sharedReminder.id,
+      endpointId: sharedEndpoint.id,
+      adapterKey: "sms.twilio",
+      scheduledFor: "2026-04-06T15:10:00.000Z",
+    });
+    const otherEndpointFixture = createReminderDeliveryFixture({
+      adapterKey: "telegram.bot_api",
+      taskDescription: "Task A",
+      endpointLabel: "Endpoint B",
+    });
+    const otherTaskFixture = createReminderDeliveryFixture({
+      adapterKey: "sms.twilio",
+      taskDescription: "Task B",
+      endpointLabel: "Endpoint A",
+    });
+
+    claimReminderDelivery(db, sentDelivery.id, "2026-04-06T15:16:00.000Z");
+    markReminderDeliverySent(db, sentDelivery.id);
+
+    claimReminderDelivery(db, retryDelivery.id, "2026-04-06T15:17:00.000Z");
+    markReminderDeliveryFailed(db, retryDelivery.id, "temporary", true);
+
+    claimReminderDelivery(
+      db,
+      otherEndpointFixture.delivery.id,
+      "2026-04-06T15:18:00.000Z",
+    );
+    markReminderDeliveryFailed(
+      db,
+      otherEndpointFixture.delivery.id,
+      "temporary",
+      true,
+    );
+
+    claimReminderDelivery(
+      db,
+      otherTaskFixture.delivery.id,
+      "2026-04-06T15:19:00.000Z",
+    );
+    markReminderDeliveryFailed(
+      db,
+      otherTaskFixture.delivery.id,
+      "temporary",
+      true,
+    );
+
+    const response = await listReminderDeliveriesRoute(
+      buildRequest(
+        `/api/reminders/deliveries?task_id=${sharedTask.id}&endpoint_id=${sharedEndpoint.id}&status=sent,failed`,
+      ),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(
+      body
+        .map((entry: { id: number }) => entry.id)
+        .sort((a: number, b: number) => a - b),
+    ).toEqual([sentDelivery.id, retryDelivery.id]);
+  });
+
+  it("rejects invalid delivery filter params", async () => {
+    const response = await listReminderDeliveriesRoute(
+      buildRequest("/api/reminders/deliveries?task_id=nope&status=bogus"),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toMatchObject({
+      error: "Validation failed",
+      details: expect.arrayContaining([
+        {
+          field: "task_id",
+          message: "task_id must be a positive integer",
+        },
+        {
+          field: "status",
+          message:
+            "status must be one or more of: pending, sending, sent, failed, dead, suppressed",
+        },
+      ]),
+    });
+  });
+});
+
+describe("/api/reminders/deliveries/[id]", () => {
+  it("returns a single delivery log entry", async () => {
+    const db = mockState.db as Db;
+    const fixture = createReminderDeliveryFixture({
+      adapterKey: "slack.webhook",
+      taskDescription: "Single delivery task",
+      endpointLabel: "Slack",
+    });
+
+    claimReminderDelivery(db, fixture.delivery.id, "2026-04-06T15:16:00.000Z");
+    markReminderDeliveryFailed(db, fixture.delivery.id, "fatal", false);
+
+    const response = await getReminderDeliveryById(
+      buildRequest(`/api/reminders/deliveries/${fixture.delivery.id}`),
+      { params: Promise.resolve({ id: String(fixture.delivery.id) }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      id: fixture.delivery.id,
+      status: "dead",
+      error: "fatal",
+      nextAttemptAt: null,
+      task: {
+        id: fixture.task.id,
+        description: "Single delivery task",
+      },
+      endpoint: {
+        id: fixture.endpoint.id,
+        label: "Slack",
+      },
+      reminder: {
+        id: fixture.reminder.id,
+        anchor: "due",
+        offsetMinutes: -15,
+      },
+    });
+  });
+
+  it("returns 404 for another user's delivery", async () => {
+    const db = mockState.db as Db;
+    const otherUser = createTestUser(db);
+    const fixture = createReminderDeliveryFixture({
+      userId: otherUser.id,
+      adapterKey: "signal.signal_cli",
+      taskDescription: "Hidden delivery",
+      endpointLabel: "Signal",
+    });
+
+    const response = await getReminderDeliveryById(
+      buildRequest(`/api/reminders/deliveries/${fixture.delivery.id}`),
+      { params: Promise.resolve({ id: String(fixture.delivery.id) }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({
+      error: "Reminder delivery not found",
+    });
   });
 });
 

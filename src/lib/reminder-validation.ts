@@ -1,3 +1,4 @@
+import type { ReminderDeliveryLogFilters } from "@/core/reminders/deliveries";
 import type {
   CreateReminderEndpointInput,
   UpdateReminderEndpointInput,
@@ -6,7 +7,12 @@ import type {
   CreateTaskReminderInput,
   UpdateTaskReminderInput,
 } from "@/core/reminders/rules";
-import { isReminderAdapterKey, isReminderAnchor } from "@/core/reminders/types";
+import {
+  isReminderAdapterKey,
+  isReminderAnchor,
+  isReminderDeliveryStatus,
+  REMINDER_DELIVERY_STATUSES,
+} from "@/core/reminders/types";
 
 interface ValidationError {
   field: string;
@@ -33,6 +39,23 @@ function isValidFlag(value: unknown): value is 0 | 1 {
 
 function isValidAllDayLocalTime(value: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function parsePositiveInteger(
+  value: string | null,
+  field: string,
+  errors: ValidationError[],
+): number | undefined {
+  if (value === null) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    errors.push({
+      field,
+      message: `${field} must be a positive integer`,
+    });
+    return undefined;
+  }
+  return parsed;
 }
 
 export function validateCreateReminderEndpoint(
@@ -102,6 +125,58 @@ export function validateCreateReminderEndpoint(
     data.metadata = body.metadata as Record<string, unknown>;
   }
   if (body.enabled !== undefined) data.enabled = body.enabled as 0 | 1;
+
+  return { success: true, data };
+}
+
+export function validateReminderDeliveryLogFilters(
+  searchParams: URLSearchParams,
+): ValidationResult<ReminderDeliveryLogFilters> {
+  const errors: ValidationError[] = [];
+  const taskId = parsePositiveInteger(
+    searchParams.get("task_id"),
+    "task_id",
+    errors,
+  );
+  const endpointId = parsePositiveInteger(
+    searchParams.get("endpoint_id"),
+    "endpoint_id",
+    errors,
+  );
+  const statusValue = searchParams.get("status");
+
+  let status: ReminderDeliveryLogFilters["status"];
+  if (statusValue !== null) {
+    const values = statusValue
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (
+      values.length === 0 ||
+      values.some((value) => !isReminderDeliveryStatus(value))
+    ) {
+      errors.push({
+        field: "status",
+        message: `status must be one or more of: ${REMINDER_DELIVERY_STATUSES.join(", ")}`,
+      });
+    } else {
+      status =
+        values.length === 1
+          ? (values[0] as ReminderDeliveryLogFilters["status"])
+          : (values as ReminderDeliveryLogFilters["status"]);
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: false, errors };
+  }
+
+  const data: ReminderDeliveryLogFilters = {};
+
+  if (taskId !== undefined) data.taskId = taskId;
+  if (endpointId !== undefined) data.endpointId = endpointId;
+  if (status !== undefined) data.status = status;
 
   return { success: true, data };
 }
