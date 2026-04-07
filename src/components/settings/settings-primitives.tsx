@@ -65,6 +65,12 @@ export function SettingsRow({
   );
 }
 
-export function SettingsPage({ children }: { children: React.ReactNode }) {
-  return <div className="w-full max-w-md px-6 py-6">{children}</div>;
+export function SettingsPage({
+  children,
+  className = "max-w-md",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={`w-full px-6 py-6 ${className}`}>{children}</div>;
 }

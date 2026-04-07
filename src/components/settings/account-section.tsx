@@ -101,10 +101,11 @@ export function AccountSection({
         {connectedAccounts.map((account) => (
           <SettingsRow
             key={account.id}
-            label={`- ${account.provider}`}
+            label={account.provider}
             value={account.name ?? account.email ?? account.providerAccountId}
             action
-            destructive
+            muted
+            prefix={{ text: "-", className: "text-destructive" }}
             onClick={() => handleUnlinkProvider(account.provider)}
           />
         ))}
