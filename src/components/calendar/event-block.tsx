@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPinSimple, VideoCamera, X } from "@phosphor-icons/react";
+import { memo } from "react";
 import type { Task } from "@/core/types";
 import type { Continuation } from "@/lib/calendar-utils";
 import {
@@ -10,7 +11,7 @@ import {
   statusColor,
 } from "@/lib/calendar-utils";
 
-export function EventBlock({
+export const EventBlock = memo(function EventBlock({
   task,
   column,
   totalColumns,
@@ -194,4 +195,4 @@ export function EventBlock({
       />
     </button>
   );
-}
+});

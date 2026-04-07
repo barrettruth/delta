@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
@@ -42,6 +42,128 @@ function getTaskDimming(status: string): string {
   if (status === "cancelled") return "opacity-30";
   return "";
 }
+
+type QueueTaskListProps = {
+  filtered: RankedTask[];
+  cursor: number;
+  selectedIds: Set<number>;
+  gutterWidth: number;
+  rowRefs: { current: Map<number, HTMLDivElement> };
+  openTask: (taskId: number, index: number) => void;
+  toggleSelect: (taskId: number) => void;
+};
+
+const QueueTaskList = memo(function QueueTaskList({
+  filtered,
+  cursor,
+  selectedIds,
+  gutterWidth,
+  rowRefs,
+  openTask,
+  toggleSelect,
+}: QueueTaskListProps) {
+  if (filtered.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+        <span className="text-4xl font-light mb-2">&delta;</span>
+        <span className="text-sm">no tasks in queue</span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {filtered.map((task, i) => {
+        const isCursor = i === cursor;
+        const isSelected = selectedIds.has(task.id);
+
+        return (
+          <div
+            key={task.id}
+            ref={(el) => {
+              if (el) rowRefs.current.set(task.id, el);
+            }}
+            className={cn(
+              "w-full pl-2 pr-4 py-2.5 md:py-1.5 cursor-pointer text-left select-none border-l-2",
+              getRowClasses(isCursor, isSelected),
+              getTaskDimming(task.status),
+              !isCursor &&
+                !isSelected &&
+                STATUS_BORDER[task.status as TaskStatus],
+            )}
+            onClick={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                toggleSelect(task.id);
+                return;
+              }
+              openTask(task.id, i);
+            }}
+            onKeyDown={() => {}}
+            tabIndex={0}
+            role="row"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className={cn(
+                  "text-xs text-right tabular-nums shrink-0",
+                  isCursor ? "text-cursor-line-nr font-bold" : "text-line-nr",
+                )}
+                style={{ minWidth: `${gutterWidth}ch` }}
+              >
+                {getLineNumber(i, cursor)}
+              </span>
+              <span
+                className={cn(
+                  "text-sm truncate",
+                  task.status === "done" &&
+                    "line-through text-muted-foreground",
+                  task.status === "cancelled" &&
+                    "line-through text-muted-foreground",
+                )}
+              >
+                {task.description}
+              </span>
+            </div>
+            {(task.category ||
+              task.due ||
+              task.location ||
+              task.meetingUrl) && (
+              <div
+                className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
+                style={{
+                  paddingLeft: `calc(${gutterWidth}ch + 0.5rem)`,
+                }}
+              >
+                {task.category && <span># {task.category}</span>}
+                {task.location && task.category && <span>&middot;</span>}
+                {task.location && (
+                  <span className="inline-flex items-center gap-0.5 truncate max-w-[20ch]">
+                    <MapPinSimple className="w-3 h-3 shrink-0" />
+                    {task.location}
+                  </span>
+                )}
+                {task.meetingUrl && (
+                  <VideoCamera className="w-3 h-3 shrink-0" />
+                )}
+                {task.due && (
+                  <span
+                    className={cn(
+                      "tabular-nums ml-auto",
+                      isOverdue(task.due) && "text-destructive",
+                    )}
+                  >
+                    {formatRelativeDate(new Date(task.due))}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+});
 
 export function QueueView({
   tasks,
@@ -241,16 +363,14 @@ export function QueueView({
     }
   }, [cursor, filtered]);
 
-  function handleRowClick(task: RankedTask, idx: number, e: React.MouseEvent) {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      toggleSelect(task.id);
-      return;
-    }
-    nav.pushJump();
-    setCursor(idx);
-    panel.open(task.id);
-  }
+  const openTask = useCallback(
+    (taskId: number, index: number) => {
+      nav.pushJump();
+      setCursor(index);
+      panel.open(taskId);
+    },
+    [nav.pushJump, panel.open, setCursor],
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -280,98 +400,15 @@ export function QueueView({
         </div>
       )}
       <div ref={scrollRef} className="flex-1 overflow-auto">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <span className="text-4xl font-light mb-2">&delta;</span>
-            <span className="text-sm">no tasks in queue</span>
-          </div>
-        ) : (
-          <div>
-            {filtered.map((task, i) => {
-              const isCursor = i === cursor;
-              const isSelected = selectedIds.has(task.id);
-
-              return (
-                <div
-                  key={task.id}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(task.id, el);
-                  }}
-                  className={cn(
-                    "w-full pl-2 pr-4 py-2.5 md:py-1.5 cursor-pointer text-left select-none border-l-2",
-                    getRowClasses(isCursor, isSelected),
-                    getTaskDimming(task.status),
-                    !isCursor &&
-                      !isSelected &&
-                      STATUS_BORDER[task.status as TaskStatus],
-                  )}
-                  onClick={(e) => handleRowClick(task, i, e)}
-                  onKeyDown={() => {}}
-                  tabIndex={0}
-                  role="row"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className={cn(
-                        "text-xs text-right tabular-nums shrink-0",
-                        isCursor
-                          ? "text-cursor-line-nr font-bold"
-                          : "text-line-nr",
-                      )}
-                      style={{ minWidth: `${gutterWidth}ch` }}
-                    >
-                      {getLineNumber(i, cursor)}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-sm truncate",
-                        task.status === "done" &&
-                          "line-through text-muted-foreground",
-                        task.status === "cancelled" &&
-                          "line-through text-muted-foreground",
-                      )}
-                    >
-                      {task.description}
-                    </span>
-                  </div>
-                  {(task.category ||
-                    task.due ||
-                    task.location ||
-                    task.meetingUrl) && (
-                    <div
-                      className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
-                      style={{
-                        paddingLeft: `calc(${gutterWidth}ch + 0.5rem)`,
-                      }}
-                    >
-                      {task.category && <span># {task.category}</span>}
-                      {task.location && task.category && <span>&middot;</span>}
-                      {task.location && (
-                        <span className="inline-flex items-center gap-0.5 truncate max-w-[20ch]">
-                          <MapPinSimple className="w-3 h-3 shrink-0" />
-                          {task.location}
-                        </span>
-                      )}
-                      {task.meetingUrl && (
-                        <VideoCamera className="w-3 h-3 shrink-0" />
-                      )}
-                      {task.due && (
-                        <span
-                          className={cn(
-                            "tabular-nums ml-auto",
-                            isOverdue(task.due) && "text-destructive",
-                          )}
-                        >
-                          {formatRelativeDate(new Date(task.due))}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <QueueTaskList
+          filtered={filtered}
+          cursor={cursor}
+          selectedIds={selectedIds}
+          gutterWidth={gutterWidth}
+          rowRefs={rowRefs}
+          openTask={openTask}
+          toggleSelect={toggleSelect}
+        />
       </div>
       <RecurrenceStrategyDialog
         open={!!recurrenceDelete.pending}
