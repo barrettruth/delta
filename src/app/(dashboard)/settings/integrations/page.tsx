@@ -5,6 +5,7 @@ import { validateSession } from "@/core/auth";
 import { getIntegrationConfig } from "@/core/integration-config";
 import { listReminderEndpoints } from "@/core/reminders/endpoints";
 import { listReminderAdapters } from "@/core/reminders/registry";
+import { listReminderTransportConfigStatuses } from "@/core/reminders/transport-config";
 import { db } from "@/db";
 
 export default async function SettingsIntegrationsPage() {
@@ -38,6 +39,7 @@ export default async function SettingsIntegrationsPage() {
     (gcal?.metadata?.conflictResolution as string) ?? "google_wins";
   const syncInterval = (gcal?.metadata?.syncInterval as number) ?? 5;
   const reminderEndpoints = listReminderEndpoints(db, user.id);
+  const reminderTransportConfigs = listReminderTransportConfigStatuses(db);
   const reminderAdapters = listReminderAdapters();
 
   return (
@@ -50,6 +52,7 @@ export default async function SettingsIntegrationsPage() {
       initialSyncInterval={syncInterval as 5 | 15 | 30}
       initialNlpProvider={nlpProvider}
       initialReminderEndpoints={reminderEndpoints}
+      initialReminderTransportConfigs={reminderTransportConfigs}
       reminderAdapters={reminderAdapters}
     />
   );

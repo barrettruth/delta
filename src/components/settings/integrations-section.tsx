@@ -9,6 +9,7 @@ import { useStatusBar } from "@/contexts/status-bar";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { ReminderAdapterManifest } from "@/core/reminders/types";
 import type { NlpProvider } from "@/lib/nlp-models";
+import type { ReminderTransportConfigStatus } from "@/lib/reminder-transport-form";
 import {
   SettingsPage,
   SettingsRow,
@@ -50,6 +51,7 @@ export function IntegrationsSection({
   initialSyncInterval = 5,
   initialNlpProvider = null,
   initialReminderEndpoints = [],
+  initialReminderTransportConfigs = [],
   reminderAdapters = [],
 }: {
   gcalConnected: boolean;
@@ -58,6 +60,7 @@ export function IntegrationsSection({
   initialSyncInterval?: SyncInterval;
   initialNlpProvider?: NlpProvider | null;
   initialReminderEndpoints?: ReminderEndpointRecord[];
+  initialReminderTransportConfigs?: ReminderTransportConfigStatus[];
   reminderAdapters?: ReminderAdapterManifest[];
 }) {
   const router = useRouter();
@@ -393,6 +396,7 @@ export function IntegrationsSection({
 
       <ReminderEndpointsSection
         initialEndpoints={initialReminderEndpoints}
+        initialTransportConfigs={initialReminderTransportConfigs}
         adapters={reminderAdapters}
       />
     </SettingsPage>
