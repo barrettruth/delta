@@ -37,98 +37,109 @@ const sampleMessage =
 
 export default function ProofOfConsentPage() {
   return (
-    <main className="min-h-dvh bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-6 py-10 sm:px-8 sm:py-14">
-        <header className="flex flex-col gap-3 border-b border-border pb-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
-            public compliance document
+    <main className="min-h-dvh bg-stone-50 text-neutral-900">
+      <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-14 sm:px-10 sm:py-20">
+        <header className="flex flex-col items-center gap-4 border-b border-neutral-300/80 pb-10 text-center">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">
+            delta · public compliance document
           </p>
-          <h1 className="font-serif text-4xl sm:text-5xl">
+          <h1 className="max-w-2xl font-serif text-4xl leading-tight sm:text-5xl">
             Proof of SMS consent
           </h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">
+          <p className="max-w-2xl font-serif text-lg leading-8 text-neutral-700">
             This page documents how delta collects consent for transactional SMS
             reminders sent through Twilio.
           </p>
         </header>
 
-        <section className="grid gap-px border border-border bg-border sm:grid-cols-2">
-          {facts.map(([label, value]) => (
-            <div key={label} className="bg-background px-4 py-4">
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70">
-                {label}
-              </dt>
-              <dd className="mt-2 text-sm text-foreground">{value}</dd>
-            </div>
-          ))}
-        </section>
-
-        <section className="grid gap-8 lg:grid-cols-[1.3fr_0.9fr]">
-          <div className="flex flex-col gap-8">
-            <section className="flex flex-col gap-4">
-              <h2 className="text-xs uppercase tracking-[0.16em] text-muted-foreground/70">
-                How consent is collected
-              </h2>
-              <ol className="flex flex-col gap-3 text-sm text-foreground">
-                {consentSteps.map((step, index) => (
-                  <li
-                    key={step}
-                    className="flex gap-3 border border-border px-4 py-3"
-                  >
-                    <span className="text-muted-foreground">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section className="flex flex-col gap-4">
-              <h2 className="text-xs uppercase tracking-[0.16em] text-muted-foreground/70">
-                What users agree to receive
-              </h2>
-              <ul className="flex flex-col gap-3 text-sm text-foreground">
-                {reminderRules.map((rule) => (
-                  <li key={rule} className="border border-border px-4 py-3">
-                    {rule}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
-
-          <div className="flex flex-col gap-8">
-            <section className="flex flex-col gap-4">
-              <h2 className="text-xs uppercase tracking-[0.16em] text-muted-foreground/70">
-                Sample message
-              </h2>
-              <div className="border border-border px-4 py-4">
-                <p className="text-sm text-foreground">{sampleMessage}</p>
+        <section className="space-y-5">
+          <h2 className="text-sm uppercase tracking-[0.2em] text-neutral-500">
+            Service overview
+          </h2>
+          <dl className="space-y-4 border-y border-neutral-300/80 py-6">
+            {facts.map(([label, value]) => (
+              <div
+                key={label}
+                className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-6"
+              >
+                <dt className="text-xs uppercase tracking-[0.16em] text-neutral-500">
+                  {label}
+                </dt>
+                <dd className="font-serif text-lg leading-8 text-neutral-800">
+                  {value}
+                </dd>
               </div>
-            </section>
-
-            <section className="flex flex-col gap-4">
-              <h2 className="text-xs uppercase tracking-[0.16em] text-muted-foreground/70">
-                Opt-out and account control
-              </h2>
-              <ul className="flex flex-col gap-3 text-sm text-foreground">
-                {optOutOptions.map((option) => (
-                  <li key={option} className="border border-border px-4 py-3">
-                    {option}
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="border border-border px-4 py-4 text-sm text-muted-foreground">
-              delta is a self-hosted productivity application. SMS reminders are
-              initiated only after a user configures their own phone number and
-              reminder rules inside the authenticated app.
-            </section>
-          </div>
+            ))}
+          </dl>
         </section>
-      </div>
+
+        <section className="space-y-5">
+          <h2 className="text-sm uppercase tracking-[0.2em] text-neutral-500">
+            How consent is collected
+          </h2>
+          <ol className="space-y-5">
+            {consentSteps.map((step, index) => (
+              <li key={step} className="grid gap-2 sm:grid-cols-[3rem_1fr]">
+                <span className="font-serif text-2xl text-neutral-400">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <p className="font-serif text-lg leading-8 text-neutral-800">
+                  {step}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="space-y-5">
+          <h2 className="text-sm uppercase tracking-[0.2em] text-neutral-500">
+            What users agree to receive
+          </h2>
+          <ul className="space-y-4">
+            {reminderRules.map((rule) => (
+              <li
+                key={rule}
+                className="font-serif text-lg leading-8 text-neutral-800"
+              >
+                {rule}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="space-y-5">
+          <h2 className="text-sm uppercase tracking-[0.2em] text-neutral-500">
+            Sample message
+          </h2>
+          <blockquote className="border-l border-neutral-300 pl-6 font-serif text-lg leading-8 text-neutral-800 italic">
+            {sampleMessage}
+          </blockquote>
+        </section>
+
+        <section className="space-y-5">
+          <h2 className="text-sm uppercase tracking-[0.2em] text-neutral-500">
+            Opt-out and account control
+          </h2>
+          <ul className="space-y-4">
+            {optOutOptions.map((option) => (
+              <li
+                key={option}
+                className="font-serif text-lg leading-8 text-neutral-800"
+              >
+                {option}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="border-t border-neutral-300/80 pt-8 text-center">
+          <p className="font-serif text-lg leading-8 text-neutral-700">
+            delta is a self-hosted productivity application. SMS reminders are
+            initiated only after a user configures their own phone number and
+            reminder rules inside the authenticated app.
+          </p>
+        </section>
+      </article>
     </main>
   );
 }
