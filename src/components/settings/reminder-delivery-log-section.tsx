@@ -55,12 +55,12 @@ const OPERATOR_PLAYBOOKS: Playbook[] = [
   {
     adapterKey: "signal.signal_cli",
     steps: [
-      "Signal stays beta until signal-cli runtime support lands in delta.",
-      "Provision and verify the sender identity with signal-cli directly on the host before wiring delta to it.",
-      "After runtime support is available, add the recipient as an endpoint and run a manual end-to-end send.",
-      "Treat Signal as manual-ops only until its adapter and runtime checks are in place.",
+      "Signal remains beta and depends on a signal-cli account that delta can access on the host.",
+      "Save the sender account and signal-cli config path in transport config before creating endpoints.",
+      "Add the recipient identifier as the endpoint target and use the endpoint test action for a direct send.",
+      "After any signal-cli upgrade or account change, run a manual end-to-end verification on the deployed host.",
     ],
-    note: "Current environments return “signal-cli is not available in this environment” until the runtime work lands.",
+    note: "Signal still requires manual live verification and dedicated service-line operations, even though send and test-send are wired into delta.",
   },
 ];
 

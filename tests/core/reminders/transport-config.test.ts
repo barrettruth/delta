@@ -28,6 +28,11 @@ describe("reminder transport config", () => {
         missingFields: ["accountSid", "authToken", "fromNumber"],
       },
       {
+        adapterKey: "signal.signal_cli",
+        configured: false,
+        missingFields: ["account", "configPath"],
+      },
+      {
         adapterKey: "telegram.bot_api",
         configured: false,
         missingFields: ["botToken"],
@@ -55,6 +60,25 @@ describe("reminder transport config", () => {
     );
     expect(getSystemConfig(db, "reminders.sms.twilio.from_number")).toBe(
       "+15125550123",
+    );
+  });
+
+  it("stores and reports Signal transport config", () => {
+    const status = setReminderTransportConfig(db, "signal.signal_cli", {
+      account: "+15125550124",
+      configPath: "/var/lib/signal-cli",
+    });
+
+    expect(status).toEqual({
+      adapterKey: "signal.signal_cli",
+      configured: true,
+      missingFields: [],
+    });
+    expect(getSystemConfig(db, "reminders.signal.signal_cli.account")).toBe(
+      "+15125550124",
+    );
+    expect(getSystemConfig(db, "reminders.signal.signal_cli.config_path")).toBe(
+      "/var/lib/signal-cli",
     );
   });
 

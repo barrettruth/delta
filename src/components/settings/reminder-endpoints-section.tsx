@@ -358,7 +358,11 @@ export function ReminderEndpointsSection({
               >
                 <SettingsRow
                   label={adapter.displayName}
-                  value={getReminderTransportStatusLabel(status)}
+                  value={
+                    adapter.capabilities.beta
+                      ? `${getReminderTransportStatusLabel(status)} · beta`
+                      : getReminderTransportStatusLabel(status)
+                  }
                   action
                   muted={!status.configured}
                   onClick={() =>
@@ -367,6 +371,11 @@ export function ReminderEndpointsSection({
                       : openTransportEditor(adapterKey)
                   }
                 />
+                {adapter.capabilities.beta && hint && (
+                  <div className="px-2 text-xs text-muted-foreground">
+                    {hint}
+                  </div>
+                )}
                 {editingTransportKey === adapterKey && (
                   <div className="space-y-2 px-2 pb-2">
                     {fields.map((field, index) => (
