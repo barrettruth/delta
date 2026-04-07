@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { IntegrationsSection } from "@/components/settings/integrations-section";
 import { validateSession } from "@/core/auth";
 import { getIntegrationConfig } from "@/core/integration-config";
+import { listReminderEndpoints } from "@/core/reminders/endpoints";
+import { listReminderAdapters } from "@/core/reminders/registry";
 import { db } from "@/db";
 
 export default async function SettingsIntegrationsPage() {
@@ -35,6 +37,8 @@ export default async function SettingsIntegrationsPage() {
   const conflictResolution =
     (gcal?.metadata?.conflictResolution as string) ?? "google_wins";
   const syncInterval = (gcal?.metadata?.syncInterval as number) ?? 5;
+  const reminderEndpoints = listReminderEndpoints(db, user.id);
+  const reminderAdapters = listReminderAdapters();
 
   return (
     <IntegrationsSection
@@ -45,6 +49,8 @@ export default async function SettingsIntegrationsPage() {
       }
       initialSyncInterval={syncInterval as 5 | 15 | 30}
       initialNlpProvider={nlpProvider}
+      initialReminderEndpoints={reminderEndpoints}
+      reminderAdapters={reminderAdapters}
     />
   );
 }

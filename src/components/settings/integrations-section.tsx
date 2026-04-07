@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ReminderEndpointsSection } from "@/components/settings/reminder-endpoints-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
+import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
+import type { ReminderAdapterManifest } from "@/core/reminders/types";
 import type { NlpProvider } from "@/lib/nlp-models";
 import {
   SettingsPage,
@@ -46,12 +49,16 @@ export function IntegrationsSection({
   initialConflictResolution = "google_wins",
   initialSyncInterval = 5,
   initialNlpProvider = null,
+  initialReminderEndpoints = [],
+  reminderAdapters = [],
 }: {
   gcalConnected: boolean;
   initialGeoProvider?: GeoProvider;
   initialConflictResolution?: ConflictResolution;
   initialSyncInterval?: SyncInterval;
   initialNlpProvider?: NlpProvider | null;
+  initialReminderEndpoints?: ReminderEndpointRecord[];
+  reminderAdapters?: ReminderAdapterManifest[];
 }) {
   const router = useRouter();
   const statusBar = useStatusBar();
@@ -383,6 +390,11 @@ export function IntegrationsSection({
           </div>
         ))}
       </SettingsSection>
+
+      <ReminderEndpointsSection
+        initialEndpoints={initialReminderEndpoints}
+        adapters={reminderAdapters}
+      />
     </SettingsPage>
   );
 }
