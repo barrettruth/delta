@@ -1,7 +1,17 @@
 import withSerwist from "@serwist/next";
 import type { NextConfig } from "next";
 
+const reactCompilerMode = process.env.DELTA_REACT_COMPILER_MODE;
+const reactCompiler: NextConfig["reactCompiler"] =
+  reactCompilerMode === "off"
+    ? false
+    : {
+        compilationMode: reactCompilerMode === "infer" ? "infer" : "annotation",
+        panicThreshold: "none",
+      };
+
 const nextConfig: NextConfig = {
+  reactCompiler,
   output: "standalone",
   turbopack: {},
   async headers() {
