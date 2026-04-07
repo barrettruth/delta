@@ -6,7 +6,9 @@ import {
   enqueueDueReminderDeliveries,
   enqueueReminderDelivery,
   getReminderDelivery,
+  getReminderDeliveryLogEntry,
   listDispatchableReminderDeliveries,
+  listReminderDeliveryLog,
   MAX_REMINDER_ATTEMPTS,
   markReminderDeliveryFailed,
   markReminderDeliverySent,
@@ -397,5 +399,143 @@ describe("retry delay helpers", () => {
     expect(computeReminderRetryDelayMinutes(2)).toBe(5);
     expect(computeReminderRetryDelayMinutes(3)).toBe(15);
     expect(computeReminderRetryDelayMinutes(4)).toBe(60);
+  });
+});
+
+describe("reminder delivery log", () => {
+  it("lists joined delivery records scoped to a user", () => {
+    const sentFixture = createDeliveryFixture("sms.twilio");
+    const retryFixture = createDeliveryFixture("telegram.bot_api");
+    const sentDelivery = enqueueReminderDelivery(db, {
+      userId,
+      taskId: sentFixture.task.id,
+      taskReminderId: sentFixture.reminder.id,
+      endpointId: sentFixture.endpoint.id,
+      adapterKey: "sms.twilio",
+      scheduledFor: "2026-04-06T15:20:00.000Z",
+    });
+    const retryDelivery = enqueueReminderDelivery(db, {
+      userId,
+      taskId: retryFixture.task.id,
+      taskReminderId: retryFixture.reminder.id,
+      endpointId: retryFixture.endpoint.id,
+      adapterKey: "telegram.bot_api",
+      scheduledFor: "2026-04-06T15:10:00.000Z",
+    });
+
+    claimReminderDelivery(db, sentDelivery.id, "2026-04-06T15:25:00.000Z");
+    markReminderDeliverySent(db, sentDelivery.id, {
+      providerMessageId: "msg_123",
+      renderedBody: "reminder text",
+    });
+
+    claimReminderDelivery(db, retryDelivery.id, "2026-04-06T15:26:00.000Z");
+    markReminderDeliveryFailed(db, retryDelivery.id, "temporary", true);
+
+    const otherUserId = createTestUser(db).id;
+    const otherTask = createTask(db, otherUserId, {
+      description: "Hidden task",
+      due: "2026-04-06T15:30:00.000Z",
+    });
+    const otherEndpoint = createReminderEndpoint(db, otherUserId, {
+      adapterKey: "signal.signal_cli",
+      label: "Other signal",
+      target: "+15125559999",
+    });
+    const otherReminder = createTaskReminder(db, otherUserId, {
+      taskId: otherTask.id,
+      endpointId: otherEndpoint.id,
+      anchor: "due",
+      offsetMinutes: -10,
+    });
+
+    enqueueReminderDelivery(db, {
+      userId: otherUserId,
+      taskId: otherTask.id,
+      taskReminderId: otherReminder.id,
+      endpointId: otherEndpoint.id,
+      adapterKey: "signal.signal_cli",
+      scheduledFor: "2026-04-06T15:20:00.000Z",
+    });
+
+    const entries = listReminderDeliveryLog(db, userId, {
+      status: ["sent", "failed"],
+    });
+
+    expect(entries.map((entry) => entry.id)).toEqual([
+      retryDelivery.id,
+      sentDelivery.id,
+    ]);
+    expect(entries[0]).toMatchObject({
+      id: retryDelivery.id,
+      status: "failed",
+      error: "temporary",
+      nextAttemptAt: "2026-04-06T15:27:00.000Z",
+      task: {
+        id: retryFixture.task.id,
+        description: retryFixture.task.description,
+      },
+      endpoint: {
+        id: retryFixture.endpoint.id,
+        label: retryFixture.endpoint.label,
+      },
+      reminder: {
+        id: retryFixture.reminder.id,
+        anchor: "due",
+        offsetMinutes: -10,
+      },
+    });
+    expect(entries[1]).toMatchObject({
+      id: sentDelivery.id,
+      status: "sent",
+      providerMessageId: "msg_123",
+      renderedBody: "reminder text",
+      task: {
+        id: sentFixture.task.id,
+        description: sentFixture.task.description,
+      },
+      endpoint: {
+        id: sentFixture.endpoint.id,
+        label: sentFixture.endpoint.label,
+      },
+    });
+  });
+
+  it("returns a single delivery log entry scoped to a user", () => {
+    const fixture = createDeliveryFixture("discord.webhook");
+    const delivery = enqueueReminderDelivery(db, {
+      userId,
+      taskId: fixture.task.id,
+      taskReminderId: fixture.reminder.id,
+      endpointId: fixture.endpoint.id,
+      adapterKey: "discord.webhook",
+      scheduledFor: "2026-04-06T15:20:00.000Z",
+    });
+
+    claimReminderDelivery(db, delivery.id, "2026-04-06T15:25:00.000Z");
+    markReminderDeliveryFailed(db, delivery.id, "fatal", false);
+
+    const entry = getReminderDeliveryLogEntry(db, userId, delivery.id);
+
+    expect(entry).toMatchObject({
+      id: delivery.id,
+      status: "dead",
+      error: "fatal",
+      nextAttemptAt: null,
+      task: {
+        id: fixture.task.id,
+        description: fixture.task.description,
+      },
+      endpoint: {
+        id: fixture.endpoint.id,
+        label: fixture.endpoint.label,
+      },
+      reminder: {
+        id: fixture.reminder.id,
+        anchor: "due",
+        offsetMinutes: -10,
+      },
+    });
+    expect(getReminderDeliveryLogEntry(db, userId + 1, delivery.id)).toBeNull();
   });
 });
