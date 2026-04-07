@@ -33,7 +33,15 @@
     }
   },
   "files": {
-    "includes": ["**", "!.next", "!.claude", "!drizzle", "!src/components/ui"]
+    "includes": [
+      "**",
+      "!.next",
+      "!.claude",
+      "!drizzle",
+      "!src/components/ui",
+      "!cli/dist",
+      "!test-results"
+    ]
   },
   "overrides": [
     {
