@@ -6,6 +6,7 @@ import { ReminderEndpointsSection } from "@/components/settings/reminder-endpoin
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
+import type { ReminderDeliveryLogRecord } from "@/core/reminders/deliveries";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { ReminderAdapterManifest } from "@/core/reminders/types";
 import type { NlpProvider } from "@/lib/nlp-models";
@@ -50,6 +51,7 @@ export function IntegrationsSection({
   initialConflictResolution = "google_wins",
   initialSyncInterval = 5,
   initialNlpProvider = null,
+  initialReminderDeliveries = [],
   initialReminderEndpoints = [],
   initialReminderTransportConfigs = [],
   reminderAdapters = [],
@@ -59,6 +61,7 @@ export function IntegrationsSection({
   initialConflictResolution?: ConflictResolution;
   initialSyncInterval?: SyncInterval;
   initialNlpProvider?: NlpProvider | null;
+  initialReminderDeliveries?: ReminderDeliveryLogRecord[];
   initialReminderEndpoints?: ReminderEndpointRecord[];
   initialReminderTransportConfigs?: ReminderTransportConfigStatus[];
   reminderAdapters?: ReminderAdapterManifest[];
@@ -397,6 +400,7 @@ export function IntegrationsSection({
       </SettingsSection>
 
       <ReminderEndpointsSection
+        initialDeliveries={initialReminderDeliveries}
         initialEndpoints={initialReminderEndpoints}
         initialTransportConfigs={initialReminderTransportConfigs}
         adapters={reminderAdapters}
