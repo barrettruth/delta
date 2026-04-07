@@ -19,7 +19,15 @@ import {
   getReminderEndpointTargetLabel,
   getReminderEndpointTargetPlaceholder,
 } from "@/lib/reminder-endpoint-form";
-import { SettingsSection } from "./settings-primitives";
+import {
+  getEmptyReminderTransportConfigStatus,
+  getReminderTransportFields,
+  getReminderTransportStatusLabel,
+  isReminderTransportConfigurableAdapterKey,
+  type ReminderTransportConfigStatus,
+  type ReminderTransportConfigurableAdapterKey,
+} from "@/lib/reminder-transport-form";
+import { SettingsRow, SettingsSection } from "./settings-primitives";
 
 interface ApiErrorResponse {
   error?: string;
@@ -28,6 +36,17 @@ interface ApiErrorResponse {
 interface ReminderEndpointTestResponse {
   ok: true;
   providerMessageId: string | null;
+}
+
+function mergeReminderTransportStatus(
+  current: ReminderTransportConfigStatus[],
+  next: ReminderTransportConfigStatus,
+): ReminderTransportConfigStatus[] {
+  return current.some((candidate) => candidate.adapterKey === next.adapterKey)
+    ? current.map((candidate) =>
+        candidate.adapterKey === next.adapterKey ? next : candidate,
+      )
+    : [...current, next];
 }
 
 async function parseApiError(response: Response): Promise<string> {
@@ -39,9 +58,11 @@ async function parseApiError(response: Response): Promise<string> {
 
 export function ReminderEndpointsSection({
   initialEndpoints,
+  initialTransportConfigs,
   adapters,
 }: {
   initialEndpoints: ReminderEndpointRecord[];
+  initialTransportConfigs: ReminderTransportConfigStatus[];
   adapters: ReminderAdapterManifest[];
 }) {
   const statusBar = useStatusBar();
@@ -49,6 +70,22 @@ export function ReminderEndpointsSection({
     () => new Map(adapters.map((adapter) => [adapter.key, adapter])),
     [adapters],
   );
+  const systemAdapters = useMemo(
+    () => adapters.filter((adapter) => adapter.configScope === "system"),
+    [adapters],
+  );
+  const [transportConfigs, setTransportConfigs] = useState(
+    initialTransportConfigs,
+  );
+  const [editingTransportKey, setEditingTransportKey] =
+    useState<ReminderTransportConfigurableAdapterKey | null>(null);
+  const [transportValues, setTransportValues] = useState<
+    Record<string, string>
+  >({});
+  const [savingTransportKey, setSavingTransportKey] =
+    useState<ReminderTransportConfigurableAdapterKey | null>(null);
+  const [deletingTransportKey, setDeletingTransportKey] =
+    useState<ReminderTransportConfigurableAdapterKey | null>(null);
   const [endpoints, setEndpoints] = useState(initialEndpoints);
   const [creating, setCreating] = useState(false);
   const [createAdapterKey, setCreateAdapterKey] =
@@ -58,6 +95,11 @@ export function ReminderEndpointsSection({
   const [testingIds, setTestingIds] = useState<number[]>([]);
   const [deletingIds, setDeletingIds] = useState<number[]>([]);
 
+  const transportConfigByKey = useMemo(
+    () =>
+      new Map(transportConfigs.map((config) => [config.adapterKey, config])),
+    [transportConfigs],
+  );
   const selectedAdapter =
     adapters.find((adapter) => adapter.key === createAdapterKey) ?? adapters[0];
   const targetLabel = getReminderEndpointTargetLabel(createAdapterKey);
@@ -67,11 +109,98 @@ export function ReminderEndpointsSection({
     ? getReminderEndpointAdapterHint(selectedAdapter)
     : null;
 
+  function resetTransportEditor() {
+    setEditingTransportKey(null);
+    setTransportValues({});
+  }
+
+  function openTransportEditor(
+    adapterKey: ReminderTransportConfigurableAdapterKey,
+  ) {
+    setEditingTransportKey(adapterKey);
+    setTransportValues(
+      Object.fromEntries(
+        getReminderTransportFields(adapterKey).map((field) => [field.name, ""]),
+      ),
+    );
+  }
+
   function resetCreateForm() {
     setCreateAdapterKey("slack.webhook");
     setCreateLabel("");
     setCreateTarget("");
     setCreating(false);
+  }
+
+  async function handleSaveTransport(
+    adapterKey: ReminderTransportConfigurableAdapterKey,
+  ) {
+    const fields = getReminderTransportFields(adapterKey);
+    const values = Object.fromEntries(
+      fields.map((field) => [field.name, transportValues[field.name] ?? ""]),
+    );
+
+    setSavingTransportKey(adapterKey);
+    try {
+      const response = await fetch(
+        `/api/settings/reminders/transports/${adapterKey}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ values }),
+        },
+      );
+      if (!response.ok) {
+        statusBar.error(await parseApiError(response));
+        return;
+      }
+
+      const status = (await response.json()) as ReminderTransportConfigStatus;
+      setTransportConfigs((current) =>
+        mergeReminderTransportStatus(current, status),
+      );
+      resetTransportEditor();
+      statusBar.message(
+        `${adapterByKey.get(adapterKey)?.displayName ?? adapterKey} configured`,
+      );
+    } catch {
+      statusBar.error("failed to save reminder transport config");
+    } finally {
+      setSavingTransportKey(null);
+    }
+  }
+
+  async function handleDeleteTransport(
+    adapterKey: ReminderTransportConfigurableAdapterKey,
+  ) {
+    setDeletingTransportKey(adapterKey);
+    try {
+      const response = await fetch(
+        `/api/settings/reminders/transports/${adapterKey}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!response.ok) {
+        statusBar.error(await parseApiError(response));
+        return;
+      }
+
+      const status = (await response.json()) as ReminderTransportConfigStatus;
+      setTransportConfigs((current) =>
+        mergeReminderTransportStatus(current, status),
+      );
+      if (editingTransportKey === adapterKey) {
+        resetTransportEditor();
+      }
+      statusBar.message(
+        `${adapterByKey.get(adapterKey)?.displayName ?? adapterKey} cleared`,
+      );
+    } catch {
+      statusBar.error("failed to delete reminder transport config");
+    } finally {
+      setDeletingTransportKey(null);
+    }
   }
 
   async function handleCreateEndpoint() {
@@ -179,6 +308,132 @@ export function ReminderEndpointsSection({
   return (
     <SettingsSection title="reminders">
       <div className="space-y-2">
+        <div className="mt-1 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
+          transport config
+        </div>
+        <div className="space-y-2">
+          {systemAdapters.map((adapter) => {
+            const adapterKey = adapter.key;
+            const hint = getReminderEndpointAdapterHint(adapter);
+
+            if (!isReminderTransportConfigurableAdapterKey(adapterKey)) {
+              return (
+                <div
+                  key={adapterKey}
+                  className="border border-border/60 px-2 py-2 space-y-1"
+                >
+                  <SettingsRow
+                    label={adapter.displayName}
+                    value={adapter.capabilities.beta ? "beta" : ""}
+                    muted
+                  />
+                  {hint && (
+                    <div className="px-2 text-xs text-muted-foreground">
+                      {hint}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const status =
+              transportConfigByKey.get(adapterKey) ??
+              getEmptyReminderTransportConfigStatus(adapterKey);
+            const fields = getReminderTransportFields(adapterKey);
+            const hasStoredConfig = status.missingFields.length < fields.length;
+            const saving = savingTransportKey === adapterKey;
+            const deleting = deletingTransportKey === adapterKey;
+            const canSave = fields.every((field) =>
+              (transportValues[field.name] ?? "").trim(),
+            );
+
+            return (
+              <div
+                key={adapterKey}
+                className="border border-border/60 px-2 py-2 space-y-2"
+              >
+                <SettingsRow
+                  label={adapter.displayName}
+                  value={getReminderTransportStatusLabel(status)}
+                  action
+                  muted={!status.configured}
+                  onClick={() =>
+                    editingTransportKey === adapterKey
+                      ? resetTransportEditor()
+                      : openTransportEditor(adapterKey)
+                  }
+                />
+                {editingTransportKey === adapterKey && (
+                  <div className="space-y-2 px-2 pb-2">
+                    {fields.map((field, index) => (
+                      <Input
+                        key={field.name}
+                        value={transportValues[field.name] ?? ""}
+                        onChange={(event) =>
+                          setTransportValues((current) => ({
+                            ...current,
+                            [field.name]: event.target.value,
+                          }))
+                        }
+                        type={field.inputType}
+                        autoFocus={index === 0}
+                        placeholder={field.placeholder}
+                        className="h-8 text-sm"
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                          if (event.key === "Enter") {
+                            void handleSaveTransport(adapterKey);
+                          }
+                          if (event.key === "Escape") {
+                            resetTransportEditor();
+                          }
+                        }}
+                      />
+                    ))}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={saving || deleting || !canSave}
+                        onClick={() => handleSaveTransport(adapterKey)}
+                        className="h-7 text-xs"
+                      >
+                        {saving ? "..." : "save transport"}
+                      </Button>
+                      {hasStoredConfig && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={saving || deleting}
+                          onClick={() => handleDeleteTransport(adapterKey)}
+                          className="h-7 text-xs"
+                        >
+                          {deleting ? "..." : "delete"}
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={saving || deleting}
+                        onClick={resetTransportEditor}
+                        className="h-7 text-xs"
+                      >
+                        cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
+          endpoints
+        </div>
         {endpoints.length === 0 ? (
           <div className="px-2 py-2 text-sm text-muted-foreground">
             no reminder endpoints yet

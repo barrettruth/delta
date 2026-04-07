@@ -26,6 +26,7 @@ export function SettingsRow({
   action,
   muted,
   destructive,
+  prefix,
   onClick,
 }: {
   label: string;
@@ -33,6 +34,7 @@ export function SettingsRow({
   action?: boolean;
   muted?: boolean;
   destructive?: boolean;
+  prefix?: { text: string; className: string };
   onClick?: () => void;
 }) {
   const Tag = action ? "button" : "div";
@@ -42,6 +44,11 @@ export function SettingsRow({
       onClick={onClick}
       type={action ? "button" : undefined}
     >
+      {prefix && (
+        <span className={`${prefix.className} mr-1 shrink-0`}>
+          {prefix.text}
+        </span>
+      )}
       <span
         className={`flex-1 text-left truncate min-w-0 ${
           destructive
