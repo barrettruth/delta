@@ -262,16 +262,18 @@ export function IntegrationsSection({
       <SettingsSection title="google calendar">
         {gcalConnected ? (
           <SettingsRow
-            label="- disconnect google calendar"
+            label="disconnect google calendar"
             action
-            destructive
+            muted
+            prefix={{ text: "-", className: "text-destructive" }}
             onClick={handleDisconnectGcal}
           />
         ) : (
           <SettingsRow
-            label="+ connect google calendar"
+            label="connect google calendar"
             action
             muted
+            prefix={{ text: "+", className: "text-status-done" }}
             onClick={handleConnectGcal}
           />
         )}
