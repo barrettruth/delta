@@ -71,7 +71,7 @@ export function KeymapsSection() {
   }, [keymaps, allConfigurableIds, statusBar]);
 
   return (
-    <SettingsPage>
+    <SettingsPage className="max-w-4xl">
       {hasOverrides && (
         <div className="flex justify-end mb-4">
           <button
@@ -88,7 +88,7 @@ export function KeymapsSection() {
           key={section.section}
           title={SECTION_LABELS[section.section]}
         >
-          <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-1 md:grid-cols-2">
             {section.rows.map((entry) => {
               const isSingleConfigurable =
                 entry.ids.length === 1 &&
