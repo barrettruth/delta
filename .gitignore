@@ -4,6 +4,8 @@
 /build
 /coverage
 /data/
+/cli/dist/
+/test-results/
 
 *.db
 *.db-wal

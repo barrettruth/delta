@@ -33,15 +33,7 @@
     }
   },
   "files": {
-    "includes": [
-      "**",
-      "!.next",
-      "!.claude",
-      "!drizzle",
-      "!src/components/ui",
-      "!cli/dist",
-      "!test-results"
-    ]
+    "includes": ["**", "!.next", "!.claude", "!drizzle"]
   },
   "overrides": [
     {
@@ -60,6 +52,16 @@
         "rules": {
           "style": {
             "noNonNullAssertion": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/components/ui/label.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": "off"
           }
         }
       }
