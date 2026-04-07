@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ReminderDeliveryLogSection } from "@/components/settings/reminder-delivery-log-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStatusBar } from "@/contexts/status-bar";
+import type { ReminderDeliveryLogRecord } from "@/core/reminders/deliveries";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { ReminderAdapterManifest } from "@/core/reminders/types";
 import {
@@ -57,10 +59,12 @@ async function parseApiError(response: Response): Promise<string> {
 }
 
 export function ReminderEndpointsSection({
+  initialDeliveries,
   initialEndpoints,
   initialTransportConfigs,
   adapters,
 }: {
+  initialDeliveries: ReminderDeliveryLogRecord[];
   initialEndpoints: ReminderEndpointRecord[];
   initialTransportConfigs: ReminderTransportConfigStatus[];
   adapters: ReminderAdapterManifest[];
@@ -576,6 +580,11 @@ export function ReminderEndpointsSection({
             </div>
           </div>
         </div>
+
+        <ReminderDeliveryLogSection
+          deliveries={initialDeliveries}
+          adapters={adapters}
+        />
       </div>
     </SettingsSection>
   );
