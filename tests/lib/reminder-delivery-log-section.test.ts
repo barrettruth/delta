@@ -68,7 +68,7 @@ function createDelivery(input: {
 }
 
 describe("ReminderDeliveryLogSection", () => {
-  it("renders action-needed deliveries, delivery history, and operator playbooks", () => {
+  it("renders issues and recent sends", () => {
     const html = renderToStaticMarkup(
       createElement(ReminderDeliveryLogSection, {
         deliveries: [
@@ -110,20 +110,17 @@ describe("ReminderDeliveryLogSection", () => {
       }),
     );
 
-    expect(html).toContain("attention needed");
+    expect(html).toContain("issues");
     expect(html).toContain("Check telegram bot");
     expect(html).toContain("Slack alert");
     expect(html).toContain("Pay rent");
     expect(html).toContain("next attempt 2026-04-06 15:18 UTC");
     expect(html).toContain("no more retries");
-    expect(html).toContain("delivery history");
-    expect(html).toContain("operator playbooks");
+    expect(html).toContain("recent sends");
     expect(html).toContain("Twilio SMS");
-    expect(html).toContain("Twilio WhatsApp");
     expect(html).toContain("Telegram Bot API");
     expect(html).toContain("Slack Webhook");
-    expect(html).toContain("Discord Webhook");
-    expect(html).toContain("approved WhatsApp template");
+    expect(html).not.toContain("operator playbooks");
   });
 
   it("renders empty states when no deliveries exist yet", () => {
@@ -134,7 +131,7 @@ describe("ReminderDeliveryLogSection", () => {
       }),
     );
 
-    expect(html).toContain("no failed or dead deliveries");
-    expect(html).toContain("no reminder deliveries yet");
+    expect(html).toContain("no failed reminder sends");
+    expect(html).toContain("no reminder sends yet");
   });
 });

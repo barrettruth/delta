@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -56,7 +57,13 @@ export const TaskPanelReminders = memo(function TaskPanelReminders({
     [endpoints],
   );
 
-  const toggleLabel = expanded ? "done" : reminders.length > 0 ? "edit" : "add";
+  const toggleLabel = expanded
+    ? "done"
+    : reminders.length > 0
+      ? "edit"
+      : endpoints.length === 0
+        ? "set up"
+        : "add";
 
   return (
     <div className="px-4 py-3 border-b border-border/40">
@@ -70,7 +77,9 @@ export const TaskPanelReminders = memo(function TaskPanelReminders({
                   loading...
                 </span>
               ) : reminders.length === 0 ? (
-                <span className="text-xs text-muted-foreground">none</span>
+                <span className="text-xs text-muted-foreground">
+                  {endpoints.length === 0 ? "needs setup" : "none"}
+                </span>
               ) : (
                 reminders.map((reminder) => (
                   <Badge
@@ -103,8 +112,19 @@ export const TaskPanelReminders = memo(function TaskPanelReminders({
               {error && <div className="text-xs text-destructive">{error}</div>}
 
               {!loading && endpoints.length === 0 ? (
-                <div className="text-xs text-muted-foreground">
-                  no reminder endpoints configured yet
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">
+                    set up a reminder destination in settings first
+                  </div>
+                  <Link
+                    href="/settings/integrations"
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "xs",
+                    })}
+                  >
+                    open reminder settings
+                  </Link>
                 </div>
               ) : (
                 <>
@@ -178,7 +198,9 @@ const ReminderEditorRow = memo(function ReminderEditorRow({
 
       <div className="space-y-2">
         <div className="space-y-1">
-          <span className="text-[11px] text-muted-foreground/60">endpoint</span>
+          <span className="text-[11px] text-muted-foreground/60">
+            destination
+          </span>
           <Select
             value={
               reminder.endpointId !== null ? String(reminder.endpointId) : ""
@@ -191,7 +213,7 @@ const ReminderEditorRow = memo(function ReminderEditorRow({
             }}
           >
             <SelectTrigger size="sm" className="h-7 text-xs w-full">
-              <SelectValue placeholder="select endpoint" />
+              <SelectValue placeholder="select destination" />
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
               {endpoints.map((endpoint) => (
