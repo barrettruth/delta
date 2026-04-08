@@ -59,6 +59,49 @@ function requireSystemConfig(db: Db, key: string, label: string): string {
   return value;
 }
 
+function getTwilioMessagesUrl(accountSid: string): string {
+  return `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`;
+}
+
+function getTwilioAuthorizationHeader(
+  accountSid: string,
+  authToken: string,
+): string {
+  return `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`;
+}
+
+function formatTwilioWhatsappAddress(value: string): string {
+  return value.startsWith("whatsapp:") ? value : `whatsapp:${value}`;
+}
+
+function getReminderScheduleLine(
+  task: Pick<Task, "due" | "startAt">,
+): string | null {
+  if (task.due) {
+    return `Due: ${task.due}`;
+  }
+
+  if (task.startAt) {
+    return `Starts: ${task.startAt}`;
+  }
+
+  return null;
+}
+
+function buildTwilioWhatsappContentVariables(
+  input: ReminderAdapterSendInput,
+): string {
+  const primaryLine = input.task?.description ?? input.body;
+  const secondaryLine = input.task
+    ? getReminderScheduleLine(input.task)
+    : "Reminder endpoint test from delta";
+
+  return JSON.stringify({
+    "1": primaryLine,
+    "2": secondaryLine ?? "Reminder from delta",
+  });
+}
+
 async function sendSlackWebhook(
   input: ReminderAdapterSendInput,
 ): Promise<ReminderAdapterSendResult> {
@@ -160,21 +203,72 @@ async function sendTwilioSms(
     "Twilio from number",
   );
 
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        To: input.endpoint.target,
-        From: fromNumber,
-        Body: input.body,
-      }),
+  const response = await fetch(getTwilioMessagesUrl(accountSid), {
+    method: "POST",
+    headers: {
+      Authorization: getTwilioAuthorizationHeader(accountSid, authToken),
+      "Content-Type": "application/x-www-form-urlencoded",
     },
+    body: new URLSearchParams({
+      To: input.endpoint.target,
+      From: fromNumber,
+      Body: input.body,
+    }),
+  });
+
+  if (!response.ok) {
+    await throwForHttpFailure(response);
+  }
+
+  const body = (await response.json()) as { sid?: string };
+  return {
+    providerMessageId: body.sid ?? null,
+  };
+}
+
+async function sendTwilioWhatsapp(
+  input: ReminderAdapterSendInput,
+): Promise<ReminderAdapterSendResult> {
+  const accountSid = requireSystemConfig(
+    input.db,
+    "reminders.whatsapp.twilio.account_sid",
+    "Twilio account SID",
   );
+  const authToken = requireSystemConfig(
+    input.db,
+    "reminders.whatsapp.twilio.auth_token",
+    "Twilio auth token",
+  );
+  const fromNumber = requireSystemConfig(
+    input.db,
+    "reminders.whatsapp.twilio.from_number",
+    "Twilio WhatsApp from number",
+  );
+  const messagingServiceSid = requireSystemConfig(
+    input.db,
+    "reminders.whatsapp.twilio.messaging_service_sid",
+    "Twilio Messaging Service SID",
+  );
+  const contentSid = requireSystemConfig(
+    input.db,
+    "reminders.whatsapp.twilio.content_sid",
+    "Twilio content SID",
+  );
+
+  const response = await fetch(getTwilioMessagesUrl(accountSid), {
+    method: "POST",
+    headers: {
+      Authorization: getTwilioAuthorizationHeader(accountSid, authToken),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      To: formatTwilioWhatsappAddress(input.endpoint.target),
+      From: formatTwilioWhatsappAddress(fromNumber),
+      MessagingServiceSid: messagingServiceSid,
+      ContentSid: contentSid,
+      ContentVariables: buildTwilioWhatsappContentVariables(input),
+    }),
+  });
 
   if (!response.ok) {
     await throwForHttpFailure(response);
@@ -204,6 +298,10 @@ function registerBuiltinReminderAdapterRuntimes() {
   runtimes.set("sms.twilio", {
     key: "sms.twilio",
     send: sendTwilioSms,
+  });
+  runtimes.set("whatsapp.twilio", {
+    key: "whatsapp.twilio",
+    send: sendTwilioWhatsapp,
   });
 }
 

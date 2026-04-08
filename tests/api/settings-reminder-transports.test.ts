@@ -87,6 +87,26 @@ describe("/api/settings/reminders/transports/[adapter]", () => {
     });
   });
 
+  it("returns WhatsApp config status with required template fields", async () => {
+    const response = await GET(
+      buildRequest("/api/settings/reminders/transports/whatsapp.twilio"),
+      { params: Promise.resolve({ adapter: "whatsapp.twilio" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      adapterKey: "whatsapp.twilio",
+      configured: false,
+      missingFields: [
+        "accountSid",
+        "authToken",
+        "fromNumber",
+        "messagingServiceSid",
+        "contentSid",
+      ],
+    });
+  });
+
   it("stores Twilio transport config without exposing secrets", async () => {
     const response = await PUT(
       buildRequest("/api/settings/reminders/transports/sms.twilio", {
@@ -117,6 +137,61 @@ describe("/api/settings/reminders/transports/[adapter]", () => {
     expect(
       getSystemConfig(mockState.db as Db, "reminders.sms.twilio.from_number"),
     ).toBe("+15125550123");
+  });
+
+  it("stores WhatsApp transport config", async () => {
+    const response = await PUT(
+      buildRequest("/api/settings/reminders/transports/whatsapp.twilio", {
+        method: "PUT",
+        body: {
+          values: {
+            accountSid: " ACWA123 ",
+            authToken: " wa-token-123 ",
+            fromNumber: " +15125550124 ",
+            messagingServiceSid: " MG123456789 ",
+            contentSid: " HX123456789 ",
+          },
+        },
+      }),
+      { params: Promise.resolve({ adapter: "whatsapp.twilio" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      adapterKey: "whatsapp.twilio",
+      configured: true,
+      missingFields: [],
+    });
+    expect(
+      getSystemConfig(
+        mockState.db as Db,
+        "reminders.whatsapp.twilio.account_sid",
+      ),
+    ).toBe("ACWA123");
+    expect(
+      getSystemConfig(
+        mockState.db as Db,
+        "reminders.whatsapp.twilio.auth_token",
+      ),
+    ).toBe("wa-token-123");
+    expect(
+      getSystemConfig(
+        mockState.db as Db,
+        "reminders.whatsapp.twilio.from_number",
+      ),
+    ).toBe("+15125550124");
+    expect(
+      getSystemConfig(
+        mockState.db as Db,
+        "reminders.whatsapp.twilio.messaging_service_sid",
+      ),
+    ).toBe("MG123456789");
+    expect(
+      getSystemConfig(
+        mockState.db as Db,
+        "reminders.whatsapp.twilio.content_sid",
+      ),
+    ).toBe("HX123456789");
   });
 
   it("rejects invalid reminder transport payloads", async () => {

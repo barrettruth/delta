@@ -26,6 +26,16 @@ const OPERATOR_PLAYBOOKS: Playbook[] = [
     ],
   },
   {
+    adapterKey: "whatsapp.twilio",
+    steps: [
+      "Save the account SID, auth token, from number, messaging service SID, and content SID in transport config.",
+      "Create an approved WhatsApp template that expects {{1}} for the task text and {{2}} for the schedule line.",
+      "Add an endpoint with the recipient phone number in E.164 format.",
+      "Use the endpoint test action, then confirm the approved WhatsApp template renders and delivers correctly.",
+    ],
+    note: "Business-initiated reminders use an approved WhatsApp template through Twilio content templates rather than a free-form body.",
+  },
+  {
     adapterKey: "telegram.bot_api",
     steps: [
       "Save the bot token in transport config.",

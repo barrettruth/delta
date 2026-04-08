@@ -90,11 +90,12 @@ function buildRequest(
 function buildReminderTarget(
   adapterKey:
     | "sms.twilio"
+    | "whatsapp.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
     | "discord.webhook",
 ) {
-  if (adapterKey === "sms.twilio") {
+  if (adapterKey === "sms.twilio" || adapterKey === "whatsapp.twilio") {
     return "+15125550100";
   }
   if (adapterKey === "telegram.bot_api") return "123456";
@@ -106,6 +107,7 @@ function createReminderDeliveryFixture(
     userId?: number;
     adapterKey?:
       | "sms.twilio"
+      | "whatsapp.twilio"
       | "telegram.bot_api"
       | "slack.webhook"
       | "discord.webhook";

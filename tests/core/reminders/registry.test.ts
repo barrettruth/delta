@@ -54,12 +54,13 @@ describe("reminder adapter registry", () => {
   });
 
   it("returns adapter metadata by key", () => {
-    const adapter = getReminderAdapter("telegram.bot_api");
+    const adapter = getReminderAdapter("whatsapp.twilio");
 
     expect(adapter).not.toBeNull();
-    expect(adapter?.channel).toBe("telegram");
+    expect(adapter?.channel).toBe("whatsapp");
     expect(adapter?.configScope).toBe("system");
     expect(adapter?.capabilities.beta).toBe(false);
+    expect(adapter?.capabilities.supportsDeliveryStatus).toBe(true);
   });
 
   it("returns null for unknown adapters", () => {
