@@ -12,6 +12,7 @@ import type {
   ReminderDeliveryStatus,
   TaskReminder,
 } from "./types";
+import { isReminderAdapterKey } from "./types";
 
 export const MAX_REMINDER_ATTEMPTS = 5;
 
@@ -89,7 +90,14 @@ function mapReminderDeliveryLogRow(row: {
   task: Task;
   endpoint: typeof reminderEndpoints.$inferSelect;
   reminder: TaskReminder;
-}): ReminderDeliveryLogRecord {
+}): ReminderDeliveryLogRecord | null {
+  if (
+    !isReminderAdapterKey(row.delivery.adapterKey) ||
+    !isReminderAdapterKey(row.endpoint.adapterKey)
+  ) {
+    return null;
+  }
+
   return {
     ...row.delivery,
     task: {
@@ -159,7 +167,10 @@ export function listReminderDeliveryLog(
     .where(and(...conditions))
     .orderBy(desc(reminderDeliveries.createdAt), desc(reminderDeliveries.id))
     .all()
-    .map(mapReminderDeliveryLogRow);
+    .flatMap((row) => {
+      const delivery = mapReminderDeliveryLogRow(row);
+      return delivery ? [delivery] : [];
+    });
 }
 
 export function getReminderDeliveryLogEntry(
@@ -426,6 +437,10 @@ export function enqueueDueReminderDeliveries(
   for (const row of joined) {
     if (row.task.status === "done" || row.task.status === "cancelled") {
       suppressPendingReminderDeliveriesForTask(db, row.task.id);
+      continue;
+    }
+
+    if (!isReminderAdapterKey(row.endpoint.adapterKey)) {
       continue;
     }
 

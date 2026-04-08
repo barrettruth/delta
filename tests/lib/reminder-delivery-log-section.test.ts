@@ -11,8 +11,7 @@ function createDelivery(input: {
     | "sms.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
-    | "discord.webhook"
-    | "signal.signal_cli";
+    | "discord.webhook";
   status: "pending" | "sending" | "sent" | "failed" | "dead" | "suppressed";
   taskDescription: string;
   endpointLabel: string;
@@ -122,10 +121,6 @@ describe("ReminderDeliveryLogSection", () => {
     expect(html).toContain("Telegram Bot API");
     expect(html).toContain("Slack Webhook");
     expect(html).toContain("Discord Webhook");
-    expect(html).toContain("Signal CLI");
-    expect(html).toContain(
-      "Signal remains beta and depends on a signal-cli account",
-    );
   });
 
   it("renders empty states when no deliveries exist yet", () => {

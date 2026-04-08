@@ -11,8 +11,6 @@ export function getReminderEndpointTargetLabel(
     case "slack.webhook":
     case "discord.webhook":
       return "webhook URL";
-    case "signal.signal_cli":
-      return "recipient";
   }
 }
 
@@ -27,8 +25,6 @@ export function getReminderEndpointTargetPlaceholder(
     case "slack.webhook":
     case "discord.webhook":
       return "https://";
-    case "signal.signal_cli":
-      return "recipient";
   }
 }
 
@@ -38,10 +34,6 @@ export function getReminderEndpointAdapterHint(
     "key" | "configScope" | "capabilities"
   >,
 ): string | null {
-  if (adapter.key === "signal.signal_cli") {
-    return "beta · requires signal-cli runtime on the server";
-  }
-
   if (adapter.configScope === "system") {
     return "requires transport config";
   }

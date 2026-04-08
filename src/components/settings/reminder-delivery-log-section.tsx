@@ -52,16 +52,6 @@ const OPERATOR_PLAYBOOKS: Playbook[] = [
       "If deliveries fail, re-check channel permissions and whether the webhook still exists.",
     ],
   },
-  {
-    adapterKey: "signal.signal_cli",
-    steps: [
-      "Signal remains beta and depends on a signal-cli account that delta can access on the host.",
-      "Save the sender account and signal-cli config path in transport config before creating endpoints.",
-      "Add the recipient identifier as the endpoint target and use the endpoint test action for a direct send.",
-      "After any signal-cli upgrade or account change, run a manual end-to-end verification on the deployed host.",
-    ],
-    note: "Signal still requires manual live verification and dedicated service-line operations, even though send and test-send are wired into delta.",
-  },
 ];
 
 function formatTimestamp(value: string | null): string | null {

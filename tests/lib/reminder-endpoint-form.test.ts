@@ -10,9 +10,6 @@ describe("reminder endpoint form helpers", () => {
     expect(getReminderEndpointTargetLabel("sms.twilio")).toBe("phone number");
     expect(getReminderEndpointTargetLabel("telegram.bot_api")).toBe("chat id");
     expect(getReminderEndpointTargetLabel("slack.webhook")).toBe("webhook URL");
-    expect(getReminderEndpointTargetLabel("signal.signal_cli")).toBe(
-      "recipient",
-    );
   });
 
   it("returns adapter-specific target placeholders", () => {
@@ -27,7 +24,7 @@ describe("reminder endpoint form helpers", () => {
     );
   });
 
-  it("returns system-config hints and Signal beta messaging", () => {
+  it("returns system-config hints for configured adapters", () => {
     expect(
       getReminderEndpointAdapterHint({
         key: "sms.twilio",
@@ -40,19 +37,6 @@ describe("reminder endpoint form helpers", () => {
         },
       }),
     ).toBe("requires transport config");
-
-    expect(
-      getReminderEndpointAdapterHint({
-        key: "signal.signal_cli",
-        configScope: "system",
-        capabilities: {
-          supportsDeliveryStatus: false,
-          supportsRichText: false,
-          supportsTestSend: true,
-          beta: true,
-        },
-      }),
-    ).toBe("beta · requires signal-cli runtime on the server");
 
     expect(
       getReminderEndpointAdapterHint({

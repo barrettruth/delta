@@ -14,18 +14,6 @@ const MANIFESTS = [
     },
   },
   {
-    key: "signal.signal_cli",
-    channel: "signal",
-    displayName: "Signal CLI",
-    configScope: "system",
-    capabilities: {
-      supportsDeliveryStatus: false,
-      supportsRichText: false,
-      supportsTestSend: true,
-      beta: true,
-    },
-  },
-  {
     key: "telegram.bot_api",
     channel: "telegram",
     displayName: "Telegram Bot API",

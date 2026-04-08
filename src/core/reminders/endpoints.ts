@@ -2,7 +2,11 @@ import { and, eq } from "drizzle-orm";
 import { decrypt, encrypt, getEncryptionKey } from "@/core/encryption";
 import { reminderEndpoints } from "@/db/schema";
 import type { Db } from "../types";
-import type { ReminderAdapterKey, ReminderTestStatus } from "./types";
+import {
+  isReminderAdapterKey,
+  type ReminderAdapterKey,
+  type ReminderTestStatus,
+} from "./types";
 
 export interface ReminderEndpointRecord {
   id: number;
@@ -36,7 +40,11 @@ export interface UpdateReminderEndpointInput {
 
 function mapEndpoint(
   row: typeof reminderEndpoints.$inferSelect,
-): ReminderEndpointRecord {
+): ReminderEndpointRecord | null {
+  if (!isReminderAdapterKey(row.adapterKey)) {
+    return null;
+  }
+
   const key = getEncryptionKey();
 
   return {
@@ -78,7 +86,12 @@ export function createReminderEndpoint(
     .returning()
     .get();
 
-  return mapEndpoint(row);
+  const endpoint = mapEndpoint(row);
+  if (!endpoint) {
+    throw new Error(`Reminder adapter ${row.adapterKey} is not supported`);
+  }
+
+  return endpoint;
 }
 
 export function getReminderEndpoint(
@@ -106,7 +119,10 @@ export function listReminderEndpoints(
     .from(reminderEndpoints)
     .where(eq(reminderEndpoints.userId, userId))
     .all()
-    .map(mapEndpoint);
+    .flatMap((row) => {
+      const endpoint = mapEndpoint(row);
+      return endpoint ? [endpoint] : [];
+    });
 }
 
 export function updateReminderEndpoint(

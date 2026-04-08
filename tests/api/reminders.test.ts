@@ -92,10 +92,9 @@ function buildReminderTarget(
     | "sms.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
-    | "discord.webhook"
-    | "signal.signal_cli",
+    | "discord.webhook",
 ) {
-  if (adapterKey === "sms.twilio" || adapterKey === "signal.signal_cli") {
+  if (adapterKey === "sms.twilio") {
     return "+15125550100";
   }
   if (adapterKey === "telegram.bot_api") return "123456";
@@ -109,8 +108,7 @@ function createReminderDeliveryFixture(
       | "sms.twilio"
       | "telegram.bot_api"
       | "slack.webhook"
-      | "discord.webhook"
-      | "signal.signal_cli";
+      | "discord.webhook";
     taskDescription?: string;
     endpointLabel?: string;
   } = {},
@@ -415,7 +413,7 @@ describe("/api/reminders/deliveries", () => {
 
     createReminderDeliveryFixture({
       userId: otherUser.id,
-      adapterKey: "signal.signal_cli",
+      adapterKey: "slack.webhook",
       taskDescription: "Hidden other user delivery",
       endpointLabel: "Other user",
     });
@@ -675,9 +673,9 @@ describe("/api/reminders/deliveries/[id]", () => {
     const otherUser = createTestUser(db);
     const fixture = createReminderDeliveryFixture({
       userId: otherUser.id,
-      adapterKey: "signal.signal_cli",
+      adapterKey: "slack.webhook",
       taskDescription: "Hidden delivery",
-      endpointLabel: "Signal",
+      endpointLabel: "Slack",
     });
 
     const response = await getReminderDeliveryById(
@@ -738,9 +736,9 @@ describe("/api/tasks/[id]/reminders", () => {
     const db = mockState.db as Db;
     const userId = mockState.user?.id as number;
     const endpoint = createReminderEndpoint(db, userId, {
-      adapterKey: "signal.signal_cli",
-      label: "Signal",
-      target: "+15125550104",
+      adapterKey: "telegram.bot_api",
+      label: "Telegram",
+      target: "123456",
     });
     const task = createTask(db, userId, { description: "Task with reminder" });
 

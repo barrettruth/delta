@@ -1,5 +1,3 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { getSystemConfig } from "@/core/system-config";
 import type { Task } from "@/core/types";
 import type { Db } from "../types";
@@ -41,7 +39,6 @@ export interface ReminderAdapterRuntime {
 }
 
 const runtimes = new Map<ReminderAdapterKey, ReminderAdapterRuntime>();
-const execFileAsync = promisify(execFile);
 
 function isRetryableStatus(status: number): boolean {
   return status === 408 || status === 425 || status === 429 || status >= 500;
@@ -60,36 +57,6 @@ function requireSystemConfig(db: Db, key: string, label: string): string {
     throw new ReminderAdapterError(`${label} is not configured`);
   }
   return value;
-}
-
-function requireSignalSystemConfig(db: Db, key: string, label: string): string {
-  const value = getSystemConfig(db, key);
-  if (!value) {
-    throw new ReminderAdapterError(`${label} is not configured`, false);
-  }
-  return value;
-}
-
-function getSignalCliErrorMessage(
-  error: Error & {
-    code?: string | number;
-    stderr?: string;
-    stdout?: string;
-  },
-): string {
-  if (typeof error.stderr === "string" && error.stderr.trim()) {
-    return error.stderr.trim();
-  }
-  if (typeof error.stdout === "string" && error.stdout.trim()) {
-    return error.stdout.trim();
-  }
-  if (error.message.trim()) {
-    return error.message.trim();
-  }
-  if (error.code !== undefined) {
-    return `signal-cli exited with code ${error.code}`;
-  }
-  return "signal-cli send failed";
 }
 
 async function sendSlackWebhook(
@@ -219,63 +186,6 @@ async function sendTwilioSms(
   };
 }
 
-async function sendSignalMessage(
-  input: ReminderAdapterSendInput,
-): Promise<ReminderAdapterSendResult> {
-  const account = requireSignalSystemConfig(
-    input.db,
-    "reminders.signal.signal_cli.account",
-    "Signal account",
-  );
-  const configPath = requireSignalSystemConfig(
-    input.db,
-    "reminders.signal.signal_cli.config_path",
-    "Signal config path",
-  );
-
-  try {
-    await execFileAsync(
-      "signal-cli",
-      [
-        "--config",
-        configPath,
-        "-a",
-        account,
-        "send",
-        "-m",
-        input.body,
-        input.endpoint.target,
-      ],
-      { timeout: 30_000 },
-    );
-  } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: string }).code === "ENOENT"
-    ) {
-      throw new ReminderAdapterError("signal-cli is not installed", false);
-    }
-
-    if (error instanceof Error) {
-      throw new ReminderAdapterError(
-        getSignalCliErrorMessage(
-          error as Error & {
-            code?: string | number;
-            stderr?: string;
-            stdout?: string;
-          },
-        ),
-      );
-    }
-
-    throw new ReminderAdapterError("signal-cli send failed");
-  }
-
-  return { providerMessageId: null };
-}
-
 function registerBuiltinReminderAdapterRuntimes() {
   if (runtimes.size > 0) return;
 
@@ -294,10 +204,6 @@ function registerBuiltinReminderAdapterRuntimes() {
   runtimes.set("sms.twilio", {
     key: "sms.twilio",
     send: sendTwilioSms,
-  });
-  runtimes.set("signal.signal_cli", {
-    key: "signal.signal_cli",
-    send: sendSignalMessage,
   });
 }
 

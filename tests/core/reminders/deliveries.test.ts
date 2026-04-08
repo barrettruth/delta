@@ -31,8 +31,7 @@ function createDeliveryFixture(
     | "sms.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
-    | "discord.webhook"
-    | "signal.signal_cli" = "sms.twilio",
+    | "discord.webhook" = "sms.twilio",
 ) {
   const task = createTask(db, userId, {
     description: `Task for ${adapterKey}`,
@@ -42,7 +41,7 @@ function createDeliveryFixture(
     adapterKey,
     label: adapterKey,
     target:
-      adapterKey === "sms.twilio" || adapterKey === "signal.signal_cli"
+      adapterKey === "sms.twilio"
         ? "+15125501381"
         : adapterKey === "telegram.bot_api"
           ? "1234"
@@ -438,9 +437,9 @@ describe("reminder delivery log", () => {
       due: "2026-04-06T15:30:00.000Z",
     });
     const otherEndpoint = createReminderEndpoint(db, otherUserId, {
-      adapterKey: "signal.signal_cli",
-      label: "Other signal",
-      target: "+15125559999",
+      adapterKey: "slack.webhook",
+      label: "Other slack",
+      target: "https://slack-other.test/hook",
     });
     const otherReminder = createTaskReminder(db, otherUserId, {
       taskId: otherTask.id,
@@ -454,7 +453,7 @@ describe("reminder delivery log", () => {
       taskId: otherTask.id,
       taskReminderId: otherReminder.id,
       endpointId: otherEndpoint.id,
-      adapterKey: "signal.signal_cli",
+      adapterKey: "slack.webhook",
       scheduledFor: "2026-04-06T15:20:00.000Z",
     });
 

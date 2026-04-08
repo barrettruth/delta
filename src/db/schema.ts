@@ -130,7 +130,6 @@ export const reminderEndpoints = sqliteTable("reminder_endpoints", {
   adapterKey: text("adapter_key", {
     enum: [
       "sms.twilio",
-      "signal.signal_cli",
       "telegram.bot_api",
       "discord.webhook",
       "slack.webhook",
@@ -185,7 +184,6 @@ export const reminderDeliveries = sqliteTable(
     adapterKey: text("adapter_key", {
       enum: [
         "sms.twilio",
-        "signal.signal_cli",
         "telegram.bot_api",
         "discord.webhook",
         "slack.webhook",
