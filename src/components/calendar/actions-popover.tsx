@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowsClockwise } from "@phosphor-icons/react";
+import { ArrowsClockwise, CalendarDots } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -159,7 +159,7 @@ export function CalendarActionsPopover({
 
   items.push({
     id: "settings",
-    label: "integrations settings",
+    label: "open settings",
     muted: true,
     onSelect: () => router.push("/settings/integrations"),
   });
@@ -223,8 +223,11 @@ export function CalendarActionsPopover({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger className="text-lg text-muted-foreground px-1 cursor-pointer hover:text-foreground leading-none">
-        ≡
+      <PopoverTrigger
+        aria-label="calendar actions"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground outline-hidden transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <CalendarDots size={16} weight="bold" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="flex flex-col">
@@ -270,6 +273,9 @@ export function CalendarActionsPopover({
           <div className="border-t border-border" />
 
           <div className="flex flex-col p-1">
+            <div className="text-[10px] text-muted-foreground px-2 py-0.5">
+              settings
+            </div>
             {settingsItem && (
               <MenuRow
                 item={settingsItem}

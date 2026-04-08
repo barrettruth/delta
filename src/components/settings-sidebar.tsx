@@ -1,38 +1,49 @@
 "use client";
 
+import {
+  Keyboard,
+  PlugsConnected,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserCircle,
+  Users,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useStatusBar } from "@/contexts/status-bar";
+import {
+  isSettingsSectionActive,
+  SETTINGS_SECTIONS,
+} from "@/lib/settings-navigation";
 import { isInputFocused } from "@/lib/utils";
 
-const SECTIONS = [
-  { id: "account", label: "account", href: "/settings" },
-  { id: "security", label: "security", href: "/settings/security" },
-  { id: "keymaps", label: "keymaps", href: "/settings/keymaps" },
-  { id: "integrations", label: "integrations", href: "/settings/integrations" },
-  { id: "preferences", label: "preferences", href: "/settings/preferences" },
-  { id: "invites", label: "invites", href: "/settings/invites" },
-] as const;
-
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/settings") return pathname === "/settings";
-  return pathname.startsWith(href);
-}
+const SECTION_ICONS = {
+  account: UserCircle,
+  security: ShieldCheck,
+  keymaps: Keyboard,
+  integrations: PlugsConnected,
+  preferences: SlidersHorizontal,
+  invites: Users,
+} as const;
 
 export function SettingsSidebar({ username }: { username: string }) {
   const pathname = usePathname();
   const statusBar = useStatusBar();
   const [cursor, setCursor] = useState(() => {
-    const idx = SECTIONS.findIndex((s) => isActive(pathname, s.href));
+    const idx = SETTINGS_SECTIONS.findIndex((s) =>
+      isSettingsSectionActive(pathname, s.href),
+    );
     return idx >= 0 ? idx : 0;
   });
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   useEffect(() => {
-    const idx = SECTIONS.findIndex((s) => isActive(pathname, s.href));
+    const idx = SETTINGS_SECTIONS.findIndex((s) =>
+      isSettingsSectionActive(pathname, s.href),
+    );
     if (idx >= 0) setCursor(idx);
-    const section = idx >= 0 ? SECTIONS[idx].label : "account";
+    const section = idx >= 0 ? SETTINGS_SECTIONS[idx].label : "account";
     statusBar.setIdle(`-- SETTINGS -- ${section}`, "");
   }, [pathname, statusBar.setIdle]);
 
@@ -43,7 +54,7 @@ export function SettingsSidebar({ username }: { username: string }) {
       if (e.key === "j") {
         e.preventDefault();
         setCursor((prev) => {
-          const next = Math.min(prev + 1, SECTIONS.length - 1);
+          const next = Math.min(prev + 1, SETTINGS_SECTIONS.length - 1);
           linkRefs.current[next]?.click();
           return next;
         });
@@ -61,31 +72,50 @@ export function SettingsSidebar({ username }: { username: string }) {
   }, []);
 
   return (
-    <nav className="w-48 shrink-0 border-r border-border/60 flex flex-col py-4">
-      <div className="px-4 pb-4 text-xs text-muted-foreground/60 uppercase tracking-wider">
-        {username}
+    <nav className="w-full shrink-0 border-b border-border/60 bg-muted/10 px-3 py-3 md:w-60 md:border-b-0 md:border-r md:px-3 md:py-4">
+      <div className="flex items-center justify-between gap-3 px-2 pb-3 md:block md:pb-4">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">
+          settings
+        </div>
+        <div className="truncate text-sm text-foreground md:mt-2">
+          {username}
+        </div>
       </div>
-      {SECTIONS.map((section, i) => {
-        const active = isActive(pathname, section.href);
-        return (
-          <Link
-            key={section.id}
-            ref={(el) => {
-              linkRefs.current[i] = el;
-            }}
-            href={section.href}
-            className={`block px-4 py-1.5 text-sm transition-colors ${
-              active
-                ? "text-foreground bg-accent"
-                : cursor === i
-                  ? "text-foreground bg-accent/50"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
-            }`}
-          >
-            {section.label}
-          </Link>
-        );
-      })}
+      <div className="no-scrollbar overflow-x-auto md:overflow-visible">
+        <div className="flex gap-1 md:flex-col md:gap-1">
+          {SETTINGS_SECTIONS.map((section, i) => {
+            const active = isSettingsSectionActive(pathname, section.href);
+            const Icon = SECTION_ICONS[section.id];
+            const highlighted = active || cursor === i;
+
+            return (
+              <Link
+                key={section.id}
+                ref={(el) => {
+                  linkRefs.current[i] = el;
+                }}
+                href={section.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-ring md:w-full ${
+                  active
+                    ? "bg-accent text-foreground"
+                    : highlighted
+                      ? "bg-accent/50 text-foreground"
+                      : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+                }`}
+              >
+                <Icon
+                  className={`size-4 shrink-0 ${
+                    active ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                  weight={active ? "fill" : "regular"}
+                />
+                <span className="truncate">{section.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </nav>
   );
 }

@@ -71,7 +71,11 @@ export function KeymapsSection() {
   }, [keymaps, allConfigurableIds, statusBar]);
 
   return (
-    <SettingsPage className="max-w-4xl">
+    <SettingsPage
+      className="max-w-4xl"
+      title="keymaps"
+      description="Customize keyboard shortcuts across global navigation and focused task actions."
+    >
       {hasOverrides && (
         <div className="flex justify-end mb-4">
           <button

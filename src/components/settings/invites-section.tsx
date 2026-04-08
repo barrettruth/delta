@@ -59,8 +59,15 @@ export function InvitesSection() {
       : null;
 
   return (
-    <SettingsPage>
-      <SettingsSection title="invite links">
+    <SettingsPage
+      className="max-w-xl"
+      title="invites"
+      description="Create and share invite links for new sign-ins."
+    >
+      <SettingsSection
+        title="invite links"
+        description="Generate a reusable link and copy the current active invite."
+      >
         {active ? (
           <>
             <SettingsRow

@@ -68,8 +68,15 @@ export function AccountSection({
   }
 
   return (
-    <SettingsPage>
-      <SettingsSection title="account">
+    <SettingsPage
+      className="max-w-2xl"
+      title="account"
+      description="Manage your profile and the providers you use to sign in."
+    >
+      <SettingsSection
+        title="profile"
+        description="Update the username shown throughout delta."
+      >
         {editing ? (
           <div className="flex gap-2 px-2">
             <Input
@@ -97,7 +104,10 @@ export function AccountSection({
         )}
       </SettingsSection>
 
-      <SettingsSection title="connected accounts">
+      <SettingsSection
+        title="connected accounts"
+        description="Linked providers you can use for sign-in."
+      >
         {connectedAccounts.map((account) => (
           <SettingsRow
             key={account.id}
