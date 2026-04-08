@@ -18,7 +18,7 @@ import {
   setReminderEndpointTestResult,
 } from "./endpoints";
 import { getReminderAdapterRuntime, ReminderAdapterError } from "./runtime";
-import type { ReminderDelivery } from "./types";
+import { isReminderAdapterKey, type ReminderDelivery } from "./types";
 
 export interface ReminderEndpointTestResult {
   endpoint: NonNullable<ReturnType<typeof getReminderEndpoint>>;
@@ -98,12 +98,25 @@ export async function dispatchReminderDelivery(
     return markReminderDeliverySuppressed(db, claimed.id);
   }
 
+  if (
+    !isReminderAdapterKey(context.delivery.adapterKey) ||
+    !isReminderAdapterKey(context.endpoint.adapterKey)
+  ) {
+    return markReminderDeliveryFailed(
+      db,
+      claimed.id,
+      "Reminder adapter is no longer supported",
+      false,
+    );
+  }
+
   const runtime = getReminderAdapterRuntime(context.delivery.adapterKey);
   if (!runtime) {
     return markReminderDeliveryFailed(
       db,
       claimed.id,
-      `Reminder adapter runtime is not available for ${context.delivery.adapterKey}`,
+      "Reminder adapter is no longer supported",
+      false,
     );
   }
 

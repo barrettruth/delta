@@ -161,8 +161,8 @@ describe("setReminderEndpointTestResult", () => {
 
   it("records failed test state", () => {
     const endpoint = createReminderEndpoint(db, userId, {
-      adapterKey: "signal.signal_cli",
-      label: "signal",
+      adapterKey: "sms.twilio",
+      label: "sms",
       target: "+15555550123",
     });
 

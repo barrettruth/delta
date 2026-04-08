@@ -54,12 +54,12 @@ describe("reminder adapter registry", () => {
   });
 
   it("returns adapter metadata by key", () => {
-    const signal = getReminderAdapter("signal.signal_cli");
+    const adapter = getReminderAdapter("telegram.bot_api");
 
-    expect(signal).not.toBeNull();
-    expect(signal?.channel).toBe("signal");
-    expect(signal?.configScope).toBe("system");
-    expect(signal?.capabilities.beta).toBe(true);
+    expect(adapter).not.toBeNull();
+    expect(adapter?.channel).toBe("telegram");
+    expect(adapter?.configScope).toBe("system");
+    expect(adapter?.capabilities.beta).toBe(false);
   });
 
   it("returns null for unknown adapters", () => {

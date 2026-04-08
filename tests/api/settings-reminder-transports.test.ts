@@ -87,20 +87,6 @@ describe("/api/settings/reminders/transports/[adapter]", () => {
     });
   });
 
-  it("returns Signal transport status with required runtime fields", async () => {
-    const response = await GET(
-      buildRequest("/api/settings/reminders/transports/signal.signal_cli"),
-      { params: Promise.resolve({ adapter: "signal.signal_cli" }) },
-    );
-
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      adapterKey: "signal.signal_cli",
-      configured: false,
-      missingFields: ["account", "configPath"],
-    });
-  });
-
   it("stores Twilio transport config without exposing secrets", async () => {
     const response = await PUT(
       buildRequest("/api/settings/reminders/transports/sms.twilio", {
@@ -131,40 +117,6 @@ describe("/api/settings/reminders/transports/[adapter]", () => {
     expect(
       getSystemConfig(mockState.db as Db, "reminders.sms.twilio.from_number"),
     ).toBe("+15125550123");
-  });
-
-  it("stores Signal transport config", async () => {
-    const response = await PUT(
-      buildRequest("/api/settings/reminders/transports/signal.signal_cli", {
-        method: "PUT",
-        body: {
-          values: {
-            account: " +15125550124 ",
-            configPath: " /var/lib/signal-cli ",
-          },
-        },
-      }),
-      { params: Promise.resolve({ adapter: "signal.signal_cli" }) },
-    );
-
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      adapterKey: "signal.signal_cli",
-      configured: true,
-      missingFields: [],
-    });
-    expect(
-      getSystemConfig(
-        mockState.db as Db,
-        "reminders.signal.signal_cli.account",
-      ),
-    ).toBe("+15125550124");
-    expect(
-      getSystemConfig(
-        mockState.db as Db,
-        "reminders.signal.signal_cli.config_path",
-      ),
-    ).toBe("/var/lib/signal-cli");
   });
 
   it("rejects invalid reminder transport payloads", async () => {

@@ -17,12 +17,6 @@ import { createTestDb, createTestUser } from "../../helpers";
 const TEST_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-const execFileMock = vi.hoisted(() => vi.fn());
-
-vi.mock("node:child_process", () => ({
-  execFile: execFileMock,
-}));
-
 let db: Db;
 let userId: number;
 
@@ -31,8 +25,7 @@ function createDeliveryFixture(
     | "sms.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
-    | "discord.webhook"
-    | "signal.signal_cli",
+    | "discord.webhook",
   target: string,
 ) {
   const task = createTask(db, userId, {
@@ -65,7 +58,6 @@ function createDeliveryFixture(
 beforeEach(() => {
   vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
   vi.unstubAllGlobals();
-  execFileMock.mockReset();
   db = createTestDb();
   userId = createTestUser(db).id;
 });
@@ -178,88 +170,6 @@ describe("dispatchReminderDelivery", () => {
     expect(failed?.status).toBe("failed");
     expect(failed?.nextAttemptAt).toBeTruthy();
   });
-
-  it("dispatches Signal deliveries through signal-cli", async () => {
-    setSystemConfig(db, "reminders.signal.signal_cli.account", "+15125559998");
-    setSystemConfig(
-      db,
-      "reminders.signal.signal_cli.config_path",
-      "/var/lib/signal-cli",
-    );
-    execFileMock.mockImplementation(
-      (
-        _file: string,
-        _args: string[],
-        _options: { timeout: number },
-        callback: (error: Error | null, stdout: string, stderr: string) => void,
-      ) => {
-        callback(null, "", "");
-        return {} as never;
-      },
-    );
-
-    const { delivery } = createDeliveryFixture(
-      "signal.signal_cli",
-      "+15125550110",
-    );
-
-    const sent = await dispatchReminderDelivery(db, delivery.id, {
-      nowIso: "2026-04-06T15:20:00.000Z",
-    });
-
-    expect(sent?.status).toBe("sent");
-    expect(execFileMock).toHaveBeenCalledWith(
-      "signal-cli",
-      [
-        "--config",
-        "/var/lib/signal-cli",
-        "-a",
-        "+15125559998",
-        "send",
-        "-m",
-        expect.stringContaining("Task for signal.signal_cli"),
-        "+15125550110",
-      ],
-      { timeout: 30_000 },
-      expect.any(Function),
-    );
-  });
-
-  it("marks Signal deliveries as dead when signal-cli is missing", async () => {
-    setSystemConfig(db, "reminders.signal.signal_cli.account", "+15125559998");
-    setSystemConfig(
-      db,
-      "reminders.signal.signal_cli.config_path",
-      "/var/lib/signal-cli",
-    );
-    execFileMock.mockImplementation(
-      (
-        _file: string,
-        _args: string[],
-        _options: { timeout: number },
-        callback: (error: Error | null, stdout: string, stderr: string) => void,
-      ) => {
-        callback(
-          Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" }),
-          "",
-          "",
-        );
-        return {} as never;
-      },
-    );
-
-    const { delivery } = createDeliveryFixture(
-      "signal.signal_cli",
-      "+15125550110",
-    );
-
-    const failed = await dispatchReminderDelivery(db, delivery.id, {
-      nowIso: "2026-04-06T15:20:00.000Z",
-    });
-
-    expect(failed?.status).toBe("dead");
-    expect(failed?.error).toContain("signal-cli is not installed");
-  });
 });
 
 describe("sendReminderEndpointTest", () => {
@@ -300,53 +210,6 @@ describe("sendReminderEndpointTest", () => {
 
     expect(getReminderEndpoint(db, userId, endpoint.id)?.lastTestStatus).toBe(
       "failed",
-    );
-  });
-
-  it("sends a Signal endpoint test through signal-cli", async () => {
-    setSystemConfig(db, "reminders.signal.signal_cli.account", "+15125559998");
-    setSystemConfig(
-      db,
-      "reminders.signal.signal_cli.config_path",
-      "/var/lib/signal-cli",
-    );
-    execFileMock.mockImplementation(
-      (
-        _file: string,
-        _args: string[],
-        _options: { timeout: number },
-        callback: (error: Error | null, stdout: string, stderr: string) => void,
-      ) => {
-        callback(null, "", "");
-        return {} as never;
-      },
-    );
-    const endpoint = createReminderEndpoint(db, userId, {
-      adapterKey: "signal.signal_cli",
-      label: "Signal",
-      target: "+15125550111",
-    });
-
-    const result = await sendReminderEndpointTest(db, userId, endpoint.id, {
-      body: "Signal reminder test",
-    });
-
-    expect(result.endpoint.lastTestStatus).toBe("ok");
-    expect(result.providerMessageId).toBeNull();
-    expect(execFileMock).toHaveBeenCalledWith(
-      "signal-cli",
-      [
-        "--config",
-        "/var/lib/signal-cli",
-        "-a",
-        "+15125559998",
-        "send",
-        "-m",
-        "Signal reminder test",
-        "+15125550111",
-      ],
-      { timeout: 30_000 },
-      expect.any(Function),
     );
   });
 
