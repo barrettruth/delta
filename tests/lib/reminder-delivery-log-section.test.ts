@@ -9,6 +9,7 @@ function createDelivery(input: {
   id: number;
   adapterKey:
     | "sms.twilio"
+    | "whatsapp.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
     | "discord.webhook";
@@ -118,9 +119,11 @@ describe("ReminderDeliveryLogSection", () => {
     expect(html).toContain("delivery history");
     expect(html).toContain("operator playbooks");
     expect(html).toContain("Twilio SMS");
+    expect(html).toContain("Twilio WhatsApp");
     expect(html).toContain("Telegram Bot API");
     expect(html).toContain("Slack Webhook");
     expect(html).toContain("Discord Webhook");
+    expect(html).toContain("approved WhatsApp template");
   });
 
   it("renders empty states when no deliveries exist yet", () => {

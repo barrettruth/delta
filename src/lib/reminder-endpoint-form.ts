@@ -6,6 +6,8 @@ export function getReminderEndpointTargetLabel(
   switch (adapterKey) {
     case "sms.twilio":
       return "phone number";
+    case "whatsapp.twilio":
+      return "WhatsApp number";
     case "telegram.bot_api":
       return "chat id";
     case "slack.webhook":
@@ -19,6 +21,8 @@ export function getReminderEndpointTargetPlaceholder(
 ): string {
   switch (adapterKey) {
     case "sms.twilio":
+      return "+15125550123";
+    case "whatsapp.twilio":
       return "+15125550123";
     case "telegram.bot_api":
       return "123456789";
@@ -34,6 +38,10 @@ export function getReminderEndpointAdapterHint(
     "key" | "configScope" | "capabilities"
   >,
 ): string | null {
+  if (adapter.key === "whatsapp.twilio") {
+    return "requires transport config · uses approved Twilio content template";
+  }
+
   if (adapter.configScope === "system") {
     return "requires transport config";
   }

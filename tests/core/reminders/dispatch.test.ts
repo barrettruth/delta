@@ -23,6 +23,7 @@ let userId: number;
 function createDeliveryFixture(
   adapterKey:
     | "sms.twilio"
+    | "whatsapp.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
     | "discord.webhook",
@@ -137,6 +138,67 @@ describe("dispatchReminderDelivery", () => {
     expect(request.body.get("Body")).toContain("Task for sms.twilio");
   });
 
+  it("dispatches Twilio WhatsApp deliveries with template config", async () => {
+    setSystemConfig(db, "reminders.whatsapp.twilio.account_sid", "ACWA123");
+    setSystemConfig(db, "reminders.whatsapp.twilio.auth_token", "wa-token-123");
+    setSystemConfig(
+      db,
+      "reminders.whatsapp.twilio.from_number",
+      "+15125558888",
+    );
+    setSystemConfig(
+      db,
+      "reminders.whatsapp.twilio.messaging_service_sid",
+      "MG123456789",
+    );
+    setSystemConfig(db, "reminders.whatsapp.twilio.content_sid", "HX123456789");
+
+    const { delivery } = createDeliveryFixture(
+      "whatsapp.twilio",
+      "+15125550119",
+    );
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ sid: "SMWA123" }), {
+          status: 201,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sent = await dispatchReminderDelivery(db, delivery.id, {
+      nowIso: "2026-04-06T15:20:00.000Z",
+    });
+
+    expect(sent?.status).toBe("sent");
+    expect(sent?.providerMessageId).toBe("SMWA123");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.twilio.com/2010-04-01/Accounts/ACWA123/Messages.json",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: `Basic ${Buffer.from("ACWA123:wa-token-123").toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        }),
+      }),
+    );
+    const request = (
+      fetchMock.mock.calls[0] as unknown as [string, { body: URLSearchParams }]
+    )[1] as {
+      body: URLSearchParams;
+    };
+    expect(request.body.get("To")).toBe("whatsapp:+15125550119");
+    expect(request.body.get("From")).toBe("whatsapp:+15125558888");
+    expect(request.body.get("MessagingServiceSid")).toBe("MG123456789");
+    expect(request.body.get("ContentSid")).toBe("HX123456789");
+    expect(request.body.get("Body")).toBeNull();
+    expect(JSON.parse(request.body.get("ContentVariables") ?? "")).toEqual({
+      "1": "Task for whatsapp.twilio",
+      "2": "Due: 2026-04-06T15:30:00.000Z",
+    });
+  });
+
   it("marks permanent adapter failures as dead", async () => {
     const { delivery } = createDeliveryFixture(
       "discord.webhook",
@@ -211,6 +273,55 @@ describe("sendReminderEndpointTest", () => {
     expect(getReminderEndpoint(db, userId, endpoint.id)?.lastTestStatus).toBe(
       "failed",
     );
+  });
+
+  it("sends a WhatsApp endpoint test through Twilio templates", async () => {
+    setSystemConfig(db, "reminders.whatsapp.twilio.account_sid", "ACWA123");
+    setSystemConfig(db, "reminders.whatsapp.twilio.auth_token", "wa-token-123");
+    setSystemConfig(
+      db,
+      "reminders.whatsapp.twilio.from_number",
+      "+15125558888",
+    );
+    setSystemConfig(
+      db,
+      "reminders.whatsapp.twilio.messaging_service_sid",
+      "MG123456789",
+    );
+    setSystemConfig(db, "reminders.whatsapp.twilio.content_sid", "HX123456789");
+    const endpoint = createReminderEndpoint(db, userId, {
+      adapterKey: "whatsapp.twilio",
+      label: "WhatsApp",
+      target: "+15125550111",
+    });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ sid: "SMWA456" }), {
+          status: 201,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await sendReminderEndpointTest(db, userId, endpoint.id, {
+      body: "WhatsApp reminder test",
+    });
+
+    expect(result.endpoint.lastTestStatus).toBe("ok");
+    expect(result.providerMessageId).toBe("SMWA456");
+    const request = (
+      fetchMock.mock.calls[0] as unknown as [string, { body: URLSearchParams }]
+    )[1] as {
+      body: URLSearchParams;
+    };
+    expect(request.body.get("To")).toBe("whatsapp:+15125550111");
+    expect(request.body.get("From")).toBe("whatsapp:+15125558888");
+    expect(request.body.get("MessagingServiceSid")).toBe("MG123456789");
+    expect(request.body.get("ContentSid")).toBe("HX123456789");
+    expect(JSON.parse(request.body.get("ContentVariables") ?? "")).toEqual({
+      "1": "WhatsApp reminder test",
+      "2": "Reminder endpoint test from delta",
+    });
   });
 
   it("throws for nonexistent endpoints", async () => {

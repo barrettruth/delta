@@ -28,6 +28,17 @@ describe("reminder transport config", () => {
         missingFields: ["accountSid", "authToken", "fromNumber"],
       },
       {
+        adapterKey: "whatsapp.twilio",
+        configured: false,
+        missingFields: [
+          "accountSid",
+          "authToken",
+          "fromNumber",
+          "messagingServiceSid",
+          "contentSid",
+        ],
+      },
+      {
         adapterKey: "telegram.bot_api",
         configured: false,
         missingFields: ["botToken"],
@@ -55,6 +66,37 @@ describe("reminder transport config", () => {
     );
     expect(getSystemConfig(db, "reminders.sms.twilio.from_number")).toBe(
       "+15125550123",
+    );
+  });
+
+  it("stores and reports WhatsApp transport config", () => {
+    const status = setReminderTransportConfig(db, "whatsapp.twilio", {
+      accountSid: "ACWA123",
+      authToken: "wa-token-123",
+      fromNumber: "+15125550124",
+      messagingServiceSid: "MG123456789",
+      contentSid: "HX123456789",
+    });
+
+    expect(status).toEqual({
+      adapterKey: "whatsapp.twilio",
+      configured: true,
+      missingFields: [],
+    });
+    expect(getSystemConfig(db, "reminders.whatsapp.twilio.account_sid")).toBe(
+      "ACWA123",
+    );
+    expect(getSystemConfig(db, "reminders.whatsapp.twilio.auth_token")).toBe(
+      "wa-token-123",
+    );
+    expect(getSystemConfig(db, "reminders.whatsapp.twilio.from_number")).toBe(
+      "+15125550124",
+    );
+    expect(
+      getSystemConfig(db, "reminders.whatsapp.twilio.messaging_service_sid"),
+    ).toBe("MG123456789");
+    expect(getSystemConfig(db, "reminders.whatsapp.twilio.content_sid")).toBe(
+      "HX123456789",
     );
   });
 

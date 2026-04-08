@@ -6,6 +6,7 @@ import type {
 
 export const REMINDER_CHANNELS = [
   "sms",
+  "whatsapp",
   "telegram",
   "discord",
   "slack",
@@ -14,6 +15,7 @@ export type ReminderChannel = (typeof REMINDER_CHANNELS)[number];
 
 export const REMINDER_ADAPTER_KEYS = [
   "sms.twilio",
+  "whatsapp.twilio",
   "telegram.bot_api",
   "discord.webhook",
   "slack.webhook",

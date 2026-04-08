@@ -14,6 +14,18 @@ const MANIFESTS = [
     },
   },
   {
+    key: "whatsapp.twilio",
+    channel: "whatsapp",
+    displayName: "Twilio WhatsApp",
+    configScope: "system",
+    capabilities: {
+      supportsDeliveryStatus: true,
+      supportsRichText: false,
+      supportsTestSend: true,
+      beta: false,
+    },
+  },
+  {
     key: "telegram.bot_api",
     channel: "telegram",
     displayName: "Telegram Bot API",

@@ -29,6 +29,7 @@ let userId: number;
 function createDeliveryFixture(
   adapterKey:
     | "sms.twilio"
+    | "whatsapp.twilio"
     | "telegram.bot_api"
     | "slack.webhook"
     | "discord.webhook" = "sms.twilio",
@@ -41,7 +42,7 @@ function createDeliveryFixture(
     adapterKey,
     label: adapterKey,
     target:
-      adapterKey === "sms.twilio"
+      adapterKey === "sms.twilio" || adapterKey === "whatsapp.twilio"
         ? "+15125501381"
         : adapterKey === "telegram.bot_api"
           ? "1234"

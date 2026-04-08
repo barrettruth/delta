@@ -2,6 +2,7 @@ import type { ReminderAdapterKey } from "@/core/reminders/types";
 
 export const REMINDER_TRANSPORT_CONFIGURABLE_ADAPTER_KEYS = [
   "sms.twilio",
+  "whatsapp.twilio",
   "telegram.bot_api",
 ] as const;
 
@@ -44,6 +45,43 @@ const REMINDER_TRANSPORT_FIELDS = {
       placeholder: "+15125550123",
       inputType: "tel",
       systemConfigKey: "reminders.sms.twilio.from_number",
+    },
+  ],
+  "whatsapp.twilio": [
+    {
+      name: "accountSid",
+      label: "account SID",
+      placeholder: "AC123456789",
+      inputType: "text",
+      systemConfigKey: "reminders.whatsapp.twilio.account_sid",
+    },
+    {
+      name: "authToken",
+      label: "auth token",
+      placeholder: "auth token",
+      inputType: "password",
+      systemConfigKey: "reminders.whatsapp.twilio.auth_token",
+    },
+    {
+      name: "fromNumber",
+      label: "from number",
+      placeholder: "+15125550123",
+      inputType: "tel",
+      systemConfigKey: "reminders.whatsapp.twilio.from_number",
+    },
+    {
+      name: "messagingServiceSid",
+      label: "messaging service SID",
+      placeholder: "MG123456789",
+      inputType: "text",
+      systemConfigKey: "reminders.whatsapp.twilio.messaging_service_sid",
+    },
+    {
+      name: "contentSid",
+      label: "content SID",
+      placeholder: "HX123456789",
+      inputType: "text",
+      systemConfigKey: "reminders.whatsapp.twilio.content_sid",
     },
   ],
   "telegram.bot_api": [
