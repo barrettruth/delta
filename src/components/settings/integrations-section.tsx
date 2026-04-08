@@ -261,150 +261,166 @@ export function IntegrationsSection({
   }
 
   return (
-    <SettingsPage>
-      <SettingsSection title="google calendar">
-        {gcalConnected ? (
-          <SettingsRow
-            label="disconnect google calendar"
-            action
-            muted
-            prefix={{ text: "-", className: "text-destructive" }}
-            onClick={handleDisconnectGcal}
-          />
-        ) : (
-          <SettingsRow
-            label="connect google calendar"
-            action
-            muted
-            prefix={{ text: "+", className: "text-status-done" }}
-            onClick={handleConnectGcal}
-          />
-        )}
-
-        {gcalConnected && (
-          <>
-            <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
-              sync strategy
-            </div>
-            {CONFLICT_STRATEGIES.map((s) => (
-              <SettingsRow
-                key={s.id}
-                label={s.label}
-                value={conflictResolution === s.id ? "active" : ""}
-                action
-                muted={conflictResolution !== s.id}
-                onClick={() => handleSelectConflictResolution(s.id)}
-              />
-            ))}
-
-            <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
-              sync interval
-            </div>
-            {SYNC_INTERVALS.map((s) => (
-              <SettingsRow
-                key={s.id}
-                label={s.label}
-                value={syncInterval === s.id ? "active" : ""}
-                action
-                muted={syncInterval !== s.id}
-                onClick={() => handleSelectSyncInterval(s.id)}
-              />
-            ))}
-          </>
-        )}
-      </SettingsSection>
-
-      <SettingsSection title="geocoding">
-        {GEO_PROVIDERS.map((p) => (
-          <div key={p.id}>
+    <SettingsPage
+      className="max-w-6xl"
+      title="integrations"
+      description="Manage calendar sync, provider API keys, and reminder delivery infrastructure."
+    >
+      <div className="grid gap-6 xl:grid-cols-3">
+        <SettingsSection
+          title="google calendar"
+          description="Connect Google Calendar and choose how two-way sync behaves."
+        >
+          {gcalConnected ? (
             <SettingsRow
-              label={p.label}
-              value={geoProvider === p.id ? "active" : ""}
+              label="disconnect google calendar"
               action
-              muted={geoProvider !== p.id}
-              onClick={() => handleSelectGeoProvider(p.id)}
+              muted
+              prefix={{ text: "-", className: "text-destructive" }}
+              onClick={handleDisconnectGcal}
             />
-            {geoKeyTarget === p.id && (
-              <div className="flex gap-2 px-2 py-1">
-                <Input
-                  value={geoKeyInput}
-                  onChange={(e) => setGeoKeyInput(e.target.value)}
-                  placeholder="api key"
-                  autoFocus
-                  className="h-7 text-sm flex-1"
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") handleTestGeoKey();
-                    if (e.key === "Escape") {
-                      setGeoKeyTarget(null);
-                      setGeoKeyInput("");
-                    }
-                  }}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={geoKeyTesting || !geoKeyInput.trim()}
-                  onClick={handleTestGeoKey}
-                  className="h-7 text-xs"
-                >
-                  {geoKeyTesting ? "..." : "test & save"}
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
-      </SettingsSection>
-
-      <SettingsSection title="recurrence NLP">
-        {NLP_PROVIDERS_LIST.map((p) => (
-          <div key={p.id}>
+          ) : (
             <SettingsRow
-              label={p.label}
-              value={nlpActive === p.id ? "active" : ""}
+              label="connect google calendar"
               action
-              muted={nlpActive !== p.id}
-              onClick={() => handleSelectNlpProvider(p.id)}
+              muted
+              prefix={{ text: "+", className: "text-status-done" }}
+              onClick={handleConnectGcal}
             />
-            {nlpKeyTarget === p.id && (
-              <div className="flex gap-2 px-2 py-1">
-                <Input
-                  value={nlpKeyInput}
-                  onChange={(e) => setNlpKeyInput(e.target.value)}
-                  placeholder="api key"
-                  type="password"
-                  autoFocus
-                  className="h-7 text-sm flex-1"
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") handleTestNlpKey();
-                    if (e.key === "Escape") {
-                      setNlpKeyTarget(null);
-                      setNlpKeyInput("");
-                    }
-                  }}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={nlpKeyTesting || !nlpKeyInput.trim()}
-                  onClick={handleTestNlpKey}
-                  className="h-7 text-xs"
-                >
-                  {nlpKeyTesting ? "..." : "test & save"}
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
-      </SettingsSection>
+          )}
 
-      <ReminderEndpointsSection
-        initialDeliveries={initialReminderDeliveries}
-        initialEndpoints={initialReminderEndpoints}
-        initialTransportConfigs={initialReminderTransportConfigs}
-        adapters={reminderAdapters}
-      />
+          {gcalConnected && (
+            <>
+              <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
+                sync strategy
+              </div>
+              {CONFLICT_STRATEGIES.map((s) => (
+                <SettingsRow
+                  key={s.id}
+                  label={s.label}
+                  value={conflictResolution === s.id ? "active" : ""}
+                  action
+                  muted={conflictResolution !== s.id}
+                  onClick={() => handleSelectConflictResolution(s.id)}
+                />
+              ))}
+
+              <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
+                sync interval
+              </div>
+              {SYNC_INTERVALS.map((s) => (
+                <SettingsRow
+                  key={s.id}
+                  label={s.label}
+                  value={syncInterval === s.id ? "active" : ""}
+                  action
+                  muted={syncInterval !== s.id}
+                  onClick={() => handleSelectSyncInterval(s.id)}
+                />
+              ))}
+            </>
+          )}
+        </SettingsSection>
+
+        <SettingsSection
+          title="geocoding"
+          description="Choose the provider used for location and meeting lookups."
+        >
+          {GEO_PROVIDERS.map((p) => (
+            <div key={p.id}>
+              <SettingsRow
+                label={p.label}
+                value={geoProvider === p.id ? "active" : ""}
+                action
+                muted={geoProvider !== p.id}
+                onClick={() => handleSelectGeoProvider(p.id)}
+              />
+              {geoKeyTarget === p.id && (
+                <div className="flex gap-2 px-2 py-1">
+                  <Input
+                    value={geoKeyInput}
+                    onChange={(e) => setGeoKeyInput(e.target.value)}
+                    placeholder="api key"
+                    autoFocus
+                    className="h-7 text-sm flex-1"
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") handleTestGeoKey();
+                      if (e.key === "Escape") {
+                        setGeoKeyTarget(null);
+                        setGeoKeyInput("");
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={geoKeyTesting || !geoKeyInput.trim()}
+                    onClick={handleTestGeoKey}
+                    className="h-7 text-xs"
+                  >
+                    {geoKeyTesting ? "..." : "test & save"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </SettingsSection>
+
+        <SettingsSection
+          title="recurrence NLP"
+          description="Choose the parser used for natural-language recurrence input."
+        >
+          {NLP_PROVIDERS_LIST.map((p) => (
+            <div key={p.id}>
+              <SettingsRow
+                label={p.label}
+                value={nlpActive === p.id ? "active" : ""}
+                action
+                muted={nlpActive !== p.id}
+                onClick={() => handleSelectNlpProvider(p.id)}
+              />
+              {nlpKeyTarget === p.id && (
+                <div className="flex gap-2 px-2 py-1">
+                  <Input
+                    value={nlpKeyInput}
+                    onChange={(e) => setNlpKeyInput(e.target.value)}
+                    placeholder="api key"
+                    type="password"
+                    autoFocus
+                    className="h-7 text-sm flex-1"
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") handleTestNlpKey();
+                      if (e.key === "Escape") {
+                        setNlpKeyTarget(null);
+                        setNlpKeyInput("");
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={nlpKeyTesting || !nlpKeyInput.trim()}
+                    onClick={handleTestNlpKey}
+                    className="h-7 text-xs"
+                  >
+                    {nlpKeyTesting ? "..." : "test & save"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </SettingsSection>
+
+        <ReminderEndpointsSection
+          className="xl:col-span-3"
+          initialDeliveries={initialReminderDeliveries}
+          initialEndpoints={initialReminderEndpoints}
+          initialTransportConfigs={initialReminderTransportConfigs}
+          adapters={reminderAdapters}
+        />
+      </div>
     </SettingsPage>
   );
 }

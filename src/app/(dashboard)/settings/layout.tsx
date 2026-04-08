@@ -17,9 +17,11 @@ export default async function SettingsLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full min-h-0 flex-col md:flex-row">
       <SettingsSidebar username={user.username} />
-      <div className="flex-1 overflow-y-auto">{children}</div>
+      <div className="min-w-0 flex-1 overflow-y-auto bg-background/40">
+        {children}
+      </div>
     </div>
   );
 }

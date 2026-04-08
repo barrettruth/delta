@@ -78,8 +78,15 @@ export function PreferencesSection({
   }
 
   return (
-    <SettingsPage>
-      <SettingsSection title="default view">
+    <SettingsPage
+      className="max-w-2xl"
+      title="preferences"
+      description="Choose the defaults delta uses for opening views and ordering work."
+    >
+      <SettingsSection
+        title="default view"
+        description="The first view delta opens when you return to the app."
+      >
         {VIEWS.map((v) => (
           <SettingsRow
             key={v.id}
@@ -92,7 +99,10 @@ export function PreferencesSection({
         ))}
       </SettingsSection>
 
-      <SettingsSection title="default category">
+      <SettingsSection
+        title="default category"
+        description="Applied when a new task is created without a category."
+      >
         {editingCategory ? (
           <div className="px-2">
             <Input
@@ -119,7 +129,10 @@ export function PreferencesSection({
         )}
       </SettingsSection>
 
-      <SettingsSection title="show completed tasks">
+      <SettingsSection
+        title="show completed tasks"
+        description="Control whether completed work stays visible across views."
+      >
         <SettingsRow
           label={settings.showCompletedTasks ? "enabled" : "disabled"}
           action
@@ -131,7 +144,10 @@ export function PreferencesSection({
         />
       </SettingsSection>
 
-      <SettingsSection title="urgency weights">
+      <SettingsSection
+        title="urgency weights"
+        description="These weights shape queue ordering and urgency scoring."
+      >
         {WEIGHT_KEYS.map((w) => (
           <div key={w.id} className="flex items-center gap-2 px-2 py-1">
             <span className="text-sm text-muted-foreground w-24 shrink-0">

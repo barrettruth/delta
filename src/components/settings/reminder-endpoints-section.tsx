@@ -59,11 +59,13 @@ async function parseApiError(response: Response): Promise<string> {
 }
 
 export function ReminderEndpointsSection({
+  className,
   initialDeliveries,
   initialEndpoints,
   initialTransportConfigs,
   adapters,
 }: {
+  className?: string;
   initialDeliveries: ReminderDeliveryLogRecord[];
   initialEndpoints: ReminderEndpointRecord[];
   initialTransportConfigs: ReminderTransportConfigStatus[];
@@ -310,7 +312,11 @@ export function ReminderEndpointsSection({
   }
 
   return (
-    <SettingsSection title="reminders">
+    <SettingsSection
+      className={className}
+      title="reminders"
+      description="Configure delivery transports, reusable endpoints, and reminder delivery history."
+    >
       <div className="space-y-2">
         <div className="mt-1 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
           transport config

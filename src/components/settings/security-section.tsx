@@ -135,8 +135,15 @@ export function SecuritySection({
   }, [showRecoveryCodes]);
 
   return (
-    <SettingsPage>
-      <SettingsSection title="passkeys">
+    <SettingsPage
+      className="max-w-3xl"
+      title="security"
+      description="Manage passkeys, your authenticator, and recovery access."
+    >
+      <SettingsSection
+        title="passkeys"
+        description="Register WebAuthn credentials for passwordless sign-in."
+      >
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs text-muted-foreground px-2">registered</span>
           {!showAddPasskey && (
@@ -183,7 +190,10 @@ export function SecuritySection({
         )}
       </SettingsSection>
 
-      <SettingsSection title="authenticator">
+      <SettingsSection
+        title="authenticator"
+        description="Enable time-based one-time passwords for an additional factor."
+      >
         {showTotpSetup ? (
           <div className="pt-2">
             <div className="flex flex-col items-center gap-2 mb-2">
@@ -228,7 +238,10 @@ export function SecuritySection({
         )}
       </SettingsSection>
 
-      <SettingsSection title="recovery codes">
+      <SettingsSection
+        title="recovery codes"
+        description="Regenerate and store emergency recovery codes in a safe place."
+      >
         {showRecoveryCodes ? (
           <div className="mb-2">
             <div className="border border-border p-3 font-mono text-sm leading-relaxed select-all text-center">

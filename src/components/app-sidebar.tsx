@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
+import { isSettingsPath } from "@/lib/settings-navigation";
 
 const VIEW_KEYMAP_IDS: {
   label: string;
@@ -151,7 +152,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href="/settings" />}
-              isActive={pathname === "/settings"}
+              isActive={isSettingsPath(pathname)}
               onClick={() => nav.pushJump()}
             >
               <Gear className="size-4" />

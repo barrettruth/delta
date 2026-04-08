@@ -1,22 +1,40 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+
 export function SettingsSection({
   title,
+  description,
+  className,
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  description?: string;
+  className?: string;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="pb-6 mb-6">
-      <h2
-        data-section={title}
-        className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-3"
-      >
-        {title}
-      </h2>
-      {children}
-    </div>
+    <section
+      className={cn(
+        "overflow-hidden rounded-xl border border-border/60 bg-background/40",
+        className,
+      )}
+    >
+      <div className="border-b border-border/60 px-3 py-2">
+        <h2
+          data-section={title}
+          className="text-xs text-muted-foreground/60 uppercase tracking-wider"
+        >
+          {title}
+        </h2>
+        {description && (
+          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="py-1">{children}</div>
+    </section>
   );
 }
 
@@ -40,7 +58,7 @@ export function SettingsRow({
   const Tag = action ? "button" : "div";
   return (
     <Tag
-      className={`flex items-center w-full text-sm py-2 md:py-1 px-2 overflow-hidden min-w-0 ${action ? "hover:bg-accent/50 cursor-pointer" : ""}`}
+      className={`flex min-w-0 items-center gap-2 overflow-hidden px-3 py-2.5 text-sm ${action ? "cursor-pointer hover:bg-accent/50" : ""}`}
       onClick={onClick}
       type={action ? "button" : undefined}
     >
@@ -67,10 +85,35 @@ export function SettingsRow({
 
 export function SettingsPage({
   children,
-  className = "max-w-md",
+  className = "max-w-3xl",
+  title,
+  description,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
+  title?: string;
+  description?: string;
 }) {
-  return <div className={`w-full px-6 py-6 ${className}`}>{children}</div>;
+  return (
+    <div className={cn("w-full px-4 py-6 md:px-6 md:py-8", className)}>
+      {(title || description) && (
+        <header className="mb-6 md:mb-8">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">
+            settings
+          </div>
+          {title && (
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+              {title}
+            </h1>
+          )}
+          {description && (
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {description}
+            </p>
+          )}
+        </header>
+      )}
+      <div className="space-y-6">{children}</div>
+    </div>
+  );
 }
