@@ -14,13 +14,8 @@ export function SettingsSection({
   children?: React.ReactNode;
 }) {
   return (
-    <section
-      className={cn(
-        "overflow-hidden rounded-xl border border-border/60 bg-background/40",
-        className,
-      )}
-    >
-      <div className="border-b border-border/60 px-3 py-2">
+    <section className={cn("space-y-2", className)}>
+      <div className="px-1">
         <h2
           data-section={title}
           className="text-xs text-muted-foreground/60 uppercase tracking-wider"
@@ -33,7 +28,7 @@ export function SettingsSection({
           </p>
         )}
       </div>
-      <div className="py-1">{children}</div>
+      <div className="border-y border-border/50">{children}</div>
     </section>
   );
 }
@@ -58,7 +53,7 @@ export function SettingsRow({
   const Tag = action ? "button" : "div";
   return (
     <Tag
-      className={`flex min-w-0 items-center gap-2 overflow-hidden px-3 py-2.5 text-sm ${action ? "cursor-pointer hover:bg-accent/50" : ""}`}
+      className={`flex w-full min-w-0 items-center gap-2 overflow-hidden border-b border-border/40 px-3 py-2.5 text-sm transition-colors last:border-b-0 ${action ? "cursor-pointer hover:bg-accent/30" : ""}`}
       onClick={onClick}
       type={action ? "button" : undefined}
     >

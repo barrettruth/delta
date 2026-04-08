@@ -87,16 +87,29 @@ export function PreferencesSection({
         title="default view"
         description="The first view delta opens when you return to the app."
       >
-        {VIEWS.map((v) => (
-          <SettingsRow
-            key={v.id}
-            label={v.label}
-            value={settings.defaultView === v.id ? "active" : ""}
-            action
-            muted={settings.defaultView !== v.id}
-            onClick={() => handleViewChange(v.id)}
-          />
-        ))}
+        <div className="flex flex-col">
+          {VIEWS.map((v) => {
+            const active = settings.defaultView === v.id;
+
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => handleViewChange(v.id)}
+                className={`flex w-full items-center justify-between gap-3 border-b border-border/40 px-3 py-2.5 text-sm transition-colors last:border-b-0 ${
+                  active
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+                }`}
+              >
+                <span>{v.label}</span>
+                {active && (
+                  <span className="text-xs text-muted-foreground">default</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </SettingsSection>
 
       <SettingsSection

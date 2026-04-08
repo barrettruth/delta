@@ -140,7 +140,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     section: "global",
     label: "This help",
   },
-
   {
     id: "queue.move_down",
     key: "j",

@@ -30,7 +30,7 @@ describe("reminder endpoint form helpers", () => {
     );
   });
 
-  it("returns system-config hints for configured adapters", () => {
+  it("returns provider-specific setup hints", () => {
     expect(
       getReminderEndpointAdapterHint({
         key: "sms.twilio",
@@ -42,7 +42,7 @@ describe("reminder endpoint form helpers", () => {
           beta: false,
         },
       }),
-    ).toBe("requires transport config");
+    ).toBeNull();
 
     expect(
       getReminderEndpointAdapterHint({
@@ -55,7 +55,7 @@ describe("reminder endpoint form helpers", () => {
           beta: false,
         },
       }),
-    ).toBe("requires transport config · uses approved Twilio content template");
+    ).toBe("uses an approved Twilio template");
 
     expect(
       getReminderEndpointAdapterHint({

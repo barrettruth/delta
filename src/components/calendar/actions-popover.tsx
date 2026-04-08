@@ -159,9 +159,9 @@ export function CalendarActionsPopover({
 
   items.push({
     id: "settings",
-    label: "open settings",
+    label: "calendar settings",
     muted: true,
-    onSelect: () => router.push("/settings/integrations"),
+    onSelect: () => router.push("/settings/calendar"),
   });
 
   const itemsRef = useRef(items);

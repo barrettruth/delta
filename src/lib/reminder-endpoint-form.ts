@@ -39,11 +39,7 @@ export function getReminderEndpointAdapterHint(
   >,
 ): string | null {
   if (adapter.key === "whatsapp.twilio") {
-    return "requires transport config · uses approved Twilio content template";
-  }
-
-  if (adapter.configScope === "system") {
-    return "requires transport config";
+    return "uses an approved Twilio template";
   }
 
   return null;

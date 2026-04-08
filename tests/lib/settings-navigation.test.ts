@@ -11,6 +11,7 @@ describe("settings navigation helpers", () => {
       "/settings",
       "/settings/security",
       "/settings/keymaps",
+      "/settings/calendar",
       "/settings/integrations",
       "/settings/preferences",
       "/settings/invites",
@@ -19,6 +20,7 @@ describe("settings navigation helpers", () => {
 
   it("matches the full settings area for the main app sidebar", () => {
     expect(isSettingsPath("/settings")).toBe(true);
+    expect(isSettingsPath("/settings/calendar")).toBe(true);
     expect(isSettingsPath("/settings/integrations")).toBe(true);
     expect(isSettingsPath("/settings/preferences/advanced")).toBe(true);
     expect(isSettingsPath("/calendar")).toBe(false);
@@ -26,6 +28,12 @@ describe("settings navigation helpers", () => {
 
   it("matches only the active section for the settings sub-navigation", () => {
     expect(isSettingsSectionActive("/settings", "/settings")).toBe(true);
+    expect(
+      isSettingsSectionActive("/settings/calendar", "/settings/calendar"),
+    ).toBe(true);
+    expect(
+      isSettingsSectionActive("/settings/calendar/sync", "/settings/calendar"),
+    ).toBe(true);
     expect(
       isSettingsSectionActive(
         "/settings/integrations",

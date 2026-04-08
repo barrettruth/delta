@@ -4,65 +4,9 @@ import type {
   ReminderDeliveryLogRecord,
 } from "@/core/reminders/deliveries";
 import type {
-  ReminderAdapterKey,
   ReminderAdapterManifest,
   ReminderDeliveryStatus,
 } from "@/core/reminders/types";
-
-type Playbook = {
-  adapterKey: ReminderAdapterKey;
-  steps: string[];
-  note?: string;
-};
-
-const OPERATOR_PLAYBOOKS: Playbook[] = [
-  {
-    adapterKey: "sms.twilio",
-    steps: [
-      "Save the account SID, auth token, and from number in transport config.",
-      "Add an endpoint with the recipient phone number in E.164 format.",
-      "Use the endpoint test action, then confirm the message arrives and the history shows a sent delivery.",
-      "Keep the public proof-of-consent page aligned with the current SMS opt-in flow.",
-    ],
-  },
-  {
-    adapterKey: "whatsapp.twilio",
-    steps: [
-      "Save the account SID, auth token, from number, messaging service SID, and content SID in transport config.",
-      "Create an approved WhatsApp template that expects {{1}} for the task text and {{2}} for the schedule line.",
-      "Add an endpoint with the recipient phone number in E.164 format.",
-      "Use the endpoint test action, then confirm the approved WhatsApp template renders and delivers correctly.",
-    ],
-    note: "Business-initiated reminders use an approved WhatsApp template through Twilio content templates rather than a free-form body.",
-  },
-  {
-    adapterKey: "telegram.bot_api",
-    steps: [
-      "Save the bot token in transport config.",
-      "Add an endpoint with the target chat ID.",
-      "Use the endpoint test action after the bot has already joined or started the chat.",
-      "If deliveries fail, re-check bot access and the stored chat ID.",
-    ],
-  },
-  {
-    adapterKey: "slack.webhook",
-    steps: [
-      "Create an incoming webhook for the destination channel.",
-      "Store the webhook URL as the endpoint target.",
-      "Use the endpoint test action and confirm the message lands in the channel.",
-      "Dead deliveries usually mean the webhook was revoked or lost channel access.",
-    ],
-  },
-  {
-    adapterKey: "discord.webhook",
-    steps: [
-      "Create a Discord webhook for the destination channel.",
-      "Store the webhook URL as the endpoint target.",
-      "Use the endpoint test action and confirm the channel receives the message.",
-      "If deliveries fail, re-check channel permissions and whether the webhook still exists.",
-    ],
-  },
-];
 
 function formatTimestamp(value: string | null): string | null {
   if (!value) return null;
@@ -212,6 +156,7 @@ export function ReminderDeliveryLogSection({
   const actionable = deliveries.filter(
     (entry) => entry.status === "failed" || entry.status === "dead",
   );
+  const recent = deliveries.slice(0, 10);
   const adapterByKey = new Map(
     adapters.map((adapter) => [adapter.key, adapter]),
   );
@@ -219,11 +164,11 @@ export function ReminderDeliveryLogSection({
   return (
     <div className="space-y-2">
       <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
-        attention needed
+        issues
       </div>
       {actionable.length === 0 ? (
         <div className="px-2 py-2 text-sm text-muted-foreground">
-          no failed or dead deliveries
+          no failed reminder sends
         </div>
       ) : (
         actionable.map((entry) => (
@@ -239,14 +184,14 @@ export function ReminderDeliveryLogSection({
       )}
 
       <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
-        delivery history
+        recent sends
       </div>
-      {deliveries.length === 0 ? (
+      {recent.length === 0 ? (
         <div className="px-2 py-2 text-sm text-muted-foreground">
-          no reminder deliveries yet
+          no reminder sends yet
         </div>
       ) : (
-        deliveries.map((entry) => (
+        recent.map((entry) => (
           <ReminderDeliveryEntry
             key={entry.id}
             entry={entry}
@@ -257,40 +202,6 @@ export function ReminderDeliveryLogSection({
           />
         ))
       )}
-
-      <div className="mt-4 mb-1 px-2 text-xs text-muted-foreground/60 uppercase tracking-wider">
-        operator playbooks
-      </div>
-      <div className="space-y-2">
-        {OPERATOR_PLAYBOOKS.map((playbook) => {
-          const adapter = adapterByKey.get(playbook.adapterKey);
-          const title = adapter?.displayName ?? playbook.adapterKey;
-
-          return (
-            <div
-              key={playbook.adapterKey}
-              className="border border-border/60 px-2 py-2 space-y-2"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{title}</span>
-                {adapter?.capabilities.beta && (
-                  <Badge variant="outline">beta</Badge>
-                )}
-              </div>
-              <ul className="space-y-1 pl-4 text-xs text-muted-foreground list-disc">
-                {playbook.steps.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ul>
-              {playbook.note && (
-                <div className="text-xs text-muted-foreground">
-                  {playbook.note}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
