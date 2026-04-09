@@ -7,6 +7,7 @@ import type {
   ReminderAdapterManifest,
   ReminderDeliveryStatus,
 } from "@/core/reminders/types";
+import { getReminderChannelLabel } from "@/lib/reminder-endpoint-form";
 
 function formatTimestamp(value: string | null): string | null {
   if (!value) return null;
@@ -97,10 +98,8 @@ function getDeliveryOutcome(entry: ReminderDeliveryLogEntry): string | null {
 
 function ReminderDeliveryEntry({
   entry,
-  adapterName,
 }: {
   entry: ReminderDeliveryLogRecord;
-  adapterName: string;
 }) {
   const scheduledLabel = formatTimestamp(entry.scheduledFor);
   const outcome = getDeliveryOutcome(entry);
@@ -116,7 +115,7 @@ function ReminderDeliveryEntry({
             </Badge>
           </div>
           <div className="text-xs text-muted-foreground truncate">
-            {adapterName} · {entry.endpoint.label}
+            {getReminderChannelLabel(entry.adapterKey)}
           </div>
           <div className="text-xs text-muted-foreground">
             {formatReminderRule(entry.reminder)} · scheduled {scheduledLabel}
@@ -148,7 +147,7 @@ function ReminderDeliveryEntry({
 
 export function ReminderDeliveryLogSection({
   deliveries,
-  adapters,
+  adapters: _adapters,
 }: {
   deliveries: ReminderDeliveryLogRecord[];
   adapters: ReminderAdapterManifest[];
@@ -157,9 +156,6 @@ export function ReminderDeliveryLogSection({
     (entry) => entry.status === "failed" || entry.status === "dead",
   );
   const recent = deliveries.slice(0, 10);
-  const adapterByKey = new Map(
-    adapters.map((adapter) => [adapter.key, adapter]),
-  );
 
   return (
     <div className="space-y-2">
@@ -172,14 +168,7 @@ export function ReminderDeliveryLogSection({
         </div>
       ) : (
         actionable.map((entry) => (
-          <ReminderDeliveryEntry
-            key={`action-${entry.id}`}
-            entry={entry}
-            adapterName={
-              adapterByKey.get(entry.adapterKey)?.displayName ??
-              entry.adapterKey
-            }
-          />
+          <ReminderDeliveryEntry key={`action-${entry.id}`} entry={entry} />
         ))
       )}
 
@@ -192,14 +181,7 @@ export function ReminderDeliveryLogSection({
         </div>
       ) : (
         recent.map((entry) => (
-          <ReminderDeliveryEntry
-            key={entry.id}
-            entry={entry}
-            adapterName={
-              adapterByKey.get(entry.adapterKey)?.displayName ??
-              entry.adapterKey
-            }
-          />
+          <ReminderDeliveryEntry key={entry.id} entry={entry} />
         ))
       )}
     </div>

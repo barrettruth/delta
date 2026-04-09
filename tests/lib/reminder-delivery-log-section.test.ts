@@ -117,9 +117,10 @@ describe("ReminderDeliveryLogSection", () => {
     expect(html).toContain("next attempt 2026-04-06 15:18 UTC");
     expect(html).toContain("no more retries");
     expect(html).toContain("recent sends");
-    expect(html).toContain("Twilio SMS");
-    expect(html).toContain("Telegram Bot API");
-    expect(html).toContain("Slack Webhook");
+    expect(html).toContain("SMS");
+    expect(html).toContain("Telegram");
+    expect(html).toContain("Slack");
+    expect(html).not.toContain("Phone");
     expect(html).not.toContain("operator playbooks");
   });
 

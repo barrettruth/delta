@@ -10,8 +10,15 @@ import {
 } from "@/lib/task-panel-reminders";
 
 const endpoints = new Map([
-  [1, { id: 1, label: "personal sms" }],
-  [2, { id: 2, label: "telegram" }],
+  [1, { id: 1, adapterKey: "sms.twilio" as const, label: "personal sms" }],
+  [
+    2,
+    {
+      id: 2,
+      adapterKey: "telegram.bot_api" as const,
+      label: "telegram",
+    },
+  ],
 ]);
 
 describe("task panel reminder helpers", () => {
@@ -71,7 +78,7 @@ describe("task panel reminder helpers", () => {
         endpoints,
         { allDay: false },
       ),
-    ).toBe("1h 30m before due → personal sms");
+    ).toBe("1h 30m before due → SMS");
   });
 
   it("formats all-day reminder summaries with a local time", () => {
@@ -86,7 +93,7 @@ describe("task panel reminder helpers", () => {
         endpoints,
         { allDay: true },
       ),
-    ).toBe("09:00 on due day → telegram");
+    ).toBe("09:00 on due day → Telegram");
   });
 
   it("compares reminder drafts by persisted fields", () => {
