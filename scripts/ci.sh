@@ -6,7 +6,7 @@ if [[ -z "${IN_NIX_SHELL:-}" ]]; then
 fi
 
 echo "==> Biome check"
-biome check .
+./scripts/biome.sh check .
 
 echo "==> TypeScript check"
 pnpm tsc --noEmit
