@@ -13,6 +13,7 @@ import type {
   ReminderAdapterManifest,
 } from "@/core/reminders/types";
 import {
+  getReminderChannelLabel,
   getReminderEndpointAdapterHint,
   getReminderEndpointTargetLabel,
   getReminderEndpointTargetPlaceholder,
@@ -56,23 +57,6 @@ async function parseApiError(response: Response): Promise<string> {
 
 function formatCount(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function getReminderAdapterLabel(
-  adapter: Pick<ReminderAdapterManifest, "key">,
-): string {
-  switch (adapter.key) {
-    case "sms.twilio":
-      return "SMS";
-    case "whatsapp.twilio":
-      return "WhatsApp";
-    case "telegram.bot_api":
-      return "Telegram";
-    case "slack.webhook":
-      return "Slack";
-    case "discord.webhook":
-      return "Discord";
-  }
 }
 
 function getReminderAdapterDescription(
@@ -185,7 +169,6 @@ export function ReminderEndpointsSection({
   const [deletingTransportKey, setDeletingTransportKey] =
     useState<ReminderTransportConfigurableAdapterKey | null>(null);
   const [endpoints, setEndpoints] = useState(initialEndpoints);
-  const [createLabel, setCreateLabel] = useState("");
   const [createTarget, setCreateTarget] = useState("");
   const [creating, setCreating] = useState(false);
   const [testingIds, setTestingIds] = useState<number[]>([]);
@@ -246,7 +229,6 @@ export function ReminderEndpointsSection({
   }
 
   function resetCreateForm() {
-    setCreateLabel("");
     setCreateTarget("");
   }
 
@@ -346,8 +328,8 @@ export function ReminderEndpointsSection({
   async function handleCreateEndpoint(
     adapterKey: ReminderAdapterManifest["key"],
   ) {
-    if (!createLabel.trim() || !createTarget.trim()) {
-      statusBar.error("destination name and target are required");
+    if (!createTarget.trim()) {
+      statusBar.error("target is required");
       return;
     }
 
@@ -358,7 +340,7 @@ export function ReminderEndpointsSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           adapterKey,
-          label: createLabel.trim(),
+          label: getReminderChannelLabel(adapterKey),
           target: createTarget.trim(),
         }),
       });
@@ -517,7 +499,7 @@ export function ReminderEndpointsSection({
                 <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm truncate">
-                      {getReminderAdapterLabel(adapter)}
+                      {getReminderChannelLabel(adapterKey)}
                     </span>
                     {adapter.capabilities.beta && (
                       <Badge variant="outline">beta</Badge>
@@ -710,7 +692,9 @@ export function ReminderEndpointsSection({
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <span className="text-sm truncate">
-                                    {endpoint.label}
+                                    {getReminderChannelLabel(
+                                      endpoint.adapterKey,
+                                    )}
                                   </span>
                                   {endpoint.enabled === 0 && (
                                     <Badge variant="ghost">off</Badge>
@@ -769,23 +753,6 @@ export function ReminderEndpointsSection({
 
                     {providerReady && (
                       <div className="space-y-2 border-t border-border/60 pt-3">
-                        <Input
-                          value={createLabel}
-                          onChange={(event) =>
-                            setCreateLabel(event.target.value)
-                          }
-                          placeholder="destination name"
-                          className="h-8 text-sm"
-                          onKeyDown={(event) => {
-                            event.stopPropagation();
-                            if (event.key === "Enter") {
-                              void handleCreateEndpoint(adapterKey);
-                            }
-                            if (event.key === "Escape") {
-                              resetCreateForm();
-                            }
-                          }}
-                        />
                         <Input
                           value={createTarget}
                           onChange={(event) =>

@@ -1,5 +1,22 @@
 import type { ReminderAdapterManifest } from "@/core/reminders/types";
 
+export function getReminderChannelLabel(
+  adapterKey: ReminderAdapterManifest["key"],
+): string {
+  switch (adapterKey) {
+    case "sms.twilio":
+      return "SMS";
+    case "whatsapp.twilio":
+      return "WhatsApp";
+    case "telegram.bot_api":
+      return "Telegram";
+    case "slack.webhook":
+      return "Slack";
+    case "discord.webhook":
+      return "Discord";
+  }
+}
+
 export function getReminderEndpointTargetLabel(
   adapterKey: ReminderAdapterManifest["key"],
 ): string {

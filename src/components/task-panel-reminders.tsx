@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { ReminderAnchor } from "@/core/reminders/types";
+import { getReminderChannelLabel } from "@/lib/reminder-endpoint-form";
 import {
   buildReminderOffsetMinutes,
   formatTaskPanelReminderSummary,
@@ -219,8 +220,8 @@ const ReminderEditorRow = memo(function ReminderEditorRow({
               {endpoints.map((endpoint) => (
                 <SelectItem key={endpoint.id} value={String(endpoint.id)}>
                   {endpoint.enabled === 1
-                    ? endpoint.label
-                    : `${endpoint.label} (off)`}
+                    ? getReminderChannelLabel(endpoint.adapterKey)
+                    : `${getReminderChannelLabel(endpoint.adapterKey)} (off)`}
                 </SelectItem>
               ))}
             </SelectContent>

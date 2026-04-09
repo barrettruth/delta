@@ -1,5 +1,6 @@
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { ReminderAnchor, TaskReminder } from "@/core/reminders/types";
+import { getReminderChannelLabel } from "./reminder-endpoint-form";
 
 export interface TaskPanelReminderDraft {
   clientId: string;
@@ -115,12 +116,18 @@ export function formatTaskPanelReminderSummary(
     TaskPanelReminderDraft,
     "endpointId" | "anchor" | "offsetMinutes" | "allDayLocalTime"
   >,
-  endpoints: Map<number, Pick<ReminderEndpointRecord, "id" | "label">>,
+  endpoints: Map<
+    number,
+    Pick<ReminderEndpointRecord, "id" | "adapterKey" | "label">
+  >,
   options: { allDay: boolean },
 ): string {
   const endpointLabel =
     (reminder.endpointId !== null
-      ? endpoints.get(reminder.endpointId)?.label
+      ? (() => {
+          const endpoint = endpoints.get(reminder.endpointId);
+          return endpoint ? getReminderChannelLabel(endpoint.adapterKey) : null;
+        })()
       : null) ?? "unknown endpoint";
 
   if (options.allDay && reminder.allDayLocalTime) {
