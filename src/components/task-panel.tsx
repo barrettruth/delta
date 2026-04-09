@@ -31,7 +31,6 @@ import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
-import { formatTime } from "@/lib/calendar-utils";
 import {
   createTaskPanelReminderDraft,
   type TaskPanelReminderDraft,
@@ -873,19 +872,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
             )}
           </div>
         </div>
-
-        {mode === "create" && preFill && (preFill.startAt || preFill.due) && (
-          <div className="flex gap-2 px-4 pb-2 text-xs text-muted-foreground">
-            {preFill.startAt && (
-              <span>
-                {formatTime(new Date(preFill.startAt))}
-                {preFill.endAt &&
-                  `\u2013${formatTime(new Date(preFill.endAt))}`}
-              </span>
-            )}
-            {preFill.allDay === 1 && <span>all day</span>}
-          </div>
-        )}
 
         <div className="grid grid-cols-[4rem_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 border-b border-border/40">
           {mode === "edit" && task && (

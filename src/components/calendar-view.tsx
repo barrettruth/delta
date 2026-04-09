@@ -31,6 +31,7 @@ import {
   formatDateKey,
   formatMonthTitle,
   formatWeekRange,
+  getCreatePreview,
   getDatesBetween,
   getMinutesFromMidnight,
   getWeekStart,
@@ -382,24 +383,8 @@ export function CalendarView({
   }, [tasks, optimisticUpdates]);
 
   const createPreview = useMemo(() => {
-    if (
-      panel.mode !== "create" ||
-      !panel.preFill?.startAt ||
-      panel.preFill.allDay
-    )
-      return null;
-    const start = new Date(panel.preFill.startAt);
-    const dayOffset = Math.floor(
-      (start.getTime() - weekAnchor.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    if (dayOffset < 0 || dayOffset > 6) return null;
-    const startMin = start.getHours() * 60 + start.getMinutes();
-    let endMin = startMin + 60;
-    if (panel.preFill.endAt) {
-      const end = new Date(panel.preFill.endAt);
-      endMin = end.getHours() * 60 + end.getMinutes();
-    }
-    return { dayIndex: dayOffset, startMin, endMin };
+    if (panel.mode !== "create") return null;
+    return getCreatePreview(panel.preFill, weekAnchor);
   }, [panel.mode, panel.preFill, weekAnchor]);
 
   function handleDayClick(date: Date, _anchorEl?: HTMLElement) {

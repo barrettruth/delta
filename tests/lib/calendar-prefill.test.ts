@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildDayPreFill, buildSlotPreFill } from "@/lib/calendar-utils";
+import {
+  buildDayPreFill,
+  buildSlotPreFill,
+  getCreatePreview,
+} from "@/lib/calendar-utils";
 
 describe("buildSlotPreFill", () => {
   it("snaps to nearest 15 minutes", () => {
@@ -95,5 +99,38 @@ describe("buildDayPreFill", () => {
     const date = new Date(2026, 2, 25);
     const result = buildDayPreFill(date);
     expect(result.timezone).toBeTruthy();
+  });
+});
+
+describe("getCreatePreview", () => {
+  it("defaults single-click previews to 15 minutes", () => {
+    const weekAnchor = new Date(2026, 2, 22);
+    const preFill = buildSlotPreFill(new Date(2026, 2, 25), 10 * 60 + 30);
+
+    expect(getCreatePreview(preFill, weekAnchor)).toEqual({
+      dayIndex: 3,
+      startMin: 630,
+      endMin: 645,
+    });
+  });
+
+  it("uses the explicit end time for range-created previews", () => {
+    const weekAnchor = new Date(2026, 2, 22);
+    const date = new Date(2026, 2, 24);
+    const startAt = new Date(date);
+    startAt.setHours(9, 0, 0, 0);
+    const endAt = new Date(date);
+    endAt.setHours(11, 0, 0, 0);
+    const preFill = {
+      startAt: startAt.toISOString(),
+      endAt: endAt.toISOString(),
+      allDay: 0,
+    };
+
+    expect(getCreatePreview(preFill, weekAnchor)).toEqual({
+      dayIndex: 2,
+      startMin: 540,
+      endMin: 660,
+    });
   });
 });

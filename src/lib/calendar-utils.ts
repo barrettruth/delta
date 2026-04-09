@@ -157,6 +157,12 @@ export interface TaskPreFill {
   category?: string;
 }
 
+export interface CreatePreview {
+  dayIndex: number;
+  startMin: number;
+  endMin: number;
+}
+
 export function buildSlotPreFill(date: Date, minuteOfDay: number): TaskPreFill {
   const snapped = Math.round(minuteOfDay / 15) * 15;
   const hours = Math.floor(snapped / 60);
@@ -214,4 +220,28 @@ export function buildDayPreFill(date: Date): TaskPreFill {
     allDay: 1,
     timezone: getUserTimezone(),
   };
+}
+
+export function getCreatePreview(
+  preFill: TaskPreFill | null | undefined,
+  weekAnchor: Date,
+): CreatePreview | null {
+  if (!preFill?.startAt || preFill.allDay) return null;
+
+  const start = new Date(preFill.startAt);
+  const dayIndex = Math.floor(
+    (start.getTime() - weekAnchor.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (dayIndex < 0 || dayIndex > 6) return null;
+
+  const startMin = start.getHours() * 60 + start.getMinutes();
+  let endMin = startMin + 15;
+
+  if (preFill.endAt) {
+    const end = new Date(preFill.endAt);
+    endMin = end.getHours() * 60 + end.getMinutes();
+  }
+
+  return { dayIndex, startMin, endMin };
 }
