@@ -30,7 +30,6 @@ describe("settings primitives", () => {
       ),
     );
 
-    expect(html).toContain("settings");
     expect(html).toContain("integrations");
     expect(html).toContain("Manage calendar sync and provider API keys.");
     expect(html).toContain("google calendar");

@@ -93,13 +93,8 @@ export function SettingsPage({
     <div className={cn("w-full px-4 py-6 md:px-6 md:py-8", className)}>
       {(title || description) && (
         <header className="mb-6 md:mb-8">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">
-            settings
-          </div>
           {title && (
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-              {title}
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           )}
           {description && (
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
