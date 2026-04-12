@@ -171,21 +171,15 @@ Authentication commands.
 * `delta auth token regenerate`:
   Regenerate the API token (invalidates the previous token).
 
-### delta sync
-
-* `delta sync`:
-  Trigger a Google Calendar synchronization.
-
 ### delta feed
 
-iCal feed management. Running `delta feed` with no verb shows the current feed
-URL or status.
+iCal subscription management. Running `delta feed` with no verb shows the current subscription URL or status.
 
 * `delta feed generate`:
-  Generate or regenerate the iCal feed URL.
+  Generate or regenerate the iCal subscription URL.
 
 * `delta feed revoke`:
-  Revoke the current feed URL.
+  Revoke the current subscription URL.
 
 ### delta import
 
@@ -219,7 +213,7 @@ Settings management. Running `delta config` with no verb shows all settings.
   Set a setting value.
 
 Valid keys: `default-view`, `show-completed`, `urgency-weights`,
-`conflict-strategy`, `sync-interval`, `geo-provider`.
+`geo-provider`.
 
 ### delta integration
 

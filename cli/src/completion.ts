@@ -12,7 +12,7 @@ _delta_completions() {
     local cur prev words cword
     _init_completion || return
 
-    local nouns="task cat cron auth sync feed import export invite share config integration completion help"
+    local nouns="task cat cron auth feed import export invite share config integration completion help"
     local universal_flags="--json --jq --quiet --no-color --server --debug --help --version --yes"
 
     local task_verbs="list add edit done delete wip block pending dep"
@@ -192,8 +192,7 @@ _delta() {
                 'cat:List categories with task counts'
                 'cron:Automation management'
                 'auth:Authentication'
-                'sync:Trigger Google Calendar sync'
-                'feed:iCal feed management'
+                'feed:iCal subscription management'
                 'import:Import from iCal or other sources'
                 'export:Export as iCal'
                 'invite:Invite link management'
@@ -325,8 +324,8 @@ _delta() {
                 feed)
                     local -a verbs
                     verbs=(
-                        'generate:Generate/regenerate feed URL'
-                        'revoke:Revoke feed URL'
+                        'generate:Generate/regenerate subscription URL'
+                        'revoke:Revoke subscription URL'
                     )
                     _arguments -C \\
                         '1:verb:->feed_verb' \\
@@ -430,7 +429,7 @@ function fishScript(): string {
 # Installation:
 #   delta completion fish > ~/.config/fish/completions/delta.fish
 
-set -l nouns task cat cron auth sync feed import export invite share config integration completion help
+set -l nouns task cat cron auth feed import export invite share config integration completion help
 
 complete -c delta -e
 
@@ -438,8 +437,7 @@ complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a task -d "Task C
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a cat -d "List categories with task counts"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a cron -d "Automation management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a auth -d "Authentication"
-complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a sync -d "Trigger Google Calendar sync"
-complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a feed -d "iCal feed management"
+complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a feed -d "iCal subscription management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a import -d "Import from iCal or other sources"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a export -d "Export as iCal"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a invite -d "Invite link management"
@@ -507,8 +505,8 @@ complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subc
 complete -c delta -n "__fish_seen_subcommand_from auth; and __fish_seen_subcommand_from token" -a regenerate -d "Regenerate API token"
 
 set -l feed_verbs generate revoke
-complete -c delta -n "__fish_seen_subcommand_from feed; and not __fish_seen_subcommand_from $feed_verbs" -a generate -d "Generate/regenerate feed URL"
-complete -c delta -n "__fish_seen_subcommand_from feed; and not __fish_seen_subcommand_from $feed_verbs" -a revoke -d "Revoke feed URL"
+complete -c delta -n "__fish_seen_subcommand_from feed; and not __fish_seen_subcommand_from $feed_verbs" -a generate -d "Generate/regenerate subscription URL"
+complete -c delta -n "__fish_seen_subcommand_from feed; and not __fish_seen_subcommand_from $feed_verbs" -a revoke -d "Revoke subscription URL"
 
 set -l invite_verbs list create
 complete -c delta -n "__fish_seen_subcommand_from invite; and not __fish_seen_subcommand_from $invite_verbs" -a list -d "List invite links"

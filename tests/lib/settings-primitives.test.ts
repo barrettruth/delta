@@ -14,16 +14,16 @@ describe("settings primitives", () => {
         SettingsPage,
         {
           title: "integrations",
-          description: "Manage calendar sync and provider API keys.",
+          description: "Manage interoperability and provider API keys.",
         },
         createElement(
           SettingsSection,
           {
-            title: "google calendar",
-            description: "Connect Google Calendar and choose sync behavior.",
+            title: "location lookup",
+            description: "Choose the provider used for location lookups.",
           },
           createElement(SettingsRow, {
-            label: "connect google calendar",
+            label: "photon",
             action: true,
           }),
         ),
@@ -32,10 +32,10 @@ describe("settings primitives", () => {
 
     expect(html).toContain("settings");
     expect(html).toContain("integrations");
-    expect(html).toContain("Manage calendar sync and provider API keys.");
-    expect(html).toContain("google calendar");
-    expect(html).toContain("Connect Google Calendar and choose sync behavior.");
-    expect(html).toContain("connect google calendar");
+    expect(html).toContain("Manage interoperability and provider API keys.");
+    expect(html).toContain("location lookup");
+    expect(html).toContain("Choose the provider used for location lookups.");
+    expect(html).toContain("photon");
   });
 
   it("passes through custom section layout classes", () => {

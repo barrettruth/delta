@@ -11,8 +11,7 @@ Commands:
   cat                        List categories with task counts
   cron [list|add|edit|delete|run|enable|disable]
   auth [login|logout|status|token]
-  sync                       Trigger Google Calendar sync
-  feed [generate|revoke]     iCal feed management
+  feed [generate|revoke]     iCal subscription management
   import <file>              Import iCal file
   export                     Export as iCal to stdout
   config [get|set]           Settings management

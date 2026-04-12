@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { CalendarView } from "@/components/calendar-view";
 import { validateSession } from "@/core/auth";
 import { getFeedToken } from "@/core/calendar-feed";
-import { getIntegrationConfig } from "@/core/integration-config";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
 import type { TaskFilters } from "@/core/types";
@@ -46,16 +45,6 @@ export default async function CalendarPage({
 
   const feedToken = getFeedToken(db, user.id);
 
-  const gcalConfig = getIntegrationConfig(db, user.id, "google_calendar");
-  const gcalMetadata = gcalConfig?.metadata as Record<string, unknown> | null;
-  const gcalStatus = gcalConfig
-    ? {
-        connected: gcalConfig.enabled === 1,
-        lastSyncTime: gcalMetadata?.lastSyncTime as string | null,
-      }
-    : { connected: false, lastSyncTime: null };
-  const syncInterval = (gcalMetadata?.syncInterval as number) ?? 5;
-
   return (
     <CalendarView
       tasks={tasks}
@@ -63,8 +52,6 @@ export default async function CalendarPage({
       categories={categories}
       defaultViewMode={defaultViewMode}
       feedToken={feedToken}
-      gcalStatus={gcalStatus}
-      syncInterval={syncInterval}
     />
   );
 }
