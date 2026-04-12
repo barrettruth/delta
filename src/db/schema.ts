@@ -81,6 +81,29 @@ export const tasks = sqliteTable("tasks", {
   sourceUserId: integer("source_user_id"),
 });
 
+export const taskExternalLinks = sqliteTable(
+  "task_external_links",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    taskId: integer("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    externalId: text("external_id").notNull(),
+    metadata: text("metadata"),
+    lastSyncedAt: text("last_synced_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [
+    unique().on(t.taskId, t.provider),
+    unique().on(t.userId, t.provider, t.externalId),
+  ],
+);
+
 export const taskDependencies = sqliteTable(
   "task_dependencies",
   {

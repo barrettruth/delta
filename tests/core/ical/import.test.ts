@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { listExternalLinksForTask } from "@/core/external-links";
 import { importICalEvents } from "@/core/ical/import";
 import type { ParsedEvent } from "@/core/ical/parser";
 import { listTasks } from "@/core/task";
@@ -64,12 +65,28 @@ describe("importICalEvents", () => {
     expect(task.location).toBe("Room A");
     expect(task.meetingUrl).toBe("https://meet.example.com/abc");
     expect(task.recurrence).toBe("FREQ=WEEKLY;BYDAY=MO");
-    expect(task.externalId).toBe("full-event@example.com");
-    expect(task.externalSource).toBe("ical");
 
     const notes = JSON.parse(task.notes as string);
     expect(notes.type).toBe("doc");
     expect(notes.content[0].content[0].text).toBe("Discuss goals");
+
+    const links = listExternalLinksForTask(db, task.id);
+    expect(links).toHaveLength(1);
+    expect(links[0].provider).toBe("ical");
+    expect(links[0].externalId).toBe("full-event@example.com");
+  });
+
+  it("preserves custom delta status metadata when present", () => {
+    const events = [
+      makeEvent({
+        uid: "status@example.com",
+        status: "done",
+      }),
+    ];
+
+    importICalEvents(db, userId, events);
+    const tasks = listTasks(db, userId);
+    expect(tasks[0].status).toBe("done");
   });
 
   it("preserves custom delta status metadata when present", () => {

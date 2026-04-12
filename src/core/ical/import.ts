@@ -1,5 +1,7 @@
-import { and, eq } from "drizzle-orm";
-import { tasks } from "@/db/schema";
+import {
+  createExternalLink,
+  getExternalLinkByProviderId,
+} from "../external-links";
 import { createTask } from "../task";
 import type { CreateTaskInput, Db, TaskStatus } from "../types";
 import type { ParsedEvent } from "./parser";
@@ -32,8 +34,6 @@ function parsedEventToInput(
     category: defaultCategory ?? "Todo",
     startAt: event.dtstart.toISOString(),
     allDay: event.allDay ? 1 : 0,
-    externalId: event.uid,
-    externalSource: "ical",
   };
 
   if (event.dtend) {
@@ -91,17 +91,12 @@ export function importICalEvents(
 
   for (const event of events) {
     try {
-      const existing = db
-        .select({ id: tasks.id })
-        .from(tasks)
-        .where(
-          and(
-            eq(tasks.userId, userId),
-            eq(tasks.externalId, event.uid),
-            eq(tasks.externalSource, "ical"),
-          ),
-        )
-        .get();
+      const existing = getExternalLinkByProviderId(
+        db,
+        userId,
+        "ical",
+        event.uid,
+      );
 
       if (existing) {
         result.skipped++;
@@ -109,7 +104,13 @@ export function importICalEvents(
       }
 
       const input = parsedEventToInput(event, defaultCategory);
-      createTask(db, userId, input);
+      const task = createTask(db, userId, input);
+      createExternalLink(db, {
+        userId,
+        taskId: task.id,
+        provider: "ical",
+        externalId: event.uid,
+      });
       result.created++;
     } catch (e) {
       const message =
