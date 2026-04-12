@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { tasks } from "@/db/schema";
 import { createTask } from "../task";
-import type { CreateTaskInput, Db } from "../types";
+import type { CreateTaskInput, Db, TaskStatus } from "../types";
 import type { ParsedEvent } from "./parser";
 
 export interface ImportResult {
@@ -56,7 +56,29 @@ function parsedEventToInput(
     input.recurrence = event.rrule;
   }
 
+  const status = normalizeStatus(event.status);
+  if (status) {
+    input.status = status;
+  }
+
   return input;
+}
+
+function normalizeStatus(status: string | undefined): TaskStatus | null {
+  if (!status) return null;
+  if (
+    status === "pending" ||
+    status === "done" ||
+    status === "wip" ||
+    status === "blocked" ||
+    status === "cancelled"
+  ) {
+    return status;
+  }
+  if (status.toUpperCase() === "CANCELLED") {
+    return "cancelled";
+  }
+  return null;
 }
 
 export function importICalEvents(

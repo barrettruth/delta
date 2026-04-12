@@ -13,6 +13,22 @@ export interface ParsedEvent {
   status?: string;
 }
 
+function getCustomStatus(event: VEvent): string | undefined {
+  const value = event["x-delta-status"];
+  if (typeof value !== "string") return undefined;
+  const status = value.toLowerCase();
+  if (
+    status === "pending" ||
+    status === "done" ||
+    status === "wip" ||
+    status === "blocked" ||
+    status === "cancelled"
+  ) {
+    return status;
+  }
+  return undefined;
+}
+
 function extractParameterValue(
   value: ParameterValue | undefined,
 ): string | undefined {
@@ -55,7 +71,10 @@ function veventToParsedEvent(event: VEvent): ParsedEvent {
     parsed.rrule = event.rrule.toString();
   }
 
-  if (event.status) {
+  const customStatus = getCustomStatus(event);
+  if (customStatus) {
+    parsed.status = customStatus;
+  } else if (event.status) {
     parsed.status = event.status;
   }
 

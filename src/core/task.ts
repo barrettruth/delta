@@ -16,11 +16,22 @@ function timestamp(): string {
   return new Date().toISOString();
 }
 
+function assertRecurringTaskHasAnchor(
+  recurrence: string | null | undefined,
+  startAt: string | null | undefined,
+  due: string | null | undefined,
+): void {
+  if (recurrence && !startAt && !due) {
+    throw new Error("Recurring tasks require startAt or due");
+  }
+}
+
 export function createTask(
   db: Db,
   userId: number,
   input: CreateTaskInput,
 ): Task {
+  assertRecurringTaskHasAnchor(input.recurrence, input.startAt, input.due);
   const ts = timestamp();
   return db
     .insert(tasks)
@@ -115,6 +126,12 @@ export function listExceptions(db: Db, masterId: number): Task[] {
 export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
   const existing = getTask(db, id);
   if (!existing) throw new Error(`Task ${id} not found`);
+
+  assertRecurringTaskHasAnchor(
+    input.recurrence === undefined ? existing.recurrence : input.recurrence,
+    input.startAt === undefined ? existing.startAt : input.startAt,
+    input.due === undefined ? existing.due : input.due,
+  );
 
   const isCompleting =
     (input.status === "done" || input.status === "cancelled") &&

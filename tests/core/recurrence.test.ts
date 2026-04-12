@@ -178,6 +178,31 @@ describe("getNextTaskData", () => {
     );
   });
 
+  it("anchors recurring event spawning on startAt when present", () => {
+    const data = getNextTaskData({
+      ...baseTask,
+      startAt: "2026-03-22T10:00:00.000Z",
+      endAt: "2026-03-22T11:00:00.000Z",
+      due: null,
+    });
+
+    expect(data).not.toBeNull();
+    expect(data?.due).toBeUndefined();
+    expect(data?.startAt).toBe("2026-03-29T10:00:00.000Z");
+    expect(data?.endAt).toBe("2026-03-29T11:00:00.000Z");
+  });
+
+  it("returns null for recurring task without a recurrence anchor", () => {
+    const data = getNextTaskData({
+      ...baseTask,
+      due: null,
+      startAt: null,
+      endAt: null,
+    });
+
+    expect(data).toBeNull();
+  });
+
   it("defaults recurMode to scheduled when null", () => {
     const data = getNextTaskData({ ...baseTask, recurMode: null });
     expect(data).not.toBeNull();
