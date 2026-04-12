@@ -38,8 +38,6 @@ export interface CreateTaskInput {
   rdates?: string;
   recurringTaskId?: number;
   originalStartAt?: string;
-  externalId?: string;
-  externalSource?: string;
 }
 
 export interface UpdateTaskInput {
@@ -61,8 +59,6 @@ export interface UpdateTaskInput {
   meetingUrl?: string | null;
   exdates?: string | null;
   rdates?: string | null;
-  externalId?: string | null;
-  externalSource?: string | null;
 }
 
 export interface TaskFilters {

@@ -57,8 +57,6 @@ export function createTask(
       rdates: input.rdates ?? null,
       recurringTaskId: input.recurringTaskId ?? null,
       originalStartAt: input.originalStartAt ?? null,
-      externalId: input.externalId ?? null,
-      externalSource: input.externalSource ?? null,
       createdAt: ts,
       updatedAt: ts,
     })
