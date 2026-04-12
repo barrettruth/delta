@@ -74,16 +74,24 @@ export function buildRRule(opts: BuildRRuleOpts): string {
 export function getNextOccurrence(
   rruleStr: string,
   mode: RecurMode,
-  currentDue: string | null,
-  completedAt: string,
+  currentAnchor: string | null,
+  completedAt: string | null,
 ): Date | null {
+  const base = parseRRule(rruleStr);
+
   if (mode === "scheduled") {
-    const rule = parseRRule(rruleStr);
-    const ref = currentDue ? new Date(currentDue) : new Date(completedAt);
+    const refSource = currentAnchor ?? completedAt;
+    if (!refSource) return null;
+    const ref = new Date(refSource);
+    const rule = new RRule({
+      ...base.origOptions,
+      dtstart: new Date(refSource),
+    });
     return rule.after(ref);
   }
 
-  const base = parseRRule(rruleStr);
+  if (!completedAt) return null;
+
   const rule = new RRule({
     ...base.origOptions,
     dtstart: new Date(completedAt),
@@ -95,35 +103,43 @@ export function getNextTaskData(task: Task): CreateTaskInput | null {
   if (!task.recurrence || !task.completedAt) return null;
 
   const mode: RecurMode = task.recurMode ?? "scheduled";
-  const nextDue = getNextOccurrence(
+  const anchor = task.startAt ?? task.due;
+  if (!anchor) return null;
+
+  const nextAnchor = getNextOccurrence(
     task.recurrence,
     mode,
-    task.due,
+    anchor,
     task.completedAt,
   );
 
-  if (!nextDue) return null;
+  if (!nextAnchor) return null;
 
-  const dueDelta = task.due
-    ? nextDue.getTime() - new Date(task.due).getTime()
-    : 0;
+  const anchorDelta = nextAnchor.getTime() - new Date(anchor).getTime();
 
   let startAt: string | undefined;
   if (task.startAt) {
     startAt = new Date(
-      new Date(task.startAt).getTime() + dueDelta,
+      new Date(task.startAt).getTime() + anchorDelta,
     ).toISOString();
   }
 
   let endAt: string | undefined;
   if (task.endAt) {
-    endAt = new Date(new Date(task.endAt).getTime() + dueDelta).toISOString();
+    endAt = new Date(
+      new Date(task.endAt).getTime() + anchorDelta,
+    ).toISOString();
+  }
+
+  let due: string | undefined;
+  if (task.due) {
+    due = new Date(new Date(task.due).getTime() + anchorDelta).toISOString();
   }
 
   return {
     description: task.description,
     category: task.category ?? undefined,
-    due: nextDue.toISOString(),
+    due,
     startAt,
     endAt,
     allDay: task.allDay ?? undefined,
@@ -132,5 +148,9 @@ export function getNextTaskData(task: Task): CreateTaskInput | null {
     recurMode: mode,
     notes: task.notes ?? undefined,
     order: task.order ?? undefined,
+    location: task.location ?? undefined,
+    locationLat: task.locationLat ?? undefined,
+    locationLon: task.locationLon ?? undefined,
+    meetingUrl: task.meetingUrl ?? undefined,
   };
 }

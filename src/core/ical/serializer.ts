@@ -4,7 +4,6 @@ import { notesToPlaintext } from "./notes-to-plaintext";
 
 function taskStatusToICalStatus(status: string): ICalEventStatus | null {
   switch (status) {
-    case "done":
     case "cancelled":
       return ICalEventStatus.CANCELLED;
     default:
@@ -58,23 +57,25 @@ export function taskToVEvent(task: Task): ICalEventData | null {
   }
 
   const exdates = parseDateArray(task.exdates);
+  const xEntries = (event.x as { key: string; value: string }[]) ?? [];
   if (
     exdates.length > 0 &&
     event.repeating &&
     typeof event.repeating === "string"
   ) {
-    event.x = exdates.map((d) => ({
-      key: "EXDATE",
-      value: d
-        .toISOString()
-        .replace(/[-:]/g, "")
-        .replace(/\.\d{3}/, ""),
-    }));
+    xEntries.push(
+      ...exdates.map((d) => ({
+        key: "EXDATE",
+        value: d
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}/, ""),
+      })),
+    );
   }
 
   const rdates = parseDateArray(task.rdates);
   if (rdates.length > 0) {
-    const xEntries = (event.x as { key: string; value: string }[]) ?? [];
     for (const d of rdates) {
       xEntries.push({
         key: "RDATE",
@@ -84,10 +85,16 @@ export function taskToVEvent(task: Task): ICalEventData | null {
           .replace(/\.\d{3}/, ""),
       });
     }
-    event.x = xEntries;
   }
 
   event.status = taskStatusToICalStatus(task.status);
+  xEntries.push({
+    key: "X-DELTA-STATUS",
+    value: task.status.toUpperCase(),
+  });
+  if (xEntries.length > 0) {
+    event.x = xEntries;
+  }
 
   return event;
 }

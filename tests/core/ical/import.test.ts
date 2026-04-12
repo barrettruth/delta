@@ -72,6 +72,19 @@ describe("importICalEvents", () => {
     expect(notes.content[0].content[0].text).toBe("Discuss goals");
   });
 
+  it("preserves custom delta status metadata when present", () => {
+    const events = [
+      makeEvent({
+        uid: "status@example.com",
+        status: "done",
+      }),
+    ];
+
+    importICalEvents(db, userId, events);
+    const tasks = listTasks(db, userId);
+    expect(tasks[0].status).toBe("done");
+  });
+
   it("skips duplicate events by UID", () => {
     const events = [makeEvent({ uid: "dup@example.com", summary: "First" })];
 

@@ -61,6 +61,15 @@ describe("createTask", () => {
     const t2 = createTask(db, userId, { description: "Second" });
     expect(t2.id).toBe(t1.id + 1);
   });
+
+  it("rejects recurring task without startAt or due", () => {
+    expect(() =>
+      createTask(db, userId, {
+        description: "Floating recurrence",
+        recurrence: "FREQ=WEEKLY",
+      }),
+    ).toThrow("Recurring tasks require startAt or due");
+  });
 });
 
 describe("getTask", () => {
@@ -203,6 +212,18 @@ describe("updateTask", () => {
     const task = createTask(db, userId, { description: "Original" });
     const updated = updateTask(db, task.id, { description: "" });
     expect(updated.description).toBe("");
+  });
+
+  it("rejects clearing the last recurrence anchor", () => {
+    const task = createTask(db, userId, {
+      description: "Weekly review",
+      due: "2026-03-22T09:00:00.000Z",
+      recurrence: "FREQ=WEEKLY",
+    });
+
+    expect(() => updateTask(db, task.id, { due: null, startAt: null })).toThrow(
+      "Recurring tasks require startAt or due",
+    );
   });
 });
 

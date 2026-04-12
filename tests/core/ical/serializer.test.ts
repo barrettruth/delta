@@ -131,7 +131,7 @@ describe("taskToVEvent", () => {
 
   it("maps done status to CANCELLED", () => {
     const event = requireEvent(makeTask({ status: "done" }));
-    expect(event.status).toBe("CANCELLED");
+    expect(event.status).toBe("CONFIRMED");
   });
 
   it("maps cancelled status to CANCELLED", () => {
@@ -152,6 +152,13 @@ describe("taskToVEvent", () => {
   it("maps blocked status to CONFIRMED", () => {
     const event = requireEvent(makeTask({ status: "blocked" }));
     expect(event.status).toBe("CONFIRMED");
+  });
+
+  it("writes x-delta-status for exported events", () => {
+    const event = requireEvent(makeTask({ status: "done" }));
+    const xEntries = event.x as { key: string; value: string }[];
+    const statusEntry = xEntries.find((x) => x.key === "X-DELTA-STATUS");
+    expect(statusEntry?.value).toBe("DONE");
   });
 });
 
