@@ -108,8 +108,6 @@ export function acceptShareLink(
       rdates: null,
       recurringTaskId: null,
       originalStartAt: null,
-      externalId: null,
-      externalSource: null,
       sourceEventId: source.id,
       sourceUserId: link.createdBy,
       createdAt: now,

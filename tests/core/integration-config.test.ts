@@ -33,11 +33,11 @@ describe("upsertIntegrationConfig", () => {
     const result = upsertIntegrationConfig(
       db,
       userId,
-      "google_calendar",
+      "calendar_adapter",
       tokens,
     );
 
-    expect(result.provider).toBe("google_calendar");
+    expect(result.provider).toBe("calendar_adapter");
     expect(result.tokens).toEqual(tokens);
     expect(result.metadata).toBeNull();
     expect(result.enabled).toBe(1);
@@ -50,7 +50,7 @@ describe("upsertIntegrationConfig", () => {
     const result = upsertIntegrationConfig(
       db,
       userId,
-      "google_calendar",
+      "calendar_adapter",
       tokens,
       metadata,
     );
@@ -75,7 +75,7 @@ describe("upsertIntegrationConfig", () => {
 
   it("stores different providers independently", () => {
     upsertIntegrationConfig(db, userId, "github", { token: "gh" });
-    upsertIntegrationConfig(db, userId, "google_calendar", { token: "gc" });
+    upsertIntegrationConfig(db, userId, "calendar_adapter", { token: "gc" });
 
     const all = listIntegrationConfigs(db, userId);
     expect(all).toHaveLength(2);
@@ -141,7 +141,7 @@ describe("listIntegrationConfigs", () => {
     upsertIntegrationConfig(
       db,
       userId,
-      "google_calendar",
+      "calendar_adapter",
       { token: "t" },
       metadata,
     );

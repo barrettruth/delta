@@ -12,7 +12,7 @@ function feedUrl(token: string): string {
 export function registerFeedCommands(program: Command): void {
   const feed = program
     .command("feed")
-    .description("iCal feed management")
+    .description("iCal subscription management")
     .action(async () => {
       const client = createClient();
       const result = await client.get<FeedResponse>("/api/calendar/feed");
@@ -26,7 +26,7 @@ export function registerFeedCommands(program: Command): void {
 
   feed
     .command("generate")
-    .description("Generate/regenerate iCal feed URL")
+    .description("Generate/regenerate iCal subscription URL")
     .action(async () => {
       const client = createClient();
       const result = await client.post<FeedResponse>("/api/calendar/feed");
@@ -35,7 +35,7 @@ export function registerFeedCommands(program: Command): void {
 
   feed
     .command("revoke")
-    .description("Revoke iCal feed URL")
+    .description("Revoke iCal subscription URL")
     .action(async () => {
       const client = createClient();
       await client.delete("/api/calendar/feed");

@@ -6,7 +6,6 @@ import {
   createSession,
   validateInviteToken,
 } from "@/core/auth";
-import { upsertIntegrationConfig } from "@/core/integration-config";
 import {
   exchangeCodeForToken,
   fetchProviderUser,
@@ -115,10 +114,6 @@ export async function GET(
             providerUser.email,
             providerUser.name,
           );
-        }
-
-        if (extraScopes.includes("https://www.googleapis.com/auth/calendar")) {
-          upsertIntegrationConfig(db, currentUser.id, "google_calendar", {});
         }
 
         return NextResponse.redirect(`${OAUTH_REDIRECT_BASE}/calendar`);
