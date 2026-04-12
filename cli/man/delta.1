@@ -243,18 +243,9 @@ Display the current API token\.
 Regenerate the API token (invalidates the previous token)\.
 
 .RE
-.SS delta sync
-
-.RS 1
-.IP \(bu 2
-\fBdelta sync\fP:
-.br
-Trigger a Google Calendar synchronization\.
-
-.RE
 .SS delta feed
 .P
-iCal feed management\. Running \fBdelta feed\fP with no verb shows the current feed
+iCal subscription management\. Running \fBdelta feed\fP with no verb shows the current subscription
 .br
 URL or status\.
 
@@ -262,11 +253,11 @@ URL or status\.
 .IP \(bu 2
 \fBdelta feed generate\fP:
 .br
-Generate or regenerate the iCal feed URL\.
+Generate or regenerate the iCal subscription URL\.
 .IP \(bu 2
 \fBdelta feed revoke\fP:
 .br
-Revoke the current feed URL\.
+Revoke the current subscription URL\.
 
 .RE
 .SS delta import
@@ -321,7 +312,7 @@ Set a setting value\.
 .P
 Valid keys: \fBdefault\-view\fP, \fBshow\-completed\fP, \fBurgency\-weights\fP,
 .br
-\fBconflict\-strategy\fP, \fBsync\-interval\fP, \fBgeo\-provider\fP\|\.
+\fBgeo\-provider\fP\|\.
 .SS delta integration
 
 .RS 1
@@ -829,4 +820,3 @@ $ delta cron run 1
 Project: https://github.com/barrettruth/delta
 .P
 Web interface: https://delta.barrettruth.com
-

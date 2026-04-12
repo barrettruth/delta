@@ -18,18 +18,13 @@ describe("CalendarSettingsSection", () => {
         StatusBarProvider,
         null,
         createElement(CalendarSettingsSection, {
-          gcalConnected: false,
           initialGeoProvider: "photon",
-          initialConflictResolution: "google_wins",
-          initialSyncInterval: 5,
           initialNlpProvider: null,
         }),
       ),
     );
 
     expect(html).toContain("calendar");
-    expect(html).toContain("google calendar");
-    expect(html).toContain("connect google calendar");
     expect(html).toContain("location lookup");
     expect(html).toContain("recurrence parsing");
     expect(html).not.toContain("reminders");

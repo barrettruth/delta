@@ -13,7 +13,6 @@ import { registerInviteCommands } from "./invite.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
 import { registerShareCommand } from "./share.js";
-import { registerSyncCommand } from "./sync.js";
 import { registerTaskCommands } from "./task.js";
 
 const pkg = require("../package.json") as { version: string };
@@ -56,7 +55,6 @@ const cron = new Command("cron").description("Automation management");
 registerCronCommands(cron);
 
 registerAuth(program);
-registerSyncCommand(program);
 registerFeedCommands(program);
 registerImportCommand(program);
 registerExportCommand(program);

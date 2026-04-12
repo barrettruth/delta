@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowsClockwise, CalendarDots } from "@phosphor-icons/react";
+import { CalendarDots } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -22,12 +22,10 @@ interface MenuItem {
 
 export function CalendarActionsPopover({
   feedToken: initialFeedToken,
-  gcalConnected = false,
   open,
   onOpenChange,
 }: {
   feedToken: string | null;
-  gcalConnected?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -76,7 +74,7 @@ export function CalendarActionsPopover({
     const res = await fetch("/api/calendar/feed", { method: "POST" });
     const data = await res.json();
     setFeedToken(data.token);
-    statusBar.message("feed url generated");
+    statusBar.message("subscription url generated");
   }
 
   async function handleCopyFeedUrl() {
@@ -88,49 +86,20 @@ export function CalendarActionsPopover({
   async function handleRevokeFeed() {
     await fetch("/api/calendar/feed", { method: "DELETE" });
     setFeedToken(null);
-    statusBar.message("feed url revoked");
-  }
-
-  async function handleSyncNow() {
-    statusBar.setOperation("syncing...");
-    try {
-      const res = await fetch("/api/calendar/sync", { method: "POST" });
-      statusBar.clearOperation();
-      if (!res.ok) {
-        statusBar.error("sync failed");
-        return;
-      }
-      const data = await res.json();
-      const total = (data.pulled ?? 0) + (data.pushed ?? 0);
-      if (total > 0) statusBar.message(`synced ${total} events`);
-      else statusBar.message("already up to date");
-      router.refresh();
-    } catch {
-      statusBar.clearOperation();
-      statusBar.error("sync failed");
-    }
+    statusBar.message("subscription url revoked");
   }
 
   const items: MenuItem[] = [];
 
-  if (gcalConnected) {
-    items.push({
-      id: "gcal-sync",
-      label: "sync now",
-      icon: <ArrowsClockwise size={12} />,
-      onSelect: handleSyncNow,
-    });
-  }
-
   if (feedToken) {
     items.push({
       id: "feed-copy",
-      label: "copy feed url",
+      label: "copy subscription url",
       onSelect: handleCopyFeedUrl,
     });
     items.push({
       id: "feed-revoke",
-      label: "revoke feed",
+      label: "revoke subscription",
       muted: true,
       prefix: { text: "-", className: "text-destructive" },
       onSelect: handleRevokeFeed,
@@ -138,7 +107,7 @@ export function CalendarActionsPopover({
   } else {
     items.push({
       id: "feed-generate",
-      label: "generate feed",
+      label: "generate subscription",
       muted: true,
       prefix: { text: "+", className: "text-status-done" },
       onSelect: handleGenerateFeed,
@@ -211,7 +180,6 @@ export function CalendarActionsPopover({
     return () => window.removeEventListener("keydown", handleKey);
   }, [open, focusIdx, onOpenChange]);
 
-  const syncItem = items.find((i) => i.id === "gcal-sync");
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));
   const ioItems = items.filter((i) => i.id === "export" || i.id === "import");
   const settingsItem = items.find((i) => i.id === "settings");
@@ -231,20 +199,9 @@ export function CalendarActionsPopover({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="flex flex-col">
-          {syncItem && (
-            <>
-              <div className="flex flex-col p-1">
-                <MenuRow
-                  item={syncItem}
-                  focused={focusIdx === items.indexOf(syncItem)}
-                />
-              </div>
-              <div className="border-t border-border" />
-            </>
-          )}
           <div className="flex flex-col p-1">
             <div className="text-[10px] text-muted-foreground px-2 py-0.5">
-              CalDAV feed
+              subscription
             </div>
             {feedItems.map((item, i) => (
               <MenuRow

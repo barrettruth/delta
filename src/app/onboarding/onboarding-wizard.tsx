@@ -3,10 +3,9 @@
 import type { Icon } from "@phosphor-icons/react";
 import { Calendar, Columns, List } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { ConflictResolution } from "@/core/types";
 import type { KeymapDef } from "@/lib/keymap-defs";
 import {
   DEFAULT_KEYMAPS,
@@ -109,31 +108,6 @@ const NLP_OPTIONS: {
   },
 ];
 
-const CONFLICT_OPTIONS: {
-  id: ConflictResolution;
-  label: string;
-  blurb: string;
-}[] = [
-  {
-    id: "lww",
-    label: "last write wins",
-    blurb:
-      "Whichever side was modified most recently takes precedence. Both systems can edit events freely.",
-  },
-  {
-    id: "google_wins",
-    label: "google wins",
-    blurb:
-      "Google Calendar is the source of truth. Synced events cannot be edited in delta.",
-  },
-  {
-    id: "delta_wins",
-    label: "delta wins",
-    blurb:
-      "Delta is the source of truth. Changes in Google Calendar are overwritten on sync.",
-  },
-];
-
 const CURATED_KEYS = [
   "global.queue",
   "global.kanban",
@@ -157,11 +131,9 @@ const CURATED_KEYS = [
 ];
 
 export function OnboardingWizard({
-  gcalConnected: initialGcalConnected,
   initialGeoProvider,
   initialNlpProvider,
 }: {
-  gcalConnected: boolean;
   initialGeoProvider: GeoProvider;
   initialNlpProvider: OnboardingNlpProvider;
 }) {
@@ -170,15 +142,12 @@ export function OnboardingWizard({
   const [step, setStep] = useState<Step>(1);
   const [defaultView, setDefaultView] = useState<DefaultView>("queue");
   const [defaultCategory, setDefaultCategory] = useState("Todo");
-  const [gcalConnected, setGcalConnected] = useState(initialGcalConnected);
   const [geoProvider, setGeoProvider] =
     useState<GeoProvider>(initialGeoProvider);
   const [geoApiKey, setGeoApiKey] = useState("");
   const [nlpProvider, setNlpProvider] =
     useState<OnboardingNlpProvider>(initialNlpProvider);
   const [nlpApiKey, setNlpApiKey] = useState("");
-  const [conflictResolution, setConflictResolution] =
-    useState<ConflictResolution>("lww");
   const [keymapOverrides, setKeymapOverrides] = useState<
     Record<string, string>
   >({});
@@ -209,40 +178,16 @@ export function OnboardingWizard({
         if (state.geoApiKey) setGeoApiKey(state.geoApiKey);
         if (state.nlpProvider) setNlpProvider(state.nlpProvider);
         if (state.nlpApiKey) setNlpApiKey(state.nlpApiKey);
-        setGcalConnected(initialGcalConnected);
       } catch {}
       sessionStorage.removeItem(STORAGE_KEY);
     }
-  }, [initialGcalConnected]);
+  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset focus on step change
   useEffect(() => {
     setFocusIdx(0);
     countBuf.current = "";
   }, [step]);
-
-  const handleGcalConnect = useCallback(() => {
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        step: 2,
-        defaultView,
-        defaultCategory,
-        geoProvider,
-        geoApiKey,
-        nlpProvider,
-        nlpApiKey,
-      }),
-    );
-    window.location.href = "/api/auth/google?scope=calendar";
-  }, [
-    defaultView,
-    defaultCategory,
-    geoProvider,
-    geoApiKey,
-    nlpProvider,
-    nlpApiKey,
-  ]);
 
   async function testApiKey(
     provider: string,
@@ -304,7 +249,6 @@ export function OnboardingWizard({
           geoApiKey: geoApiKey || undefined,
           nlpProvider,
           nlpApiKey: nlpApiKey || undefined,
-          conflictResolution: gcalConnected ? conflictResolution : undefined,
           keymapOverrides:
             Object.keys(keymapOverrides).length > 0
               ? keymapOverrides
@@ -324,54 +268,7 @@ export function OnboardingWizard({
     DEFAULT_KEYMAPS.find((d) => d.id === id),
   ).filter(Boolean) as KeymapDef[];
 
-  const step2ItemCount = (() => {
-    let count = 1;
-    count += GEO_OPTIONS.length;
-    count += NLP_OPTIONS.length;
-    if (gcalConnected) count += CONFLICT_OPTIONS.length;
-    return count;
-  })();
-
-  const handleStep2Select = useCallback(
-    (idx: number) => {
-      if (idx === 0) {
-        if (gcalConnected) return;
-        handleGcalConnect();
-        return;
-      }
-      let offset = 1;
-      if (idx < offset + GEO_OPTIONS.length) {
-        const geoIdx = idx - offset;
-        const newGeo = GEO_OPTIONS[geoIdx];
-        if (newGeo.id !== geoProvider) {
-          setGeoProvider(newGeo.id);
-          setGeoKeyStatus(null);
-          setGeoKeyError("");
-          if (!newGeo.needsKey) setGeoApiKey("");
-        }
-        return;
-      }
-      offset += GEO_OPTIONS.length;
-      if (idx < offset + NLP_OPTIONS.length) {
-        const nlpIdx = idx - offset;
-        const opt = NLP_OPTIONS[nlpIdx];
-        if (opt.id !== nlpProvider) {
-          setNlpProvider(opt.id);
-          setNlpKeyStatus(null);
-          setNlpKeyError("");
-          if (!opt.needsKey) {
-            setNlpApiKey("");
-          }
-        }
-        return;
-      }
-      offset += NLP_OPTIONS.length;
-      if (gcalConnected && idx < offset + CONFLICT_OPTIONS.length) {
-        setConflictResolution(CONFLICT_OPTIONS[idx - offset].id);
-      }
-    },
-    [gcalConnected, handleGcalConnect, geoProvider, nlpProvider],
-  );
+  const step2ItemCount = GEO_OPTIONS.length + NLP_OPTIONS.length;
 
   useEffect(() => {
     if (step === 3 && capturingId) {
@@ -435,7 +332,26 @@ export function OnboardingWizard({
         }
       } else if (e.key === "Enter" && step === 2) {
         e.preventDefault();
-        handleStep2Select(focusIdx);
+        if (focusIdx < GEO_OPTIONS.length) {
+          const opt = GEO_OPTIONS[focusIdx];
+          if (opt.id !== geoProvider) {
+            setGeoProvider(opt.id);
+            setGeoKeyStatus(null);
+            setGeoKeyError("");
+            if (!opt.needsKey) setGeoApiKey("");
+          }
+        } else {
+          const nlpIdx = focusIdx - GEO_OPTIONS.length;
+          const opt = NLP_OPTIONS[nlpIdx];
+          if (opt && opt.id !== nlpProvider) {
+            setNlpProvider(opt.id);
+            setNlpKeyStatus(null);
+            setNlpKeyError("");
+            if (!opt.needsKey) {
+              setNlpApiKey("");
+            }
+          }
+        }
       } else if (e.key === "Enter" && step === 3) {
         e.preventDefault();
         const def = curatedDefs[focusIdx];
@@ -453,7 +369,8 @@ export function OnboardingWizard({
     capturingId,
     step2ItemCount,
     curatedDefs,
-    handleStep2Select,
+    geoProvider,
+    nlpProvider,
   ]);
 
   return (
@@ -538,44 +455,11 @@ export function OnboardingWizard({
         {step === 2 && (
           <div className="flex flex-col w-full gap-3">
             <div className="flex flex-col border border-border">
-              <button
-                type="button"
-                className={`flex items-center w-full px-3 py-2 text-xs transition-colors ${
-                  focusIdx === 0 ? "bg-accent" : ""
-                }`}
-                onClick={() => {
-                  setFocusIdx(0);
-                  if (!gcalConnected) handleGcalConnect();
-                }}
-                onMouseEnter={() => setFocusIdx(0)}
-              >
-                <span
-                  className={
-                    gcalConnected
-                      ? "text-status-done mr-1"
-                      : "text-status-done mr-1"
-                  }
-                >
-                  {gcalConnected ? "✓" : "+"}
-                </span>
-                <span
-                  className={
-                    gcalConnected ? "text-foreground" : "text-muted-foreground"
-                  }
-                >
-                  {gcalConnected
-                    ? "google calendar connected"
-                    : "connect google calendar"}
-                </span>
-              </button>
-            </div>
-
-            <div className="flex flex-col border border-border">
               <div className="text-[10px] text-muted-foreground px-3 py-1">
                 geocoding
               </div>
               {GEO_OPTIONS.map((opt, i) => {
-                const globalIdx = 1 + i;
+                const globalIdx = i;
                 const selected = geoProvider === opt.id;
                 const focused = focusIdx === globalIdx;
                 return (
@@ -607,11 +491,9 @@ export function OnboardingWizard({
                 );
               })}
               {(() => {
-                const focusedGeo = GEO_OPTIONS[focusIdx - 1];
+                const focusedGeo = GEO_OPTIONS[focusIdx];
                 const blurb = focusedGeo?.blurb;
-                return focusIdx >= 1 &&
-                  focusIdx < 1 + GEO_OPTIONS.length &&
-                  blurb ? (
+                return focusIdx < GEO_OPTIONS.length && blurb ? (
                   <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
                     {blurb}
                   </div>
@@ -661,7 +543,7 @@ export function OnboardingWizard({
                 NLP
               </div>
               {NLP_OPTIONS.map((opt, i) => {
-                const globalIdx = 1 + GEO_OPTIONS.length + i;
+                const globalIdx = GEO_OPTIONS.length + i;
                 const selected = nlpProvider === opt.id;
                 const focused = focusIdx === globalIdx;
                 return (
@@ -695,7 +577,7 @@ export function OnboardingWizard({
                 );
               })}
               {(() => {
-                const nlpStart = 1 + GEO_OPTIONS.length;
+                const nlpStart = GEO_OPTIONS.length;
                 const focusedNlp = NLP_OPTIONS[focusIdx - nlpStart];
                 return focusIdx >= nlpStart &&
                   focusIdx < nlpStart + NLP_OPTIONS.length &&
@@ -749,55 +631,6 @@ export function OnboardingWizard({
                 );
               })()}
             </div>
-
-            {gcalConnected && (
-              <div className="flex flex-col border border-border">
-                <div className="text-[10px] text-muted-foreground px-3 py-1">
-                  sync strategy
-                </div>
-                {CONFLICT_OPTIONS.map((opt, i) => {
-                  const globalIdx =
-                    1 + GEO_OPTIONS.length + NLP_OPTIONS.length + i;
-                  const selected = conflictResolution === opt.id;
-                  const focused = focusIdx === globalIdx;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
-                        focused ? "bg-accent" : ""
-                      }`}
-                      onClick={() => {
-                        setFocusIdx(globalIdx);
-                        setConflictResolution(opt.id);
-                      }}
-                      onMouseEnter={() => setFocusIdx(globalIdx)}
-                    >
-                      <span
-                        className={
-                          selected ? "text-foreground" : "text-muted-foreground"
-                        }
-                      >
-                        {opt.label}
-                      </span>
-                    </button>
-                  );
-                })}
-                {(() => {
-                  const conflictStart =
-                    1 + GEO_OPTIONS.length + NLP_OPTIONS.length;
-                  const focusedConflict =
-                    CONFLICT_OPTIONS[focusIdx - conflictStart];
-                  return focusIdx >= conflictStart &&
-                    focusIdx < conflictStart + CONFLICT_OPTIONS.length &&
-                    focusedConflict ? (
-                    <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
-                      {focusedConflict.blurb}
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            )}
 
             <div className="flex gap-2">
               <Button

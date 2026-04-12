@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteTaskAction,
@@ -50,18 +49,13 @@ export function CalendarView({
   categories: _categories = [],
   defaultViewMode = "week",
   feedToken = null,
-  gcalStatus = { connected: false, lastSyncTime: null },
-  syncInterval = 5,
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
   categories?: string[];
   defaultViewMode?: ViewMode;
   feedToken?: string | null;
-  gcalStatus?: { connected: boolean; lastSyncTime: string | null };
-  syncInterval?: number;
 }) {
-  const router = useRouter();
   const nav = useNavigation();
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
@@ -119,42 +113,6 @@ export function CalendarView({
   useEffect(() => {
     nav.saveViewState("cal:viewMode", viewMode);
   }, [viewMode, nav]);
-
-  const statusBarRef = useRef(statusBar);
-  statusBarRef.current = statusBar;
-
-  useEffect(() => {
-    if (!gcalStatus.connected || syncInterval === 0) return;
-    let cancelled = false;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    async function sync() {
-      try {
-        statusBarRef.current.setOperation("syncing...");
-        const res = await fetch("/api/calendar/sync", { method: "POST" });
-        statusBarRef.current.clearOperation();
-        if (!res.ok) {
-          if (intervalId) clearInterval(intervalId);
-          return;
-        }
-        if (!cancelled) {
-          const data = await res.json();
-          const total = (data.pulled ?? 0) + (data.pushed ?? 0);
-          if (total > 0) statusBarRef.current.message(`synced ${total} events`);
-          router.refresh();
-        }
-      } catch {
-        statusBarRef.current.clearOperation();
-        if (intervalId) clearInterval(intervalId);
-      }
-    }
-    sync();
-    intervalId = setInterval(sync, syncInterval * 60 * 1000);
-    return () => {
-      cancelled = true;
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [gcalStatus.connected, syncInterval, router]);
 
   const weekAnchor = useMemo(
     () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
@@ -1013,7 +971,6 @@ export function CalendarView({
         <div className="flex-1 flex justify-end gap-1">
           <CalendarActionsPopover
             feedToken={feedToken}
-            gcalConnected={gcalStatus.connected}
             open={actionsOpen}
             onOpenChange={setActionsOpen}
           />

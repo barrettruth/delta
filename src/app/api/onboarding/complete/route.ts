@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { validateSession } from "@/core/auth";
 import { upsertIntegrationConfig } from "@/core/integration-config";
 import { updateSettings } from "@/core/settings";
-import type { ConflictResolution } from "@/core/types";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 
@@ -15,7 +14,6 @@ interface OnboardingPayload {
   geoApiKey?: string;
   nlpProvider?: "builtin" | "anthropic" | "openai";
   nlpApiKey?: string;
-  conflictResolution?: ConflictResolution;
   keymapOverrides?: Record<string, string>;
 }
 
@@ -69,22 +67,6 @@ export async function POST(req: Request) {
       deleteIntegrationConfig(db, user.id, other);
     } catch (err) {
       console.error("[onboarding] delete nlp config failed", err);
-    }
-  }
-
-  if (body.conflictResolution) {
-    const { getIntegrationConfig } = await import("@/core/integration-config");
-    const gcalConfig = getIntegrationConfig(db, user.id, "google_calendar");
-    if (gcalConfig) {
-      const metadata = (gcalConfig.metadata ?? {}) as Record<string, unknown>;
-      metadata.conflictResolution = body.conflictResolution;
-      upsertIntegrationConfig(
-        db,
-        user.id,
-        "google_calendar",
-        gcalConfig.tokens,
-        metadata,
-      );
     }
   }
 

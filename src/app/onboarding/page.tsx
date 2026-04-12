@@ -16,9 +16,6 @@ export default async function OnboardingPage() {
   if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
   if (user.onboardingCompleted) redirect("/");
 
-  const gcalConfig = getIntegrationConfig(db, user.id, "google_calendar");
-  const gcalConnected = gcalConfig?.enabled === 1;
-
   let geoProvider: "photon" | "mapbox" | "google_maps" = "photon";
   for (const p of ["mapbox", "google_maps"] as const) {
     const config = getIntegrationConfig(db, user.id, p);
@@ -39,7 +36,6 @@ export default async function OnboardingPage() {
 
   return (
     <OnboardingWizard
-      gcalConnected={gcalConnected}
       initialGeoProvider={geoProvider}
       initialNlpProvider={nlpProvider}
     />
