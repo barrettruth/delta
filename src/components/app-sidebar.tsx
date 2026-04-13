@@ -27,7 +27,7 @@ const VIEW_KEYMAP_IDS: {
   keymapId: string;
 }[] = [
   { label: "Queue", href: "/?view=queue", keymapId: "global.queue" },
-  { label: "Kanban", href: "/kanban", keymapId: "global.kanban" },
+  { label: "kanban", href: "/kanban", keymapId: "global.kanban" },
   { label: "Calendar", href: "/calendar", keymapId: "global.calendar" },
 ];
 
