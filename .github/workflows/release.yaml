@@ -3,6 +3,17 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: Version bump type
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -12,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
       - uses: cachix/install-nix-action@v31
       - run: nix develop --command biome check .
 
@@ -19,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
       - uses: cachix/install-nix-action@v31
       - run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command pnpm tsc --noEmit
@@ -27,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
       - uses: cachix/install-nix-action@v31
       - run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command pnpm vitest run --reporter=verbose --coverage.enabled --coverage.reporter=text
@@ -36,14 +53,65 @@ jobs:
     needs: [lint, typecheck, test]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
       - uses: cachix/install-nix-action@v31
       - run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command bash scripts/fetch-fonts.sh
       - run: nix develop --command pnpm build
 
+  prepare-release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.CI_PAT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bump app version
+        id: version
+        env:
+          VERSION_BUMP: ${{ github.event.inputs.version_bump || 'patch' }}
+        run: |
+          git fetch origin main --tags
+          VERSION="$(./scripts/version/bump-app.sh "$VERSION_BUMP")"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Commit and tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="v${VERSION}"
+
+          git add package.json
+
+          if git diff --cached --quiet; then
+            echo "No version file changes to commit"
+          else
+            git commit -m "chore(app): release ${TAG} [skip ci]"
+            git fetch origin main --tags
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}$"; then
+            echo "Tag already exists on origin: ${TAG}"
+          else
+            git tag -a "${TAG}" -m "delta ${TAG}"
+            git push origin "${TAG}"
+          fi
+
   release:
     runs-on: ubuntu-latest
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
         with:

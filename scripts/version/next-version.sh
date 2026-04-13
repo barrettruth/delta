@@ -5,6 +5,7 @@ PACKAGE="${1:?Usage: next-version.sh <package> <patch|minor|major>}"
 BUMP="${2:?Usage: next-version.sh <package> <patch|minor|major>}"
 
 case "$PACKAGE" in
+  app) PKG_PATH="package.json" ;;
   cli) PKG_PATH="cli/package.json" ;;
   *) echo "Unknown package: $PACKAGE" >&2; exit 1 ;;
 esac

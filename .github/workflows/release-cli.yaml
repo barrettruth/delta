@@ -39,6 +39,12 @@ jobs:
         with:
           node-version: "22"
 
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install CLI dependencies
+        working-directory: cli
+        run: bun install --frozen-lockfile
+
       - name: Install CLI dependencies
         working-directory: cli
         run: bun install --frozen-lockfile
@@ -48,6 +54,10 @@ jobs:
         run: bun run build:local
 
       - name: Build man page
+
+      - name: Build man page
+        working-directory: cli
+        run: bun run build:man
         working-directory: cli
         run: bun run build:man
 
@@ -87,19 +97,15 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Calculate next version
+      - name: Bump CLI version
         id: version
         env:
           VERSION_BUMP: ${{ github.event.inputs.version_bump || 'patch' }}
         run: |
           git fetch origin main --tags
-          NEW_VERSION="$(./scripts/version/next-version.sh cli "$VERSION_BUMP")"
+          NEW_VERSION="$(./scripts/version/bump-cli.sh "$VERSION_BUMP")"
           echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "New version: ${NEW_VERSION}"
-
-      - name: Bump CLI version
-        run: |
-          node -e "const fs=require('fs');const path='cli/package.json';const pkg=JSON.parse(fs.readFileSync(path,'utf8'));pkg.version='${{ steps.version.outputs.new_version }}';fs.writeFileSync(path,JSON.stringify(pkg,null,2)+'\n');"
 
       - name: Configure git
         run: |
@@ -112,7 +118,7 @@ jobs:
           VERSION="${{ steps.version.outputs.new_version }}"
           TAG="cli-v${VERSION}"
 
-          git add cli/package.json
+          git add cli/package.json cli/man/delta.1
 
           if git diff --cached --quiet; then
             echo "No version file changes to commit"
