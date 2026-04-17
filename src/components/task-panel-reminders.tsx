@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -16,6 +17,10 @@ import {
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { ReminderAnchor } from "@/core/reminders/types";
 import { getReminderChannelLabel } from "@/lib/reminder-endpoint-form";
+import {
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 import {
   buildReminderOffsetMinutes,
   formatTaskPanelReminderSummary,
@@ -53,9 +58,15 @@ export const TaskPanelReminders = memo(function TaskPanelReminders({
   onChangeReminder,
   onRemoveReminder,
 }: TaskPanelRemindersProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const endpointMap = useMemo(
     () => new Map(endpoints.map((endpoint) => [endpoint.id, endpoint])),
     [endpoints],
+  );
+  const reminderSettingsHref = settingsHref(
+    "/settings/integrations",
+    settingsReturnToForPath(pathname, searchParams),
   );
 
   const toggleLabel = expanded
@@ -118,7 +129,7 @@ export const TaskPanelReminders = memo(function TaskPanelReminders({
                     set up a reminder destination in settings first
                   </div>
                   <Link
-                    href="/settings/integrations"
+                    href={reminderSettingsHref}
                     className={buttonVariants({
                       variant: "outline",
                       size: "xs",
