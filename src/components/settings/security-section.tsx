@@ -136,37 +136,36 @@ export function SecuritySection({
 
   return (
     <SettingsPage
-      className="max-w-3xl"
       title="security"
       description="Manage passkeys, your authenticator, and recovery access."
     >
       <SettingsSection
         title="passkeys"
         description="Register WebAuthn credentials for passwordless sign-in."
-      >
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-muted-foreground px-2">registered</span>
-          {!showAddPasskey && (
+        headerAction={
+          !showAddPasskey && (
             <button
               type="button"
-              className="text-xs text-muted-foreground cursor-pointer px-2"
+              aria-label="add passkey"
+              className="flex size-6 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
               onClick={() => setShowAddPasskey(true)}
             >
               +
             </button>
-          )}
-        </div>
+          )
+        }
+      >
         {passkeys.map((pk) => (
           <SettingsRow
             key={pk.id}
-            label={`  ${pk.name}`}
+            label={pk.name}
             value={pk.createdAt.slice(0, 10)}
             action
             onClick={() => handleRemovePasskey(pk.id)}
           />
         ))}
         {showAddPasskey && (
-          <div className="flex gap-2 ml-4 mb-2">
+          <div className="flex gap-2 px-3 py-2">
             <Input
               value={passkeyName}
               onChange={(e) => setPasskeyName(e.target.value)}

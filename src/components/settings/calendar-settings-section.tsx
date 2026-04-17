@@ -179,7 +179,6 @@ export function CalendarSettingsSection({
 
   return (
     <SettingsPage
-      className="max-w-6xl"
       title="calendar"
       description="Manage the providers delta uses for location lookup and recurrence parsing."
     >
@@ -231,7 +230,7 @@ export function CalendarSettingsSection({
 
         <SettingsSection
           title="recurrence parsing"
-          description="Choose the parser used for natural-language recurrence input."
+          description="Choose the parser used for natural-language input."
         >
           {NLP_PROVIDERS_LIST.map((provider) => (
             <div key={provider.id}>

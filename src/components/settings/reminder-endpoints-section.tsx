@@ -8,10 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
 import type { ReminderDeliveryLogRecord } from "@/core/reminders/deliveries";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
-import type {
-  ReminderAdapterKey,
-  ReminderAdapterManifest,
-} from "@/core/reminders/types";
+import type { ReminderAdapterManifest } from "@/core/reminders/types";
 import {
   getReminderChannelLabel,
   getReminderEndpointAdapterHint,
@@ -108,40 +105,6 @@ function getReminderAdapterStatus(input: {
   };
 }
 
-function getInitialExpandedAdapterKey(input: {
-  adapters: ReminderAdapterManifest[];
-  transportConfigs: ReminderTransportConfigStatus[];
-  deliveries: ReminderDeliveryLogRecord[];
-  endpoints: ReminderEndpointRecord[];
-}): ReminderAdapterKey | null {
-  const transportConfigByKey = new Map(
-    input.transportConfigs.map((config) => [config.adapterKey, config]),
-  );
-
-  for (const adapter of input.adapters) {
-    if (isReminderTransportConfigurableAdapterKey(adapter.key)) {
-      const status =
-        transportConfigByKey.get(adapter.key) ??
-        getEmptyReminderTransportConfigStatus(adapter.key);
-      if (!status.configured) return adapter.key;
-    }
-  }
-
-  for (const endpoint of input.endpoints) {
-    if (endpoint.lastTestStatus === "failed") {
-      return endpoint.adapterKey;
-    }
-  }
-
-  for (const delivery of input.deliveries) {
-    if (delivery.status === "failed" || delivery.status === "dead") {
-      return delivery.adapterKey;
-    }
-  }
-
-  return null;
-}
-
 export function ReminderEndpointsSection({
   className,
   initialDeliveries,
@@ -176,14 +139,7 @@ export function ReminderEndpointsSection({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [expandedAdapterKey, setExpandedAdapterKey] = useState<
     ReminderAdapterManifest["key"] | null
-  >(() =>
-    getInitialExpandedAdapterKey({
-      adapters,
-      transportConfigs: initialTransportConfigs,
-      deliveries: initialDeliveries,
-      endpoints: initialEndpoints,
-    }),
-  );
+  >(null);
 
   const transportConfigByKey = useMemo(
     () =>

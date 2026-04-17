@@ -20,7 +20,6 @@ export function IntegrationsSection({
 }) {
   return (
     <SettingsPage
-      className="max-w-4xl"
       title="integrations"
       description="Set up where delta can send reminders. Most people only need one or two destinations here."
     >

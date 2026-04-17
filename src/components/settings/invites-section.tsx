@@ -60,7 +60,6 @@ export function InvitesSection() {
 
   return (
     <SettingsPage
-      className="max-w-xl"
       title="invites"
       description="Create and share invite links for new sign-ins."
     >

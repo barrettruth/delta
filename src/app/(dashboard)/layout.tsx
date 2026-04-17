@@ -15,8 +15,10 @@ import { categoryColors } from "@/db/schema";
 
 export default async function DashboardLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("session")?.value;
@@ -61,6 +63,7 @@ export default async function DashboardLayout({
             <GlobalKeyboard categories={categories} />
           </DashboardContent>
         </SidebarInset>
+        {modal}
       </NavigationWrapper>
     </Suspense>
   );
