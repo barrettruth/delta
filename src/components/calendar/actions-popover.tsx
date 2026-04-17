@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDots } from "@phosphor-icons/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Popover,
@@ -9,6 +9,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
+import {
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 
 interface MenuItem {
   id: string;
@@ -31,6 +35,8 @@ export function CalendarActionsPopover({
 }) {
   const statusBar = useStatusBar();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [feedToken, setFeedToken] = useState(initialFeedToken);
@@ -130,7 +136,13 @@ export function CalendarActionsPopover({
     id: "settings",
     label: "calendar settings",
     muted: true,
-    onSelect: () => router.push("/settings/calendar"),
+    onSelect: () =>
+      router.push(
+        settingsHref(
+          "/settings/calendar",
+          settingsReturnToForPath(pathname, searchParams),
+        ),
+      ),
   });
 
   const itemsRef = useRef(items);

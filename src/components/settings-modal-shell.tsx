@@ -3,12 +3,15 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { X } from "@phosphor-icons/react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
-  isSettingsSectionActive,
+  getActiveSettingsIndex,
+  SETTINGS_RETURN_TO_PARAM,
   SETTINGS_SECTIONS,
+  safeSettingsReturnTo,
+  settingsHref,
 } from "@/lib/settings-navigation";
 import { isInputFocused } from "@/lib/utils";
 
@@ -19,25 +22,31 @@ export function SettingsModalShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const statusBar = useStatusBar();
+  const returnTo = safeSettingsReturnTo(
+    searchParams.get(SETTINGS_RETURN_TO_PARAM),
+  );
 
-  const activeIndex = useMemo(() => {
-    const exact = SETTINGS_SECTIONS.findIndex((s) => s.href === pathname);
-    if (exact >= 0) return exact;
-    const prefixed = SETTINGS_SECTIONS.findIndex((s) =>
-      isSettingsSectionActive(pathname, s.href),
-    );
-    return prefixed >= 0 ? prefixed : 0;
-  }, [pathname]);
+  const activeIndex = useMemo(
+    () => getActiveSettingsIndex(pathname),
+    [pathname],
+  );
   const activeSection = SETTINGS_SECTIONS[activeIndex];
+  const sectionHref = useCallback(
+    (href: string) => settingsHref(href, returnTo),
+    [returnTo],
+  );
 
   const close = useCallback(() => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/");
-    }
-  }, [router]);
+    router.replace(returnTo);
+  }, [returnTo, router]);
+
+  const navigateToSection = useCallback(
+    (index: number) =>
+      router.replace(sectionHref(SETTINGS_SECTIONS[index].href)),
+    [router, sectionHref],
+  );
 
   useEffect(() => {
     statusBar.setIdle(
@@ -72,27 +81,27 @@ export function SettingsModalShell({
         numeric <= SETTINGS_SECTIONS.length
       ) {
         e.preventDefault();
-        router.push(SETTINGS_SECTIONS[numeric - 1].href);
+        navigateToSection(numeric - 1);
         return;
       }
 
       if (e.key === "j" || e.key === "ArrowDown") {
         e.preventDefault();
         const next = Math.min(activeIndex + 1, SETTINGS_SECTIONS.length - 1);
-        router.push(SETTINGS_SECTIONS[next].href);
+        navigateToSection(next);
         return;
       }
 
       if (e.key === "k" || e.key === "ArrowUp") {
         e.preventDefault();
         const prev = Math.max(activeIndex - 1, 0);
-        router.push(SETTINGS_SECTIONS[prev].href);
+        navigateToSection(prev);
         return;
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeIndex, close, router]);
+  }, [activeIndex, close, navigateToSection]);
 
   return (
     <DialogPrimitive.Root
@@ -127,7 +136,10 @@ export function SettingsModalShell({
             data-closed:animate-out data-closed:fade-out-0
           "
         >
-          <SettingsNavRail activeHref={activeSection.href} />
+          <SettingsNavRail
+            activeHref={activeSection.href}
+            sectionHref={sectionHref}
+          />
 
           <div className="flex flex-1 min-w-0 min-h-0 flex-col">
             <div className="flex items-center justify-between h-8 shrink-0 border-b border-border/60 pl-4 pr-1">
@@ -157,7 +169,13 @@ export function SettingsModalShell({
   );
 }
 
-function SettingsNavRail({ activeHref }: { activeHref: string }) {
+function SettingsNavRail({
+  activeHref,
+  sectionHref,
+}: {
+  activeHref: string;
+  sectionHref: (href: string) => string;
+}) {
   return (
     <nav
       className="
@@ -180,7 +198,8 @@ function SettingsNavRail({ activeHref }: { activeHref: string }) {
           return (
             <Link
               key={section.id}
-              href={section.href}
+              href={sectionHref(section.href)}
+              replace
               aria-current={active ? "page" : undefined}
               className={`
                 group relative flex shrink-0 items-center gap-2

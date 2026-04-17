@@ -9,6 +9,10 @@ import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import { focusSectionForPath } from "@/lib/keymap-defs";
+import {
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -25,21 +29,25 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const keymaps = useKeymaps();
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settingsReturnTo = settingsReturnToForPath(pathname, searchParams);
 
   const openHelp = useCallback(() => {
     const focus = focusSectionForPath(pathname);
     pushJump();
-    router.push(`/settings/keymaps?focus=${focus}`);
-  }, [pathname, pushJump, router]);
+    router.push(settingsHref("/settings/keymaps", settingsReturnTo, { focus }));
+  }, [pathname, pushJump, router, settingsReturnTo]);
 
   const viewKeys = useMemo(() => {
     const map: Record<string, string> = {};
     map[keymaps.getResolvedKeymap("global.queue").triggerKey] = "/?view=queue";
     map[keymaps.getResolvedKeymap("global.kanban").triggerKey] = "/kanban";
     map[keymaps.getResolvedKeymap("global.calendar").triggerKey] = "/calendar";
-    map[keymaps.getResolvedKeymap("global.settings").triggerKey] = "/settings";
+    map[keymaps.getResolvedKeymap("global.settings").triggerKey] = settingsHref(
+      "/settings",
+      settingsReturnTo,
+    );
     return map;
-  }, [keymaps]);
+  }, [keymaps, settingsReturnTo]);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
@@ -209,11 +217,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handler]);
-
-  useEffect(() => {
-    window.addEventListener("open-keymap-help", openHelp);
-    return () => window.removeEventListener("open-keymap-help", openHelp);
-  }, [openHelp]);
 
   useEffect(() => {
     return () => {

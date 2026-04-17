@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { HELP_SECTIONS, sectionsForPath } from "@/lib/keymap-defs";
+import {
+  focusSectionForPath,
+  HELP_SECTIONS,
+  sectionsForPath,
+} from "@/lib/keymap-defs";
 
 describe("keymap definitions", () => {
   it("falls back to global shortcuts across the settings area", () => {
@@ -9,6 +13,12 @@ describe("keymap definitions", () => {
     expect(sectionsForPath("/settings/preferences/advanced")).toEqual([
       "global",
     ]);
+  });
+
+  it("selects the focused help section for a route", () => {
+    expect(focusSectionForPath("/calendar")).toBe("calendar");
+    expect(focusSectionForPath("/kanban")).toBe("kanban");
+    expect(focusSectionForPath("/settings/keymaps")).toBe("global");
   });
 
   it("does not advertise settings-specific movement shortcuts", () => {
