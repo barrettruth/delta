@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/sidebar";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
-import { isSettingsPath } from "@/lib/settings-navigation";
+import {
+  isSettingsPath,
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 
 const VIEW_KEYMAP_IDS: {
   label: string;
@@ -46,6 +50,10 @@ export function AppSidebar({
   const nav = useNavigation();
   const keymaps = useKeymaps();
   const [editingColor, setEditingColor] = useState<string | null>(null);
+  const settingsUrl = settingsHref(
+    "/settings",
+    settingsReturnToForPath(pathname, searchParams),
+  );
 
   return (
     <Sidebar>
@@ -151,7 +159,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              render={<Link href="/settings" />}
+              render={<Link href={settingsUrl} />}
               isActive={isSettingsPath(pathname)}
               onClick={() => nav.pushJump()}
             >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useCommandBar } from "@/contexts/command-bar";
@@ -14,12 +14,20 @@ import {
   getCompletions,
   longestCommonPrefix,
 } from "@/core/commands";
+import { focusSectionForPath } from "@/lib/keymap-defs";
+import {
+  isSettingsPath,
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 
 export function StatusBar() {
   const { state } = useStatusBar();
   const statusBar = useStatusBar();
   const commandBar = useCommandBar();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toggleSidebar } = useSidebar();
   const panel = useTaskPanel();
   const { undo: performUndo } = useUndo();
@@ -33,9 +41,18 @@ export function StatusBar() {
   }, [commandBar.active]);
 
   const buildContext = useCallback((): CommandContext => {
+    const route = (url: string) => {
+      const routePath = url.split(/[?#]/, 1)[0];
+      router.push(
+        isSettingsPath(routePath)
+          ? settingsHref(url, settingsReturnToForPath(pathname, searchParams))
+          : url,
+      );
+    };
+
     return {
       router: {
-        push: (url: string) => router.push(url),
+        push: route,
         refresh: () => router.refresh(),
       },
       logout: (force?: boolean) => {
@@ -45,7 +62,14 @@ export function StatusBar() {
         });
       },
       toggleSidebar,
-      openHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
+      openHelp: () =>
+        router.push(
+          settingsHref(
+            "/settings/keymaps",
+            settingsReturnToForPath(pathname, searchParams),
+            { focus: focusSectionForPath(pathname) },
+          ),
+        ),
       undo: () => performUndo(),
       taskPanel: {
         isOpen: panel.isOpen,
@@ -70,7 +94,15 @@ export function StatusBar() {
         error: statusBar.error,
       },
     };
-  }, [router, toggleSidebar, performUndo, panel, statusBar]);
+  }, [
+    router,
+    pathname,
+    searchParams,
+    toggleSidebar,
+    performUndo,
+    panel,
+    statusBar,
+  ]);
 
   const handleExecute = useCallback(() => {
     const raw = commandBar.input.trim();

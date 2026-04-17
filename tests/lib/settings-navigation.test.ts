@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  getActiveSettingsSection,
   isSettingsPath,
   isSettingsSectionActive,
+  pathWithSearch,
   SETTINGS_SECTIONS,
+  safeSettingsReturnTo,
+  settingsHref,
+  settingsReturnToForPath,
 } from "@/lib/settings-navigation";
 
 describe("settings navigation helpers", () => {
@@ -52,5 +57,38 @@ describe("settings navigation helpers", () => {
     expect(
       isSettingsSectionActive("/settings/preferences", "/settings/security"),
     ).toBe(false);
+  });
+
+  it("resolves the active settings section", () => {
+    expect(getActiveSettingsSection("/settings").id).toBe("account");
+    expect(getActiveSettingsSection("/settings/keymaps").id).toBe("keymaps");
+    expect(getActiveSettingsSection("/settings/calendar/sync").id).toBe(
+      "calendar",
+    );
+    expect(getActiveSettingsSection("/nope").id).toBe("account");
+  });
+
+  it("builds settings hrefs with safe return targets", () => {
+    expect(
+      settingsHref("/settings/keymaps", "/calendar?mode=week", {
+        focus: "calendar",
+      }),
+    ).toBe(
+      "/settings/keymaps?returnTo=%2Fcalendar%3Fmode%3Dweek&focus=calendar",
+    );
+    expect(settingsHref("/settings", "/settings/security")).toBe("/settings");
+    expect(settingsHref("/settings", "https://example.com")).toBe("/settings");
+  });
+
+  it("derives settings close targets from the current route", () => {
+    const queueParams = new URLSearchParams("view=queue");
+    const settingsParams = new URLSearchParams("returnTo=/calendar");
+
+    expect(pathWithSearch("/", queueParams)).toBe("/?view=queue");
+    expect(settingsReturnToForPath("/", queueParams)).toBe("/?view=queue");
+    expect(settingsReturnToForPath("/settings/keymaps", settingsParams)).toBe(
+      "/calendar",
+    );
+    expect(safeSettingsReturnTo("//example.com")).toBe("/");
   });
 });

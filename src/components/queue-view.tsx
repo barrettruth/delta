@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -19,6 +20,11 @@ import type { UndoMutation } from "@/core/undo";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { focusSectionForPath } from "@/lib/keymap-defs";
+import {
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
@@ -173,6 +179,9 @@ export function QueueView({
   categoryColors: Record<string, string>;
   categoryFilter?: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const nav = useNavigation();
   const statusBar = useStatusBar();
   const undo = useUndo();
@@ -195,6 +204,16 @@ export function QueueView({
   }, [tasks, searchQuery]);
 
   const gutterWidth = String(filtered.length).length;
+  const openHelp = useCallback(() => {
+    nav.pushJump();
+    router.push(
+      settingsHref(
+        "/settings/keymaps",
+        settingsReturnToForPath(pathname, searchParams),
+        { focus: focusSectionForPath(pathname) },
+      ),
+    );
+  }, [nav, pathname, router, searchParams]);
 
   const { cursor, setCursor, selectedIds, toggleSelect, visualMode } =
     useKeyboard({
@@ -280,7 +299,7 @@ export function QueueView({
         panel.toggle(task.id);
       },
       onDeselect: () => panel.close(),
-      onHelp: () => window.dispatchEvent(new Event("open-keymap-help")),
+      onHelp: openHelp,
       onJump: () => nav.pushJump(),
       scrollRef,
     });

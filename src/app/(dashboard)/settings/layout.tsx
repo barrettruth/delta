@@ -1,20 +1,9 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { SettingsModalShell } from "@/components/settings-modal-shell";
-import { validateSession } from "@/core/auth";
-import { db } from "@/db";
 
-export default async function SettingsLayout({
+export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
-
   return <SettingsModalShell>{children}</SettingsModalShell>;
 }
