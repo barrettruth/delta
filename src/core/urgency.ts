@@ -81,6 +81,6 @@ export function rankTasks(
         customWeights,
       ),
     }))
-    .filter((t) => t.urgency > 0)
+    .filter((t) => t.status !== "done" && t.status !== "cancelled")
     .sort((a, b) => b.urgency - a.urgency);
 }
