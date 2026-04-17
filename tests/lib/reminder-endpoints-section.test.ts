@@ -6,7 +6,7 @@ import { StatusBarProvider } from "@/contexts/status-bar";
 import { getEmptyReminderTransportConfigStatus } from "@/lib/reminder-transport-form";
 
 describe("ReminderEndpointsSection", () => {
-  it("shows inline provider fields instead of a set-up button when setup is missing", () => {
+  it("renders adapters collapsed by default without auto-opening setup forms", () => {
     const html = renderToStaticMarkup(
       createElement(
         StatusBarProvider,
@@ -35,12 +35,11 @@ describe("ReminderEndpointsSection", () => {
       ),
     );
 
-    expect(html).toContain("provider setup");
-    expect(html).toContain(
+    expect(html).toContain("SMS");
+    expect(html).toContain("needs setup");
+    expect(html).not.toContain('placeholder="AC123456789"');
+    expect(html).not.toContain(
       "Finish provider setup before testing or sending reminders.",
     );
-    expect(html).toContain('placeholder="AC123456789"');
-    expect(html).toContain("save setup");
-    expect(html).not.toContain("set up provider");
   });
 });

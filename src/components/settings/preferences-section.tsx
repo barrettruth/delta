@@ -79,7 +79,6 @@ export function PreferencesSection({
 
   return (
     <SettingsPage
-      className="max-w-2xl"
       title="preferences"
       description="Choose the defaults delta uses for opening views and ordering work."
     >

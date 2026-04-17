@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useStatusBar } from "@/contexts/status-bar";
+import { commandRegistry } from "@/core/commands";
 import {
   DEFAULT_KEYMAPS,
   formatKey,
@@ -17,8 +19,24 @@ import { SettingsPage, SettingsSection } from "./settings-primitives";
 export function KeymapsSection() {
   const keymaps = useKeymaps();
   const statusBar = useStatusBar();
+  const searchParams = useSearchParams();
+  const focusKey = searchParams.get("focus");
   const [capturingId, setCapturingId] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(
+    null,
+  );
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  useEffect(() => {
+    if (!focusKey) return;
+    const target = sectionRefs.current[focusKey];
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedSection(focusKey);
+    const timeout = setTimeout(() => setHighlightedSection(null), 1800);
+    return () => clearTimeout(timeout);
+  }, [focusKey]);
 
   const allConfigurableIds = useMemo(
     () =>
@@ -72,7 +90,6 @@ export function KeymapsSection() {
 
   return (
     <SettingsPage
-      className="max-w-4xl"
       title="keymaps"
       description="Customize keyboard shortcuts across global navigation and focused task actions."
     >
@@ -88,70 +105,136 @@ export function KeymapsSection() {
         </div>
       )}
       {HELP_SECTIONS.map((section) => (
-        <SettingsSection
+        <div
           key={section.section}
-          title={SECTION_LABELS[section.section]}
+          ref={(el) => {
+            sectionRefs.current[section.section] = el;
+          }}
+          data-highlighted={
+            highlightedSection === section.section ? "true" : undefined
+          }
+          className="
+            relative -mx-4 px-4 py-2
+            border-l-2 border-transparent
+            transition-[background-color,border-color] duration-1000 ease-out
+            data-[highlighted=true]:bg-accent/60
+            data-[highlighted=true]:border-foreground/60
+            data-[highlighted=true]:duration-0
+          "
         >
-          <div className="grid grid-cols-1 gap-x-6 gap-y-1 md:grid-cols-2">
-            {section.rows.map((entry) => {
-              const isSingleConfigurable =
-                entry.ids.length === 1 &&
-                (() => {
-                  const def = DEFAULT_KEYMAPS.find(
-                    (d) => d.id === entry.ids[0],
+          <SettingsSection
+            title={SECTION_LABELS[section.section]}
+            dividers={false}
+          >
+            <div className="grid grid-cols-1 gap-x-6 gap-y-1 md:grid-cols-2 p-2">
+              {section.rows.map((entry) => {
+                const isSingleConfigurable =
+                  entry.ids.length === 1 &&
+                  (() => {
+                    const def = DEFAULT_KEYMAPS.find(
+                      (d) => d.id === entry.ids[0],
+                    );
+                    return def && def.configurable !== false;
+                  })();
+                const singleId = isSingleConfigurable
+                  ? (entry.ids[0] as string)
+                  : null;
+                const isCapturing =
+                  singleId !== null && capturingId === singleId;
+                const isOverridden =
+                  singleId !== null && singleId in keymaps.overrides;
+
+                const displayKey = resolveDisplayKey(entry, keymaps);
+
+                if (!isSingleConfigurable) {
+                  return (
+                    <div
+                      key={entry.keyDisplay}
+                      className="flex items-center justify-between gap-4 py-0.5 px-2"
+                    >
+                      <kbd className="text-xs text-muted-foreground shrink-0 min-w-16">
+                        {displayKey}
+                      </kbd>
+                      <span className="text-xs text-muted-foreground text-right">
+                        {entry.label}
+                      </span>
+                    </div>
                   );
-                  return def && def.configurable !== false;
-                })();
-              const singleId = isSingleConfigurable
-                ? (entry.ids[0] as string)
-                : null;
-              const isCapturing = singleId !== null && capturingId === singleId;
-              const isOverridden =
-                singleId !== null && singleId in keymaps.overrides;
+                }
 
-              const displayKey = resolveDisplayKey(entry, keymaps);
-
-              if (!isSingleConfigurable) {
                 return (
-                  <div
+                  <KeyRow
                     key={entry.keyDisplay}
-                    className="flex items-center justify-between gap-4 py-0.5 px-2"
-                  >
-                    <kbd className="text-xs text-muted-foreground shrink-0 min-w-16">
-                      {displayKey}
-                    </kbd>
-                    <span className="text-xs text-muted-foreground text-right">
-                      {entry.label}
-                    </span>
-                  </div>
+                    defId={singleId as string}
+                    displayKey={displayKey}
+                    label={entry.label}
+                    isCapturing={isCapturing}
+                    isOverridden={isOverridden}
+                    captureError={isCapturing ? captureError : null}
+                    onStartCapture={() => {
+                      setCapturingId(singleId);
+                      setCaptureError(null);
+                    }}
+                    onCapture={handleCapture}
+                    onCancelCapture={() => {
+                      setCapturingId(null);
+                      setCaptureError(null);
+                    }}
+                    onReset={handleReset}
+                  />
                 );
-              }
+              })}
+            </div>
+          </SettingsSection>
+        </div>
+      ))}
 
+      <div
+        ref={(el) => {
+          sectionRefs.current.commands = el;
+        }}
+        data-highlighted={
+          highlightedSection === "commands" ? "true" : undefined
+        }
+        className="
+          relative -mx-4 px-4 py-2
+          border-l-2 border-transparent
+          transition-[background-color,border-color] duration-1000 ease-out
+          data-[highlighted=true]:bg-accent/60
+          data-[highlighted=true]:border-foreground/60
+          data-[highlighted=true]:duration-0
+        "
+      >
+        <SettingsSection title="Commands" dividers={false}>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-1 md:grid-cols-2 p-2">
+            {commandRegistry.map((cmd) => {
+              const aliases =
+                cmd.aliases.length > 0
+                  ? ` (${cmd.aliases.map((a) => `:${a}`).join(", ")})`
+                  : "";
+              const args =
+                cmd.expectedArgs && cmd.expectedArgs.length > 0
+                  ? ` [${cmd.expectedArgs.join("|")}]`
+                  : "";
               return (
-                <KeyRow
-                  key={entry.keyDisplay}
-                  defId={singleId as string}
-                  displayKey={displayKey}
-                  label={entry.label}
-                  isCapturing={isCapturing}
-                  isOverridden={isOverridden}
-                  captureError={isCapturing ? captureError : null}
-                  onStartCapture={() => {
-                    setCapturingId(singleId);
-                    setCaptureError(null);
-                  }}
-                  onCapture={handleCapture}
-                  onCancelCapture={() => {
-                    setCapturingId(null);
-                    setCaptureError(null);
-                  }}
-                  onReset={handleReset}
-                />
+                <div
+                  key={cmd.name}
+                  className="flex items-center justify-between gap-4 py-0.5 px-2"
+                >
+                  <kbd className="text-xs text-foreground shrink-0 min-w-16">
+                    :{cmd.name}
+                    {args}
+                    {aliases}
+                  </kbd>
+                  <span className="text-xs text-muted-foreground text-right">
+                    {cmd.description}
+                  </span>
+                </div>
               );
             })}
           </div>
         </SettingsSection>
-      ))}
+      </div>
     </SettingsPage>
   );
 }

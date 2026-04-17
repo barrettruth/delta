@@ -44,6 +44,11 @@ export function sectionsForPath(pathname: string): KeySection[] {
   return VIEW_SECTIONS[pathname] ?? ["global"];
 }
 
+export function focusSectionForPath(pathname: string): KeySection {
+  const sections = sectionsForPath(pathname);
+  return sections.find((s) => s !== "global" && s !== "navigation") ?? "global";
+}
+
 export const DEFAULT_KEYMAPS: KeymapDef[] = [
   {
     id: "global.queue",

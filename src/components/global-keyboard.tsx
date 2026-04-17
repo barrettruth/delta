@@ -1,14 +1,14 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { KeymapHelp } from "@/components/keymap-help";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useCommandBar } from "@/contexts/command-bar";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
+import { focusSectionForPath } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -23,9 +23,14 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const panel = useTaskPanel();
   const commandBar = useCommandBar();
   const keymaps = useKeymaps();
-  const [helpOpen, setHelpOpen] = useState(false);
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openHelp = useCallback(() => {
+    const focus = focusSectionForPath(pathname);
+    pushJump();
+    router.push(`/settings/keymaps?focus=${focus}`);
+  }, [pathname, pushJump, router]);
 
   const viewKeys = useMemo(() => {
     const map: Record<string, string> = {};
@@ -87,7 +92,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
           pushJump();
           router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
         } else if (key === "?") {
-          setHelpOpen(true);
+          openHelp();
         } else if (key === "c") {
           panel.create();
         } else if (key === ".") {
@@ -196,6 +201,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       commandBar,
       keymaps,
       viewKeys,
+      openHelp,
     ],
   );
 
@@ -205,10 +211,9 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   }, [handler]);
 
   useEffect(() => {
-    const open = () => setHelpOpen(true);
-    window.addEventListener("open-keymap-help", open);
-    return () => window.removeEventListener("open-keymap-help", open);
-  }, []);
+    window.addEventListener("open-keymap-help", openHelp);
+    return () => window.removeEventListener("open-keymap-help", openHelp);
+  }, [openHelp]);
 
   useEffect(() => {
     return () => {
@@ -216,11 +221,5 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     };
   }, []);
 
-  return (
-    <KeymapHelp
-      open={helpOpen}
-      onClose={() => setHelpOpen(false)}
-      pathname={pathname}
-    />
-  );
+  return null;
 }

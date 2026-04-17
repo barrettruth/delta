@@ -69,7 +69,6 @@ export function AccountSection({
 
   return (
     <SettingsPage
-      className="max-w-2xl"
       title="account"
       description="Manage your profile and the providers you use to sign in."
     >
