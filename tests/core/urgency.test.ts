@@ -148,6 +148,15 @@ describe("rankTasks", () => {
     expect(ranked.every((t) => t.status !== "done")).toBe(true);
   });
 
+  it("keeps active tasks even when urgency is zero", () => {
+    createTask(db, userId, { description: "New pending task" });
+
+    const tasks = listTasks(db, userId);
+    const ranked = rankTasks(db, tasks);
+
+    expect(ranked.map((t) => t.description)).toContain("New pending task");
+  });
+
   it("accounts for blocking relationships", () => {
     const blocker = createTask(db, userId, {
       description: "Blocker",
