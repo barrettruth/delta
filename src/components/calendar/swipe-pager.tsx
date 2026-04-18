@@ -114,52 +114,35 @@ export function SwipePager({
   }, [enabled, onPrev, onNext, recenter]);
 
   if (!enabled) {
-    return (
-      <div className="flex-1 min-h-0 min-w-0 flex flex-col">{children}</div>
-    );
+    return <div className="flex-1 min-h-0 min-w-0">{children}</div>;
   }
 
   return (
     <div
       ref={scrollerRef}
-      className="flex-1 min-h-0 min-w-0 overflow-x-auto overscroll-x-contain swipe-pager-scroller"
+      className="flex-1 min-h-0 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain swipe-pager-scroller"
       style={{
         scrollSnapType: "x mandatory",
+        // Hide scrollbars cross-browser.
         scrollbarWidth: "none",
       }}
     >
-      <div
-        className="flex"
-        style={{ width: "300%", height: "100%", minHeight: 0 }}
-      >
+      <div className="flex h-full" style={{ width: "300%" }}>
         <div
           aria-hidden
-          className="shrink-0"
-          style={{
-            width: "33.3333%",
-            height: "100%",
-            scrollSnapAlign: "start",
-          }}
+          className="h-full shrink-0"
+          style={{ width: "33.3333%", scrollSnapAlign: "start" }}
         />
         <div
-          className="shrink-0 min-w-0 flex flex-col"
-          style={{
-            width: "33.3333%",
-            height: "100%",
-            minHeight: 0,
-            scrollSnapAlign: "start",
-          }}
+          className="h-full shrink-0 min-w-0"
+          style={{ width: "33.3333%", scrollSnapAlign: "start" }}
         >
           {children}
         </div>
         <div
           aria-hidden
-          className="shrink-0"
-          style={{
-            width: "33.3333%",
-            height: "100%",
-            scrollSnapAlign: "start",
-          }}
+          className="h-full shrink-0"
+          style={{ width: "33.3333%", scrollSnapAlign: "start" }}
         />
       </div>
     </div>
