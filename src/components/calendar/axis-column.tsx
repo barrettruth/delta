@@ -22,25 +22,24 @@ export function AxisColumn({
   return (
     <div
       className="fc-delta-root fc-axis-only shrink-0"
-      style={{ width: "max-content" }}
+      style={{ width: "var(--fc-axis-width, 48px)" }}
     >
       <FullCalendar
         plugins={[timeGridPlugin]}
         initialView="timeGridDay"
         initialDate={referenceDate}
         headerToolbar={false}
-        /* Keep the column header row so its height matches the panes' header
-           row — we CSS-blank the cell content but preserve layout height. */
-        dayHeaders
+        dayHeaders={false}
         allDaySlot={allDaySlot}
         slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
         slotEventOverlap={false}
         expandRows
         height="100%"
         events={[]}
+        // Turn off interactions — it's a display-only axis.
         selectable={false}
         editable={false}
-        nowIndicator={false}
+        nowIndicator
       />
     </div>
   );
