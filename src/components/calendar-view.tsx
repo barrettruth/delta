@@ -25,6 +25,7 @@ import {
   buildDayPreFill,
   buildRangePreFill,
   buildSlotPreFill,
+  formatDayTitle,
   formatMonthTitle,
   formatWeekRange,
   getWeekStart,
@@ -129,16 +130,20 @@ export function CalendarView({
   const rangeStart = useMemo(() => {
     if (visibleRange) return visibleRange.start;
     if (!anchor) return getWeekStart(new Date());
-    return viewMode === "week"
-      ? getWeekStart(anchor)
-      : getWeekStart(startOfMonth(anchor));
+    if (viewMode === "day") {
+      const d = new Date(anchor);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    if (viewMode === "week") return getWeekStart(anchor);
+    return getWeekStart(startOfMonth(anchor));
   }, [visibleRange, anchor, viewMode]);
 
   const rangeEnd = useMemo(() => {
     if (visibleRange) return visibleRange.end;
-    const start = rangeStart;
-    const end = new Date(start);
-    end.setDate(end.getDate() + (viewMode === "week" ? 7 : 42));
+    const end = new Date(rangeStart);
+    const span = viewMode === "day" ? 1 : viewMode === "week" ? 7 : 42;
+    end.setDate(end.getDate() + span);
     return end;
   }, [visibleRange, rangeStart, viewMode]);
 
@@ -163,9 +168,9 @@ export function CalendarView({
 
   const headerTitle = useMemo(() => {
     if (!anchor) return "";
-    return viewMode === "week"
-      ? formatWeekRange(getWeekStart(anchor))
-      : formatMonthTitle(startOfMonth(anchor));
+    if (viewMode === "day") return formatDayTitle(anchor);
+    if (viewMode === "week") return formatWeekRange(getWeekStart(anchor));
+    return formatMonthTitle(startOfMonth(anchor));
   }, [anchor, viewMode]);
 
   useEffect(() => {
@@ -369,6 +374,24 @@ export function CalendarView({
       }),
     [],
   );
+  const prevDay = useCallback(
+    () =>
+      setAnchor((d) => {
+        const r = new Date(d ?? new Date());
+        r.setDate(r.getDate() - 1);
+        return r;
+      }),
+    [],
+  );
+  const nextDay = useCallback(
+    () =>
+      setAnchor((d) => {
+        const r = new Date(d ?? new Date());
+        r.setDate(r.getDate() + 1);
+        return r;
+      }),
+    [],
+  );
   const prevMonth = useCallback(() => {
     setAnchor((d) => {
       const b = d ?? new Date();
@@ -398,7 +421,8 @@ export function CalendarView({
 
       const scrollerEl = fcRef.current?.getScrollerEl() ?? null;
 
-      if (viewMode === "week" && scrollerEl) {
+      const isTimeGrid = viewMode === "week" || viewMode === "day";
+      if (isTimeGrid && scrollerEl) {
         const HOUR = 60; // approx scroll unit (px per hour in FC default slots)
         if (keymaps.resolvedMatchesEvent("calendar.scroll_down_hour", e)) {
           e.preventDefault();
@@ -460,7 +484,7 @@ export function CalendarView({
           clearTimeout(gTimer.current);
           gTimer.current = null;
         }
-        if (e.key === scrollTopKey && viewMode === "week") {
+        if (e.key === scrollTopKey && isTimeGrid) {
           e.preventDefault();
           const hour = countBuf.current
             ? Math.min(23, Number.parseInt(countBuf.current, 10))
@@ -504,7 +528,7 @@ export function CalendarView({
       const scrollBottomKey = keymaps.getResolvedKeymap(
         "calendar.scroll_bottom",
       ).triggerKey;
-      if (e.key === scrollBottomKey && viewMode === "week") {
+      if (e.key === scrollBottomKey && isTimeGrid) {
         e.preventDefault();
         const n = countBuf.current
           ? Math.min(23, Number.parseInt(countBuf.current, 10))
@@ -521,7 +545,8 @@ export function CalendarView({
         e.preventDefault();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
-          if (viewMode === "week") prevWeek();
+          if (viewMode === "day") prevDay();
+          else if (viewMode === "week") prevWeek();
           else prevMonth();
         }
         return;
@@ -533,7 +558,8 @@ export function CalendarView({
         e.preventDefault();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
-          if (viewMode === "week") nextWeek();
+          if (viewMode === "day") nextDay();
+          else if (viewMode === "week") nextWeek();
           else nextMonth();
         }
         return;
@@ -542,13 +568,21 @@ export function CalendarView({
       const alldayKey = keymaps.getResolvedKeymap(
         "calendar.toggle_allday",
       ).triggerKey;
-      if (e.key === alldayKey && viewMode === "week") {
+      if (e.key === alldayKey && isTimeGrid) {
         e.preventDefault();
         countBuf.current = "";
         setAllDayVisible((prev) => !prev);
         return;
       }
 
+      const dayViewKey =
+        keymaps.getResolvedKeymap("calendar.day_view").triggerKey;
+      if (e.key === dayViewKey) {
+        e.preventDefault();
+        countBuf.current = "";
+        setViewMode("day");
+        return;
+      }
       const weekViewKey =
         keymaps.getResolvedKeymap("calendar.week_view").triggerKey;
       if (e.key === weekViewKey) {
@@ -588,6 +622,8 @@ export function CalendarView({
     },
     [
       viewMode,
+      prevDay,
+      nextDay,
       prevWeek,
       nextWeek,
       prevMonth,
@@ -635,7 +671,9 @@ export function CalendarView({
           events={events}
           viewMode={viewMode}
           initialDate={anchor}
-          allDaySlot={viewMode === "week" ? allDayVisible : true}
+          allDaySlot={
+            viewMode === "week" || viewMode === "day" ? allDayVisible : true
+          }
           onEventClick={openTaskFromEvent}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventResize}

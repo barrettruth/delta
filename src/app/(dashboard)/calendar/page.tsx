@@ -38,7 +38,9 @@ export default async function CalendarPage({
       .map((c) => [c.category, c.color]),
   );
   const defaultViewMode =
-    params.mode === "week" || params.mode === "month" ? params.mode : undefined;
+    params.mode === "day" || params.mode === "week" || params.mode === "month"
+      ? params.mode
+      : undefined;
   const categories = [
     ...new Set(tasks.map((t) => t.category).filter(Boolean)),
   ] as string[];

@@ -35,6 +35,15 @@ export function formatMonthTitle(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
+export function formatDayTitle(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function getUserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }

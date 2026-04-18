@@ -199,7 +199,7 @@ describe("executeCommand", () => {
     const ctx = makeMockContext();
     const result = executeCommand("calendar foo", commandRegistry, ctx);
     expect(result).toBe(
-      "calendar: unexpected argument 'foo' (expected: week, month, import, export)",
+      "calendar: unexpected argument 'foo' (expected: day, week, month, import, export)",
     );
   });
 

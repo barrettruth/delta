@@ -22,7 +22,7 @@ import type { Task } from "@/core/types";
 
 import "./fc-styles.css";
 
-export type FcViewMode = "week" | "month";
+export type FcViewMode = "day" | "week" | "month";
 
 export interface FcCalendarHandle {
   prev: () => void;
@@ -100,8 +100,12 @@ function renderEventContent(arg: EventContentArg) {
   );
 }
 
-function viewName(mode: FcViewMode): "timeGridWeek" | "dayGridMonth" {
-  return mode === "week" ? "timeGridWeek" : "dayGridMonth";
+function viewName(
+  mode: FcViewMode,
+): "timeGridDay" | "timeGridWeek" | "dayGridMonth" {
+  if (mode === "day") return "timeGridDay";
+  if (mode === "week") return "timeGridWeek";
+  return "dayGridMonth";
 }
 
 export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
