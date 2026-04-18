@@ -801,14 +801,16 @@ export function CalendarView({
         <SwipePager
           enabled={viewMode === "day" || viewMode === "week"}
           anchor={anchor}
-          /* Always shift by 1 day on swipe — in week view the visible 7-day
-             window slides by one day at a time, not by a whole week. */
-          unit="day"
-          commitFraction={viewMode === "week" ? 1 / 7 : 1}
+          unit={viewMode === "day" ? "day" : "week"}
           onCommit={(dir) => {
             dismissPopover();
-            if (dir === "prev") prevDay();
-            else nextDay();
+            if (dir === "prev") {
+              if (viewMode === "day") prevDay();
+              else prevWeek();
+            } else {
+              if (viewMode === "day") nextDay();
+              else nextWeek();
+            }
           }}
           renderPane={({ date, isCenter }) => (
             <FcCalendar

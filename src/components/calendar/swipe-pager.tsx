@@ -15,7 +15,7 @@ import {
  * translateX-animated track. The user drags horizontally with a pointer; the
  * neighbor pane peeks in from the side in real time. On release:
  *
- *   - if |delta| > commitThreshold * paneWidth, animate to the neighbor and
+ *   - if |delta| > COMMIT_THRESHOLD * paneWidth, animate to the neighbor and
  *     call onCommit("prev" | "next"). The parent updates its anchor state,
  *     which causes us to re-render with freshly dated panes; we then snap the
  *     track back to center without animation so the illusion is seamless.
@@ -31,7 +31,7 @@ import {
  */
 
 const ACTIVATION_PX = 8;
-const DEFAULT_COMMIT_FRACTION = 1; // whole pane = one commit unit
+const COMMIT_THRESHOLD = 0.22; // fraction of pane width needed to commit
 const SNAP_MS = 240;
 
 interface PaneProps {
@@ -45,12 +45,6 @@ interface SwipePagerProps {
   anchor: Date;
   /** "day" or "week" — determines how neighbor dates are offset. */
   unit: "day" | "week";
-  /**
-   * Fraction of the pane width that constitutes one "commit unit". Commit
-   * threshold is half this. E.g. 1/7 means "half a day-column of travel" in a
-   * week view that shows 7 days per pane.
-   */
-  commitFraction?: number;
   onCommit: (direction: "prev" | "next") => void;
   renderPane: (props: PaneProps) => React.ReactNode;
 }
@@ -73,12 +67,9 @@ export function SwipePager({
   enabled,
   anchor,
   unit,
-  commitFraction = DEFAULT_COMMIT_FRACTION,
   onCommit,
   renderPane,
 }: SwipePagerProps) {
-  // Commit when the user has travelled more than half a commit-unit.
-  const commitThreshold = commitFraction / 2;
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
 
@@ -95,9 +86,6 @@ export function SwipePager({
 
   // Small state bump to re-render after a commit so neighbor dates refresh.
   const [, forceTick] = useState(0);
-  // Pixel-exact pane width tracked via ResizeObserver so flex sub-pixel
-  // rounding can't create hairline gaps between adjacent panes.
-  const [paneWidthPx, setPaneWidthPx] = useState(0);
 
   // Measure pane width and set initial transform to -1 * paneWidth (center).
   const recenter = useCallback((animated: boolean) => {
@@ -116,16 +104,12 @@ export function SwipePager({
     recenter(false);
   }, [recenter]);
 
-  // Recenter + re-measure pane width on resize.
+  // Recenter on resize.
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp) return;
-    const ro = new ResizeObserver(() => {
-      setPaneWidthPx(vp.clientWidth);
-      recenter(false);
-    });
+    const ro = new ResizeObserver(() => recenter(false));
     ro.observe(vp);
-    setPaneWidthPx(vp.clientWidth);
     return () => ro.disconnect();
   }, [recenter]);
 
@@ -144,13 +128,11 @@ export function SwipePager({
   const getAxisEls = useCallback((): HTMLElement[] => {
     const track = trackRef.current;
     if (!track) return [];
-    const center = track.querySelector<HTMLElement>(".fc-center-pane");
+    const center = track.children[1] as HTMLElement | undefined;
     if (!center) return [];
-    // Counter-translate whole axis cells so both the background (which masks
-    // sliding content) and the cushion text move together.
     const sel =
-      ".fc-timegrid-axis, .fc-timegrid-slot-label, " +
-      ".fc-col-header-cell.fc-timegrid-axis";
+      ".fc-timegrid-axis-cushion, .fc-timegrid-slot-label-cushion, " +
+      ".fc-col-header-cell.fc-timegrid-axis .fc-col-header-cell-cushion";
     return Array.from(center.querySelectorAll<HTMLElement>(sel));
   }, []);
 
@@ -230,7 +212,7 @@ export function SwipePager({
     const dx = lastDx.current;
     const ratio = dx / w;
 
-    if (ratio <= -commitThreshold) {
+    if (ratio <= -COMMIT_THRESHOLD) {
       // Committed to NEXT pane — animate to -2w, then reset after anchor updates.
       setTransform(-2 * w, true);
       window.setTimeout(() => {
@@ -243,7 +225,7 @@ export function SwipePager({
           forceTick((n) => n + 1);
         });
       }, SNAP_MS);
-    } else if (ratio >= commitThreshold) {
+    } else if (ratio >= COMMIT_THRESHOLD) {
       setTransform(0, true);
       window.setTimeout(() => {
         onCommit("prev");
@@ -256,7 +238,7 @@ export function SwipePager({
       // Snap back.
       setTransform(-w, true);
     }
-  }, [onCommit, recenter, setTransform, commitThreshold]);
+  }, [onCommit, recenter, setTransform]);
 
   const onPointerUp = useCallback(() => {
     finishDrag();
@@ -283,7 +265,7 @@ export function SwipePager({
     wheelDx.current = 0;
     const ratio = dx / w;
 
-    if (ratio <= -commitThreshold) {
+    if (ratio <= -COMMIT_THRESHOLD) {
       setTransform(-2 * w, true);
       window.setTimeout(() => {
         onCommit("next");
@@ -292,7 +274,7 @@ export function SwipePager({
           forceTick((n) => n + 1);
         });
       }, SNAP_MS);
-    } else if (ratio >= commitThreshold) {
+    } else if (ratio >= COMMIT_THRESHOLD) {
       setTransform(0, true);
       window.setTimeout(() => {
         onCommit("prev");
@@ -304,7 +286,7 @@ export function SwipePager({
     } else {
       setTransform(-w, true);
     }
-  }, [onCommit, recenter, setTransform, commitThreshold]);
+  }, [onCommit, recenter, setTransform]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -374,43 +356,23 @@ export function SwipePager({
       <div
         ref={trackRef}
         className="flex h-full"
-        style={{
-          width: paneWidthPx ? `${paneWidthPx * 3}px` : "300%",
-          willChange: "transform",
-        }}
+        style={{ width: "300%", willChange: "transform" }}
       >
-        <Pane widthPx={paneWidthPx}>
-          {renderPane({ date: prev, isCenter: false })}
-        </Pane>
-        <Pane widthPx={paneWidthPx} center>
-          {renderPane({ date: anchor, isCenter: true })}
-        </Pane>
-        <Pane widthPx={paneWidthPx}>
-          {renderPane({ date: next, isCenter: false })}
-        </Pane>
+        <Pane>{renderPane({ date: prev, isCenter: false })}</Pane>
+        <Pane>{renderPane({ date: anchor, isCenter: true })}</Pane>
+        <Pane>{renderPane({ date: next, isCenter: false })}</Pane>
       </div>
     </div>
   );
 }
 
-function Pane({
-  children,
-  center,
-  widthPx,
-}: {
-  children: React.ReactNode;
-  center?: boolean;
-  widthPx: number;
-}) {
+function Pane({ children }: { children: React.ReactNode }) {
+  // flex: 1 0 0 with three siblings under width:300% gives exact 1/3 widths
+  // and avoids the sub-pixel rounding gap produced by percent-based widths.
   return (
     <div
-      className={`min-w-0 flex flex-col${center ? " fc-center-pane" : ""}`}
-      style={{
-        width: widthPx ? `${widthPx}px` : undefined,
-        flex: widthPx ? undefined : "1 0 0",
-        height: "100%",
-        minHeight: 0,
-      }}
+      className="min-w-0 flex flex-col"
+      style={{ flex: "1 0 0", height: "100%", minHeight: 0 }}
     >
       {children}
     </div>
