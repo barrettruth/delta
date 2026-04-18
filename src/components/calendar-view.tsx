@@ -7,41 +7,35 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { CalendarActionsPopover } from "@/components/calendar/actions-popover";
-import { AllDayBar } from "@/components/calendar/all-day-bar";
-import { MonthGrid } from "@/components/calendar/month-grid";
-import { WeekTimeGrid } from "@/components/calendar/week-time-grid";
+import {
+  FcCalendar,
+  type FcCalendarHandle,
+  type FcViewMode,
+} from "@/components/calendar/fc-calendar";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
-import { expandInstances } from "@/core/recurrence-expansion";
 import type { Task, TaskStatus } from "@/core/types";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { useRecurrenceEdit } from "@/hooks/use-recurrence-edit";
-import type { TimedEntry } from "@/lib/calendar-utils";
 import {
-  addDays,
   buildDayPreFill,
   buildRangePreFill,
   buildSlotPreFill,
-  DAY_NAMES,
-  formatDateKey,
   formatMonthTitle,
   formatWeekRange,
-  getCreatePreview,
-  getDatesBetween,
-  getMinutesFromMidnight,
   getWeekStart,
-  HOUR_HEIGHT,
-  isMultiDay,
-  minuteToISOString,
   startOfMonth,
 } from "@/lib/calendar-utils";
+import {
+  type OptimisticUpdate,
+  tasksToEvents,
+  type VirtualMeta,
+} from "@/lib/fullcalendar-adapter";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
-
-type ViewMode = "week" | "month";
 
 export function CalendarView({
   tasks,
@@ -53,7 +47,7 @@ export function CalendarView({
   tasks: Task[];
   categoryColors?: Record<string, string>;
   categories?: string[];
-  defaultViewMode?: ViewMode;
+  defaultViewMode?: FcViewMode;
   feedToken?: string | null;
 }) {
   const nav = useNavigation();
@@ -64,26 +58,28 @@ export function CalendarView({
   const { pendingEdits } = panel;
   const recurrenceDelete = useRecurrenceDelete();
   const recurrenceEdit = useRecurrenceEdit();
-  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
+
+  const [viewMode, setViewMode] = useState<FcViewMode>(defaultViewMode);
   const [anchor, setAnchor] = useState<Date | null>(null);
-  const weekScrollRef = useRef<HTMLDivElement>(null);
+  const [visibleRange, setVisibleRange] = useState<{
+    start: Date;
+    end: Date;
+  } | null>(null);
+  const [allDayVisible, setAllDayVisible] = useState(true);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [optimisticUpdates, setOptimisticUpdates] = useState<
+    Map<number, OptimisticUpdate>
+  >(new Map());
+
+  const fcRef = useRef<FcCalendarHandle>(null);
   const countBuf = useRef("");
   const pendingG = useRef(false);
   const pendingOp = useRef<string | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [today, setToday] = useState<Date | null>(null);
-  const [allDayVisible, setAllDayVisible] = useState(true);
-  const [allDayExpanded, setAllDayExpanded] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
-  const [optimisticUpdates, setOptimisticUpdates] = useState<
-    Map<number, { startAt?: string; endAt?: string; deleted?: true }>
-  >(new Map());
+  const virtualMetaRef = useRef(new Map<number, VirtualMeta>());
 
-  const virtualMetaRef = useRef(
-    new Map<number, { masterId: number; instanceDate: string }>(),
-  );
-
+  // Clear optimistic updates when a fresh task list arrives from the server.
   const prevTasksRef = useRef(tasks);
   useEffect(() => {
     if (prevTasksRef.current !== tasks && optimisticUpdates.size > 0) {
@@ -94,16 +90,9 @@ export function CalendarView({
 
   useEffect(() => {
     const savedAnchor = nav.getViewState<string>("cal:anchor");
-    const savedMode = nav.getViewState<ViewMode>("cal:viewMode");
-    const now = new Date();
-    setAnchor(savedAnchor ? new Date(savedAnchor) : now);
+    const savedMode = nav.getViewState<FcViewMode>("cal:viewMode");
+    setAnchor(savedAnchor ? new Date(savedAnchor) : new Date());
     if (savedMode) setViewMode(savedMode);
-    setToday(now);
-    const msUntilMidnight =
-      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
-      now.getTime();
-    const timer = setTimeout(() => setToday(new Date()), msUntilMidnight + 100);
-    return () => clearTimeout(timer);
   }, [nav.getViewState]);
 
   useEffect(() => {
@@ -114,565 +103,321 @@ export function CalendarView({
     nav.saveViewState("cal:viewMode", viewMode);
   }, [viewMode, nav]);
 
-  const weekAnchor = useMemo(
-    () => (anchor ? getWeekStart(anchor) : getWeekStart(new Date())),
-    [anchor],
-  );
-  const monthStart = useMemo(
-    () => (anchor ? startOfMonth(anchor) : startOfMonth(new Date())),
-    [anchor],
-  );
-
-  const tasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>();
-    const masters: Task[] = [];
-    const exceptionsMap = new Map<number, Task[]>();
-
-    const monthGridStart = getWeekStart(monthStart);
-    const monthGridEnd = addDays(monthGridStart, 42);
-
-    for (const task of tasks) {
-      if (task.recurringTaskId) {
-        const list = exceptionsMap.get(task.recurringTaskId) ?? [];
-        list.push(task);
-        exceptionsMap.set(task.recurringTaskId, list);
-      }
-
-      if (
-        task.recurrence &&
-        !task.recurringTaskId &&
-        task.recurMode === "scheduled" &&
-        (task.startAt || task.due) &&
-        task.status !== "cancelled"
-      ) {
-        masters.push(task);
-        continue;
-      }
-
-      if (task.recurringTaskId) continue;
-      const dateSource = task.startAt || task.due;
-      if (!dateSource) continue;
-      const key = dateSource.slice(0, 10);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)?.push(task);
-    }
-
-    for (const master of masters) {
-      const exceptions = exceptionsMap.get(master.id) ?? [];
-      const instances = expandInstances(
-        master,
-        monthGridStart,
-        monthGridEnd,
-        exceptions,
-      );
-
-      for (const inst of instances) {
-        if (inst.exception) {
-          if (inst.exception.status === "cancelled") continue;
-          const key = (
-            inst.exception.startAt ??
-            inst.exception.due ??
-            inst.startAt
-          ).slice(0, 10);
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)?.push(inst.exception);
-        } else {
-          const virtual = {
-            ...master,
-            id: -(
-              master.id * 10000000 +
-              (Math.floor(inst.instanceDate.getTime() / 60000) % 10000000)
-            ),
-            startAt: inst.startAt,
-            endAt: inst.endAt,
-          } as Task;
-          const key = inst.startAt.slice(0, 10);
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)?.push(virtual);
-        }
-      }
-    }
-
-    return map;
-  }, [tasks, monthStart]);
-
-  const weekEnd = useMemo(() => addDays(weekAnchor, 7), [weekAnchor]);
-
-  const timedTasksByDate = useMemo(() => {
-    const map = new Map<string, TimedEntry[]>();
-    const masters: Task[] = [];
-    const exceptionsMap = new Map<number, Task[]>();
-    const virtualMeta = new Map<
-      number,
-      { masterId: number; instanceDate: string }
-    >();
-
-    const addEntry = (task: Task) => {
-      if (!task.startAt) return;
-      const startDate = new Date(task.startAt);
-      const endDate = task.endAt ? new Date(task.endAt) : null;
-
-      if (endDate && task.endAt && isMultiDay(task.startAt, task.endAt)) {
-        const dates = getDatesBetween(startDate, endDate);
-        for (let i = 0; i < dates.length; i++) {
-          const key = formatDateKey(dates[i]);
-          let continuation: "start" | "middle" | "end" | undefined;
-          let timeStartMin: number;
-          let timeEndMin: number;
-
-          if (dates.length === 1) {
-            timeStartMin = getMinutesFromMidnight(startDate);
-            timeEndMin = getMinutesFromMidnight(endDate);
-          } else if (i === 0) {
-            continuation = "start";
-            timeStartMin = getMinutesFromMidnight(startDate);
-            timeEndMin = 1440;
-          } else if (i === dates.length - 1) {
-            continuation = "end";
-            timeStartMin = 0;
-            timeEndMin = getMinutesFromMidnight(endDate);
-          } else {
-            continuation = "middle";
-            timeStartMin = 0;
-            timeEndMin = 1440;
-          }
-
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)?.push({ task, continuation, timeStartMin, timeEndMin });
-        }
-      } else {
-        const key = task.startAt.slice(0, 10);
-        const timeStartMin = getMinutesFromMidnight(startDate);
-        const timeEndMin = endDate
-          ? getMinutesFromMidnight(endDate)
-          : timeStartMin + 15;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)?.push({ task, timeStartMin, timeEndMin });
-      }
+  // Register the FC internal scroller so other parts of the app
+  // (e.g. global scroll jumps) can address it. Re-runs whenever FC remounts
+  // its scroll container (view switch, all-day bar toggle).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: viewMode + allDayVisible gate re-registration
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      nav.registerScrollContainer(fcRef.current?.getScrollerEl() ?? null);
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      nav.registerScrollContainer(null);
     };
+  }, [nav.registerScrollContainer, viewMode, allDayVisible]);
 
-    for (const task of tasks) {
-      if (task.recurringTaskId) {
-        const list = exceptionsMap.get(task.recurringTaskId) ?? [];
-        list.push(task);
-        exceptionsMap.set(task.recurringTaskId, list);
-      }
+  // Keep FC in sync when anchor or view change from keyboard.
+  useEffect(() => {
+    if (anchor && fcRef.current) fcRef.current.gotoDate(anchor);
+  }, [anchor]);
 
-      if (
-        task.recurrence &&
-        !task.recurringTaskId &&
-        task.recurMode === "scheduled" &&
-        task.startAt &&
-        task.allDay !== 1 &&
-        task.status !== "cancelled"
-      ) {
-        masters.push(task);
-        continue;
-      }
+  useEffect(() => {
+    if (fcRef.current) fcRef.current.changeView(viewMode);
+  }, [viewMode]);
 
-      if (task.recurringTaskId) continue;
-      if (!task.startAt || task.allDay === 1) continue;
+  const rangeStart = useMemo(() => {
+    if (visibleRange) return visibleRange.start;
+    if (!anchor) return getWeekStart(new Date());
+    return viewMode === "week"
+      ? getWeekStart(anchor)
+      : getWeekStart(startOfMonth(anchor));
+  }, [visibleRange, anchor, viewMode]);
 
-      const update = optimisticUpdates.get(task.id);
-      if (update?.deleted) continue;
-      const pending = pendingEdits.get(task.id);
-      const merged =
-        update || pending ? { ...task, ...pending, ...update } : task;
-      addEntry(merged);
-    }
+  const rangeEnd = useMemo(() => {
+    if (visibleRange) return visibleRange.end;
+    const start = rangeStart;
+    const end = new Date(start);
+    end.setDate(end.getDate() + (viewMode === "week" ? 7 : 42));
+    return end;
+  }, [visibleRange, rangeStart, viewMode]);
 
-    for (const master of masters) {
-      if (optimisticUpdates.get(master.id)?.deleted) continue;
-      const exceptions = exceptionsMap.get(master.id) ?? [];
-      const instances = expandInstances(
-        master,
-        weekAnchor,
-        weekEnd,
-        exceptions,
-      );
+  const { events, virtualMeta } = useMemo(() => {
+    return tasksToEvents(tasks, {
+      pendingEdits,
+      optimisticUpdates,
+      categoryColors,
+      rangeStart,
+      rangeEnd,
+    });
+  }, [
+    tasks,
+    pendingEdits,
+    optimisticUpdates,
+    categoryColors,
+    rangeStart,
+    rangeEnd,
+  ]);
 
-      for (const inst of instances) {
-        if (inst.exception) {
-          if (inst.exception.status === "cancelled") continue;
-          const update = optimisticUpdates.get(inst.exception.id);
-          const pending = pendingEdits.get(inst.exception.id);
-          const merged =
-            update || pending
-              ? { ...inst.exception, ...pending, ...update }
-              : inst.exception;
-          addEntry(merged);
-        } else {
-          const syntheticId = -(
-            master.id * 10000000 +
-            (Math.floor(inst.instanceDate.getTime() / 60000) % 10000000)
+  virtualMetaRef.current = virtualMeta;
+
+  const headerTitle = useMemo(() => {
+    if (!anchor) return "";
+    return viewMode === "week"
+      ? formatWeekRange(getWeekStart(anchor))
+      : formatMonthTitle(startOfMonth(anchor));
+  }, [anchor, viewMode]);
+
+  useEffect(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const count = events.length;
+    const eventLabel =
+      count > 0 ? `${count} event${count !== 1 ? "s" : ""}` : "";
+    const right = [eventLabel, tz].filter(Boolean).join("  ");
+    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, right);
+  }, [viewMode, events.length, statusBar.setIdle]);
+
+  useEffect(() => {
+    const pendingId = nav.consumePendingTaskDetail();
+    if (pendingId != null) panel.open(pendingId);
+  }, [nav.consumePendingTaskDetail, panel]);
+
+  // ----- FC callbacks ---------------------------------------------------------
+
+  const openTaskFromEvent = useCallback(
+    (task: Task, isVirtual: boolean) => {
+      nav.pushJump();
+      if (isVirtual) {
+        const meta = virtualMetaRef.current.get(task.id);
+        if (meta) {
+          materializeInstanceAction(meta.masterId, meta.instanceDate).then(
+            (result) => {
+              if ("data" in result) panel.toggle(result.data.id);
+            },
           );
-          virtualMeta.set(syntheticId, {
-            masterId: master.id,
-            instanceDate: inst.instanceDate.toISOString(),
-          });
-          const virtual = {
-            ...master,
-            id: syntheticId,
-            startAt: inst.startAt,
-            endAt: inst.endAt,
-          } as Task;
-          const update = optimisticUpdates.get(syntheticId);
-          const merged = update ? { ...virtual, ...update } : virtual;
-          addEntry(merged);
+          return;
         }
       }
-    }
+      panel.toggle(task.id);
+    },
+    [nav, panel],
+  );
 
-    virtualMetaRef.current = virtualMeta;
+  const pushOptimistic = useCallback((id: number, update: OptimisticUpdate) => {
+    setOptimisticUpdates((prev) => {
+      const next = new Map(prev);
+      next.set(id, { ...(next.get(id) ?? {}), ...update });
+      return next;
+    });
+  }, []);
 
-    return map;
-  }, [tasks, optimisticUpdates, pendingEdits, weekAnchor, weekEnd]);
-
-  const allDayTasks = useMemo(() => {
-    return tasks
-      .filter(
-        (t) =>
-          t.allDay === 1 && t.startAt && !optimisticUpdates.get(t.id)?.deleted,
-      )
-      .map((t) => {
-        const update = optimisticUpdates.get(t.id);
-        return update ? { ...t, ...update } : t;
-      });
-  }, [tasks, optimisticUpdates]);
-
-  const createPreview = useMemo(() => {
-    if (panel.mode !== "create") return null;
-    return getCreatePreview(panel.preFill, weekAnchor);
-  }, [panel.mode, panel.preFill, weekAnchor]);
-
-  function handleDayClick(date: Date, _anchorEl?: HTMLElement) {
-    setAnchor(date);
-    panel.create(buildDayPreFill(date));
-  }
-
-  function handleSlotClick(
-    date: Date,
-    minuteOfDay: number,
-    _anchor: Element | { getBoundingClientRect: () => DOMRect },
-  ) {
-    setAnchor(date);
-    panel.create(buildSlotPreFill(date, minuteOfDay));
-  }
-
-  const weekDays = useMemo(() => {
-    const result: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-      result.push(addDays(weekAnchor, i));
-    }
-    return result;
-  }, [weekAnchor]);
-
-  const handleEventMove = useCallback(
+  const applyEventChange = useCallback(
     (
-      taskId: number,
-      newStartMinStr: string,
-      newEndMinStr: string | null,
-      dayIndex?: number,
+      task: Task,
+      isVirtual: boolean,
+      newStart: Date,
+      newEnd: Date | null,
+      newAllDay: boolean,
+      revert: () => void,
     ) => {
-      const meta = virtualMetaRef.current.get(taskId);
-      const task = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === taskId);
-      if (!task || !task.startAt) return;
-      const baseDate =
-        dayIndex !== undefined ? weekDays[dayIndex] : new Date(task.startAt);
-      if (!baseDate) return;
-      const newStartMin = Number.parseInt(newStartMinStr, 10);
-      const newStartAt = minuteToISOString(baseDate, newStartMin);
-      const newEndAt =
-        newEndMinStr !== null
-          ? minuteToISOString(baseDate, Number.parseInt(newEndMinStr, 10))
-          : null;
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(taskId, {
-          startAt: newStartAt,
-          ...(newEndAt !== null ? { endAt: newEndAt } : {}),
-        });
-        return next;
-      });
+      const meta = isVirtual ? virtualMetaRef.current.get(task.id) : null;
+      const startAt = newStart.toISOString();
+      const endAt = newEnd ? newEnd.toISOString() : null;
+
+      pushOptimistic(task.id, { startAt, endAt });
+
+      const updates = {
+        startAt,
+        endAt,
+        allDay: newAllDay ? 1 : 0,
+      };
+
       if (meta) {
-        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
-          startAt: newStartAt,
-          endAt: newEndAt,
-        });
+        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, updates);
       } else {
-        updateTaskAction(taskId, {
-          startAt: newStartAt,
-          endAt: newEndAt,
+        updateTaskAction(task.id, updates).then((result) => {
+          if ("error" in result) {
+            setOptimisticUpdates((prev) => {
+              const next = new Map(prev);
+              next.delete(task.id);
+              return next;
+            });
+            revert();
+          }
         });
       }
     },
-    [tasks, weekDays, recurrenceEdit],
+    [pushOptimistic, recurrenceEdit],
   );
 
-  const handleAllDayMove = useCallback(
-    (taskId: number, dayOffset: number) => {
-      const meta = virtualMetaRef.current.get(taskId);
-      const task = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === taskId);
-      if (!task || !task.startAt) return;
-
-      const oldStart = new Date(task.startAt);
-      const newStart = addDays(oldStart, dayOffset);
-      newStart.setHours(
-        oldStart.getHours(),
-        oldStart.getMinutes(),
-        oldStart.getSeconds(),
-      );
-      const newStartAt = newStart.toISOString();
-
-      let newEndAt: string | null = null;
-      if (task.endAt) {
-        const oldEnd = new Date(task.endAt);
-        const newEnd = addDays(oldEnd, dayOffset);
-        newEnd.setHours(
-          oldEnd.getHours(),
-          oldEnd.getMinutes(),
-          oldEnd.getSeconds(),
-        );
-        newEndAt = newEnd.toISOString();
-      }
-
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(taskId, {
-          startAt: newStartAt,
-          ...(newEndAt !== null ? { endAt: newEndAt } : {}),
-        });
-        return next;
-      });
-
-      if (meta) {
-        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
-          startAt: newStartAt,
-          endAt: newEndAt,
-        });
-      } else {
-        updateTaskAction(taskId, {
-          startAt: newStartAt,
-          endAt: newEndAt,
-        });
-      }
+  const handleEventDrop = useCallback(
+    (
+      task: Task,
+      isVirtual: boolean,
+      newStart: Date,
+      newEnd: Date | null,
+      newAllDay: boolean,
+      revert: () => void,
+    ) => {
+      applyEventChange(task, isVirtual, newStart, newEnd, newAllDay, revert);
     },
-    [tasks, recurrenceEdit],
-  );
-
-  const handleAllDayResize = useCallback(
-    (taskId: number, startOffset: number, endOffset: number) => {
-      const meta = virtualMetaRef.current.get(taskId);
-      const task = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === taskId);
-      if (!task || !task.startAt) return;
-
-      const oldStart = new Date(task.startAt);
-      const newStart = addDays(oldStart, startOffset);
-      newStart.setHours(
-        oldStart.getHours(),
-        oldStart.getMinutes(),
-        oldStart.getSeconds(),
-      );
-      const newStartAt = newStart.toISOString();
-
-      const oldEnd = task.endAt ? new Date(task.endAt) : new Date(oldStart);
-      const newEnd = addDays(oldEnd, endOffset);
-      newEnd.setHours(
-        oldEnd.getHours(),
-        oldEnd.getMinutes(),
-        oldEnd.getSeconds(),
-      );
-      const newEndAt = newEnd.toISOString();
-
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(taskId, { startAt: newStartAt, endAt: newEndAt });
-        return next;
-      });
-
-      if (meta) {
-        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
-          startAt: newStartAt,
-          endAt: newEndAt,
-        });
-      } else {
-        updateTaskAction(taskId, { startAt: newStartAt, endAt: newEndAt });
-      }
-    },
-    [tasks, recurrenceEdit],
+    [applyEventChange],
   );
 
   const handleEventResize = useCallback(
-    (taskId: number, newEndMinStr: string) => {
-      const meta = virtualMetaRef.current.get(taskId);
-      const task = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === taskId);
-      if (!task || !task.startAt) return;
-      const baseDate = meta
-        ? new Date(meta.instanceDate)
-        : new Date(task.startAt);
-      const newEndMin = Number.parseInt(newEndMinStr, 10);
-      const newEndAt = minuteToISOString(baseDate, newEndMin);
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(taskId, { endAt: newEndAt });
-        return next;
-      });
-      if (meta) {
-        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
-          endAt: newEndAt,
-        });
-      } else {
-        updateTaskAction(taskId, { endAt: newEndAt });
-      }
-    },
-    [tasks, recurrenceEdit],
-  );
-
-  const handleEventResizeStart = useCallback(
-    (taskId: number, newStartMinStr: string) => {
-      const meta = virtualMetaRef.current.get(taskId);
-      const task = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === taskId);
-      if (!task || !task.startAt) return;
-      const baseDate = meta
-        ? new Date(meta.instanceDate)
-        : new Date(task.startAt);
-      const newStartMin = Number.parseInt(newStartMinStr, 10);
-      const newStartAt = minuteToISOString(baseDate, newStartMin);
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(taskId, { startAt: newStartAt });
-        return next;
-      });
-      if (meta) {
-        recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, {
-          startAt: newStartAt,
-        });
-      } else {
-        updateTaskAction(taskId, { startAt: newStartAt });
-      }
-    },
-    [tasks, recurrenceEdit],
-  );
-
-  const handleRangeCreate = useCallback(
     (
-      dayIndex: number,
-      startMinute: number,
-      endMinute: number,
-      _anchorRect: DOMRect,
+      task: Task,
+      isVirtual: boolean,
+      newStart: Date,
+      newEnd: Date,
+      revert: () => void,
     ) => {
-      const date = weekDays[dayIndex];
-      if (!date) return;
-      panel.create(buildRangePreFill(date, startMinute, endMinute));
+      applyEventChange(
+        task,
+        isVirtual,
+        newStart,
+        newEnd,
+        task.allDay === 1,
+        revert,
+      );
     },
-    [weekDays, panel],
+    [applyEventChange],
   );
 
-  const handleDeleteTask = useCallback(
-    (task: Task) => {
-      const meta = virtualMetaRef.current.get(task.id);
-      const target = meta
-        ? tasks.find((t) => t.id === meta.masterId)
-        : tasks.find((t) => t.id === task.id);
-      if (!target) return;
-
-      if (
-        (target.recurrence || target.recurringTaskId) &&
-        recurrenceDelete.requestDelete(target)
-      ) {
+  const handleDateSelect = useCallback(
+    (start: Date, end: Date, allDay: boolean) => {
+      setAnchor(start);
+      if (allDay) {
+        panel.create(buildDayPreFill(start));
         return;
       }
-
-      setOptimisticUpdates((prev) => {
-        const next = new Map(prev);
-        next.set(target.id, { deleted: true });
-        return next;
-      });
-      undo.push({
-        id: `delete-${Date.now()}-${target.id}`,
-        op: "delete",
-        label: "1 event deleted",
-        mutations: [
-          {
-            taskId: target.id,
-            restore: {
-              status: (target.status as TaskStatus) ?? "pending",
-              completedAt: target.completedAt ?? null,
-            },
-          },
-        ],
-        timestamp: Date.now(),
-      });
-      deleteTaskAction(target.id);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      const endMin = end.getHours() * 60 + end.getMinutes();
+      if (endMin - startMin <= 15) {
+        panel.create(buildSlotPreFill(start, startMin));
+      } else {
+        panel.create(buildRangePreFill(start, startMin, endMin));
+      }
     },
-    [tasks, recurrenceDelete, undo],
+    [panel],
   );
 
-  const prevWeek = useCallback(() => {
-    setAnchor((d) => addDays(d ?? new Date(), -7));
+  const handleDateClick = useCallback(
+    (date: Date, allDay: boolean) => {
+      setAnchor(date);
+      if (allDay) {
+        panel.create(buildDayPreFill(date));
+      } else {
+        const minute = date.getHours() * 60 + date.getMinutes();
+        panel.create(buildSlotPreFill(date, minute));
+      }
+    },
+    [panel],
+  );
+
+  const handleDatesSet = useCallback((start: Date, end: Date) => {
+    setVisibleRange({ start, end });
   }, []);
-  const nextWeek = useCallback(() => {
-    setAnchor((d) => addDays(d ?? new Date(), 7));
-  }, []);
+
+  const handleDeletePanelTask = useCallback(() => {
+    if (!panel.isOpen || panel.taskId == null) return;
+    const target = tasks.find((t) => t.id === panel.taskId);
+    if (!target) return;
+    if (
+      (target.recurrence || target.recurringTaskId) &&
+      recurrenceDelete.requestDelete(target)
+    ) {
+      panel.close();
+      return;
+    }
+    undo.push({
+      id: `delete-${Date.now()}-${target.id}`,
+      op: "delete",
+      label: "1 task deleted",
+      mutations: [
+        {
+          taskId: target.id,
+          restore: {
+            status: (target.status as TaskStatus) ?? "pending",
+            completedAt: target.completedAt ?? null,
+          },
+        },
+      ],
+      timestamp: Date.now(),
+    });
+    deleteTaskAction(target.id);
+    panel.close();
+  }, [panel, tasks, recurrenceDelete, undo]);
+
+  // ----- Navigation helpers ---------------------------------------------------
+
+  const prevWeek = useCallback(
+    () =>
+      setAnchor((d) => {
+        const r = new Date(d ?? new Date());
+        r.setDate(r.getDate() - 7);
+        return r;
+      }),
+    [],
+  );
+  const nextWeek = useCallback(
+    () =>
+      setAnchor((d) => {
+        const r = new Date(d ?? new Date());
+        r.setDate(r.getDate() + 7);
+        return r;
+      }),
+    [],
+  );
   const prevMonth = useCallback(() => {
     setAnchor((d) => {
       const b = d ?? new Date();
-      const targetMonth = b.getMonth() - 1;
-      const targetYear = b.getFullYear();
-      const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
-      const day = Math.min(b.getDate(), lastDay);
-      return new Date(targetYear, targetMonth, day);
+      const tm = b.getMonth() - 1;
+      const ty = b.getFullYear();
+      const lastDay = new Date(ty, tm + 1, 0).getDate();
+      return new Date(ty, tm, Math.min(b.getDate(), lastDay));
     });
   }, []);
   const nextMonth = useCallback(() => {
     setAnchor((d) => {
       const b = d ?? new Date();
-      const targetMonth = b.getMonth() + 1;
-      const targetYear = b.getFullYear();
-      const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
-      const day = Math.min(b.getDate(), lastDay);
-      return new Date(targetYear, targetMonth, day);
+      const tm = b.getMonth() + 1;
+      const ty = b.getFullYear();
+      const lastDay = new Date(ty, tm + 1, 0).getDate();
+      return new Date(ty, tm, Math.min(b.getDate(), lastDay));
     });
   }, []);
-  const goToday = useCallback(() => {
-    setAnchor(new Date());
-  }, []);
+  const goToday = useCallback(() => setAnchor(new Date()), []);
+
+  // ----- Keybindings ----------------------------------------------------------
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (isInputFocused()) return;
       if (isBrowserShortcut(e)) return;
 
-      if (viewMode === "week" && weekScrollRef.current) {
-        const el = weekScrollRef.current;
+      const scrollerEl = fcRef.current?.getScrollerEl() ?? null;
+
+      if (viewMode === "week" && scrollerEl) {
+        const HOUR = 60; // approx scroll unit (px per hour in FC default slots)
         if (keymaps.resolvedMatchesEvent("calendar.scroll_down_hour", e)) {
           e.preventDefault();
-          el.scrollBy({ top: HOUR_HEIGHT });
+          scrollerEl.scrollBy({ top: HOUR });
           return;
         }
         if (keymaps.resolvedMatchesEvent("calendar.scroll_up_hour", e)) {
           e.preventDefault();
-          el.scrollBy({ top: -HOUR_HEIGHT });
+          scrollerEl.scrollBy({ top: -HOUR });
           return;
         }
         if (keymaps.resolvedMatchesEvent("calendar.half_page_down", e)) {
           e.preventDefault();
-          el.scrollBy({ top: el.clientHeight / 2 });
+          scrollerEl.scrollBy({ top: scrollerEl.clientHeight / 2 });
           return;
         }
         if (keymaps.resolvedMatchesEvent("calendar.half_page_up", e)) {
           e.preventDefault();
-          el.scrollBy({ top: -el.clientHeight / 2 });
+          scrollerEl.scrollBy({ top: -scrollerEl.clientHeight / 2 });
           return;
         }
       }
@@ -693,34 +438,7 @@ export function CalendarView({
         }
         if (e.key === op && op === delKey) {
           e.preventDefault();
-          if (panel.isOpen && panel.taskId !== null) {
-            const target = tasks.find((t) => t.id === panel.taskId);
-            if (
-              target &&
-              (target.recurrence || target.recurringTaskId) &&
-              recurrenceDelete.requestDelete(target)
-            ) {
-              panel.close();
-            } else if (target) {
-              undo.push({
-                id: `delete-${Date.now()}-${panel.taskId}`,
-                op: "delete",
-                label: "1 task deleted",
-                mutations: [
-                  {
-                    taskId: panel.taskId,
-                    restore: {
-                      status: (target.status as TaskStatus) ?? "pending",
-                      completedAt: target.completedAt ?? null,
-                    },
-                  },
-                ],
-                timestamp: Date.now(),
-              });
-              deleteTaskAction(panel.taskId);
-              panel.close();
-            }
-          }
+          handleDeletePanelTask();
         }
         countBuf.current = "";
         return;
@@ -742,17 +460,13 @@ export function CalendarView({
           clearTimeout(gTimer.current);
           gTimer.current = null;
         }
-        if (
-          e.key === scrollTopKey &&
-          viewMode === "week" &&
-          weekScrollRef.current
-        ) {
+        if (e.key === scrollTopKey && viewMode === "week") {
           e.preventDefault();
           const hour = countBuf.current
             ? Math.min(23, Number.parseInt(countBuf.current, 10))
             : 0;
           countBuf.current = "";
-          weekScrollRef.current.scrollTop = hour * HOUR_HEIGHT;
+          fcRef.current?.scrollToTime(hour);
           return;
         }
         const actionsKey =
@@ -790,17 +504,13 @@ export function CalendarView({
       const scrollBottomKey = keymaps.getResolvedKeymap(
         "calendar.scroll_bottom",
       ).triggerKey;
-      if (
-        e.key === scrollBottomKey &&
-        viewMode === "week" &&
-        weekScrollRef.current
-      ) {
+      if (e.key === scrollBottomKey && viewMode === "week") {
         e.preventDefault();
         const n = countBuf.current
           ? Math.min(23, Number.parseInt(countBuf.current, 10))
           : 23;
         countBuf.current = "";
-        weekScrollRef.current.scrollTop = n * HOUR_HEIGHT;
+        fcRef.current?.scrollToTime(n);
         return;
       }
 
@@ -835,10 +545,7 @@ export function CalendarView({
       if (e.key === alldayKey && viewMode === "week") {
         e.preventDefault();
         countBuf.current = "";
-        setAllDayVisible((prev) => {
-          if (prev) setAllDayExpanded(false);
-          return !prev;
-        });
+        setAllDayVisible((prev) => !prev);
         return;
       }
 
@@ -886,11 +593,8 @@ export function CalendarView({
       prevMonth,
       nextMonth,
       goToday,
-      panel,
-      tasks,
-      recurrenceDelete,
-      undo,
       keymaps,
+      handleDeletePanelTask,
     ],
   );
 
@@ -909,59 +613,7 @@ export function CalendarView({
     };
   }, []);
 
-  useEffect(() => {
-    const pendingId = nav.consumePendingTaskDetail();
-    if (pendingId != null) {
-      panel.open(pendingId);
-    }
-  }, [nav.consumePendingTaskDetail, panel]);
-
-  useEffect(() => {
-    nav.registerScrollContainer(weekScrollRef.current);
-    return () => nav.registerScrollContainer(null);
-  }, [nav.registerScrollContainer]);
-
-  const headerTitle =
-    viewMode === "week"
-      ? formatWeekRange(weekAnchor)
-      : formatMonthTitle(monthStart);
-
-  const visibleEventCount = useMemo(() => {
-    if (viewMode === "week") {
-      let count = 0;
-      for (let d = 0; d < 7; d++) {
-        const key = formatDateKey(addDays(weekAnchor, d));
-        count += timedTasksByDate.get(key)?.length ?? 0;
-      }
-      count += allDayTasks.length;
-      return count;
-    }
-    let count = 0;
-    const gridStart = getWeekStart(monthStart);
-    for (let d = 0; d < 42; d++) {
-      const key = formatDateKey(addDays(gridStart, d));
-      count += tasksByDate.get(key)?.length ?? 0;
-    }
-    return count;
-  }, [
-    viewMode,
-    weekAnchor,
-    timedTasksByDate,
-    allDayTasks,
-    monthStart,
-    tasksByDate,
-  ]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: headerTitle kept to preserve deps array size
-  useEffect(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const eventLabel =
-      visibleEventCount > 0
-        ? `${visibleEventCount} event${visibleEventCount !== 1 ? "s" : ""}`
-        : "";
-    const right = [eventLabel, tz].filter(Boolean).join("  ");
-    statusBar.setIdle(`-- CALENDAR -- ${viewMode}`, right);
-  }, [viewMode, headerTitle, visibleEventCount, statusBar.setIdle]);
+  // ----- Render ---------------------------------------------------------------
 
   return (
     <div className="flex flex-col h-full">
@@ -977,84 +629,19 @@ export function CalendarView({
         </div>
       </div>
 
-      {viewMode === "week" && allDayVisible && allDayTasks.length > 0 && (
-        <AllDayBar
-          weekStart={weekAnchor}
-          allDayTasks={allDayTasks}
-          expanded={allDayExpanded}
-          onToggleExpand={() => setAllDayExpanded((prev) => !prev)}
-          categoryColors={categoryColors}
-          onTaskClick={(task) => {
-            nav.pushJump();
-            const meta = virtualMetaRef.current.get(task.id);
-            if (meta) {
-              materializeInstanceAction(meta.masterId, meta.instanceDate).then(
-                (result) => {
-                  if ("data" in result) panel.toggle(result.data.id);
-                },
-              );
-              return;
-            }
-            panel.toggle(task.id);
-          }}
-          onAllDayMove={handleAllDayMove}
-          onAllDayResize={handleAllDayResize}
-          onEmptyClick={(dayIndex) => {
-            const date = addDays(weekAnchor, dayIndex);
-            panel.create(buildDayPreFill(date));
-          }}
-        />
-      )}
-
-      {viewMode === "week" ? (
-        <WeekTimeGrid
-          weekStart={weekAnchor}
-          today={today ?? new Date()}
-          timedTasksByDate={timedTasksByDate}
-          onSlotClick={handleSlotClick}
-          onTaskClick={(task) => {
-            nav.pushJump();
-            const meta = virtualMetaRef.current.get(task.id);
-            if (meta) {
-              materializeInstanceAction(meta.masterId, meta.instanceDate).then(
-                (result) => {
-                  if ("data" in result) panel.toggle(result.data.id);
-                },
-              );
-              return;
-            }
-            panel.toggle(task.id);
-          }}
-          categoryColors={categoryColors}
-          scrollRef={weekScrollRef}
-          onEventMove={handleEventMove}
+      {anchor && (
+        <FcCalendar
+          ref={fcRef}
+          events={events}
+          viewMode={viewMode}
+          initialDate={anchor}
+          allDaySlot={viewMode === "week" ? allDayVisible : true}
+          onEventClick={openTaskFromEvent}
+          onEventDrop={handleEventDrop}
           onEventResize={handleEventResize}
-          onEventResizeStart={handleEventResizeStart}
-          onRangeCreate={handleRangeCreate}
-          onDeleteTask={handleDeleteTask}
-          createPreview={createPreview}
-        />
-      ) : (
-        <MonthGrid
-          monthStart={monthStart}
-          today={today ?? new Date()}
-          tasksByDate={tasksByDate}
-          onDayClick={handleDayClick}
-          onTaskClick={(task) => {
-            nav.pushJump();
-            const meta = virtualMetaRef.current.get(task.id);
-            if (meta) {
-              materializeInstanceAction(meta.masterId, meta.instanceDate).then(
-                (result) => {
-                  if ("data" in result) panel.toggle(result.data.id);
-                },
-              );
-              return;
-            }
-            panel.toggle(task.id);
-          }}
-          dayNames={DAY_NAMES}
-          categoryColors={categoryColors}
+          onDateSelect={handleDateSelect}
+          onDateClick={handleDateClick}
+          onDatesSet={handleDatesSet}
         />
       )}
 

@@ -33,7 +33,7 @@
     }
   },
   "files": {
-    "includes": ["**", "!.next", "!.claude", "!drizzle"]
+    "includes": ["**", "!.next", "!.claude", "!drizzle", "!tmp"]
   },
   "overrides": [
     {
@@ -62,16 +62,6 @@
         "rules": {
           "a11y": {
             "noLabelWithoutControl": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["src/components/calendar/all-day-bar.tsx"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noArrayIndexKey": "off"
           }
         }
       }
