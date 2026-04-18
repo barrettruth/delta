@@ -124,12 +124,21 @@ export function CalendarView({
   }, [nav.registerScrollContainer, viewMode, allDayVisible]);
 
   // Keep FC in sync when anchor or view change from keyboard.
+  // FullCalendar's gotoDate / changeView synchronously fire datesSet which
+  // internally uses flushSync. Calling them directly from an effect can land
+  // inside React's commit phase (especially on view switch where layout and
+  // effects interleave). Deferring to a microtask ensures we're out of it.
   useEffect(() => {
-    if (anchor && fcRef.current) fcRef.current.gotoDate(anchor);
+    if (!anchor) return;
+    queueMicrotask(() => {
+      fcRef.current?.gotoDate(anchor);
+    });
   }, [anchor]);
 
   useEffect(() => {
-    if (fcRef.current) fcRef.current.changeView(viewMode);
+    queueMicrotask(() => {
+      fcRef.current?.changeView(viewMode);
+    });
   }, [viewMode]);
 
   // Dismiss the event popover on real user navigation (prev/next, view
