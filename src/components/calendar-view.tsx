@@ -9,7 +9,6 @@ import {
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { CalendarActionsPopover } from "@/components/calendar/actions-popover";
-import { AxisColumn } from "@/components/calendar/axis-column";
 import {
   CalendarEventPopover,
   type PopoverAnchor,
@@ -799,47 +798,39 @@ export function CalendarView({
       </div>
 
       {anchor && (
-        <div className="flex-1 min-h-0 flex">
-          {(viewMode === "day" || viewMode === "week") && (
-            <AxisColumn allDaySlot={allDayVisible} referenceDate={anchor} />
-          )}
-          <SwipePager
-            enabled={viewMode === "day" || viewMode === "week"}
-            anchor={anchor}
-            unit={viewMode === "day" ? "day" : "week"}
-            onCommit={(dir) => {
-              dismissPopover();
-              if (dir === "prev") {
-                if (viewMode === "day") prevDay();
-                else prevWeek();
-              } else {
-                if (viewMode === "day") nextDay();
-                else nextWeek();
+        <SwipePager
+          enabled={viewMode === "day" || viewMode === "week"}
+          anchor={anchor}
+          unit={viewMode === "day" ? "day" : "week"}
+          onCommit={(dir) => {
+            dismissPopover();
+            if (dir === "prev") {
+              if (viewMode === "day") prevDay();
+              else prevWeek();
+            } else {
+              if (viewMode === "day") nextDay();
+              else nextWeek();
+            }
+          }}
+          renderPane={({ date, isCenter }) => (
+            <FcCalendar
+              key={`${viewMode}:${date.toISOString().slice(0, 10)}`}
+              ref={isCenter ? fcRef : undefined}
+              events={eventsWithDraft}
+              viewMode={viewMode}
+              initialDate={date}
+              allDaySlot={
+                viewMode === "week" || viewMode === "day" ? allDayVisible : true
               }
-            }}
-            renderPane={({ date, isCenter }) => (
-              <FcCalendar
-                key={`${viewMode}:${date.toISOString().slice(0, 10)}`}
-                ref={isCenter ? fcRef : undefined}
-                events={eventsWithDraft}
-                viewMode={viewMode}
-                initialDate={date}
-                allDaySlot={
-                  viewMode === "week" || viewMode === "day"
-                    ? allDayVisible
-                    : true
-                }
-                hideAxis={viewMode === "day" || viewMode === "week"}
-                onEventClick={openTaskFromEvent}
-                onEventDrop={handleEventDrop}
-                onEventResize={handleEventResize}
-                onDateSelect={handleDateSelect}
-                onDateClick={handleDateClick}
-                onDatesSet={isCenter ? handleDatesSet : () => {}}
-              />
-            )}
-          />
-        </div>
+              onEventClick={openTaskFromEvent}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onDateSelect={handleDateSelect}
+              onDateClick={handleDateClick}
+              onDatesSet={isCenter ? handleDatesSet : () => {}}
+            />
+          )}
+        />
       )}
 
       <CalendarEventPopover tasks={tasks} anchor={popoverAnchor} />
