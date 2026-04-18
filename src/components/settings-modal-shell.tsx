@@ -17,8 +17,10 @@ import { isInputFocused } from "@/lib/utils";
 
 export function SettingsModalShell({
   children,
+  intercepted = false,
 }: {
   children: React.ReactNode;
+  intercepted?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -38,9 +40,18 @@ export function SettingsModalShell({
     [returnTo],
   );
 
+  // When opened via the intercepting parallel route (@modal/(.)settings), the
+  // modal slot is "sticky" in Next.js: router.replace() only changes the URL
+  // and leaves the intercepted page mounted, so the popover appears to never
+  // close. router.back() pops the history entry that triggered the intercept
+  // and correctly unmounts the @modal slot.
   const close = useCallback(() => {
+    if (intercepted) {
+      router.back();
+      return;
+    }
     router.replace(returnTo);
-  }, [returnTo, router]);
+  }, [intercepted, returnTo, router]);
 
   const navigateToSection = useCallback(
     (index: number) =>
