@@ -123,39 +123,14 @@ export function SwipePager({
 
   // --- Pointer handling --------------------------------------------------
 
-  // Query center pane's axis cells so we can counter-translate them while the
-  // track moves (making the time axis appear pinned).
-  const getAxisEls = useCallback((): HTMLElement[] => {
+  const setTransform = useCallback((px: number, animated: boolean) => {
     const track = trackRef.current;
-    if (!track) return [];
-    const center = track.children[1] as HTMLElement | undefined;
-    if (!center) return [];
-    const sel =
-      ".fc-timegrid-axis-cushion, .fc-timegrid-slot-label-cushion, " +
-      ".fc-col-header-cell.fc-timegrid-axis .fc-col-header-cell-cushion";
-    return Array.from(center.querySelectorAll<HTMLElement>(sel));
+    if (!track) return;
+    track.style.transition = animated
+      ? `transform ${SNAP_MS}ms ease-out`
+      : "none";
+    track.style.transform = `translate3d(${px}px, 0, 0)`;
   }, []);
-
-  const setTransform = useCallback(
-    (px: number, animated: boolean) => {
-      const track = trackRef.current;
-      if (!track) return;
-      const transition = animated ? `transform ${SNAP_MS}ms ease-out` : "none";
-      const w = paneWidthRef.current || track.clientWidth / 3;
-      // Current drag offset (px is -w at rest, -w+dx while dragging).
-      const dx = px - -w;
-      track.style.transition = transition;
-      track.style.transform = `translate3d(${px}px, 0, 0)`;
-      // Counter-translate the center pane's axis text so it stays put.
-      const counter = `translate3d(${-dx}px, 0, 0)`;
-      for (const el of getAxisEls()) {
-        el.style.transition = transition;
-        el.style.transform = counter;
-        el.style.willChange = "transform";
-      }
-    },
-    [getAxisEls],
-  );
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -367,12 +342,10 @@ export function SwipePager({
 }
 
 function Pane({ children }: { children: React.ReactNode }) {
-  // flex: 1 0 0 with three siblings under width:300% gives exact 1/3 widths
-  // and avoids the sub-pixel rounding gap produced by percent-based widths.
   return (
     <div
-      className="min-w-0 flex flex-col"
-      style={{ flex: "1 0 0", height: "100%", minHeight: 0 }}
+      className="shrink-0 min-w-0 flex flex-col"
+      style={{ width: "33.3333%", height: "100%", minHeight: 0 }}
     >
       {children}
     </div>

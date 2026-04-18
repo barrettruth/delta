@@ -286,16 +286,41 @@
 }
 
 /* --------------------------------------------------------------------------
- * Neighbor panes inside the sliding track: keep the axis column's structural
- * width so all panes line up, but blank out its visible text. The center
- * pane's axis text is counter-translated by the pager so it stays put while
- * the track slides, giving the illusion of a pinned axis.
+ * Axis-only FC (rendered outside the sliding track). Everything except the
+ * hour axis column + all-day axis label is hidden, but header + all-day row
+ * heights are preserved so vertical alignment with the panes is pixel-exact.
  * -------------------------------------------------------------------------- */
-.fc-no-axis .fc .fc-timegrid-axis-cushion,
-.fc-no-axis .fc .fc-timegrid-slot-label-cushion,
-.fc-no-axis
-  .fc
-  .fc-col-header-cell.fc-timegrid-axis
+
+/* Blank out the day-header cell contents (but keep the row's height). */
+.fc-axis-only .fc
+  .fc-col-header-cell:not(.fc-timegrid-axis)
   .fc-col-header-cell-cushion {
   visibility: hidden;
+}
+
+/* Remove the day content column (single day, since we set initialView=day). */
+.fc-axis-only .fc .fc-timegrid-col:not(.fc-timegrid-axis) {
+  display: none;
+}
+
+/* Suppress any stray event rendering in the axis column. */
+.fc-axis-only .fc .fc-timegrid-event-harness,
+.fc-axis-only .fc .fc-daygrid-event-harness {
+  display: none;
+}
+
+/* Right edge of the axis column. */
+.fc-axis-only {
+  border-right: 1px solid var(--border);
+}
+
+/* --------------------------------------------------------------------------
+ * Panes inside the sliding track: suppress EVERY part of the built-in time
+ * axis (slat labels, axis column cells, and axis chunk containers) so the
+ * fixed axis overlay on the left is the only one visible.
+ * -------------------------------------------------------------------------- */
+.fc-no-axis .fc .fc-timegrid-axis,
+.fc-no-axis .fc .fc-timegrid-axis-chunk,
+.fc-no-axis .fc .fc-timegrid-slot-label {
+  display: none;
 }
