@@ -1,5 +1,6 @@
 "use client";
 
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteTaskAction,
@@ -442,6 +443,26 @@ export function CalendarView({
   }, []);
   const goToday = useCallback(() => setAnchor(new Date()), []);
 
+  // View-aware prev/next used by the header chevrons.
+  const goPrev = useCallback(() => {
+    dismissPopover();
+    if (viewMode === "day") prevDay();
+    else if (viewMode === "week") prevWeek();
+    else prevMonth();
+  }, [viewMode, prevDay, prevWeek, prevMonth, dismissPopover]);
+
+  const goNext = useCallback(() => {
+    dismissPopover();
+    if (viewMode === "day") nextDay();
+    else if (viewMode === "week") nextWeek();
+    else nextMonth();
+  }, [viewMode, nextDay, nextWeek, nextMonth, dismissPopover]);
+
+  const goTodayWithDismiss = useCallback(() => {
+    dismissPopover();
+    goToday();
+  }, [goToday, dismissPopover]);
+
   // ----- Keybindings ----------------------------------------------------------
 
   const handleKey = useCallback(
@@ -690,9 +711,38 @@ export function CalendarView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center h-8 px-3 md:px-6 border-b border-border/60 shrink-0">
-        <div className="flex-1" />
-        <h2 className="text-sm font-semibold tracking-tight">{headerTitle}</h2>
+      <div className="flex items-center h-10 px-3 md:px-6 border-b border-border/60 shrink-0">
+        <div className="flex-1 flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Today"
+            onClick={goTodayWithDismiss}
+            className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+          >
+            Today
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Previous period"
+            onClick={goPrev}
+            className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+          >
+            <CaretLeft className="size-3" weight="bold" />
+          </button>
+          <h2 className="text-sm font-semibold tracking-tight px-2 tabular-nums">
+            {headerTitle}
+          </h2>
+          <button
+            type="button"
+            aria-label="Next period"
+            onClick={goNext}
+            className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+          >
+            <CaretRight className="size-3" weight="bold" />
+          </button>
+        </div>
         <div className="flex-1 flex justify-end gap-1">
           <CalendarActionsPopover
             feedToken={feedToken}
