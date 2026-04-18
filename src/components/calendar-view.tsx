@@ -814,6 +814,7 @@ export function CalendarView({
           }}
           renderPane={({ date, isCenter }) => (
             <FcCalendar
+              key={`${viewMode}:${date.toISOString().slice(0, 10)}`}
               ref={isCenter ? fcRef : undefined}
               events={eventsWithDraft}
               viewMode={viewMode}

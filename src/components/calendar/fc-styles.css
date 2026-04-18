@@ -256,14 +256,20 @@
   font-size: 11px;
 }
 
-/* Hide FullCalendar's internal vertical scrollbar on the time grid. The
-   calendar is still scrollable with the wheel / touch; we just don't show
-   a scrollbar. */
-.fc-delta-root .fc .fc-scroller {
+/* Hide FullCalendar's internal scrollbars. The calendar is still scrollable
+   with the wheel / touch; we just don't show a scrollbar. We also target the
+   harness / liquid scrollers so no gutter is reserved. */
+.fc-delta-root .fc .fc-scroller,
+.fc-delta-root .fc .fc-scroller-harness,
+.fc-delta-root .fc .fc-scroller-liquid-absolute {
   scrollbar-width: none;
 }
-.fc-delta-root .fc .fc-scroller::-webkit-scrollbar {
+.fc-delta-root .fc .fc-scroller::-webkit-scrollbar,
+.fc-delta-root .fc .fc-scroller-harness::-webkit-scrollbar,
+.fc-delta-root .fc .fc-scroller-liquid-absolute::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Ghost draft event shown while the create popover is open. */
