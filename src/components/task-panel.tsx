@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy } from "@phosphor-icons/react";
+import { Copy, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -870,6 +870,25 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
                 <Copy size={14} />
               </button>
             )}
+            <button
+              type="button"
+              aria-label="close task panel"
+              className="text-muted-foreground hover:text-foreground shrink-0 p-1 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+              onClick={() => {
+                if (mode === "edit" && task) {
+                  void saveTask(task.id, { applyReminderState: false });
+                  panel.close();
+                } else if (mode === "create") {
+                  if (description.trim()) {
+                    void handleCreate();
+                  } else {
+                    panel.close();
+                  }
+                }
+              }}
+            >
+              <X size={14} />
+            </button>
           </div>
         </div>
 

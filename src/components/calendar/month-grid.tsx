@@ -45,11 +45,11 @@ export function MonthGrid({
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-border/60 shrink-0">
+      <div className="grid grid-cols-7 shrink-0">
         {dayNames.map((d) => (
           <div
             key={d}
-            className="text-xs font-medium text-muted-foreground text-center py-2 border-r border-border/30 last:border-r-0"
+            className="flex items-center justify-center h-8 text-xs font-medium text-muted-foreground border-b border-border/60 border-r border-border/30 last:border-r-0"
           >
             {d}
           </div>

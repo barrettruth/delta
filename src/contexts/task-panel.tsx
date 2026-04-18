@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -124,24 +125,41 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const value = useMemo<TaskPanelContextValue>(
+    () => ({
+      isOpen,
+      mode,
+      taskId,
+      preFill,
+      width,
+      pendingEdits,
+      open,
+      create,
+      close,
+      toggle,
+      setWidth,
+      setPendingEdit,
+      clearPendingEdit,
+    }),
+    [
+      isOpen,
+      mode,
+      taskId,
+      preFill,
+      width,
+      pendingEdits,
+      open,
+      create,
+      close,
+      toggle,
+      setWidth,
+      setPendingEdit,
+      clearPendingEdit,
+    ],
+  );
+
   return (
-    <TaskPanelContext.Provider
-      value={{
-        isOpen,
-        mode,
-        taskId,
-        preFill,
-        width,
-        pendingEdits,
-        open,
-        create,
-        close,
-        toggle,
-        setWidth,
-        setPendingEdit,
-        clearPendingEdit,
-      }}
-    >
+    <TaskPanelContext.Provider value={value}>
       {children}
     </TaskPanelContext.Provider>
   );

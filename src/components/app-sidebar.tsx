@@ -57,7 +57,7 @@ export function AppSidebar({
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 py-4 border-b border-border/60">
+      <SidebarHeader className="h-16 shrink-0 flex-row items-center gap-2 p-0 px-4 border-b border-border/60">
         <Link
           href="/"
           className="flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors select-none"
@@ -155,7 +155,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-border/60 p-2">
+      <SidebarFooter className="p-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
