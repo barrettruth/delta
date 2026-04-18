@@ -49,6 +49,7 @@ export function CalendarEventPopover({
           sideOffset={8}
           alignOffset={-8}
           collisionAvoidance={{ side: "flip", align: "shift" }}
+          sticky
           className="isolate z-50"
         >
           <PopoverPrimitive.Popup
