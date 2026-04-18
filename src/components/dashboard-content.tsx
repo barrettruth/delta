@@ -47,7 +47,7 @@ export function DashboardContent({
 }) {
   return (
     <TaskPanelProvider>
-      <div className="relative flex flex-1 min-h-0">
+      <div className="relative flex flex-1 min-h-0 overflow-hidden">
         <main className="flex-1 min-w-0 overflow-hidden bg-background">
           <div className="md:hidden flex items-center h-10 px-2 border-b border-border/60 shrink-0">
             <SidebarTrigger />

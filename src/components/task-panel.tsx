@@ -825,7 +825,7 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       {!isMobile && <ResizeHandle onResize={panel.setWidth} />}
       <div
         role="region"
-        className="flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden w-full"
+        className="flex flex-col h-full border-l border-border bg-card overflow-hidden flex-1 min-w-0"
         onKeyDown={handleKeyDown}
       >
         <div className="px-4 pt-3 pb-2">
