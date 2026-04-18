@@ -8,6 +8,10 @@ import {
 } from "@/app/actions/tasks";
 import { CalendarActionsPopover } from "@/components/calendar/actions-popover";
 import {
+  CalendarEventPopover,
+  type PopoverAnchor,
+} from "@/components/calendar/event-popover";
+import {
   FcCalendar,
   type FcCalendarHandle,
   type FcViewMode,
@@ -71,6 +75,7 @@ export function CalendarView({
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, OptimisticUpdate>
   >(new Map());
+  const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor>(null);
 
   const fcRef = useRef<FcCalendarHandle>(null);
   const countBuf = useRef("");
@@ -126,6 +131,17 @@ export function CalendarView({
   useEffect(() => {
     if (fcRef.current) fcRef.current.changeView(viewMode);
   }, [viewMode]);
+
+  // Close the event popover on navigation/view changes — the anchored DOM
+  // element is about to be re-rendered by FullCalendar and would leave the
+  // popover pointing at a detached node.
+  const panelCloseRef = useRef(panel.close);
+  panelCloseRef.current = panel.close;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: anchor + viewMode are the trigger conditions; the effect body doesn't read them.
+  useEffect(() => {
+    setPopoverAnchor(null);
+    panelCloseRef.current();
+  }, [anchor, viewMode]);
 
   const rangeStart = useMemo(() => {
     if (visibleRange) return visibleRange.start;
@@ -190,8 +206,9 @@ export function CalendarView({
   // ----- FC callbacks ---------------------------------------------------------
 
   const openTaskFromEvent = useCallback(
-    (task: Task, isVirtual: boolean) => {
+    (task: Task, isVirtual: boolean, anchorEl: HTMLElement) => {
       nav.pushJump();
+      setPopoverAnchor(anchorEl);
       if (isVirtual) {
         const meta = virtualMetaRef.current.get(task.id);
         if (meta) {
@@ -290,8 +307,9 @@ export function CalendarView({
   );
 
   const handleDateSelect = useCallback(
-    (start: Date, end: Date, allDay: boolean) => {
+    (start: Date, end: Date, allDay: boolean, anchorRect: DOMRect) => {
       setAnchor(start);
+      setPopoverAnchor({ rect: anchorRect });
       if (allDay) {
         panel.create(buildDayPreFill(start));
         return;
@@ -308,8 +326,9 @@ export function CalendarView({
   );
 
   const handleDateClick = useCallback(
-    (date: Date, allDay: boolean) => {
+    (date: Date, allDay: boolean, anchorEl: HTMLElement) => {
       setAnchor(date);
+      setPopoverAnchor(anchorEl);
       if (allDay) {
         panel.create(buildDayPreFill(date));
       } else {
@@ -685,6 +704,8 @@ export function CalendarView({
           onDatesSet={handleDatesSet}
         />
       )}
+
+      <CalendarEventPopover tasks={tasks} anchor={popoverAnchor} />
 
       <RecurrenceStrategyDialog
         open={!!recurrenceDelete.pending}

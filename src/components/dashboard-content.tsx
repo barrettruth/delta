@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { StatusBar } from "@/components/status-bar";
 import { TaskPanel } from "@/components/task-panel";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -7,10 +8,25 @@ import { TaskPanelProvider, useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+/**
+ * On /calendar, the panel is rendered inline as a Google-style popover
+ * anchored to the clicked event (see CalendarView). On every other page
+ * it's the classic side-by-side right sidebar.
+ */
+function usePanelLayout(): "sidebar" | "none" {
+  const pathname = usePathname();
+  if (pathname === "/calendar" || pathname.startsWith("/calendar/")) {
+    return "none";
+  }
+  return "sidebar";
+}
+
 function MobileTaskOverlay({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const isMobile = useIsMobile();
+  const layout = usePanelLayout();
 
+  if (layout === "none") return null;
   if (!isMobile || !panel.isOpen) return null;
 
   return (
@@ -20,31 +36,15 @@ function MobileTaskOverlay({ tasks }: { tasks: Task[] }) {
   );
 }
 
-function DesktopTaskOverlay({ tasks }: { tasks: Task[] }) {
+function DesktopTaskSidebar({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const isMobile = useIsMobile();
+  const layout = usePanelLayout();
 
+  if (layout === "none") return null;
   if (isMobile || !panel.isOpen) return null;
 
-  // Backdrop + panel share the same z-stack as the settings modal:
-  // backdrop at z-40, panel at z-50. Clicking the backdrop closes the
-  // panel (TaskPanel's own close handler saves pending edits first).
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Close panel"
-        onClick={panel.close}
-        className="fixed inset-0 z-40 bg-background/70 backdrop-blur-[3px] animate-in fade-in-0 duration-150"
-      />
-      <div
-        className="fixed top-0 right-0 bottom-7 z-50 flex border-l border-border shadow-2xl shadow-black/20 animate-in slide-in-from-right-4 duration-150"
-        style={{ width: `${panel.width}%` }}
-      >
-        <TaskPanel tasks={tasks} />
-      </div>
-    </>
-  );
+  return <TaskPanel tasks={tasks} />;
 }
 
 export function DashboardContent({
@@ -63,7 +63,9 @@ export function DashboardContent({
           </div>
           {children}
         </main>
-        <DesktopTaskOverlay tasks={tasks} />
+        <div className="hidden md:contents">
+          <DesktopTaskSidebar tasks={tasks} />
+        </div>
         <MobileTaskOverlay tasks={tasks} />
       </div>
       <StatusBar />

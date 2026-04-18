@@ -39,7 +39,7 @@ interface FcCalendarProps {
   viewMode: FcViewMode;
   initialDate: Date;
   allDaySlot: boolean;
-  onEventClick: (task: Task, isVirtual: boolean) => void;
+  onEventClick: (task: Task, isVirtual: boolean, anchor: HTMLElement) => void;
   onEventDrop: (
     task: Task,
     isVirtual: boolean,
@@ -55,8 +55,13 @@ interface FcCalendarProps {
     newEnd: Date,
     revert: () => void,
   ) => void;
-  onDateSelect: (start: Date, end: Date, allDay: boolean) => void;
-  onDateClick: (date: Date, allDay: boolean) => void;
+  onDateSelect: (
+    start: Date,
+    end: Date,
+    allDay: boolean,
+    anchorRect: DOMRect,
+  ) => void;
+  onDateClick: (date: Date, allDay: boolean, anchor: HTMLElement) => void;
   onDatesSet: (start: Date, end: Date) => void;
 }
 
@@ -106,6 +111,22 @@ function viewName(
   if (mode === "day") return "timeGridDay";
   if (mode === "week") return "timeGridWeek";
   return "dayGridMonth";
+}
+
+/** Build a zero-width DOMRect at the pointer location for popover anchoring. */
+function getPointerRect(evt: MouseEvent | TouchEvent | null): DOMRect {
+  let x = 0;
+  let y = 0;
+  if (evt) {
+    if ("clientX" in evt) {
+      x = evt.clientX;
+      y = evt.clientY;
+    } else if (evt.touches?.[0]) {
+      x = evt.touches[0].clientX;
+      y = evt.touches[0].clientY;
+    }
+  }
+  return new DOMRect(x, y, 0, 0);
 }
 
 export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
@@ -161,7 +182,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
         const task = arg.event.extendedProps.task as Task | undefined;
         const isVirtual = Boolean(arg.event.extendedProps.isVirtual);
         if (!task) return;
-        onEventClick(task, isVirtual);
+        onEventClick(task, isVirtual, arg.el);
       },
       [onEventClick],
     );
@@ -207,14 +228,17 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
 
     const handleSelect = useCallback(
       (arg: DateSelectArg) => {
-        onDateSelect(arg.start, arg.end, arg.allDay);
+        // Anchor to the selection rect on screen. jsEvent may be a touch/mouse.
+        const evt = arg.jsEvent as MouseEvent | TouchEvent | null;
+        const rect = getPointerRect(evt);
+        onDateSelect(arg.start, arg.end, arg.allDay, rect);
       },
       [onDateSelect],
     );
 
     const handleDateClick = useCallback(
       (arg: DateClickArg) => {
-        onDateClick(arg.date, arg.allDay);
+        onDateClick(arg.date, arg.allDay, arg.dayEl);
       },
       [onDateClick],
     );

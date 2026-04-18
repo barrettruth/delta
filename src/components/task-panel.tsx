@@ -76,14 +76,27 @@ function cloneReminderDrafts(
   return drafts.map((draft) => ({ ...draft }));
 }
 
-export function TaskPanel({ tasks }: { tasks: Task[] }) {
+export function TaskPanel({
+  tasks,
+  variant = "sidebar",
+}: {
+  tasks: Task[];
+  variant?: "sidebar" | "popover";
+}) {
   const panel = useTaskPanel();
   const nav = useNavigation();
   const keymaps = useKeymaps();
   const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
-  const { isOpen, mode, taskId, preFill, setPendingEdit, clearPendingEdit } =
-    panel;
+  const {
+    isOpen,
+    mode,
+    taskId,
+    preFill,
+    width,
+    setPendingEdit,
+    clearPendingEdit,
+  } = panel;
 
   const task = useMemo(
     () => (taskId ? (tasks.find((t) => t.id === taskId) ?? null) : null),
@@ -820,12 +833,19 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   if (!isOpen) return null;
   if (mode === "edit" && !task) return null;
 
+  const isSidebar = variant === "sidebar";
+
   return (
     <>
-      {!isMobile && <ResizeHandle onResize={panel.setWidth} />}
+      {isSidebar && !isMobile && <ResizeHandle onResize={panel.setWidth} />}
       <div
         role="region"
-        className="flex flex-col h-full bg-card overflow-hidden flex-1 min-w-0"
+        style={isSidebar && !isMobile ? { width: `${width}%` } : undefined}
+        className={
+          isSidebar
+            ? "flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden w-full"
+            : "flex flex-col h-full w-full bg-card overflow-hidden"
+        }
         onKeyDown={handleKeyDown}
       >
         <div className="px-4 pt-3 pb-2">
