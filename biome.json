@@ -33,7 +33,7 @@
     }
   },
   "files": {
-    "includes": ["**", "!.next", "!.claude", "!drizzle", "!tmp"]
+    "includes": ["**", "!.next", "!.claude", "!drizzle"]
   },
   "overrides": [
     {
