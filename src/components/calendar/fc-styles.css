@@ -255,3 +255,8 @@
   padding: 4px 8px;
   font-size: 11px;
 }
+
+/* Hide scrollbar for the horizontal swipe pager (Webkit/Blink). */
+.swipe-pager-scroller::-webkit-scrollbar {
+  display: none;
+}

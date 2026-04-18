@@ -17,6 +17,7 @@ import {
   type FcCalendarHandle,
   type FcViewMode,
 } from "@/components/calendar/fc-calendar";
+import { SwipePager } from "@/components/calendar/swipe-pager";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
@@ -711,13 +712,13 @@ export function CalendarView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center h-10 px-3 md:px-6 border-b border-border/60 shrink-0">
-        <div className="flex-1 flex items-center gap-1">
+      <div className="flex items-center h-10 p-2 border-b border-border/60 shrink-0">
+        <div className="flex-1 flex items-center">
           <button
             type="button"
             aria-label="Today"
             onClick={goTodayWithDismiss}
-            className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+            className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             Today
           </button>
@@ -727,7 +728,7 @@ export function CalendarView({
             type="button"
             aria-label="Previous period"
             onClick={goPrev}
-            className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+            className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <CaretLeft className="size-3" weight="bold" />
           </button>
@@ -738,12 +739,12 @@ export function CalendarView({
             type="button"
             aria-label="Next period"
             onClick={goNext}
-            className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+            className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <CaretRight className="size-3" weight="bold" />
           </button>
         </div>
-        <div className="flex-1 flex justify-end gap-1">
+        <div className="flex-1 flex justify-end">
           <CalendarActionsPopover
             feedToken={feedToken}
             open={actionsOpen}
@@ -753,21 +754,28 @@ export function CalendarView({
       </div>
 
       {anchor && (
-        <FcCalendar
-          ref={fcRef}
-          events={events}
-          viewMode={viewMode}
-          initialDate={anchor}
-          allDaySlot={
-            viewMode === "week" || viewMode === "day" ? allDayVisible : true
-          }
-          onEventClick={openTaskFromEvent}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
-          onDateSelect={handleDateSelect}
-          onDateClick={handleDateClick}
-          onDatesSet={handleDatesSet}
-        />
+        <SwipePager
+          enabled={viewMode === "day" || viewMode === "week"}
+          onPrev={goPrev}
+          onNext={goNext}
+          resetKey={`${viewMode}:${anchor.toISOString()}`}
+        >
+          <FcCalendar
+            ref={fcRef}
+            events={events}
+            viewMode={viewMode}
+            initialDate={anchor}
+            allDaySlot={
+              viewMode === "week" || viewMode === "day" ? allDayVisible : true
+            }
+            onEventClick={openTaskFromEvent}
+            onEventDrop={handleEventDrop}
+            onEventResize={handleEventResize}
+            onDateSelect={handleDateSelect}
+            onDateClick={handleDateClick}
+            onDatesSet={handleDatesSet}
+          />
+        </SwipePager>
       )}
 
       <CalendarEventPopover tasks={tasks} anchor={popoverAnchor} />

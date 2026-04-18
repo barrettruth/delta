@@ -205,9 +205,9 @@ export function CalendarActionsPopover({
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
         aria-label="calendar actions"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground outline-hidden transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
-        <CalendarDots size={16} weight="bold" />
+        <CalendarDots size={12} weight="bold" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="flex flex-col">
