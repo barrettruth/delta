@@ -260,3 +260,16 @@
 .swipe-pager-scroller::-webkit-scrollbar {
   display: none;
 }
+
+/* Ghost draft event shown while the create popover is open. */
+.fc-delta-root .fc .fc-event.is-draft {
+  background: color-mix(in oklab, var(--primary) 15%, transparent);
+  border-color: var(--primary);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.fc-delta-root .fc .fc-event.is-draft .fc-event-title,
+.fc-delta-root .fc .fc-event.is-draft .fc-event-time {
+  font-style: italic;
+  color: var(--muted-foreground);
+}

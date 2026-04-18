@@ -1,5 +1,6 @@
 "use client";
 
+import type { EventInput } from "@fullcalendar/core";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -191,6 +192,40 @@ export function CalendarView({
   ]);
 
   virtualMetaRef.current = virtualMeta;
+
+  // While the create popover is open, keep the drag-selected "draft" visible
+  // on the grid so users see what they're about to create (like Google
+  // Calendar's ghost block). Built purely from panel.preFill so it matches
+  // exactly what handleDateSelect / handleDateClick just seeded.
+  const draftEvent = useMemo((): EventInput | null => {
+    if (panel.mode !== "create" || !panel.preFill) return null;
+    const { startAt, endAt, allDay } = panel.preFill;
+    if (!startAt) return null;
+    const start = new Date(startAt);
+    let end: Date;
+    if (allDay) {
+      end = new Date(start);
+      end.setDate(end.getDate() + 1);
+    } else if (endAt) {
+      end = new Date(endAt);
+    } else {
+      end = new Date(start.getTime() + 30 * 60_000);
+    }
+    return {
+      id: "__draft__",
+      title: "(New event)",
+      start,
+      end,
+      allDay: Boolean(allDay),
+      editable: false,
+      classNames: ["is-draft"],
+      extendedProps: { isDraft: true },
+    };
+  }, [panel.mode, panel.preFill]);
+
+  const eventsWithDraft = useMemo(() => {
+    return draftEvent ? [...events, draftEvent] : events;
+  }, [events, draftEvent]);
 
   const headerTitle = useMemo(() => {
     if (!anchor) return "";
@@ -762,7 +797,7 @@ export function CalendarView({
         >
           <FcCalendar
             ref={fcRef}
-            events={events}
+            events={eventsWithDraft}
             viewMode={viewMode}
             initialDate={anchor}
             allDaySlot={
