@@ -216,12 +216,11 @@ function SettingsNavRail({
                 group relative flex shrink-0 items-center gap-2
                 md:w-full
                 px-4 py-2 md:py-1.5 text-sm
-                border-l-2
                 transition-colors outline-none
                 ${
                   active
-                    ? "bg-muted text-foreground border-foreground/70 font-medium"
-                    : "border-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground focus-visible:bg-muted/30"
+                    ? "bg-muted text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted/30 hover:text-foreground focus-visible:bg-muted/30"
                 }
               `}
             >
