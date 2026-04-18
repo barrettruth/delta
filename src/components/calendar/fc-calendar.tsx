@@ -63,6 +63,8 @@ interface FcCalendarProps {
   ) => void;
   onDateClick: (date: Date, allDay: boolean, anchor: HTMLElement) => void;
   onDatesSet: (start: Date, end: Date) => void;
+  /** When true, the built-in time axis column is hidden (rendered elsewhere). */
+  hideAxis?: boolean;
 }
 
 function renderEventContent(arg: EventContentArg) {
@@ -142,6 +144,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
       onDateSelect,
       onDateClick,
       onDatesSet,
+      hideAxis,
     } = props;
 
     const fcRef = useRef<FullCalendar>(null);
@@ -251,7 +254,10 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
     );
 
     return (
-      <div ref={containerRef} className="fc-delta-root flex-1 min-h-0">
+      <div
+        ref={containerRef}
+        className={`fc-delta-root flex-1 min-h-0${hideAxis ? " fc-no-axis" : ""}`}
+      >
         <FullCalendar
           ref={fcRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

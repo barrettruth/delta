@@ -223,6 +223,88 @@ export function SwipePager({
     finishDrag();
   }, [finishDrag]);
 
+  // --- Wheel (trackpad) handling -----------------------------------------
+  //
+  // Treat horizontal wheel deltas as a continuous pan. When the user stops
+  // delivering deltas for WHEEL_IDLE_MS, run the commit-or-snapback decision.
+  const wheelDx = useRef(0);
+  const wheelActive = useRef(false);
+  const wheelIdleTimer = useRef<number | null>(null);
+  const WHEEL_IDLE_MS = 140;
+
+  const finishWheel = useCallback(() => {
+    if (!wheelActive.current) return;
+    wheelActive.current = false;
+    const w = paneWidthRef.current || (viewportRef.current?.clientWidth ?? 1);
+    const dx = wheelDx.current;
+    wheelDx.current = 0;
+    const ratio = dx / w;
+
+    if (ratio <= -COMMIT_THRESHOLD) {
+      setTransform(-2 * w, true);
+      window.setTimeout(() => {
+        onCommit("next");
+        requestAnimationFrame(() => {
+          recenter(false);
+          forceTick((n) => n + 1);
+        });
+      }, SNAP_MS);
+    } else if (ratio >= COMMIT_THRESHOLD) {
+      setTransform(0, true);
+      window.setTimeout(() => {
+        onCommit("prev");
+        requestAnimationFrame(() => {
+          recenter(false);
+          forceTick((n) => n + 1);
+        });
+      }, SNAP_MS);
+    } else {
+      setTransform(-w, true);
+    }
+  }, [onCommit, recenter, setTransform]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const vp = viewportRef.current;
+    if (!vp) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Only hijack when horizontal intent dominates. Trackpad horizontal
+      // swipe emits |deltaX| >> |deltaY|; regular mouse wheel sends deltaY.
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+
+      if (!wheelActive.current) {
+        wheelActive.current = true;
+        wheelDx.current = 0;
+      }
+      // Wheel deltaX is positive when panning content to the LEFT (i.e. the
+      // user is moving to the NEXT period). Our transform dx is positive for
+      // panning right, so invert.
+      wheelDx.current -= e.deltaX;
+
+      const w = paneWidthRef.current || vp.clientWidth;
+      // Clamp to [-w, w] so the user can't overscroll past a neighbor.
+      const clamped = Math.max(-w, Math.min(w, wheelDx.current));
+      wheelDx.current = clamped;
+      setTransform(-w + clamped, false);
+
+      if (wheelIdleTimer.current != null) {
+        window.clearTimeout(wheelIdleTimer.current);
+      }
+      wheelIdleTimer.current = window.setTimeout(finishWheel, WHEEL_IDLE_MS);
+    };
+
+    vp.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      vp.removeEventListener("wheel", onWheel);
+      if (wheelIdleTimer.current != null) {
+        window.clearTimeout(wheelIdleTimer.current);
+        wheelIdleTimer.current = null;
+      }
+    };
+  }, [enabled, finishWheel, setTransform]);
+
   // --- Render ------------------------------------------------------------
 
   if (!enabled) {

@@ -284,3 +284,36 @@
   font-style: italic;
   color: var(--muted-foreground);
 }
+
+/* --------------------------------------------------------------------------
+ * Axis-only FC (rendered outside the sliding track). Everything except the
+ * hour axis column and all-day axis label is hidden.
+ * -------------------------------------------------------------------------- */
+.fc-axis-only .fc .fc-col-header {
+  display: none;
+}
+/* Hide the solitary day content column and the daygrid body. We keep only
+   the .fc-timegrid-axis cells visible. */
+.fc-axis-only .fc .fc-timegrid-col:not(.fc-timegrid-axis) {
+  display: none;
+}
+.fc-axis-only .fc .fc-daygrid-body,
+.fc-axis-only .fc .fc-scrollgrid-section-sticky {
+  /* noop today but reserved */
+}
+/* Kill the right border on the axis cells so it butts flush against the pager. */
+.fc-axis-only .fc .fc-timegrid-axis {
+  border-right: 1px solid var(--border);
+}
+/* Hide any event overlay that might still render. */
+.fc-axis-only .fc .fc-timegrid-event-harness {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+ * Panes inside the sliding track: suppress their own axis so the fixed axis
+ * overlay is the only one visible.
+ * -------------------------------------------------------------------------- */
+.fc-no-axis .fc .fc-timegrid-axis {
+  display: none;
+}
