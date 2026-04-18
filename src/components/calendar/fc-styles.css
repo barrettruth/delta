@@ -299,3 +299,21 @@
   .fc-col-header-cell-cushion {
   visibility: hidden;
 }
+
+/* --------------------------------------------------------------------------
+ * Pin the center pane's axis on top of neighbor content that slides into
+ * view. We paint the axis cells with the page background and raise their
+ * z-index so events / slots in neighbor panes can't bleed over them.
+ * The `.fc-center-pane` class is added by SwipePager.
+ * -------------------------------------------------------------------------- */
+.fc-center-pane .fc .fc-timegrid-axis,
+.fc-center-pane .fc .fc-timegrid-slot-label {
+  position: relative;
+  z-index: 5;
+  background: var(--background);
+}
+.fc-center-pane .fc .fc-col-header-cell.fc-timegrid-axis {
+  position: relative;
+  z-index: 5;
+  background: var(--background);
+}
