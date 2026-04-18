@@ -256,13 +256,8 @@
   font-size: 11px;
 }
 
-/* Hide FullCalendar's internal vertical scrollbar on the time grid. The
-   calendar is still scrollable with the wheel / touch; we just don't show
-   a scrollbar. */
-.fc-delta-root .fc .fc-scroller {
-  scrollbar-width: none;
-}
-.fc-delta-root .fc .fc-scroller::-webkit-scrollbar {
+/* Hide scrollbar for the horizontal swipe pager (Webkit/Blink). */
+.swipe-pager-scroller::-webkit-scrollbar {
   display: none;
 }
 
