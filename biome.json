@@ -65,16 +65,6 @@
           }
         }
       }
-    },
-    {
-      "includes": ["src/components/calendar/all-day-bar.tsx"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noArrayIndexKey": "off"
-          }
-        }
-      }
     }
   ]
 }

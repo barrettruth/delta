@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { StatusBar } from "@/components/status-bar";
 import { TaskPanel } from "@/components/task-panel";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -7,10 +8,25 @@ import { TaskPanelProvider, useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+/**
+ * On /calendar, the panel is rendered inline as a Google-style popover
+ * anchored to the clicked event (see CalendarView). On every other page
+ * it's the classic side-by-side right sidebar.
+ */
+function usePanelLayout(): "sidebar" | "none" {
+  const pathname = usePathname();
+  if (pathname === "/calendar" || pathname.startsWith("/calendar/")) {
+    return "none";
+  }
+  return "sidebar";
+}
+
 function MobileTaskOverlay({ tasks }: { tasks: Task[] }) {
   const panel = useTaskPanel();
   const isMobile = useIsMobile();
+  const layout = usePanelLayout();
 
+  if (layout === "none") return null;
   if (!isMobile || !panel.isOpen) return null;
 
   return (
@@ -18,6 +34,17 @@ function MobileTaskOverlay({ tasks }: { tasks: Task[] }) {
       <TaskPanel tasks={tasks} />
     </div>
   );
+}
+
+function DesktopTaskSidebar({ tasks }: { tasks: Task[] }) {
+  const panel = useTaskPanel();
+  const isMobile = useIsMobile();
+  const layout = usePanelLayout();
+
+  if (layout === "none") return null;
+  if (isMobile || !panel.isOpen) return null;
+
+  return <TaskPanel tasks={tasks} />;
 }
 
 export function DashboardContent({
@@ -37,7 +64,7 @@ export function DashboardContent({
           {children}
         </main>
         <div className="hidden md:contents">
-          <TaskPanel tasks={tasks} />
+          <DesktopTaskSidebar tasks={tasks} />
         </div>
         <MobileTaskOverlay tasks={tasks} />
       </div>

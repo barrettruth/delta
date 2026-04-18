@@ -195,7 +195,7 @@ export const commandRegistry: CommandDefinition[] = [
     aliases: ["cal"],
     description: "Navigate to calendar or manage events",
     category: "navigation",
-    expectedArgs: ["week", "month", "import", "export"],
+    expectedArgs: ["day", "week", "month", "import", "export"],
     execute: (args, ctx) => {
       if (args[0] === "import") return ctx.importIcal();
       if (args[0] === "export") return ctx.exportIcal();

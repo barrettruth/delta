@@ -79,6 +79,13 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     label: "Settings",
   },
   {
+    id: "global.calendar_day",
+    key: "D",
+    triggerKey: "D",
+    section: "global",
+    label: "Calendar day view",
+  },
+  {
     id: "global.calendar_week",
     key: "w",
     triggerKey: "w",
@@ -494,6 +501,13 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     label: "Scroll half page up",
   },
   {
+    id: "calendar.day_view",
+    key: "D",
+    triggerKey: "D",
+    section: "calendar",
+    label: "Day view",
+  },
+  {
     id: "calendar.week_view",
     key: "w",
     triggerKey: "w",
@@ -692,9 +706,13 @@ export const HELP_SECTIONS: HelpSection[] = [
       row("global.calendar", "C", "Calendar view"),
       row("global.settings", "S", "Settings"),
       row(
-        ["global.calendar_week", "global.calendar_month"],
-        "w / m",
-        "Calendar week / month view",
+        [
+          "global.calendar_day",
+          "global.calendar_week",
+          "global.calendar_month",
+        ],
+        "D / w / m",
+        "Calendar day / week / month view",
       ),
       row("global.toggle_sidebar", "-", "Toggle sidebar"),
       row("global.logout", "q", "Logout"),
@@ -790,9 +808,9 @@ export const HELP_SECTIONS: HelpSection[] = [
       row("calendar.half_page_down", "<C-d>", "Scroll half page down"),
       row("calendar.half_page_up", "<C-u>", "Scroll half page up"),
       row(
-        ["calendar.week_view", "calendar.month_view"],
-        "w / m",
-        "Week / month view",
+        ["calendar.day_view", "calendar.week_view", "calendar.month_view"],
+        "D / w / m",
+        "Day / week / month view",
       ),
       row("calendar.today", "t", "Jump to today"),
       row("calendar.toggle_allday", "a", "Toggle all-day bar"),

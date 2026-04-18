@@ -76,7 +76,13 @@ function cloneReminderDrafts(
   return drafts.map((draft) => ({ ...draft }));
 }
 
-export function TaskPanel({ tasks }: { tasks: Task[] }) {
+export function TaskPanel({
+  tasks,
+  variant = "sidebar",
+}: {
+  tasks: Task[];
+  variant?: "sidebar" | "popover";
+}) {
   const panel = useTaskPanel();
   const nav = useNavigation();
   const keymaps = useKeymaps();
@@ -827,13 +833,19 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   if (!isOpen) return null;
   if (mode === "edit" && !task) return null;
 
+  const isSidebar = variant === "sidebar";
+
   return (
     <>
-      {!isMobile && <ResizeHandle onResize={panel.setWidth} />}
+      {isSidebar && !isMobile && <ResizeHandle onResize={panel.setWidth} />}
       <div
         role="region"
-        style={isMobile ? undefined : { width: `${width}%` }}
-        className="flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden w-full"
+        style={isSidebar && !isMobile ? { width: `${width}%` } : undefined}
+        className={
+          isSidebar
+            ? "flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden w-full"
+            : "flex flex-col h-full w-full bg-card overflow-hidden"
+        }
         onKeyDown={handleKeyDown}
       >
         <div className="px-4 pt-3 pb-2">

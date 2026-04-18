@@ -152,6 +152,19 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
+      const dayKey = keymaps.getResolvedKeymap(
+        "global.calendar_day",
+      ).triggerKey;
+      if (
+        e.key === dayKey &&
+        pathname !== "/calendar" &&
+        pathname !== "/kanban"
+      ) {
+        e.preventDefault();
+        pushJump();
+        router.push("/calendar?mode=day");
+        return;
+      }
       const weekKey = keymaps.getResolvedKeymap(
         "global.calendar_week",
       ).triggerKey;

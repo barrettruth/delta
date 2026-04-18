@@ -1,0 +1,285 @@
+.fc-delta-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.fc-delta-root .fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--background);
+  --fc-neutral-bg-color: var(--muted);
+  --fc-today-bg-color: color-mix(in oklab, var(--primary) 6%, transparent);
+  --fc-now-indicator-color: var(--primary);
+  --fc-event-bg-color: var(--accent);
+  --fc-event-border-color: var(--primary);
+  --fc-event-text-color: var(--foreground);
+  --fc-event-selected-overlay-color: color-mix(
+    in oklab,
+    var(--primary) 15%,
+    transparent
+  );
+  --fc-highlight-color: color-mix(in oklab, var(--primary) 12%, transparent);
+  --fc-small-font-size: 10px;
+
+  font-size: 11px;
+  height: 100%;
+  color: var(--foreground);
+}
+
+.fc-delta-root .fc .fc-col-header-cell {
+  background: transparent;
+  border-color: var(--border);
+  padding: 2px 0;
+}
+
+.fc-delta-root .fc .fc-col-header-cell-cushion {
+  color: var(--muted-foreground);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 4px 4px;
+}
+
+.fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.fc-delta-root .fc .fc-timegrid-slot {
+  height: 15px;
+  border-color: color-mix(in oklab, var(--border) 50%, transparent);
+}
+
+.fc-delta-root .fc .fc-timegrid-slot-minor {
+  border-color: color-mix(in oklab, var(--border) 30%, transparent);
+}
+
+.fc-delta-root .fc .fc-timegrid-slot-label-cushion {
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  padding: 0 4px;
+}
+
+.fc-delta-root .fc .fc-timegrid-axis-cushion {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+/*
+ * The surrounding chrome (calendar header, left sidebar, status bar) already
+ * provides a 1px border on every edge of the calendar area. Drawing FC's
+ * outer scrollgrid border on top creates visible double lines on the top,
+ * left, and bottom edges. Strip the outer frame but keep the inner cell
+ * dividers (td / th borders) so the day/time grid structure stays intact.
+ */
+.fc-delta-root .fc .fc-scrollgrid {
+  border: 0;
+  border-collapse: collapse;
+}
+
+/* Hide FullCalendar's internal scrollbars (vertical on time grid, horizontal
+   on month/week). Scrolling still works with wheel / touch. */
+.fc-delta-root .fc .fc-scroller,
+.fc-delta-root .fc .fc-scroller-harness,
+.fc-delta-root .fc .fc-scroller-liquid-absolute {
+  scrollbar-width: none;
+}
+.fc-delta-root .fc .fc-scroller::-webkit-scrollbar,
+.fc-delta-root .fc .fc-scroller-harness::-webkit-scrollbar,
+.fc-delta-root .fc .fc-scroller-liquid-absolute::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.fc-delta-root .fc .fc-scrollgrid td,
+.fc-delta-root .fc .fc-scrollgrid th {
+  border-color: var(--border);
+}
+
+/* Also strip the outermost row's top border and the last row's bottom
+ * border — those form the frame's top / bottom edges even after removing
+ * the scrollgrid's own border. */
+.fc-delta-root .fc .fc-scrollgrid > :first-child > tr > * {
+  border-top: 0;
+}
+.fc-delta-root .fc .fc-scrollgrid > :last-child > tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Left-most column's left border and right-most column's right border
+ * form the vertical frame edges. */
+.fc-delta-root .fc .fc-scrollgrid > * > tr > *:first-child {
+  border-left: 0;
+}
+.fc-delta-root .fc .fc-scrollgrid > * > tr > *:last-child {
+  border-right: 0;
+}
+
+.fc-delta-root .fc .fc-daygrid-day-number {
+  color: var(--foreground);
+  padding: 2px 4px;
+  text-decoration: none;
+}
+
+.fc-delta-root .fc .fc-day-today .fc-daygrid-day-number {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.fc-delta-root .fc .fc-day-other .fc-daygrid-day-number {
+  color: var(--muted-foreground);
+  opacity: 0.6;
+}
+
+.fc-delta-root .fc .fc-event {
+  border-left: 2px solid var(--fc-event-border-color);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  padding: 1px 4px;
+  border-radius: 0;
+  cursor: pointer;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.fc-delta-root .fc .fc-event:hover {
+  filter: brightness(0.92);
+}
+
+.fc-delta-root .fc .fc-event.is-virtual {
+  /* subtle marker for virtual (non-materialized) recurring instances */
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in oklab, var(--foreground) 4%, transparent) 6px 7px
+  );
+}
+
+.fc-delta-root .fc .fc-event.status-blocked {
+  border-left-color: var(--status-blocked);
+}
+
+.fc-delta-root .fc .fc-event.status-wip {
+  border-left-color: var(--status-wip);
+}
+
+.fc-delta-root .fc .fc-event.status-done {
+  border-left-color: var(--status-done);
+  opacity: 0.6;
+}
+
+.fc-delta-root .fc .fc-event.status-cancelled {
+  border-left-color: var(--status-cancelled);
+  opacity: 0.6;
+}
+
+.fc-delta-event-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  width: 100%;
+}
+
+.fc-delta-event-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.fc-delta-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.fc-delta-recur {
+  flex-shrink: 0;
+  opacity: 0.7;
+  font-size: 10px;
+}
+
+.fc-delta-root .fc .fc-event.status-done .fc-delta-title-text,
+.fc-delta-root .fc .fc-event.status-cancelled .fc-delta-title-text {
+  text-decoration: line-through;
+}
+
+.fc-delta-icon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.fc-delta-event-time {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fc-delta-root .fc .fc-timegrid-now-indicator-line {
+  border-color: var(--primary);
+  border-width: 2px 0 0 0;
+}
+
+.fc-delta-root .fc .fc-timegrid-now-indicator-arrow {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.fc-delta-root .fc .fc-highlight {
+  background: var(--fc-highlight-color);
+}
+
+.fc-delta-root .fc .fc-button {
+  display: none;
+}
+
+.fc-delta-root .fc a {
+  color: inherit;
+}
+
+.fc-delta-root .fc .fc-more-link {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.fc-delta-root .fc .fc-popover {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fc-delta-root .fc .fc-popover-header {
+  background: var(--muted);
+  color: var(--foreground);
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+/* Ghost draft event shown while the create popover is open. */
+.fc-delta-root .fc .fc-event.is-draft {
+  background: color-mix(in oklab, var(--primary) 15%, transparent);
+  border-color: var(--primary);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.fc-delta-root .fc .fc-event.is-draft .fc-event-title,
+.fc-delta-root .fc .fc-event.is-draft .fc-event-time {
+  font-style: italic;
+  color: var(--muted-foreground);
+}
