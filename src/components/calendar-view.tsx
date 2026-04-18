@@ -157,19 +157,28 @@ export function CalendarView({
   const rangeStart = useMemo(() => {
     if (visibleRange) return visibleRange.start;
     if (!anchor) return getWeekStart(new Date());
+    let base: Date;
     if (viewMode === "day") {
-      const d = new Date(anchor);
-      d.setHours(0, 0, 0, 0);
-      return d;
+      base = new Date(anchor);
+      base.setHours(0, 0, 0, 0);
+    } else if (viewMode === "week") {
+      base = getWeekStart(anchor);
+    } else {
+      base = getWeekStart(startOfMonth(anchor));
     }
-    if (viewMode === "week") return getWeekStart(anchor);
-    return getWeekStart(startOfMonth(anchor));
+    // For the swipe pager we expand virtual recurrences for the previous pane
+    // too, so pad the window by one unit on the left.
+    const pad = viewMode === "day" ? 1 : viewMode === "week" ? 7 : 0;
+    base.setDate(base.getDate() - pad);
+    return base;
   }, [visibleRange, anchor, viewMode]);
 
   const rangeEnd = useMemo(() => {
     if (visibleRange) return visibleRange.end;
     const end = new Date(rangeStart);
-    const span = viewMode === "day" ? 1 : viewMode === "week" ? 7 : 42;
+    // span = current period + next pane (pager lookahead). Month isn't paged
+    // so it keeps its original 42-day window (no trailing pad needed).
+    const span = viewMode === "day" ? 1 + 2 : viewMode === "week" ? 7 + 14 : 42;
     end.setDate(end.getDate() + span);
     return end;
   }, [visibleRange, rangeStart, viewMode]);
@@ -791,26 +800,36 @@ export function CalendarView({
       {anchor && (
         <SwipePager
           enabled={viewMode === "day" || viewMode === "week"}
-          onPrev={goPrev}
-          onNext={goNext}
-          resetKey={`${viewMode}:${anchor.toISOString()}`}
-        >
-          <FcCalendar
-            ref={fcRef}
-            events={eventsWithDraft}
-            viewMode={viewMode}
-            initialDate={anchor}
-            allDaySlot={
-              viewMode === "week" || viewMode === "day" ? allDayVisible : true
+          anchor={anchor}
+          unit={viewMode === "day" ? "day" : "week"}
+          onCommit={(dir) => {
+            dismissPopover();
+            if (dir === "prev") {
+              if (viewMode === "day") prevDay();
+              else prevWeek();
+            } else {
+              if (viewMode === "day") nextDay();
+              else nextWeek();
             }
-            onEventClick={openTaskFromEvent}
-            onEventDrop={handleEventDrop}
-            onEventResize={handleEventResize}
-            onDateSelect={handleDateSelect}
-            onDateClick={handleDateClick}
-            onDatesSet={handleDatesSet}
-          />
-        </SwipePager>
+          }}
+          renderPane={({ date, isCenter }) => (
+            <FcCalendar
+              ref={isCenter ? fcRef : undefined}
+              events={eventsWithDraft}
+              viewMode={viewMode}
+              initialDate={date}
+              allDaySlot={
+                viewMode === "week" || viewMode === "day" ? allDayVisible : true
+              }
+              onEventClick={openTaskFromEvent}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onDateSelect={handleDateSelect}
+              onDateClick={handleDateClick}
+              onDatesSet={isCenter ? handleDatesSet : () => {}}
+            />
+          )}
+        />
       )}
 
       <CalendarEventPopover tasks={tasks} anchor={popoverAnchor} />
