@@ -82,15 +82,8 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
   const keymaps = useKeymaps();
   const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
-  const {
-    isOpen,
-    mode,
-    taskId,
-    preFill,
-    width,
-    setPendingEdit,
-    clearPendingEdit,
-  } = panel;
+  const { isOpen, mode, taskId, preFill, setPendingEdit, clearPendingEdit } =
+    panel;
 
   const task = useMemo(
     () => (taskId ? (tasks.find((t) => t.id === taskId) ?? null) : null),
@@ -832,7 +825,6 @@ export function TaskPanel({ tasks }: { tasks: Task[] }) {
       {!isMobile && <ResizeHandle onResize={panel.setWidth} />}
       <div
         role="region"
-        style={isMobile ? undefined : { width: `${width}%` }}
         className="flex flex-col h-full border-l border-border bg-card shrink-0 overflow-hidden w-full"
         onKeyDown={handleKeyDown}
       >

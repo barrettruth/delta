@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { MAX_WIDTH_PCT, MIN_WIDTH_PCT } from "@/contexts/task-panel";
 
 export function ResizeHandle({
@@ -10,25 +10,19 @@ export function ResizeHandle({
   onResize: (widthPct: number) => void;
   onResizeEnd?: () => void;
 }) {
-  const draggingRef = useRef(false);
-
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      draggingRef.current = true;
 
-      const container = (e.target as HTMLElement).parentElement;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
 
       const onMove = (moveE: PointerEvent) => {
-        const pct = ((rect.right - moveE.clientX) / rect.width) * 100;
+        const pct = ((viewportWidth - moveE.clientX) / viewportWidth) * 100;
         const clamped = Math.max(MIN_WIDTH_PCT, Math.min(MAX_WIDTH_PCT, pct));
         onResize(clamped);
       };
 
       const onUp = () => {
-        draggingRef.current = false;
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
         document.body.style.cursor = "";

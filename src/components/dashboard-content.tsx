@@ -20,6 +20,22 @@ function MobileTaskOverlay({ tasks }: { tasks: Task[] }) {
   );
 }
 
+function DesktopTaskOverlay({ tasks }: { tasks: Task[] }) {
+  const panel = useTaskPanel();
+  const isMobile = useIsMobile();
+
+  if (isMobile || !panel.isOpen) return null;
+
+  return (
+    <div
+      className="fixed top-0 right-0 bottom-7 z-40 flex shadow-2xl shadow-black/20 animate-in slide-in-from-right-4 duration-150"
+      style={{ width: `${panel.width}%` }}
+    >
+      <TaskPanel tasks={tasks} />
+    </div>
+  );
+}
+
 export function DashboardContent({
   children,
   tasks,
@@ -36,9 +52,7 @@ export function DashboardContent({
           </div>
           {children}
         </main>
-        <div className="hidden md:contents">
-          <TaskPanel tasks={tasks} />
-        </div>
+        <DesktopTaskOverlay tasks={tasks} />
         <MobileTaskOverlay tasks={tasks} />
       </div>
       <StatusBar />
