@@ -26,15 +26,24 @@ function DesktopTaskOverlay({ tasks }: { tasks: Task[] }) {
 
   if (isMobile || !panel.isOpen) return null;
 
-  // Positioned absolute inside the main-row container so the bottom edge
-  // naturally aligns with the top of the StatusBar (no magic offsets).
+  // Backdrop + panel share the same z-stack as the settings modal:
+  // backdrop at z-40, panel at z-50. Clicking the backdrop closes the
+  // panel (TaskPanel's own close handler saves pending edits first).
   return (
-    <div
-      className="absolute inset-y-0 right-0 z-40 flex shadow-2xl shadow-black/20 animate-in slide-in-from-right-4 duration-150"
-      style={{ width: `${panel.width}%` }}
-    >
-      <TaskPanel tasks={tasks} />
-    </div>
+    <>
+      <button
+        type="button"
+        aria-label="Close panel"
+        onClick={panel.close}
+        className="absolute inset-0 z-40 bg-background/70 backdrop-blur-[3px] animate-in fade-in-0 duration-150"
+      />
+      <div
+        className="absolute inset-y-0 right-0 z-50 flex shadow-2xl shadow-black/20 animate-in slide-in-from-right-4 duration-150"
+        style={{ width: `${panel.width}%` }}
+      >
+        <TaskPanel tasks={tasks} />
+      </div>
+    </>
   );
 }
 

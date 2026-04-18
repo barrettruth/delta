@@ -40,7 +40,7 @@ export function ResizeHandle({
 
   return (
     <div
-      className="w-1 shrink-0 bg-transparent hover:bg-accent/50 cursor-col-resize transition-colors"
+      className="w-1 shrink-0 bg-card hover:bg-border cursor-col-resize transition-colors"
       onPointerDown={handlePointerDown}
     />
   );
