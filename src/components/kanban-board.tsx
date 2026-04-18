@@ -133,7 +133,7 @@ const KanbanGrid = memo(function KanbanGrid({
                 setDragOver(null);
               }}
             >
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
+              <div className="flex items-center justify-between h-8 px-3 border-b border-border/60">
                 <span className="text-xs font-medium">{col.label}</span>
                 <kbd className="text-[10px] text-muted-foreground">
                   {columnHints[ci]}

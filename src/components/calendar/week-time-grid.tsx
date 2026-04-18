@@ -204,7 +204,7 @@ export function WeekTimeGrid({
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="overflow-x-auto shrink-0 border-b border-border/60">
+      <div className="overflow-x-auto shrink-0">
         <div
           className="grid"
           style={{
@@ -212,19 +212,19 @@ export function WeekTimeGrid({
             minWidth: "640px",
           }}
         >
-          <div className="py-2" />
+          <div className="h-8 border-b border-border/60" />
           {days.map((date, idx) => {
             const isToday = isSameDay(date, today);
             return (
               <div
                 key={formatDateKey(date)}
-                className="flex flex-col items-center py-2 border-l border-border/30"
+                className="flex items-center justify-center gap-1.5 h-8 border-b border-border/60 border-l border-border/30"
               >
                 <span className="text-xs text-muted-foreground">
                   {DAY_NAMES[idx]}
                 </span>
                 <span
-                  className={`text-sm mt-0.5 ${isToday ? "text-primary font-bold" : "text-foreground font-semibold"}`}
+                  className={`text-sm ${isToday ? "text-primary font-bold" : "text-foreground font-semibold"}`}
                 >
                   {date.getDate()}
                 </span>
