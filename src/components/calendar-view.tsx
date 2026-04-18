@@ -321,7 +321,10 @@ export function CalendarView({
   );
 
   const handleDatesSet = useCallback((start: Date, end: Date) => {
-    setVisibleRange({ start, end });
+    // Defer to a microtask: FullCalendar fires datesSet synchronously during
+    // mount/commit, and a setState here would run inside React's render phase,
+    // triggering "flushSync was called from inside a lifecycle method".
+    queueMicrotask(() => setVisibleRange({ start, end }));
   }, []);
 
   const handleDeletePanelTask = useCallback(() => {
