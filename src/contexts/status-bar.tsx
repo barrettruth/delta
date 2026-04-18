@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -105,15 +106,18 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const value: StatusBarContextValue = {
-    state,
-    message,
-    error,
-    undo,
-    setOperation,
-    clearOperation,
-    setIdle,
-  };
+  const value = useMemo<StatusBarContextValue>(
+    () => ({
+      state,
+      message,
+      error,
+      undo,
+      setOperation,
+      clearOperation,
+      setIdle,
+    }),
+    [state, message, error, undo, setOperation, clearOperation, setIdle],
+  );
 
   return (
     <StatusBarContext.Provider value={value}>

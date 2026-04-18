@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
 } from "react";
 
@@ -253,17 +254,30 @@ export function NavigationProvider({
     return viewStateRef.current.get(key) as T | undefined;
   }, []);
 
-  const value: NavigationContextValue = {
-    pushJump,
-    jumpBack,
-    jumpForward,
-    goAlternate,
-    setTaskDetailOpen,
-    consumePendingTaskDetail,
-    saveViewState,
-    getViewState,
-    registerScrollContainer,
-  };
+  const value = useMemo<NavigationContextValue>(
+    () => ({
+      pushJump,
+      jumpBack,
+      jumpForward,
+      goAlternate,
+      setTaskDetailOpen,
+      consumePendingTaskDetail,
+      saveViewState,
+      getViewState,
+      registerScrollContainer,
+    }),
+    [
+      pushJump,
+      jumpBack,
+      jumpForward,
+      goAlternate,
+      setTaskDetailOpen,
+      consumePendingTaskDetail,
+      saveViewState,
+      getViewState,
+      registerScrollContainer,
+    ],
+  );
 
   return (
     <NavigationContext.Provider value={value}>
