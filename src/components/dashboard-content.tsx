@@ -26,9 +26,11 @@ function DesktopTaskOverlay({ tasks }: { tasks: Task[] }) {
 
   if (isMobile || !panel.isOpen) return null;
 
+  // Positioned absolute inside the main-row container so the bottom edge
+  // naturally aligns with the top of the StatusBar (no magic offsets).
   return (
     <div
-      className="fixed top-0 right-0 bottom-7 z-40 flex shadow-2xl shadow-black/20 animate-in slide-in-from-right-4 duration-150"
+      className="absolute inset-y-0 right-0 z-40 flex shadow-2xl shadow-black/20 animate-in slide-in-from-right-4 duration-150"
       style={{ width: `${panel.width}%` }}
     >
       <TaskPanel tasks={tasks} />
@@ -45,7 +47,7 @@ export function DashboardContent({
 }) {
   return (
     <TaskPanelProvider>
-      <div className="flex flex-1 min-h-0">
+      <div className="relative flex flex-1 min-h-0">
         <main className="flex-1 min-w-0 overflow-hidden bg-background">
           <div className="md:hidden flex items-center h-10 px-2 border-b border-border/60 shrink-0">
             <SidebarTrigger />
