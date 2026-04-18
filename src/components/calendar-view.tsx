@@ -18,7 +18,6 @@ import {
   type FcCalendarHandle,
   type FcViewMode,
 } from "@/components/calendar/fc-calendar";
-import { SwipePager } from "@/components/calendar/swipe-pager";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
@@ -789,28 +788,21 @@ export function CalendarView({
       </div>
 
       {anchor && (
-        <SwipePager
-          enabled={viewMode === "day" || viewMode === "week"}
-          onPrev={goPrev}
-          onNext={goNext}
-          resetKey={`${viewMode}:${anchor.toISOString()}`}
-        >
-          <FcCalendar
-            ref={fcRef}
-            events={eventsWithDraft}
-            viewMode={viewMode}
-            initialDate={anchor}
-            allDaySlot={
-              viewMode === "week" || viewMode === "day" ? allDayVisible : true
-            }
-            onEventClick={openTaskFromEvent}
-            onEventDrop={handleEventDrop}
-            onEventResize={handleEventResize}
-            onDateSelect={handleDateSelect}
-            onDateClick={handleDateClick}
-            onDatesSet={handleDatesSet}
-          />
-        </SwipePager>
+        <FcCalendar
+          ref={fcRef}
+          events={eventsWithDraft}
+          viewMode={viewMode}
+          initialDate={anchor}
+          allDaySlot={
+            viewMode === "week" || viewMode === "day" ? allDayVisible : true
+          }
+          onEventClick={openTaskFromEvent}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
+          onDateSelect={handleDateSelect}
+          onDateClick={handleDateClick}
+          onDatesSet={handleDatesSet}
+        />
       )}
 
       <CalendarEventPopover tasks={tasks} anchor={popoverAnchor} />

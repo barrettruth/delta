@@ -79,6 +79,21 @@
   border-collapse: collapse;
 }
 
+/* Hide FullCalendar's internal scrollbars (vertical on time grid, horizontal
+   on month/week). Scrolling still works with wheel / touch. */
+.fc-delta-root .fc .fc-scroller,
+.fc-delta-root .fc .fc-scroller-harness,
+.fc-delta-root .fc .fc-scroller-liquid-absolute {
+  scrollbar-width: none;
+}
+.fc-delta-root .fc .fc-scroller::-webkit-scrollbar,
+.fc-delta-root .fc .fc-scroller-harness::-webkit-scrollbar,
+.fc-delta-root .fc .fc-scroller-liquid-absolute::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .fc-delta-root .fc .fc-scrollgrid td,
 .fc-delta-root .fc .fc-scrollgrid th {
   border-color: var(--border);
@@ -254,11 +269,6 @@
   color: var(--foreground);
   padding: 4px 8px;
   font-size: 11px;
-}
-
-/* Hide scrollbar for the horizontal swipe pager (Webkit/Blink). */
-.swipe-pager-scroller::-webkit-scrollbar {
-  display: none;
 }
 
 /* Ghost draft event shown while the create popover is open. */
