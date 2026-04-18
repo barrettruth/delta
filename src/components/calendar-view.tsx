@@ -132,16 +132,15 @@ export function CalendarView({
     if (fcRef.current) fcRef.current.changeView(viewMode);
   }, [viewMode]);
 
-  // Close the event popover on navigation/view changes — the anchored DOM
-  // element is about to be re-rendered by FullCalendar and would leave the
-  // popover pointing at a detached node.
-  const panelCloseRef = useRef(panel.close);
-  panelCloseRef.current = panel.close;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: anchor + viewMode are the trigger conditions; the effect body doesn't read them.
-  useEffect(() => {
+  // Dismiss the event popover on real user navigation (prev/next, view
+  // switch, today, goto) — NOT on programmatic anchor changes from slot
+  // clicks. Wiring it to navigation callbacks directly avoids a setState-
+  // inside-commit cascade (and the flushSync warning) and prevents the
+  // create-flow from closing itself the moment it opens.
+  const dismissPopover = useCallback(() => {
     setPopoverAnchor(null);
-    panelCloseRef.current();
-  }, [anchor, viewMode]);
+    panel.close();
+  }, [panel]);
 
   const rangeStart = useMemo(() => {
     if (visibleRange) return visibleRange.start;
@@ -565,6 +564,7 @@ export function CalendarView({
       ).triggerKey;
       if (e.key === prevKey) {
         e.preventDefault();
+        dismissPopover();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
           if (viewMode === "day") prevDay();
@@ -578,6 +578,7 @@ export function CalendarView({
       ).triggerKey;
       if (e.key === nextKey) {
         e.preventDefault();
+        dismissPopover();
         const n = consumeCount();
         for (let i = 0; i < n; i++) {
           if (viewMode === "day") nextDay();
@@ -602,6 +603,7 @@ export function CalendarView({
       if (e.key === dayViewKey) {
         e.preventDefault();
         countBuf.current = "";
+        dismissPopover();
         setViewMode("day");
         return;
       }
@@ -610,6 +612,7 @@ export function CalendarView({
       if (e.key === weekViewKey) {
         e.preventDefault();
         countBuf.current = "";
+        dismissPopover();
         setViewMode("week");
         return;
       }
@@ -619,6 +622,7 @@ export function CalendarView({
       if (e.key === monthViewKey) {
         e.preventDefault();
         countBuf.current = "";
+        dismissPopover();
         setViewMode("month");
         return;
       }
@@ -626,6 +630,7 @@ export function CalendarView({
       if (e.key === todayKey) {
         e.preventDefault();
         countBuf.current = "";
+        dismissPopover();
         goToday();
         return;
       }
@@ -653,6 +658,7 @@ export function CalendarView({
       goToday,
       keymaps,
       handleDeletePanelTask,
+      dismissPopover,
     ],
   );
 
