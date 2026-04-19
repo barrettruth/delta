@@ -125,7 +125,7 @@ export function SettingsModalShell({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop
           className="
-            fixed inset-0 z-40 bg-background/70 backdrop-blur-[3px]
+            fixed inset-0 z-40 bg-black/60 backdrop-blur-[3px]
             duration-150
             data-open:animate-in data-open:fade-in-0
             data-closed:animate-out data-closed:fade-out-0
@@ -194,7 +194,7 @@ function SettingsNavRail({
         flex-row md:flex-col
         md:w-52
         md:border-r border-b md:border-b-0 border-border/60
-        bg-background/30
+        bg-black/20
       "
     >
       <div
