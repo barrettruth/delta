@@ -62,8 +62,8 @@ export function AppSidebar({
           href="/"
           className="flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors select-none"
         >
-          <span className="text-3xl font-serif leading-none">&delta;</span>
-          <span className="text-base">delta</span>
+          <span className="text-lg font-serif leading-none">&delta;</span>
+          <span className="text-lg leading-none">delta</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
