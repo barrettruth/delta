@@ -5,6 +5,8 @@
   font-size: 0.875rem;
   line-height: 1.625;
   color: var(--foreground);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tiptap > * + * {
