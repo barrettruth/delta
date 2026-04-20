@@ -17,7 +17,13 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import type { Task } from "@/core/types";
 
 import "./fc-styles.css";
@@ -146,6 +152,46 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
 
     const fcRef = useRef<FullCalendar>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // FullCalendar only reacts to `window.resize` events internally (see
+    // Calendar.handleWindowResize in @fullcalendar/core). When our sidebar
+    // collapses/expands it animates its own width via a CSS transition,
+    // which changes the calendar's container width without firing a window
+    // resize. FC's cached `scrollerClientWidths` (SimpleScrollGrid state)
+    // therefore stays stale until some unrelated render kicks in, producing
+    // a visible lag where the day columns haven't caught up with the new
+    // container width. A ResizeObserver on the root re-runs `updateSize()`
+    // (which internally flushSync's preact) every animation frame that the
+    // box actually changes, coalescing the stream of transition deltas into
+    // at most one layout per paint.
+    useEffect(() => {
+      const root = containerRef.current;
+      if (!root) return;
+      if (typeof ResizeObserver === "undefined") return;
+
+      let rafId: number | null = null;
+      let lastW = root.getBoundingClientRect().width;
+      let lastH = root.getBoundingClientRect().height;
+
+      const ro = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        if (width === lastW && height === lastH) return;
+        lastW = width;
+        lastH = height;
+        if (rafId != null) return;
+        rafId = window.requestAnimationFrame(() => {
+          rafId = null;
+          fcRef.current?.getApi().updateSize();
+        });
+      });
+      ro.observe(root);
+      return () => {
+        if (rafId != null) window.cancelAnimationFrame(rafId);
+        ro.disconnect();
+      };
+    }, []);
 
     const getScrollerEl = useCallback((): HTMLElement | null => {
       const root = containerRef.current;
