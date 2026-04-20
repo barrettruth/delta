@@ -113,6 +113,30 @@
   height: 0;
 }
 
+/* FC probes the OS scrollbar width by appending a bare <div style="overflow:
+ * scroll; position: absolute; top: -9999px; left: -9999px"> to <body> once
+ * per page load (see computeScrollbarWidths in @fullcalendar/core). It then
+ * uses that value to shrink each scrollgrid section's inner <table> width
+ * whenever SimpleScrollGrid decides forceYScrollbars=true — which happens on
+ * re-measure after any re-render that causes the body section to report
+ * overflow (e.g. opening the calendar actions popover, which triggers FC's
+ * componentDidUpdate).
+ *
+ * Because our scrollers above use scrollbar-width: none, the reserved space
+ * is never filled by an actual scrollbar. The result in week/day view is
+ * either an empty ~15px gap on the right of the grid, or the rightmost day
+ * column appearing visibly cut off (since the 7 columns share the shrunk
+ * width). Forcing the probe element itself to report 0 keeps FC's section
+ * widths aligned with the harness width. */
+body > div[style*="overflow: scroll"] {
+  scrollbar-width: none;
+}
+body > div[style*="overflow: scroll"]::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .fc-delta-root .fc .fc-scrollgrid td,
 .fc-delta-root .fc .fc-scrollgrid th {
   border-color: var(--border);
