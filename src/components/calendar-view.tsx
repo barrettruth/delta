@@ -287,16 +287,43 @@ export function CalendarView({
       revert: () => void,
     ) => {
       const meta = isVirtual ? virtualMetaRef.current.get(task.id) : null;
+
+      // A task with only `due` and no `startAt` is rendered on the calendar
+      // as an all-day marker on its deadline. Dragging it in the all-day
+      // row should move the deadline, not silently schedule it (which would
+      // make it disappear from the queue/kanban "due" column). Dropping it
+      // into a timed slot promotes it to a scheduled event and clears `due`.
+      const isDueOnly = !task.startAt && Boolean(task.due);
+      if (isDueOnly && newAllDay) {
+        const dueStr =
+          (task.due as string).length === 10
+            ? newStart.toISOString().slice(0, 10)
+            : newStart.toISOString();
+        pushOptimistic(task.id, {});
+        updateTaskAction(task.id, { due: dueStr }).then((result) => {
+          if ("error" in result) {
+            setOptimisticUpdates((prev) => {
+              const next = new Map(prev);
+              next.delete(task.id);
+              return next;
+            });
+            revert();
+          }
+        });
+        return;
+      }
+
       const startAt = newStart.toISOString();
       const endAt = newEnd ? newEnd.toISOString() : null;
 
       pushOptimistic(task.id, { startAt, endAt });
 
-      const updates = {
+      const updates: Parameters<typeof updateTaskAction>[1] = {
         startAt,
         endAt,
         allDay: newAllDay ? 1 : 0,
       };
+      if (isDueOnly) updates.due = null;
 
       if (meta) {
         recurrenceEdit.requestEdit(meta.masterId, meta.instanceDate, updates);

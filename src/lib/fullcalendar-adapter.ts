@@ -53,7 +53,11 @@ function taskToEvent(
   categoryColors: Record<string, string> | undefined,
   isVirtual: boolean,
 ): EventInput | null {
-  if (!task.startAt) return null;
+  // Prefer an explicit scheduled start. Otherwise fall back to `due` and
+  // render the task as an all-day marker on its deadline day. Tasks with
+  // neither a start nor a due date never appear on the calendar.
+  const isDueOnly = !task.startAt && Boolean(task.due);
+  if (!task.startAt && !isDueOnly) return null;
 
   const isRecurring = Boolean(task.recurrence) || Boolean(task.recurringTaskId);
   const classNames: string[] = [`status-${task.status ?? "pending"}`];
@@ -63,17 +67,29 @@ function taskToEvent(
   const color =
     task.category && categoryColors ? categoryColors[task.category] : undefined;
 
+  // For due-only tasks: a `YYYY-MM-DD` string is a pure date (all-day). A full
+  // ISO timestamp still has a time component but with no duration, so we pin
+  // it to the day and mark it all-day so FC shows it in the all-day row.
+  const dueStart = isDueOnly
+    ? (task.due as string).length === 10
+      ? (task.due as string)
+      : (task.due as string).slice(0, 10)
+    : undefined;
+
   const event: EventInput = {
     id: String(task.id),
     title: task.description,
-    start: task.startAt,
-    end: task.endAt ?? undefined,
-    allDay: task.allDay === 1,
+    start: isDueOnly ? (dueStart as string) : (task.startAt as string),
+    end: isDueOnly ? undefined : (task.endAt ?? undefined),
+    allDay: isDueOnly ? true : task.allDay === 1,
+    editable: true,
+    durationEditable: !isDueOnly,
     classNames,
     extendedProps: {
       task,
       isVirtual,
       isRecurring,
+      isDueOnly,
     },
   };
 
@@ -140,7 +156,7 @@ export function tasksToEvents(
       continue;
     }
 
-    if (!task.startAt) continue;
+    if (!task.startAt && !task.due) continue;
     if (optimisticUpdates?.get(task.id)?.deleted) continue;
 
     const merged = mergeTask(task, pendingEdits, optimisticUpdates);
