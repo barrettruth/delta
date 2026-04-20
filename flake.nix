@@ -21,16 +21,19 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          commonPackages = with pkgs; [
+            nodejs_22
+            pnpm
+            sqlite
+            biome
+            bun
+            curl
+            just
+          ];
         in
         {
-          default = pkgs.mkShell {
-            packages = with pkgs; [
-              nodejs_22
-              pnpm
-              sqlite
-              biome
-            ];
-          };
+          default = pkgs.mkShell { packages = commonPackages; };
+          ci = pkgs.mkShell { packages = commonPackages; };
         }
       );
 

@@ -33,38 +33,15 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
 
-      - uses: oven-sh/setup-bun@v2
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Install CLI dependencies
-        working-directory: cli
-        run: bun install --frozen-lockfile
-
-      - name: Install CLI dependencies
-        working-directory: cli
-        run: bun install --frozen-lockfile
+      - uses: cachix/install-nix-action@v31
 
       - name: Build CLI
-        working-directory: cli
-        run: bun run build:local
-
-      - name: Build man page
-
-      - name: Build man page
-        working-directory: cli
-        run: bun run build:man
-        working-directory: cli
-        run: bun run build:man
+        run: nix develop .#ci --command just cli-build-release
 
       - name: Get version
         id: version
         run: |
-          VERSION=$(node -p "require('./cli/package.json').version")
+          VERSION=$(nix develop .#ci --command node -p "require('./cli/package.json').version")
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Verify tag matches package version
@@ -93,9 +70,7 @@ jobs:
           ref: main
           token: ${{ secrets.CI_PAT }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
+      - uses: cachix/install-nix-action@v31
 
       - name: Bump CLI version
         id: version
@@ -103,9 +78,12 @@ jobs:
           VERSION_BUMP: ${{ github.event.inputs.version_bump || 'patch' }}
         run: |
           git fetch origin main --tags
-          NEW_VERSION="$(./scripts/version/bump-cli.sh "$VERSION_BUMP")"
+          NEW_VERSION="$(nix develop .#ci --command ./scripts/version/bump-cli.sh "$VERSION_BUMP")"
           echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "New version: ${NEW_VERSION}"
+
+      - name: Build man page
+        run: nix develop .#ci --command just cli-build-man
 
       - name: Configure git
         run: |
@@ -150,29 +128,20 @@ jobs:
         with:
           ref: ${{ needs.release.outputs.ref != '' && needs.release.outputs.ref || github.ref }}
 
-      - uses: oven-sh/setup-bun@v2
-
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
 
-      - name: Install CLI dependencies
-        working-directory: cli
-        run: bun install --frozen-lockfile
+      - uses: cachix/install-nix-action@v31
 
-      - name: Build for npm
-        working-directory: cli
-        run: bun run build:npm
-
-      - name: Build man page
-        working-directory: cli
-        run: bun run build:man
+      - name: Build publish bundle
+        run: nix develop .#ci --command just cli-build-publish
 
       - name: Check if version already published
         id: published
         run: |
           VERSION=$(node -p "require('./cli/package.json').version")
-          if npm view @barrettruth/delta@${VERSION} version >/dev/null 2>&1; then
+          if npm view "@barrettruth/delta@${VERSION}" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
@@ -195,29 +164,20 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      - uses: oven-sh/setup-bun@v2
-
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
 
-      - name: Install CLI dependencies
-        working-directory: cli
-        run: bun install --frozen-lockfile
+      - uses: cachix/install-nix-action@v31
 
-      - name: Build for npm
-        working-directory: cli
-        run: bun run build:npm
-
-      - name: Build man page
-        working-directory: cli
-        run: bun run build:man
+      - name: Build publish bundle
+        run: nix develop .#ci --command just cli-build-publish
 
       - name: Check if version already published
         id: published
         run: |
           VERSION=$(node -p "require('./cli/package.json').version")
-          if npm view @barrettruth/delta@${VERSION} version >/dev/null 2>&1; then
+          if npm view "@barrettruth/delta@${VERSION}" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
