@@ -31,7 +31,9 @@
 .fc-delta-root .fc .fc-col-header-cell {
   background: transparent;
   border-color: var(--border);
-  padding: 2px 0;
+  padding: 0;
+  height: 31.5px;
+  vertical-align: middle;
 }
 
 .fc-delta-root .fc .fc-col-header-cell-cushion {
@@ -65,6 +67,23 @@
 .fc-delta-root .fc .fc-timegrid-axis-cushion {
   color: var(--muted-foreground);
   font-size: 10px;
+}
+
+/* All-day row axis label: wrap "all day" onto two lines and center it
+ * vertically, without widening the time-axis column. 
+ * This trick is a bit hacky bit works in this version of css xd*/
+.fc-delta-root .fc .fc-timegrid-axis-frame {
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+.fc-delta-root .fc .fc-timegrid-axis .fc-timegrid-axis-cushion {
+  white-space: normal;
+  word-spacing: 9999px;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 100%;
+  padding: 0 2px;
 }
 
 /*
@@ -226,6 +245,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Divider between the all-day row and the time grid. FullCalendar renders
+ * this as a ~3px thick bar using the neutral bg color, which reads as a
+ * double border against our cell borders. Flatten it to a single 1px line. */
+.fc-delta-root .fc .fc-timegrid-divider {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Drop the all-day row's bottom border so only the divider's line remains. */
+.fc-delta-root .fc .fc-daygrid-body {
+  border-bottom: 0;
+}
+.fc-delta-root .fc .fc-timegrid-divider {
+  border-top: 1px solid var(--border);
+}
+.fc-delta-root .fc tr:has(> .fc-timegrid-divider) > * {
+  border: 0;
 }
 
 .fc-delta-root .fc .fc-timegrid-now-indicator-line {

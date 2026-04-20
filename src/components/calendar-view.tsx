@@ -746,7 +746,10 @@ export function CalendarView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center h-10 p-2 border-b border-border/60 shrink-0">
+      <div
+        className="flex items-center px-2 border-b border-border/60 shrink-0"
+        style={{ height: "31.5px" }}
+      >
         <div className="flex-1 flex items-center">
           <button
             type="button"
