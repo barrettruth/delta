@@ -283,6 +283,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           expandRows
           height="100%"
           events={events}
+          eventDisplay="block"
           eventContent={renderEventContent}
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}
