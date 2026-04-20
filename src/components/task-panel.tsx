@@ -1,10 +1,11 @@
 "use client";
 
-import { Copy, X } from "@phosphor-icons/react";
+import { Copy, Trash, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
   createTaskAction,
+  deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
@@ -23,6 +24,7 @@ import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
+import { useUndo } from "@/contexts/undo";
 import { rruleToText } from "@/core/recurrence";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { TaskReminder } from "@/core/reminders/types";
@@ -88,6 +90,7 @@ export function TaskPanel({
   const keymaps = useKeymaps();
   const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
+  const undo = useUndo();
   const {
     isOpen,
     mode,
@@ -711,6 +714,35 @@ export function TaskPanel({
     }
   }
 
+  const handleDelete = useCallback(() => {
+    if (!task) return;
+    if (
+      (task.recurrence || task.recurringTaskId) &&
+      recurrenceDelete.requestDelete(task)
+    ) {
+      panel.close();
+      return;
+    }
+    undo.push({
+      id: `delete-${Date.now()}-${task.id}`,
+      op: "delete",
+      label: "1 task deleted",
+      mutations: [
+        {
+          taskId: task.id,
+          restore: {
+            status: (task.status as TaskStatus) ?? "pending",
+            completedAt: task.completedAt ?? null,
+          },
+        },
+      ],
+      timestamp: Date.now(),
+    });
+    prevTaskIdRef.current = null;
+    deleteTaskAction(task.id);
+    panel.close();
+  }, [task, recurrenceDelete, undo, panel]);
+
   const handleShare = useCallback(async () => {
     if (!task?.startAt) return;
     try {
@@ -880,6 +912,16 @@ export function TaskPanel({
                 onClick={handleShare}
               >
                 <Copy size={14} />
+              </button>
+            )}
+            {mode === "edit" && task && (
+              <button
+                type="button"
+                aria-label="delete task"
+                className="text-muted-foreground hover:text-destructive shrink-0 p-1 transition-colors cursor-pointer"
+                onClick={handleDelete}
+              >
+                <Trash size={14} />
               </button>
             )}
             <button
