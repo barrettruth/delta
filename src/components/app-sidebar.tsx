@@ -60,10 +60,10 @@ export function AppSidebar({
       <SidebarHeader className="h-16 shrink-0 flex-row items-center gap-2 p-0 px-4 border-b border-border/60">
         <Link
           href="/"
-          className="flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors select-none"
+          className="flex items-baseline gap-0.5 text-foreground hover:text-foreground/80 transition-colors select-none"
         >
-          <span className="text-xl font-serif leading-none">&delta;</span>
-          <span className="text-xl leading-none">delta</span>
+          <span className="text-2xl font-serif leading-none">&delta;</span>
+          <span className="text-xl leading-none">elta</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
