@@ -131,6 +131,12 @@ export function TaskPanel({
   const pendingYRef = useRef(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const prevTaskIdRef = useRef<number | null>(null);
+  // Snapshot of the `due` input value when the form loaded for this task.
+  // Used to skip rewriting `due` on save when the user didn't touch it —
+  // otherwise the round-trip through `new Date(datetime-local).toISOString()`
+  // shifts the stored timestamp by the local timezone offset, which can
+  // push an all-day / due-only event onto the adjacent date.
+  const initialDueRef = useRef<string>("");
   const reminderClientIdRef = useRef(0);
   const reminderDraftsRef = useRef<TaskPanelReminderDraft[]>([]);
   const initialReminderDraftsRef = useRef<TaskPanelReminderDraft[]>([]);
@@ -544,10 +550,13 @@ export function TaskPanel({
       const currentReminderDrafts = cloneReminderDrafts(
         reminderDraftsRef.current,
       );
+      const dueChanged = f.due !== initialDueRef.current;
       const result = await updateTaskAction(id, {
         description: f.description,
         category: f.category || null,
-        due: f.due ? new Date(f.due).toISOString() : null,
+        ...(dueChanged
+          ? { due: f.due ? new Date(f.due).toISOString() : null }
+          : {}),
         notes: f.notes || null,
         location: f.location || null,
         locationLat: f.location ? f.locationLat : null,
@@ -591,7 +600,9 @@ export function TaskPanel({
     if (mode === "edit" && t) {
       setDescription(t.description);
       setCategory(t.category ?? "");
-      setDue(t.due ? t.due.slice(0, t.allDay === 1 ? 10 : 16) : "");
+      const dueInit = t.due ? t.due.slice(0, t.allDay === 1 ? 10 : 16) : "";
+      setDue(dueInit);
+      initialDueRef.current = dueInit;
       setLocation(t.location ?? "");
       setLocationLat(t.locationLat ?? null);
       setLocationLon(t.locationLon ?? null);
@@ -602,11 +613,11 @@ export function TaskPanel({
     } else if (mode === "create") {
       setDescription("");
       setCategory(preFill?.category ?? "");
-      setDue(
-        preFill?.startAt
-          ? preFill.startAt.slice(0, preFill?.allDay === 1 ? 10 : 16)
-          : "",
-      );
+      const dueInit = preFill?.startAt
+        ? preFill.startAt.slice(0, preFill?.allDay === 1 ? 10 : 16)
+        : "";
+      setDue(dueInit);
+      initialDueRef.current = dueInit;
       setLocation("");
       setLocationLat(null);
       setLocationLon(null);
