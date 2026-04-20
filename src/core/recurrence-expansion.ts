@@ -68,8 +68,10 @@ export function expandInstances(
     }
   }
 
-  return dates.map((date) => {
+  const seenOriginalStarts = new Set<string>();
+  const instances = dates.map((date) => {
     const key = date.toISOString();
+    seenOriginalStarts.add(key);
     const exception = exceptionMap.get(key) ?? null;
 
     return {
@@ -82,6 +84,39 @@ export function expandInstances(
       exception,
     };
   });
+
+  // Exceptions are stored as standalone rows keyed by originalStartAt. When the
+  // master also carries that date in EXDATE, RRuleSet.between() omits it, so we
+  // need to add the exception back explicitly or the instance disappears.
+  for (const exc of exceptions) {
+    if (!exc.originalStartAt || seenOriginalStarts.has(exc.originalStartAt)) {
+      continue;
+    }
+    if (exc.status === "cancelled") continue;
+
+    const eventStart = exc.startAt ?? exc.due;
+    if (!eventStart) continue;
+
+    const startDate = new Date(eventStart);
+    const endDate = new Date(exc.endAt ?? eventStart);
+    if (endDate < rangeStart || startDate > rangeEnd) continue;
+
+    instances.push({
+      masterId: master.id,
+      instanceDate: new Date(exc.originalStartAt),
+      startAt: exc.startAt ?? exc.originalStartAt,
+      endAt:
+        exc.endAt ??
+        (duration ? new Date(startDate.getTime() + duration).toISOString() : null),
+      exception: exc,
+    });
+  }
+
+  instances.sort(
+    (a, b) =>
+      new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+  );
+  return instances;
 }
 
 export function materializeInstance(

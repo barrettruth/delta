@@ -62,7 +62,7 @@ export function CalendarView({
   const panel = useTaskPanel();
   const undo = useUndo();
   const keymaps = useKeymaps();
-  const { pendingEdits } = panel;
+  const { pendingEdits, optimisticTasks, setOptimisticTask } = panel;
   const recurrenceDelete = useRecurrenceDelete();
   const recurrenceEdit = useRecurrenceEdit();
 
@@ -77,6 +77,12 @@ export function CalendarView({
   const [optimisticUpdates, setOptimisticUpdates] = useState<
     Map<number, OptimisticUpdate>
   >(new Map());
+  // Extra exdates to merge onto masters while a just-materialized instance is
+  // awaiting revalidation. Prevents the virtual (striped) instance from
+  // rendering on top of the freshly-created concrete exception.
+  const [optimisticMasterExdates, setOptimisticMasterExdates] = useState<
+    Map<number, string[]>
+  >(new Map());
   const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor>(null);
 
   const fcRef = useRef<FcCalendarHandle>(null);
@@ -90,11 +96,36 @@ export function CalendarView({
   // Clear optimistic updates when a fresh task list arrives from the server.
   const prevTasksRef = useRef(tasks);
   useEffect(() => {
-    if (prevTasksRef.current !== tasks && optimisticUpdates.size > 0) {
-      setOptimisticUpdates(new Map());
+    if (prevTasksRef.current !== tasks) {
+      if (optimisticUpdates.size > 0) setOptimisticUpdates(new Map());
+      if (optimisticMasterExdates.size > 0) {
+        // Drop patched exdates for masters whose real row now carries the
+        // exdate server-side, so we don't double-apply it.
+        setOptimisticMasterExdates((prev) => {
+          const next = new Map(prev);
+          for (const [masterId, added] of prev) {
+            const master = tasks.find((t) => t.id === masterId);
+            if (!master) {
+              next.delete(masterId);
+              continue;
+            }
+            const current: string[] = master.exdates
+              ? JSON.parse(master.exdates)
+              : [];
+            const currentSet = new Set(current);
+            const remaining = added.filter((d) => !currentSet.has(d));
+            if (remaining.length === 0) {
+              next.delete(masterId);
+            } else if (remaining.length !== added.length) {
+              next.set(masterId, remaining);
+            }
+          }
+          return next;
+        });
+      }
     }
     prevTasksRef.current = tasks;
-  }, [tasks, optimisticUpdates.size]);
+  }, [tasks, optimisticUpdates.size, optimisticMasterExdates.size]);
 
   useEffect(() => {
     const savedAnchor = nav.getViewState<string>("cal:anchor");
@@ -173,8 +204,40 @@ export function CalendarView({
     return end;
   }, [visibleRange, rangeStart, viewMode]);
 
+  // Compose the task list with client-side optimistic state:
+  //  - append just-materialized recurring exceptions that the server has
+  //    acknowledged but haven't made it back through revalidation yet, so
+  //    they render as real (non-virtual) events immediately.
+  //  - patch masters with any extra exdates we just pushed so the virtual
+  //    instance for that date stops rendering while the exception takes over.
+  const effectiveTasks = useMemo(() => {
+    if (optimisticTasks.size === 0 && optimisticMasterExdates.size === 0) {
+      return tasks;
+    }
+    const byId = new Map<number, Task>();
+    for (const t of tasks) byId.set(t.id, t);
+    for (const [id, extra] of optimisticTasks) {
+      if (!byId.has(id)) byId.set(id, extra);
+    }
+    if (optimisticMasterExdates.size > 0) {
+      for (const [masterId, added] of optimisticMasterExdates) {
+        const master = byId.get(masterId);
+        if (!master) continue;
+        const current: string[] = master.exdates
+          ? JSON.parse(master.exdates)
+          : [];
+        const merged = Array.from(new Set([...current, ...added]));
+        byId.set(masterId, {
+          ...master,
+          exdates: JSON.stringify(merged),
+        });
+      }
+    }
+    return Array.from(byId.values());
+  }, [tasks, optimisticTasks, optimisticMasterExdates]);
+
   const { events, virtualMeta } = useMemo(() => {
-    return tasksToEvents(tasks, {
+    return tasksToEvents(effectiveTasks, {
       pendingEdits,
       optimisticUpdates,
       categoryColors,
@@ -182,7 +245,7 @@ export function CalendarView({
       rangeEnd,
     });
   }, [
-    tasks,
+    effectiveTasks,
     pendingEdits,
     optimisticUpdates,
     categoryColors,
@@ -256,17 +319,32 @@ export function CalendarView({
       if (isVirtual) {
         const meta = virtualMetaRef.current.get(task.id);
         if (meta) {
-          materializeInstanceAction(meta.masterId, meta.instanceDate).then(
-            (result) => {
-              if ("data" in result) panel.toggle(result.data.id);
-            },
-          );
+          const { masterId, instanceDate } = meta;
+          materializeInstanceAction(masterId, instanceDate).then((result) => {
+            if ("data" in result) {
+              // Seed client state so the calendar instantly shows the new
+              // concrete exception (and hides the virtual duplicate for that
+              // date) and the task panel can find the row by id without
+              // waiting for Next.js to revalidate the route.
+              setOptimisticTask(result.data);
+              const exdateIso = new Date(instanceDate).toISOString();
+              setOptimisticMasterExdates((prev) => {
+                const next = new Map(prev);
+                const existing = next.get(masterId) ?? [];
+                if (!existing.includes(exdateIso)) {
+                  next.set(masterId, [...existing, exdateIso]);
+                }
+                return next;
+              });
+              panel.toggle(result.data.id);
+            }
+          });
           return;
         }
       }
       panel.toggle(task.id);
     },
-    [nav, panel],
+    [nav, panel, setOptimisticTask],
   );
 
   const pushOptimistic = useCallback((id: number, update: OptimisticUpdate) => {

@@ -232,6 +232,32 @@ describe("tasksToEvents — exceptions", () => {
     // 4 other virtual instances remain (March 2, 16, 23, 30).
     expect(events.length).toBe(4);
   });
+
+  it("renders a real exception even after the master exdates it", () => {
+    const master = createTask(db, userId, {
+      description: "Standup",
+      startAt: "2026-03-02T14:00:00.000Z",
+      endAt: "2026-03-02T15:00:00.000Z",
+      recurrence: "FREQ=WEEKLY;BYDAY=MO",
+      recurMode: "scheduled",
+      exdates: JSON.stringify(["2026-03-09T14:00:00.000Z"]),
+    });
+
+    const exception = createTask(db, userId, {
+      description: "Materialized standup",
+      startAt: "2026-03-09T14:00:00.000Z",
+      endAt: "2026-03-09T15:00:00.000Z",
+      recurringTaskId: master.id,
+      originalStartAt: "2026-03-09T14:00:00.000Z",
+    });
+
+    const { events } = tasksToEvents([master, exception], {
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    });
+
+    expect(events.find((e) => e.id === String(exception.id))).toBeDefined();
+  });
 });
 
 describe("tasksToEvents — pendingEdits + optimisticUpdates", () => {

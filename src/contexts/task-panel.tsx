@@ -20,6 +20,7 @@ interface TaskPanelContextValue {
   preFill: TaskPreFill | null;
   width: number;
   pendingEdits: Map<number, Partial<Task>>;
+  optimisticTasks: Map<number, Task>;
   open: (taskId: number) => void;
   create: (preFill?: TaskPreFill) => void;
   close: () => void;
@@ -27,6 +28,8 @@ interface TaskPanelContextValue {
   setWidth: (w: number) => void;
   setPendingEdit: (taskId: number, fields: Partial<Task>) => void;
   clearPendingEdit: (taskId: number) => void;
+  setOptimisticTask: (task: Task) => void;
+  clearOptimisticTask: (taskId: number) => void;
 }
 
 const TaskPanelContext = createContext<TaskPanelContextValue | null>(null);
@@ -42,6 +45,9 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
   const [taskId, setTaskId] = useState<number | null>(null);
   const [preFill, setPreFill] = useState<TaskPreFill | null>(null);
   const [pendingEdits, setPendingEdits] = useState<Map<number, Partial<Task>>>(
+    () => new Map(),
+  );
+  const [optimisticTasks, setOptimisticTasks] = useState<Map<number, Task>>(
     () => new Map(),
   );
 
@@ -80,6 +86,12 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     const id = taskIdRef.current;
     if (id !== null) {
       setPendingEdits((prev) => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+      setOptimisticTasks((prev) => {
+        if (!prev.has(id)) return prev;
         const next = new Map(prev);
         next.delete(id);
         return next;
@@ -125,6 +137,23 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setOptimisticTask = useCallback((task: Task) => {
+    setOptimisticTasks((prev) => {
+      const next = new Map(prev);
+      next.set(task.id, task);
+      return next;
+    });
+  }, []);
+
+  const clearOptimisticTask = useCallback((id: number) => {
+    setOptimisticTasks((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<TaskPanelContextValue>(
     () => ({
       isOpen,
@@ -133,6 +162,7 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
       preFill,
       width,
       pendingEdits,
+      optimisticTasks,
       open,
       create,
       close,
@@ -140,6 +170,8 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
       setWidth,
       setPendingEdit,
       clearPendingEdit,
+      setOptimisticTask,
+      clearOptimisticTask,
     }),
     [
       isOpen,
@@ -148,6 +180,7 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
       preFill,
       width,
       pendingEdits,
+      optimisticTasks,
       open,
       create,
       close,
@@ -155,6 +188,8 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
       setWidth,
       setPendingEdit,
       clearPendingEdit,
+      setOptimisticTask,
+      clearOptimisticTask,
     ],
   );
 
