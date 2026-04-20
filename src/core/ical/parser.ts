@@ -5,10 +5,14 @@ export interface ParsedEvent {
   dtstart: Date;
   dtend?: Date;
   allDay: boolean;
+  timezone?: string;
   location?: string;
   url?: string;
   rrule?: string;
   status?: string;
+  recurrenceId?: Date;
+  exdates?: Date[];
+  rdates?: Date[];
 }
 
 interface ParsedProperty {
@@ -28,11 +32,16 @@ interface EventAccumulator {
   description?: string;
   location?: string;
   url?: string;
+  googleConference?: string;
   rrule?: string;
   status?: string;
   customStatus?: string;
   dtstart?: ParsedDateValue;
   dtend?: ParsedDateValue;
+  timezone?: string;
+  recurrenceId?: Date;
+  exdates: Date[];
+  rdates: Date[];
 }
 
 function unfoldICalendar(icsContent: string): string[] {
@@ -332,6 +341,22 @@ function parseICalDateTime(
   };
 }
 
+function parseDateList(
+  value: string,
+  params: Record<string, string>,
+): Date[] {
+  const parsed: Date[] = [];
+  for (const item of splitOutsideQuotes(value, ",")) {
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+    const parsedValue = parseICalDateTime(trimmed, params);
+    if (parsedValue) {
+      parsed.push(parsedValue.date);
+    }
+  }
+  return parsed;
+}
+
 function eventToParsedEvent(event: EventAccumulator): ParsedEvent | null {
   if (!event.uid || !event.dtstart) return null;
 
@@ -341,6 +366,10 @@ function eventToParsedEvent(event: EventAccumulator): ParsedEvent | null {
     dtstart: event.dtstart.date,
     allDay: event.dtstart.allDay,
   };
+
+  if (event.timezone) {
+    parsed.timezone = event.timezone;
+  }
 
   if (event.description) {
     parsed.description = event.description;
@@ -356,6 +385,8 @@ function eventToParsedEvent(event: EventAccumulator): ParsedEvent | null {
 
   if (event.url) {
     parsed.url = event.url;
+  } else if (event.googleConference) {
+    parsed.url = event.googleConference;
   }
 
   if (event.rrule) {
@@ -365,6 +396,18 @@ function eventToParsedEvent(event: EventAccumulator): ParsedEvent | null {
   const status = normalizeDeltaStatus(event.customStatus) ?? event.status;
   if (status) {
     parsed.status = status;
+  }
+
+  if (event.recurrenceId) {
+    parsed.recurrenceId = event.recurrenceId;
+  }
+
+  if (event.exdates.length > 0) {
+    parsed.exdates = event.exdates;
+  }
+
+  if (event.rdates.length > 0) {
+    parsed.rdates = event.rdates;
   }
 
   return parsed;
@@ -387,8 +430,24 @@ function applyProperty(event: EventAccumulator, property: ParsedProperty): void 
     case "URL":
       event.url ??= unescapeText(property.value);
       break;
+    case "X-GOOGLE-CONFERENCE":
+      event.googleConference ??= unescapeText(property.value);
+      break;
     case "RRULE":
       event.rrule ??= property.value.replace(/^RRULE:/i, "");
+      break;
+    case "RECURRENCE-ID": {
+      const recurrenceId = parseICalDateTime(property.value, property.params);
+      if (recurrenceId) {
+        event.recurrenceId = recurrenceId.date;
+      }
+      break;
+    }
+    case "EXDATE":
+      event.exdates.push(...parseDateList(property.value, property.params));
+      break;
+    case "RDATE":
+      event.rdates.push(...parseDateList(property.value, property.params));
       break;
     case "STATUS":
       event.status ??= unescapeText(property.value);
@@ -399,6 +458,9 @@ function applyProperty(event: EventAccumulator, property: ParsedProperty): void 
     case "DTSTART":
       if (!event.dtstart) {
         event.dtstart = parseICalDateTime(property.value, property.params) ?? undefined;
+        if (event.dtstart && !event.dtstart.allDay && property.params.TZID) {
+          event.timezone = property.params.TZID.trim();
+        }
       }
       break;
     case "DTEND":
@@ -424,7 +486,7 @@ export async function parseICalendar(
 
     if (property.name === "BEGIN") {
       if (property.value.toUpperCase() === "VEVENT" && !currentEvent) {
-        currentEvent = {};
+        currentEvent = { exdates: [], rdates: [] };
         nestedDepth = 0;
       } else if (currentEvent) {
         nestedDepth++;

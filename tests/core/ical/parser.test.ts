@@ -54,6 +54,43 @@ DTSTAMP:20260328T000000Z
 END:VEVENT
 END:VCALENDAR`;
 
+const RECURRING_EXCEPTION_EVENT = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:recurring-master@example.com
+DTSTART;TZID=America/New_York:20260401T090000
+DTEND;TZID=America/New_York:20260401T100000
+SUMMARY:Algorithms
+RRULE:FREQ=WEEKLY;BYDAY=WE
+EXDATE;TZID=America/New_York:20260415T090000
+RDATE;TZID=America/New_York:20260417T090000
+DTSTAMP:20260328T000000Z
+END:VEVENT
+BEGIN:VEVENT
+UID:recurring-master@example.com
+RECURRENCE-ID;TZID=America/New_York:20260422T090000
+DTSTART;TZID=America/New_York:20260422T110000
+DTEND;TZID=America/New_York:20260422T120000
+SUMMARY:Algorithms (moved)
+STATUS:CANCELLED
+DTSTAMP:20260328T000000Z
+END:VEVENT
+END:VCALENDAR`;
+
+const GOOGLE_MEET_EVENT = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+BEGIN:VEVENT
+UID:google-meet@example.com
+DTSTART:20260401T140000Z
+DTEND:20260401T150000Z
+SUMMARY:Google Meet sync
+X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij
+DESCRIPTION:Join with Google Meet: https://meet.google.com/abc-defg-hij\n\nLearn more about Meet at: https://support.google.com/a/users/answer/9282720
+END:VEVENT
+END:VCALENDAR`;
+
 describe("parseICalendar", () => {
   it("parses a simple VCALENDAR with one event", async () => {
     const events = await parseICalendar(SIMPLE_EVENT);
@@ -88,6 +125,38 @@ describe("parseICalendar", () => {
     expect(events[0].url).toBe("https://meet.example.com/planning");
     expect(events[0].description).toBe("Discuss Q3 goals");
     expect(events[0].status).toBe("CONFIRMED");
+  });
+
+  it("prefers X-GOOGLE-CONFERENCE as the event URL", async () => {
+    const events = await parseICalendar(GOOGLE_MEET_EVENT);
+    expect(events).toHaveLength(1);
+    expect(events[0].url).toBe("https://meet.google.com/abc-defg-hij");
+    expect(events[0].description).toContain(
+      "Join with Google Meet: https://meet.google.com/abc-defg-hij",
+    );
+  });
+
+  it("parses recurring metadata and recurrence exceptions", async () => {
+    const events = await parseICalendar(RECURRING_EXCEPTION_EVENT);
+    expect(events).toHaveLength(2);
+
+    const master = events.find((event) => !event.recurrenceId);
+    const exception = events.find((event) => !!event.recurrenceId);
+
+    expect(master?.rrule).toBe("FREQ=WEEKLY;BYDAY=WE");
+    expect(master?.timezone).toBe("America/New_York");
+    expect(master?.exdates?.map((date) => date.toISOString())).toEqual([
+      "2026-04-15T13:00:00.000Z",
+    ]);
+    expect(master?.rdates?.map((date) => date.toISOString())).toEqual([
+      "2026-04-17T13:00:00.000Z",
+    ]);
+
+    expect(exception?.recurrenceId?.toISOString()).toBe(
+      "2026-04-22T13:00:00.000Z",
+    );
+    expect(exception?.dtstart.toISOString()).toBe("2026-04-22T15:00:00.000Z");
+    expect(exception?.status).toBe("CANCELLED");
   });
 
   it("returns empty array for empty input", async () => {
