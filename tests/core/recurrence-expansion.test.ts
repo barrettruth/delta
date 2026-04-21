@@ -156,6 +156,32 @@ describe("expandInstances", () => {
     expect(march9?.endAt).toBe("2026-03-09T16:00:00.000Z");
   });
 
+  it("keeps rendering exceptions when the master excludes the original date", () => {
+    const master = makeWeeklyMaster({
+      exdates: JSON.stringify(["2026-03-09T14:00:00.000Z"]),
+    });
+    const exception = createTask(db, userId, {
+      description: "Materialized standup",
+      startAt: "2026-03-09T14:00:00.000Z",
+      endAt: "2026-03-09T15:00:00.000Z",
+      recurringTaskId: master.id,
+      originalStartAt: "2026-03-09T14:00:00.000Z",
+    });
+
+    const instances = expandInstances(
+      master,
+      new Date("2026-03-01T00:00:00Z"),
+      new Date("2026-03-15T23:59:59Z"),
+      [exception],
+    );
+
+    const march9 = instances.find(
+      (i) => i.startAt === "2026-03-09T14:00:00.000Z",
+    );
+    expect(march9).toBeDefined();
+    expect(march9?.exception?.id).toBe(exception.id);
+  });
+
   it("returns empty for range with no occurrences", () => {
     const master = makeWeeklyMaster();
     const instances = expandInstances(

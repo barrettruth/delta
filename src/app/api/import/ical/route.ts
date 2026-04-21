@@ -40,11 +40,10 @@ export async function POST(request: Request) {
   let events: Awaited<ReturnType<typeof parseICalendar>>;
   try {
     events = await parseICalendar(content);
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to parse iCal content" },
-      { status: 400 },
-    );
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to parse iCal content";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const category = (formData.get("category") as string | null) ?? undefined;

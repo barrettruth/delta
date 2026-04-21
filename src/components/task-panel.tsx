@@ -97,14 +97,31 @@ export function TaskPanel({
     taskId,
     preFill,
     width,
+    optimisticTasks,
     setPendingEdit,
     clearPendingEdit,
+    clearOptimisticTask,
   } = panel;
 
   const task = useMemo(
-    () => (taskId ? (tasks.find((t) => t.id === taskId) ?? null) : null),
-    [tasks, taskId],
+    () =>
+      taskId
+        ? (tasks.find((t) => t.id === taskId) ??
+          optimisticTasks.get(taskId) ??
+          null)
+        : null,
+    [tasks, taskId, optimisticTasks],
   );
+
+  // Once the server's canonical task list contains this id, drop the
+  // optimistic shim so future edits see the real row.
+  useEffect(() => {
+    if (taskId == null) return;
+    if (!optimisticTasks.has(taskId)) return;
+    if (tasks.some((t) => t.id === taskId)) {
+      clearOptimisticTask(taskId);
+    }
+  }, [tasks, taskId, optimisticTasks, clearOptimisticTask]);
   const taskRef = useRef(task);
   taskRef.current = task;
   const activeTaskIdRef = useRef<number | null>(taskId);
@@ -406,17 +423,22 @@ export function TaskPanel({
   ]);
 
   useEffect(() => {
-    if (mode === "edit" && taskId) {
-      setPendingEdit(taskId, {
-        description,
-        category: category || null,
-        location: location || null,
-        meetingUrl: meetingUrl || null,
-      } as Partial<Task>);
-    }
+    // Only mirror form state into pendingEdits once we actually have the task
+    // loaded. Otherwise a freshly-opened panel whose task hasn't hydrated yet
+    // (e.g. just-materialized recurring instance awaiting revalidation) would
+    // write the previous task's stale description/category/location/meetingUrl
+    // under the new id and corrupt the calendar render.
+    if (mode !== "edit" || !taskId || !task) return;
+    setPendingEdit(taskId, {
+      description,
+      category: category || null,
+      location: location || null,
+      meetingUrl: meetingUrl || null,
+    } as Partial<Task>);
   }, [
     mode,
     taskId,
+    task,
     description,
     category,
     location,

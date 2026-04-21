@@ -50,7 +50,7 @@ export async function createTaskAction(
   try {
     const user = await requireUser();
     const task = createTask(db, user.id, input);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to create task" };
@@ -65,7 +65,7 @@ export async function updateTaskAction(
     const { user } = await requireOwnedTask(id);
     void user;
     const task = updateTask(db, id, input);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update task" };
@@ -78,7 +78,7 @@ export async function completeTaskAction(
   try {
     const { user } = await requireOwnedTask(id);
     const result = completeTask(db, user.id, id);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: result };
   } catch (e) {
     return {
@@ -93,7 +93,7 @@ export async function deleteTaskAction(
   try {
     await requireOwnedTask(id);
     const task = deleteTask(db, id);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to delete task" };
@@ -108,7 +108,7 @@ export async function addDependencyAction(
     await requireOwnedTask(taskId);
     await requireOwnedTask(dependsOnId);
     addDependency(db, taskId, dependsOnId);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -130,7 +130,7 @@ export async function setCategoryColorAction(
         set: { color },
       })
       .run();
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -152,7 +152,7 @@ export async function removeCategoryColorAction(
         ),
       )
       .run();
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -168,7 +168,7 @@ export async function removeDependencyAction(
   try {
     await requireOwnedTask(taskId);
     removeDependency(db, taskId, dependsOnId);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -196,7 +196,7 @@ export async function undoTaskAction(
         .where(eq(tasks.id, m.taskId))
         .run();
     }
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to undo" };
@@ -212,7 +212,7 @@ export async function materializeInstanceAction(
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     const task = materializeInstance(db, user.id, masterId, instanceDate);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return {
@@ -231,7 +231,7 @@ export async function completeVirtualInstanceAction(
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     const task = materializeInstance(db, user.id, masterId, instanceDate);
     const result = completeTask(db, user.id, task.id);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: result.task };
   } catch (e) {
     return {
@@ -251,7 +251,7 @@ export async function editRecurringInstanceAction(
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     const task = editThisInstance(db, user.id, masterId, instanceDate, updates);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return {
@@ -276,7 +276,7 @@ export async function editThisAndFutureAction(
       instanceDate,
       updates,
     );
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return {
@@ -294,7 +294,7 @@ export async function editAllInstancesAction(
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     const task = editAllInstances(db, user.id, masterId, updates);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
     return {
@@ -312,7 +312,7 @@ export async function deleteThisInstanceAction(
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     deleteThisInstance(db, user.id, masterId, instanceDate);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -330,7 +330,7 @@ export async function deleteThisAndFutureAction(
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     deleteThisAndFuture(db, user.id, masterId, instanceDate);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -347,7 +347,7 @@ export async function deleteAllInstancesAction(
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
     deleteAllInstances(db, masterId);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return {
@@ -379,7 +379,7 @@ export async function undoCompleteTaskAction(
         db.delete(tasks).where(eq(tasks.id, m.spawnedTaskId)).run();
       }
     }
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to undo" };
