@@ -194,7 +194,7 @@ function SettingsNavRail({
         flex-row md:flex-col
         md:w-52
         md:border-r border-b md:border-b-0 border-border/60
-        bg-black/20
+        bg-sidebar
       "
     >
       <div
