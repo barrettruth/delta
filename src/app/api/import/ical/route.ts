@@ -43,10 +43,7 @@ export async function POST(request: Request) {
   } catch (e) {
     const message =
       e instanceof Error ? e.message : "Failed to parse iCal content";
-    return NextResponse.json(
-      { error: message },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const category = (formData.get("category") as string | null) ?? undefined;

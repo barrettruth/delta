@@ -341,10 +341,7 @@ function parseICalDateTime(
   };
 }
 
-function parseDateList(
-  value: string,
-  params: Record<string, string>,
-): Date[] {
+function parseDateList(value: string, params: Record<string, string>): Date[] {
   const parsed: Date[] = [];
   for (const item of splitOutsideQuotes(value, ",")) {
     const trimmed = item.trim();
@@ -413,7 +410,10 @@ function eventToParsedEvent(event: EventAccumulator): ParsedEvent | null {
   return parsed;
 }
 
-function applyProperty(event: EventAccumulator, property: ParsedProperty): void {
+function applyProperty(
+  event: EventAccumulator,
+  property: ParsedProperty,
+): void {
   switch (property.name) {
     case "UID":
       event.uid ??= unescapeText(property.value);
@@ -457,7 +457,8 @@ function applyProperty(event: EventAccumulator, property: ParsedProperty): void 
       break;
     case "DTSTART":
       if (!event.dtstart) {
-        event.dtstart = parseICalDateTime(property.value, property.params) ?? undefined;
+        event.dtstart =
+          parseICalDateTime(property.value, property.params) ?? undefined;
         if (event.dtstart && !event.dtstart.allDay && property.params.TZID) {
           event.timezone = property.params.TZID.trim();
         }
@@ -465,7 +466,8 @@ function applyProperty(event: EventAccumulator, property: ParsedProperty): void 
       break;
     case "DTEND":
       if (!event.dtend) {
-        event.dtend = parseICalDateTime(property.value, property.params) ?? undefined;
+        event.dtend =
+          parseICalDateTime(property.value, property.params) ?? undefined;
       }
       break;
   }

@@ -107,14 +107,15 @@ export function expandInstances(
       startAt: exc.startAt ?? exc.originalStartAt,
       endAt:
         exc.endAt ??
-        (duration ? new Date(startDate.getTime() + duration).toISOString() : null),
+        (duration
+          ? new Date(startDate.getTime() + duration).toISOString()
+          : null),
       exception: exc,
     });
   }
 
   instances.sort(
-    (a, b) =>
-      new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+    (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
   );
   return instances;
 }

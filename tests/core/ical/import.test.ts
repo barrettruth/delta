@@ -94,12 +94,8 @@ describe("importICalEvents", () => {
     expect(tasks[0].timezone).toBe("America/New_York");
     expect(tasks[0].recurrence).toBe("FREQ=WEEKLY;BYDAY=MO");
     expect(tasks[0].recurMode).toBe("scheduled");
-    expect(tasks[0].exdates).toBe(
-      JSON.stringify(["2026-04-13T13:00:00.000Z"]),
-    );
-    expect(tasks[0].rdates).toBe(
-      JSON.stringify(["2026-04-15T13:00:00.000Z"]),
-    );
+    expect(tasks[0].exdates).toBe(JSON.stringify(["2026-04-13T13:00:00.000Z"]));
+    expect(tasks[0].rdates).toBe(JSON.stringify(["2026-04-15T13:00:00.000Z"]));
   });
 
   it("imports recurrence exceptions as exception tasks", () => {
@@ -135,10 +131,7 @@ describe("importICalEvents", () => {
     expect(master?.recurrence).toBe("FREQ=WEEKLY;BYDAY=WE");
     expect(master?.recurMode).toBe("scheduled");
     expect(master?.exdates).toBe(
-      JSON.stringify([
-        "2026-04-08T09:00:00.000Z",
-        "2026-04-15T09:00:00.000Z",
-      ]),
+      JSON.stringify(["2026-04-08T09:00:00.000Z", "2026-04-15T09:00:00.000Z"]),
     );
 
     expect(exception?.description).toBe("Lecture (moved)");

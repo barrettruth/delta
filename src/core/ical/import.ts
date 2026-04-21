@@ -64,7 +64,9 @@ function parsedEventToInput(
     getMeetingUrl(event.url, event.location) ??
     extractMeetingUrlFromDescription(event.description);
   const location =
-    event.location && meetingUrl !== event.location ? event.location : undefined;
+    event.location && meetingUrl !== event.location
+      ? event.location
+      : undefined;
   const input: CreateTaskInput = {
     description: event.summary,
     status: "pending",
@@ -257,7 +259,12 @@ function importRecurringGroup(
     if (!event.recurrenceId) continue;
 
     const externalId = eventExternalId(event);
-    const existing = getExternalLinkByProviderId(db, userId, "ical", externalId);
+    const existing = getExternalLinkByProviderId(
+      db,
+      userId,
+      "ical",
+      externalId,
+    );
     if (existing) {
       result.skipped++;
       continue;
@@ -306,7 +313,10 @@ export function importICalEvents(
     try {
       const hasRecurringMetadata = group.some(
         (event) =>
-          !!event.rrule || !!event.recurrenceId || !!event.exdates?.length || !!event.rdates?.length,
+          !!event.rrule ||
+          !!event.recurrenceId ||
+          !!event.exdates?.length ||
+          !!event.rdates?.length,
       );
 
       if (group.length === 1 && !hasRecurringMetadata) {
@@ -316,7 +326,9 @@ export function importICalEvents(
       }
     } catch (e) {
       const message =
-        e instanceof Error ? e.message : `Failed to import ${group[0]?.uid ?? "event"}`;
+        e instanceof Error
+          ? e.message
+          : `Failed to import ${group[0]?.uid ?? "event"}`;
       result.errors.push(message);
     }
   }
