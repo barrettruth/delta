@@ -209,7 +209,7 @@ describe("executeCommand", () => {
     expect(result).toBe("quit: unexpected argument 'foo'");
   });
 
-  it("handles :wq command", () => {
+  it("routes :wq through the panel close flow", () => {
     let saved = false;
     let closed = false;
     const ctx = makeMockContext({
@@ -228,11 +228,11 @@ describe("executeCommand", () => {
       },
     });
     executeCommand("wq", commandRegistry, ctx);
-    expect(saved).toBe(true);
+    expect(saved).toBe(false);
     expect(closed).toBe(true);
   });
 
-  it("handles :x alias for :wq", () => {
+  it("routes :x through the panel close flow", () => {
     let saved = false;
     let closed = false;
     const ctx = makeMockContext({
@@ -251,7 +251,7 @@ describe("executeCommand", () => {
       },
     });
     executeCommand("x", commandRegistry, ctx);
-    expect(saved).toBe(true);
+    expect(saved).toBe(false);
     expect(closed).toBe(true);
   });
 
