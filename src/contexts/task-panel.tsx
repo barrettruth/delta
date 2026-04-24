@@ -19,11 +19,13 @@ interface TaskPanelContextValue {
   taskId: number | null;
   preFill: TaskPreFill | null;
   width: number;
+  closeRequestSeq: number;
   pendingEdits: Map<number, Partial<Task>>;
   optimisticTasks: Map<number, Task>;
   open: (taskId: number) => void;
   create: (preFill?: TaskPreFill) => void;
   close: () => void;
+  forceClose: () => void;
   toggle: (taskId: number) => void;
   setWidth: (w: number) => void;
   setPendingEdit: (taskId: number, fields: Partial<Task>) => void;
@@ -44,6 +46,7 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<PanelMode>("edit");
   const [taskId, setTaskId] = useState<number | null>(null);
   const [preFill, setPreFill] = useState<TaskPreFill | null>(null);
+  const [closeRequestSeq, setCloseRequestSeq] = useState(0);
   const [pendingEdits, setPendingEdits] = useState<Map<number, Partial<Task>>>(
     () => new Map(),
   );
@@ -82,7 +85,7 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(true);
   }, []);
 
-  const close = useCallback(() => {
+  const forceClose = useCallback(() => {
     const id = taskIdRef.current;
     if (id !== null) {
       setPendingEdits((prev) => {
@@ -102,9 +105,14 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
     setPreFill(null);
   }, []);
 
+  const close = useCallback(() => {
+    if (!isOpenRef.current) return;
+    setCloseRequestSeq((prev) => prev + 1);
+  }, []);
+
   const toggle = useCallback((id: number) => {
     if (isOpenRef.current && taskIdRef.current === id) {
-      setIsOpen(false);
+      setCloseRequestSeq((prev) => prev + 1);
     } else {
       setTaskId(id);
       setMode("edit");
@@ -161,11 +169,13 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
       taskId,
       preFill,
       width,
+      closeRequestSeq,
       pendingEdits,
       optimisticTasks,
       open,
       create,
       close,
+      forceClose,
       toggle,
       setWidth,
       setPendingEdit,
@@ -179,11 +189,13 @@ export function TaskPanelProvider({ children }: { children: React.ReactNode }) {
       taskId,
       preFill,
       width,
+      closeRequestSeq,
       pendingEdits,
       optimisticTasks,
       open,
       create,
       close,
+      forceClose,
       toggle,
       setWidth,
       setPendingEdit,

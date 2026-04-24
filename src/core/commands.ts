@@ -129,7 +129,6 @@ export const commandRegistry: CommandDefinition[] = [
     execute: (_args, ctx) => {
       if (ctx.taskPanel.isOpen) {
         ctx.discardTask();
-        ctx.taskPanel.close();
       } else {
         ctx.logout();
       }
@@ -150,7 +149,6 @@ export const commandRegistry: CommandDefinition[] = [
     category: "task",
     expectedArgs: [],
     execute: (_args, ctx) => {
-      ctx.saveTask();
       ctx.taskPanel.close();
     },
   },

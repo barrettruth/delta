@@ -6,6 +6,7 @@ import {
   completeTaskAction,
   createTaskAction,
   deleteTaskAction,
+  saveTaskDetailsAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
@@ -39,6 +40,13 @@ import {
   taskPanelRemindersEqual,
   taskReminderToDraft,
 } from "@/lib/task-panel-reminders";
+import {
+  buildTaskPanelUpdateInput,
+  isTaskPanelDirty,
+  mergeSavedReminderDrafts,
+  type TaskPanelFormValues,
+  taskPanelRemindersChanged,
+} from "@/lib/task-panel-save";
 import { detectMeetingPlatform } from "@/lib/utils";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -97,10 +105,12 @@ export function TaskPanel({
     taskId,
     preFill,
     width,
+    closeRequestSeq,
     optimisticTasks,
     setPendingEdit,
     clearPendingEdit,
     clearOptimisticTask,
+    forceClose,
   } = panel;
 
   const task = useMemo(
@@ -145,6 +155,7 @@ export function TaskPanel({
   const [locationIdx, setLocationIdx] = useState(-1);
   const [recurrenceFocused, setRecurrenceFocused] = useState(false);
   const notesRef = useRef<string | null>(null);
+  const [notesValue, setNotesValue] = useState<string | null>(null);
   const pendingYRef = useRef(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const prevTaskIdRef = useRef<number | null>(null);
@@ -157,6 +168,10 @@ export function TaskPanel({
   const reminderClientIdRef = useRef(0);
   const reminderDraftsRef = useRef<TaskPanelReminderDraft[]>([]);
   const initialReminderDraftsRef = useRef<TaskPanelReminderDraft[]>([]);
+  const initialFormRef = useRef<TaskPanelFormValues | null>(null);
+  const saveQueueRef = useRef(Promise.resolve(true));
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handledCloseRequestRef = useRef(0);
   const remindersReadyRef = useRef(false);
 
   const [reminderEndpoints, setReminderEndpoints] = useState<
@@ -223,6 +238,7 @@ export function TaskPanel({
 
   const handleNotesChange = useCallback((json: string) => {
     notesRef.current = json;
+    setNotesValue(json);
   }, []);
 
   const loadReminderState = useCallback(
@@ -563,66 +579,168 @@ export function TaskPanel({
 
   const { results: locationResults } = useLocationSearch(location);
 
+  const getCurrentFormValues = useCallback(
+    (): TaskPanelFormValues => ({
+      ...formDataRef.current,
+    }),
+    [],
+  );
+
+  const currentFormValues = useMemo(
+    (): TaskPanelFormValues => ({
+      description,
+      category,
+      due,
+      location,
+      locationLat,
+      locationLon,
+      meetingUrl,
+      recurrence,
+      recurMode,
+      notes: notesValue,
+    }),
+    [
+      description,
+      category,
+      due,
+      location,
+      locationLat,
+      locationLon,
+      meetingUrl,
+      recurrence,
+      recurMode,
+      notesValue,
+    ],
+  );
+
+  const clearAutoSaveTimer = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+  }, []);
+
   const saveTask = useCallback(
-    async (id: number, options?: { applyReminderState?: boolean }) => {
-      const f = formDataRef.current;
-      const initialReminderDrafts = cloneReminderDrafts(
-        initialReminderDraftsRef.current,
-      );
-      const currentReminderDrafts = cloneReminderDrafts(
-        reminderDraftsRef.current,
-      );
-      const dueChanged = f.due !== initialDueRef.current;
-      const result = await updateTaskAction(id, {
-        description: f.description,
-        category: f.category || null,
-        ...(dueChanged
-          ? { due: f.due ? new Date(f.due).toISOString() : null }
-          : {}),
-        notes: f.notes || null,
-        location: f.location || null,
-        locationLat: f.location ? f.locationLat : null,
-        locationLon: f.location ? f.locationLon : null,
-        meetingUrl: f.meetingUrl || null,
-        recurrence: f.recurrence || null,
-        recurMode: f.recurrence ? f.recurMode : null,
-      });
+    (
+      id: number,
+      options?: { applyReminderState?: boolean; includeReminders?: boolean },
+    ) => {
+      const snapshot = {
+        form: getCurrentFormValues(),
+        reminders:
+          options?.includeReminders && remindersReadyRef.current
+            ? cloneReminderDrafts(reminderDraftsRef.current)
+            : null,
+        initialDue: initialDueRef.current,
+      };
 
-      if ("error" in result) {
-        statusBar.error(result.error);
-        return false;
-      }
+      const run = async () => {
+        const initialReminders = snapshot.reminders
+          ? cloneReminderDrafts(initialReminderDraftsRef.current)
+          : null;
 
-      try {
-        await saveTaskReminders(id, {
-          initial: initialReminderDrafts,
-          current: currentReminderDrafts,
-          applyState: options?.applyReminderState,
+        if (
+          !isTaskPanelDirty(
+            initialFormRef.current,
+            snapshot.form,
+            initialReminders,
+            snapshot.reminders,
+          )
+        ) {
+          return true;
+        }
+
+        const result = await saveTaskDetailsAction(id, {
+          task: buildTaskPanelUpdateInput(snapshot.form, snapshot.initialDue),
+          ...(snapshot.reminders ? { reminders: snapshot.reminders } : {}),
         });
-      } catch (error) {
-        statusBar.error(
-          error instanceof Error ? error.message : "Failed to save reminders",
-        );
-        return false;
-      }
 
-      return true;
+        if ("error" in result) {
+          statusBar.error(result.error);
+          return false;
+        }
+
+        initialFormRef.current = snapshot.form;
+        initialDueRef.current = snapshot.form.due;
+
+        if (snapshot.reminders) {
+          const savedDrafts = mergeSavedReminderDrafts(
+            snapshot.reminders,
+            result.data.reminders,
+          );
+          initialReminderDraftsRef.current = savedDrafts;
+
+          if (
+            options?.applyReminderState !== false &&
+            panelOpenRef.current &&
+            activeTaskIdRef.current === id
+          ) {
+            setReminderDrafts((current) => {
+              const mergedIds = current.map((draft) => {
+                const saved = savedDrafts.find(
+                  (candidate) => candidate.clientId === draft.clientId,
+                );
+
+                if (!saved || draft.id !== null || saved.id === null) {
+                  return draft;
+                }
+
+                return { ...draft, id: saved.id };
+              });
+              const nextDrafts = taskPanelRemindersChanged(
+                snapshot.reminders,
+                mergedIds,
+              )
+                ? mergedIds
+                : savedDrafts;
+              reminderDraftsRef.current = nextDrafts;
+              return nextDrafts;
+            });
+          }
+        }
+
+        return true;
+      };
+
+      const queued = saveQueueRef.current.then(run, run);
+      saveQueueRef.current = queued.then(
+        () => true,
+        () => true,
+      );
+
+      return queued;
     },
-    [saveTaskReminders, statusBar],
+    [getCurrentFormValues, statusBar],
   );
 
   useEffect(() => {
     const prevId = prevTaskIdRef.current;
     if (prevId && prevId !== taskId) {
-      void saveTask(prevId, { applyReminderState: false });
+      void saveTask(prevId, {
+        applyReminderState: false,
+        includeReminders: true,
+      });
     }
     prevTaskIdRef.current = taskId;
 
     const t = taskRef.current;
     if (mode === "edit" && t) {
+      const dueInit = t.due ? t.due.slice(0, t.allDay === 1 ? 10 : 16) : "";
+      const nextForm = {
+        description: t.description,
+        category: t.category ?? "",
+        due: dueInit,
+        location: t.location ?? "",
+        locationLat: t.locationLat ?? null,
+        locationLon: t.locationLon ?? null,
+        meetingUrl: t.meetingUrl ?? "",
+        recurrence: t.recurrence,
+        recurMode: t.recurMode ?? "scheduled",
+        notes: t.notes ?? null,
+      } satisfies TaskPanelFormValues;
+      initialFormRef.current = nextForm;
       setDescription(t.description);
       setCategory(t.category ?? "");
-      const dueInit = t.due ? t.due.slice(0, t.allDay === 1 ? 10 : 16) : "";
       setDue(dueInit);
       initialDueRef.current = dueInit;
       setLocation(t.location ?? "");
@@ -632,12 +750,25 @@ export function TaskPanel({
       setRecurrence(t.recurrence);
       setRecurMode(t.recurMode ?? "scheduled");
       notesRef.current = t.notes ?? null;
+      setNotesValue(t.notes ?? null);
     } else if (mode === "create") {
-      setDescription("");
-      setCategory(preFill?.category ?? "");
       const dueInit = preFill?.startAt
         ? preFill.startAt.slice(0, preFill?.allDay === 1 ? 10 : 16)
         : "";
+      initialFormRef.current = {
+        description: "",
+        category: preFill?.category ?? "",
+        due: dueInit,
+        location: "",
+        locationLat: null,
+        locationLon: null,
+        meetingUrl: "",
+        recurrence: null,
+        recurMode: "scheduled",
+        notes: null,
+      };
+      setDescription("");
+      setCategory(preFill?.category ?? "");
       setDue(dueInit);
       initialDueRef.current = dueInit;
       setLocation("");
@@ -647,6 +778,7 @@ export function TaskPanel({
       setRecurrence(null);
       setRecurMode("scheduled");
       notesRef.current = null;
+      setNotesValue(null);
     }
   }, [taskId, mode, preFill, saveTask]);
 
@@ -664,15 +796,6 @@ export function TaskPanel({
       nav.setTaskDetailOpen(null);
     }
   }, [isOpen, taskId, nav]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    return () => {
-      const id = prevTaskIdRef.current;
-      if (id) void saveTask(id, { applyReminderState: false });
-      prevTaskIdRef.current = null;
-    };
-  }, [isOpen, saveTask]);
 
   const handleCreate = useCallback(async () => {
     const trimmed = description.trim();
@@ -715,7 +838,7 @@ export function TaskPanel({
             : "task created, but reminders failed to save",
         );
       }
-      panel.close();
+      forceClose();
       return;
     }
 
@@ -733,7 +856,7 @@ export function TaskPanel({
     recurrence,
     recurMode,
     preFill,
-    panel,
+    forceClose,
     saveTaskReminders,
     statusBar,
   ]);
@@ -753,7 +876,7 @@ export function TaskPanel({
       (task.recurrence || task.recurringTaskId) &&
       recurrenceDelete.requestDelete(task)
     ) {
-      panel.close();
+      forceClose();
       return;
     }
     undo.push({
@@ -773,8 +896,8 @@ export function TaskPanel({
     });
     prevTaskIdRef.current = null;
     deleteTaskAction(task.id);
-    panel.close();
-  }, [task, recurrenceDelete, undo, panel]);
+    forceClose();
+  }, [task, recurrenceDelete, undo, forceClose]);
 
   const handleShare = useCallback(async () => {
     if (!task?.startAt) return;
@@ -794,12 +917,46 @@ export function TaskPanel({
     }
   }, [task, statusBar]);
 
+  const handleClosePanel = useCallback(async () => {
+    clearAutoSaveTimer();
+
+    if (mode === "edit" && task) {
+      if (
+        await saveTask(task.id, {
+          applyReminderState: false,
+          includeReminders: true,
+        })
+      ) {
+        forceClose();
+      }
+      return;
+    }
+
+    if (mode === "create") {
+      if (description.trim()) {
+        await handleCreate();
+      } else {
+        forceClose();
+      }
+    }
+  }, [
+    clearAutoSaveTimer,
+    mode,
+    task,
+    saveTask,
+    forceClose,
+    description,
+    handleCreate,
+  ]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (keymaps.resolvedMatchesEvent("task_detail.save", e.nativeEvent)) {
         e.preventDefault();
-        if (mode === "edit" && task) void saveTask(task.id);
-        else if (mode === "create") void handleCreate();
+        clearAutoSaveTimer();
+        if (mode === "edit" && task) {
+          void saveTask(task.id, { includeReminders: true });
+        } else if (mode === "create") void handleCreate();
         return;
       }
 
@@ -808,16 +965,7 @@ export function TaskPanel({
       if (e.key === closeKey) {
         e.preventDefault();
         e.stopPropagation();
-        if (mode === "edit" && task) {
-          void saveTask(task.id, { applyReminderState: false });
-          panel.close();
-        } else if (mode === "create") {
-          if (description.trim()) {
-            void handleCreate();
-          } else {
-            panel.close();
-          }
-        }
+        void handleClosePanel();
         return;
       }
 
@@ -857,24 +1005,60 @@ export function TaskPanel({
       mode,
       task,
       saveTask,
-      panel,
+      clearAutoSaveTimer,
+      handleClosePanel,
       handleCreate,
       handleShare,
-      description,
       keymaps,
     ],
   );
 
   useEffect(() => {
     if (isOpen && mode === "edit" && !task) {
-      panel.close();
+      forceClose();
     }
-  }, [isOpen, mode, task, panel]);
+  }, [isOpen, mode, task, forceClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      handledCloseRequestRef.current = closeRequestSeq;
+      return;
+    }
+    if (closeRequestSeq === handledCloseRequestRef.current) return;
+    handledCloseRequestRef.current = closeRequestSeq;
+    void handleClosePanel();
+  }, [closeRequestSeq, handleClosePanel, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== "edit" || !task) {
+      clearAutoSaveTimer();
+      return;
+    }
+
+    if (currentFormValues.description.trim().length === 0) {
+      clearAutoSaveTimer();
+      return;
+    }
+
+    if (
+      !isTaskPanelDirty(initialFormRef.current, currentFormValues, null, null)
+    ) {
+      clearAutoSaveTimer();
+      return;
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      void saveTask(task.id);
+    }, 750);
+
+    return clearAutoSaveTimer;
+  }, [isOpen, mode, task, clearAutoSaveTimer, currentFormValues, saveTask]);
 
   useEffect(() => {
     async function onSave() {
       if (mode === "edit" && task) {
-        if (await saveTask(task.id)) {
+        clearAutoSaveTimer();
+        if (await saveTask(task.id, { includeReminders: true })) {
           statusBar.message("saved");
         }
       } else if (mode === "create") {
@@ -883,7 +1067,8 @@ export function TaskPanel({
     }
     function onDiscard() {
       prevTaskIdRef.current = null;
-      panel.close();
+      clearAutoSaveTimer();
+      forceClose();
     }
     window.addEventListener("command-save-task", onSave);
     window.addEventListener("command-discard-task", onDiscard);
@@ -891,7 +1076,15 @@ export function TaskPanel({
       window.removeEventListener("command-save-task", onSave);
       window.removeEventListener("command-discard-task", onDiscard);
     };
-  }, [mode, task, saveTask, handleCreate, panel, statusBar]);
+  }, [
+    mode,
+    task,
+    saveTask,
+    handleCreate,
+    forceClose,
+    statusBar,
+    clearAutoSaveTimer,
+  ]);
 
   const isMobile = useIsMobile();
 
@@ -918,12 +1111,7 @@ export function TaskPanel({
             <button
               type="button"
               className="text-xs text-muted-foreground hover:text-foreground mb-2 min-h-[44px] flex items-center"
-              onClick={() => {
-                if (mode === "edit" && task) {
-                  void saveTask(task.id, { applyReminderState: false });
-                }
-                panel.close();
-              }}
+              onClick={() => void handleClosePanel()}
             >
               &larr; back
             </button>
@@ -961,18 +1149,7 @@ export function TaskPanel({
               type="button"
               aria-label="close task panel"
               className="text-muted-foreground hover:text-foreground shrink-0 p-1 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
-              onClick={() => {
-                if (mode === "edit" && task) {
-                  void saveTask(task.id, { applyReminderState: false });
-                  panel.close();
-                } else if (mode === "create") {
-                  if (description.trim()) {
-                    void handleCreate();
-                  } else {
-                    panel.close();
-                  }
-                }
-              }}
+              onClick={() => void handleClosePanel()}
             >
               <X size={14} />
             </button>
@@ -1207,7 +1384,7 @@ export function TaskPanel({
         mode="delete"
         onSelect={(strategy) => {
           recurrenceDelete.executeStrategy(strategy);
-          panel.close();
+          forceClose();
         }}
       />
     </>
