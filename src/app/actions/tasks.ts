@@ -19,6 +19,7 @@ import {
   getTask,
   updateTask,
 } from "@/core/task";
+import { saveTaskDetails } from "@/core/task-detail-save";
 import type {
   CreateTaskInput,
   Task,
@@ -28,6 +29,7 @@ import type {
 import { db } from "@/db";
 import { categoryColors, tasks } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
+import type { TaskPanelReminderDraft } from "@/lib/task-panel-reminders";
 
 type ActionResult<T> = { data: T } | { error: string };
 
@@ -69,6 +71,25 @@ export async function updateTaskAction(
     return { data: task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update task" };
+  }
+}
+
+export async function saveTaskDetailsAction(
+  id: number,
+  input: {
+    task: UpdateTaskInput;
+    reminders?: TaskPanelReminderDraft[] | null;
+  },
+): Promise<ActionResult<ReturnType<typeof saveTaskDetails>>> {
+  try {
+    const { user } = await requireOwnedTask(id);
+    const result = saveTaskDetails(db, user.id, id, input);
+    revalidatePath("/", "layout");
+    return { data: result };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Failed to save task details",
+    };
   }
 }
 
