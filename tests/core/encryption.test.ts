@@ -87,7 +87,8 @@ describe("encrypt / decrypt", () => {
   it("fails to decrypt tampered auth tag", () => {
     const encrypted = encrypt("secret", TEST_KEY);
     const parts = encrypted.split(":");
-    const tamperedTag = `${parts[2].slice(0, -2)}ff`;
+    const last2 = parts[2].slice(-2);
+    const tamperedTag = `${parts[2].slice(0, -2)}${last2 === "ff" ? "00" : "ff"}`;
     const tamperedStr = `${parts[0]}:${parts[1]}:${tamperedTag}`;
     expect(() => decrypt(tamperedStr, TEST_KEY)).toThrow();
   });
