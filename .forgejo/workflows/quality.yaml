@@ -1,0 +1,31 @@
+name: quality
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: spark
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint
+        run: nix develop .#ci --command just lint
+  test:
+    name: Test
+    runs-on: spark
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: nix develop .#ci --command just test
+  build:
+    name: Build
+    runs-on: spark
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: nix develop .#ci --command just build
