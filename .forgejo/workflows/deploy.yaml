@@ -1,0 +1,105 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: nix
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for quality
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          nix develop .#ci --command node <<'EOF'
+          const required = [
+            "quality / Lint (push)",
+            "quality / Test (push)",
+            "quality / Build (push)",
+          ];
+          const deadline = Date.now() + 60 * 60 * 1000;
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+          async function fetchStatuses() {
+            const url = `${process.env.SERVER_URL}/api/v1/repos/${process.env.REPOSITORY}/commits/${process.env.SHA}/status`;
+            const response = await fetch(url, {
+              headers: { Authorization: `token ${process.env.GITHUB_TOKEN}` },
+            });
+            if (!response.ok) {
+              throw new Error(`status API returned ${response.status}`);
+            }
+            return response.json();
+          }
+
+          async function main() {
+            while (Date.now() < deadline) {
+              const payload = await fetchStatuses();
+              const statuses = new Map();
+              for (const status of payload.statuses ?? []) {
+                if (required.includes(status.context) && !statuses.has(status.context)) {
+                  statuses.set(status.context, status.status);
+                }
+              }
+
+              const missing = required.filter((context) => !statuses.has(context));
+              const failed = required.filter((context) => ["error", "failure"].includes(statuses.get(context)));
+              const pending = required.filter((context) => statuses.get(context) !== "success");
+
+              if (failed.length > 0) {
+                console.error(`Quality checks failed: ${failed.join(", ")}`);
+                process.exit(1);
+              }
+              if (missing.length === 0 && pending.length === 0) {
+                console.log("Quality checks passed.");
+                process.exit(0);
+              }
+
+              console.log(`Waiting for quality checks: ${pending.concat(missing).join(", ")}`);
+              await sleep(10000);
+            }
+
+            console.error("Timed out waiting for quality checks.");
+            process.exit(1);
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          EOF
+      - name: Deploy
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          set -eu
+          if [ -z "${VPS_HOST:-}" ]; then
+            echo "VPS_HOST is not set" >&2
+            exit 1
+          fi
+          if [ -z "${VPS_USERNAME:-}" ]; then
+            echo "VPS_USERNAME is not set" >&2
+            exit 1
+          fi
+          if [ -z "${VPS_SSH_KEY:-}" ]; then
+            echo "VPS_SSH_KEY is not set" >&2
+            exit 1
+          fi
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/vps_delta_deploy"
+          chmod 600 "$HOME/.ssh/vps_delta_deploy"
+          ssh-keyscan -H "$VPS_HOST" >> "$HOME/.ssh/known_hosts"
+          ssh -i "$HOME/.ssh/vps_delta_deploy" "$VPS_USERNAME@$VPS_HOST" /opt/delta/scripts/deploy.sh
