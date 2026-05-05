@@ -2,4 +2,8 @@
 
 A personal, self-hosted todo platform.
 
-![delta](https://github.com/user-attachments/assets/df4bc3ed-679a-4a14-809d-a9b92327bdf4)
+> [!NOTE]
+> Due to GitHub's historic unreliability, development, issues, and pull requests
+> have moved to [Forgejo](https://git.barrettruth.com/barrettruth/delta).
+
+![delta](assets/delta.png)
