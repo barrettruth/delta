@@ -1,18 +1,10 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { PreferencesSection } from "@/components/settings/preferences-section";
-import { validateSession } from "@/core/auth";
 import { getSettings } from "@/core/settings";
 import { db } from "@/db";
+import { requireAuthUser } from "@/lib/server-auth";
 
 export default async function SettingsPreferencesPage() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
-
+  const user = await requireAuthUser();
   const settings = getSettings(db, user.id);
 
   return <PreferencesSection settings={settings} />;

@@ -1,18 +1,12 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { validateSession } from "@/core/auth";
 import { getIntegrationConfig } from "@/core/integration-config";
 import { userHas2FA } from "@/core/two-factor";
 import { db } from "@/db";
+import { requireAuthUser } from "@/lib/server-auth";
 import { OnboardingWizard } from "./onboarding-wizard";
 
 export default async function OnboardingPage() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
+  const user = await requireAuthUser();
   if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
   if (user.onboardingCompleted) redirect("/");
 

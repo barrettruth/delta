@@ -1,21 +1,13 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { CalendarSettingsSection } from "@/components/settings/calendar-settings-section";
-import { validateSession } from "@/core/auth";
 import { getIntegrationConfig } from "@/core/integration-config";
 import { db } from "@/db";
 import type { NlpProvider } from "@/lib/nlp-models";
+import { requireAuthUser } from "@/lib/server-auth";
 
 type GeoProvider = "photon" | "mapbox" | "google_maps";
 
 export default async function SettingsCalendarPage() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
-
+  const user = await requireAuthUser();
   const nlpAnthropic = getIntegrationConfig(db, user.id, "nlp_anthropic");
   const nlpOpenai = getIntegrationConfig(db, user.id, "nlp_openai");
 

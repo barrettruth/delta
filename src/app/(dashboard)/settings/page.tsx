@@ -1,18 +1,10 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { AccountSection } from "@/components/settings/account-section";
-import { validateSession } from "@/core/auth";
 import { getLinkedAccounts } from "@/core/oauth";
 import { db } from "@/db";
+import { requireAuthUser } from "@/lib/server-auth";
 
 export default async function SettingsAccountPage() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
-
+  const user = await requireAuthUser();
   const connectedAccounts = getLinkedAccounts(db, user.id);
 
   return (

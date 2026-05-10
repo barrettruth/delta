@@ -1,11 +1,10 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { KanbanBoard } from "@/components/kanban-board";
-import { validateSession } from "@/core/auth";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
+import { ACTIVE_TASK_STATUSES } from "@/core/task-status";
 import type { TaskFilters } from "@/core/types";
 import { db } from "@/db";
+import { requireAuthUser } from "@/lib/server-auth";
 
 export default async function KanbanPage({
   searchParams,
@@ -13,11 +12,7 @@ export default async function KanbanPage({
   searchParams: Promise<{ showDone?: string }>;
 }) {
   const params = await searchParams;
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
+  const user = await requireAuthUser();
   const settings = getSettings(db, user.id);
 
   const filters: TaskFilters = {
@@ -26,7 +21,7 @@ export default async function KanbanPage({
   };
 
   if (!params.showDone && !settings.showCompletedTasks) {
-    filters.status = ["pending", "wip", "blocked"];
+    filters.status = ACTIVE_TASK_STATUSES;
   }
 
   const tasks = listTasks(db, user.id, filters);

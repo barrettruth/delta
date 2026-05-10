@@ -29,11 +29,13 @@ import { useUndo } from "@/contexts/undo";
 import { rruleToText } from "@/core/recurrence";
 import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
 import type { TaskReminder } from "@/core/reminders/types";
+import { TASK_STATUS_LABELS } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { fetchJson } from "@/lib/http-client";
 import {
   createTaskPanelReminderDraft,
   type TaskPanelReminderDraft,
@@ -48,37 +50,6 @@ import {
   taskPanelRemindersChanged,
 } from "@/lib/task-panel-save";
 import { detectMeetingPlatform } from "@/lib/utils";
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  pending: "Pending",
-  wip: "In Progress",
-  done: "Done",
-  blocked: "Blocked",
-  cancelled: "Cancelled",
-};
-
-interface ApiErrorResponse {
-  error?: string;
-}
-
-async function fetchJson<T>(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<T> {
-  const response = await fetch(input, init);
-  const body = (await response.json().catch(() => null)) as
-    | ApiErrorResponse
-    | T
-    | null;
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === "object" && "error" in body ? body.error : null;
-    throw new Error(typeof message === "string" ? message : "Request failed");
-  }
-
-  return body as T;
-}
 
 function cloneReminderDrafts(
   drafts: TaskPanelReminderDraft[],
@@ -1166,13 +1137,13 @@ export function TaskPanel({
               >
                 <SelectTrigger size="sm" className="h-7 text-xs w-full">
                   <SelectValue>
-                    {STATUS_LABELS[task.status as TaskStatus]}
+                    {TASK_STATUS_LABELS[task.status as TaskStatus]}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   {TASK_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {STATUS_LABELS[s]}
+                      {TASK_STATUS_LABELS[s]}
                     </SelectItem>
                   ))}
                 </SelectContent>

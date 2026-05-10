@@ -1,15 +1,14 @@
-import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { QueueView } from "@/components/queue-view";
-import { validateSession } from "@/core/auth";
+import { listCategoryColors } from "@/core/category-colors";
 import type { ViewType } from "@/core/settings";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
+import { ACTIVE_TASK_STATUSES } from "@/core/task-status";
 import type { TaskFilters, TaskStatus } from "@/core/types";
 import { rankTasks } from "@/core/urgency";
 import { db } from "@/db";
-import { categoryColors } from "@/db/schema";
+import { requireAuthUser } from "@/lib/server-auth";
 
 const viewRoutes: Record<ViewType, string> = {
   queue: "/",
@@ -29,11 +28,7 @@ export default async function QueuePage({
   }>;
 }) {
   const params = await searchParams;
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
+  const user = await requireAuthUser();
   const settings = getSettings(db, user.id);
 
   if (
@@ -58,19 +53,12 @@ export default async function QueuePage({
   }
 
   if (!params.showDone && !settings.showCompletedTasks && !params.status) {
-    filters.status = ["pending", "wip", "blocked"];
+    filters.status = ACTIVE_TASK_STATUSES;
   }
 
   const tasks = listTasks(db, user.id, filters);
   const ranked = rankTasks(db, tasks, settings.urgencyWeights);
-  const colors = Object.fromEntries(
-    db
-      .select()
-      .from(categoryColors)
-      .where(eq(categoryColors.userId, user.id))
-      .all()
-      .map((c) => [c.category, c.color]),
-  );
+  const colors = listCategoryColors(db, user.id);
   return (
     <QueueView
       tasks={ranked}

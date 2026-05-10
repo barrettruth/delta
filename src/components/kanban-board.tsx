@@ -14,19 +14,13 @@ import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
+import { KANBAN_COLUMNS, type TaskStatusColumn } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
-type BoardColumn = { status: TaskStatus; label: string };
-
-const defaultColumns: BoardColumn[] = [
-  { status: "pending", label: "Waiting" },
-  { status: "wip", label: "In Progress" },
-  { status: "blocked", label: "Blocked" },
-  { status: "done", label: "Done" },
-];
+type BoardColumn = TaskStatusColumn;
 
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
   const lo = Math.min(a, b);
@@ -249,7 +243,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [colIdx, setColIdx] = useState(0);
   const [rowIdx, setRowIdx] = useState(0);
   const [kbActive, setKbActive] = useState(false);
-  const [columns, setColumns] = useState(defaultColumns);
+  const [columns, setColumns] = useState<BoardColumn[]>(KANBAN_COLUMNS);
   const [visualMode, setVisualMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");

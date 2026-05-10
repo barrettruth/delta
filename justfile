@@ -13,6 +13,7 @@ format:
 lint: install
     ./scripts/biome.sh check .
     pnpm tsc --noEmit
+    pnpm version:check
 
 test: install
     pnpm vitest run --reporter=verbose --coverage.enabled --coverage.reporter=text

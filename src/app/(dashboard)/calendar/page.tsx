@@ -1,42 +1,29 @@
-import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { CalendarView } from "@/components/calendar-view";
-import { validateSession } from "@/core/auth";
 import { getFeedToken } from "@/core/calendar-feed";
+import { listCategoryColors } from "@/core/category-colors";
 import { getSettings } from "@/core/settings";
 import { listTasks } from "@/core/task";
+import { ACTIVE_TASK_STATUSES } from "@/core/task-status";
 import type { TaskFilters } from "@/core/types";
 import { db } from "@/db";
-import { categoryColors } from "@/db/schema";
+import { requireAuthUser } from "@/lib/server-auth";
 
 export default async function CalendarPage({
   searchParams,
 }: {
   searchParams: Promise<{ mode?: string; showDone?: string }>;
 }) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) redirect("/login");
-  const user = validateSession(db, sessionId);
-  if (!user) redirect("/login");
+  const user = await requireAuthUser();
   const settings = getSettings(db, user.id);
 
   const params = await searchParams;
   const filters: TaskFilters = {};
   if (!params.showDone && !settings.showCompletedTasks) {
-    filters.status = ["pending", "wip", "blocked"];
+    filters.status = ACTIVE_TASK_STATUSES;
   }
 
   const tasks = listTasks(db, user.id, filters);
-  const colors = Object.fromEntries(
-    db
-      .select()
-      .from(categoryColors)
-      .where(eq(categoryColors.userId, user.id))
-      .all()
-      .map((c) => [c.category, c.color]),
-  );
+  const colors = listCategoryColors(db, user.id);
   const defaultViewMode =
     params.mode === "day" || params.mode === "week" || params.mode === "month"
       ? params.mode
