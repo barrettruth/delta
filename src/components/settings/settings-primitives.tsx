@@ -23,12 +23,12 @@ export function SettingsSection({
         <div className="space-y-1.5 min-w-0">
           <h2
             data-section={title}
-            className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60"
+            className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70"
           >
             {title}
           </h2>
           {description && (
-            <p className="max-w-md text-xs text-muted-foreground leading-relaxed">
+            <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>
           )}
@@ -77,7 +77,7 @@ export function SettingsRow({
       type={action ? "button" : undefined}
     >
       {prefix && (
-        <span className={cn("mr-1 shrink-0 text-xs", prefix.className)}>
+        <span className={cn("mr-1 shrink-0 text-sm", prefix.className)}>
           {prefix.text}
         </span>
       )}
@@ -94,7 +94,7 @@ export function SettingsRow({
         {label}
       </span>
       {value && (
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+        <span className="text-muted-foreground shrink-0 text-sm tabular-nums">
           {value}
         </span>
       )}
@@ -118,12 +118,12 @@ export function SettingsPage({
       {(title || description) && (
         <header className="mb-6 pb-4 border-b border-border/60">
           {title && (
-            <h1 className="text-lg leading-none text-foreground tracking-tight">
+            <h1 className="text-xl leading-none text-foreground tracking-tight">
               {title}
             </h1>
           )}
           {description && (
-            <p className="mt-2 max-w-xl text-xs text-muted-foreground leading-relaxed">
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>
           )}

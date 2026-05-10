@@ -14,7 +14,6 @@ interface OnboardingPayload {
   geoApiKey?: string;
   nlpProvider?: "builtin" | "anthropic" | "openai";
   nlpApiKey?: string;
-  keymapOverrides?: Record<string, string>;
 }
 
 export async function POST(req: Request) {
@@ -68,13 +67,6 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error("[onboarding] delete nlp config failed", err);
     }
-  }
-
-  if (body.keymapOverrides && Object.keys(body.keymapOverrides).length > 0) {
-    db.update(users)
-      .set({ keymapOverrides: JSON.stringify(body.keymapOverrides) })
-      .where(eq(users.id, user.id))
-      .run();
   }
 
   db.update(users)

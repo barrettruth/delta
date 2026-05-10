@@ -12,6 +12,7 @@ import {
 } from "./settings-primitives";
 
 type GeoProvider = "photon" | "mapbox" | "google_maps";
+type ProviderTab = "geocoding" | "nlp";
 
 const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
   { id: "photon", label: "photon" },
@@ -34,6 +35,7 @@ export function CalendarSettingsSection({
 }) {
   const statusBar = useStatusBar();
 
+  const [activeTab, setActiveTab] = useState<ProviderTab>("geocoding");
   const [geoProvider, setGeoProvider] =
     useState<GeoProvider>(initialGeoProvider);
   const [geoKeyInput, setGeoKeyInput] = useState("");
@@ -182,97 +184,123 @@ export function CalendarSettingsSection({
       title="calendar"
       description="Manage the providers delta uses for location lookup and recurrence parsing."
     >
-      <div className="grid gap-6 xl:grid-cols-2">
-        <SettingsSection
-          title="location lookup"
-          description="Choose the provider used for location and meeting lookups."
-        >
-          {GEO_PROVIDERS.map((provider) => (
-            <div key={provider.id}>
-              <SettingsRow
-                label={provider.label}
-                value={geoProvider === provider.id ? "active" : ""}
-                action
-                muted={geoProvider !== provider.id}
-                onClick={() => handleSelectGeoProvider(provider.id)}
-              />
-              {geoKeyTarget === provider.id && (
-                <div className="flex gap-2 px-2 py-1">
-                  <Input
-                    value={geoKeyInput}
-                    onChange={(e) => setGeoKeyInput(e.target.value)}
-                    placeholder="api key"
-                    autoFocus
-                    className="h-7 flex-1 text-sm"
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === "Enter") handleTestGeoKey();
-                      if (e.key === "Escape") {
-                        setGeoKeyTarget(null);
-                        setGeoKeyInput("");
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={geoKeyTesting || !geoKeyInput.trim()}
-                    onClick={handleTestGeoKey}
-                    className="h-7 text-xs"
-                  >
-                    {geoKeyTesting ? "..." : "test & save"}
-                  </Button>
-                </div>
-              )}
-            </div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 border border-border/60">
+          {(
+            [
+              ["geocoding", "geocoding"],
+              ["nlp", "NLP"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`px-3 py-2.5 text-sm transition-colors ${
+                activeTab === id
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:bg-accent/40"
+              }`}
+              onClick={() => setActiveTab(id)}
+            >
+              {label}
+            </button>
           ))}
-        </SettingsSection>
+        </div>
 
-        <SettingsSection
-          title="recurrence parsing"
-          description="Choose the parser used for natural-language input."
-        >
-          {NLP_PROVIDERS_LIST.map((provider) => (
-            <div key={provider.id}>
-              <SettingsRow
-                label={provider.label}
-                value={nlpActive === provider.id ? "active" : ""}
-                action
-                muted={nlpActive !== provider.id}
-                onClick={() => handleSelectNlpProvider(provider.id)}
-              />
-              {nlpKeyTarget === provider.id && (
-                <div className="flex gap-2 px-2 py-1">
-                  <Input
-                    value={nlpKeyInput}
-                    onChange={(e) => setNlpKeyInput(e.target.value)}
-                    placeholder="api key"
-                    type="password"
-                    autoFocus
-                    className="h-7 flex-1 text-sm"
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === "Enter") handleTestNlpKey();
-                      if (e.key === "Escape") {
-                        setNlpKeyTarget(null);
-                        setNlpKeyInput("");
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={nlpKeyTesting || !nlpKeyInput.trim()}
-                    onClick={handleTestNlpKey}
-                    className="h-7 text-xs"
-                  >
-                    {nlpKeyTesting ? "..." : "test & save"}
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </SettingsSection>
+        {activeTab === "geocoding" && (
+          <SettingsSection
+            title="location lookup"
+            description="Choose the provider used for location and meeting lookups."
+          >
+            {GEO_PROVIDERS.map((provider) => (
+              <div key={provider.id}>
+                <SettingsRow
+                  label={provider.label}
+                  value={geoProvider === provider.id ? "active" : ""}
+                  action
+                  muted={geoProvider !== provider.id}
+                  onClick={() => handleSelectGeoProvider(provider.id)}
+                />
+                {geoKeyTarget === provider.id && (
+                  <div className="flex gap-2 px-2 py-1">
+                    <Input
+                      value={geoKeyInput}
+                      onChange={(e) => setGeoKeyInput(e.target.value)}
+                      placeholder="api key"
+                      autoFocus
+                      className="h-8 flex-1 text-sm"
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") handleTestGeoKey();
+                        if (e.key === "Escape") {
+                          setGeoKeyTarget(null);
+                          setGeoKeyInput("");
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={geoKeyTesting || !geoKeyInput.trim()}
+                      onClick={handleTestGeoKey}
+                      className="h-8 text-sm"
+                    >
+                      {geoKeyTesting ? "..." : "test & save"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </SettingsSection>
+        )}
+
+        {activeTab === "nlp" && (
+          <SettingsSection
+            title="recurrence parsing"
+            description="Choose the parser used for natural-language input."
+          >
+            {NLP_PROVIDERS_LIST.map((provider) => (
+              <div key={provider.id}>
+                <SettingsRow
+                  label={provider.label}
+                  value={nlpActive === provider.id ? "active" : ""}
+                  action
+                  muted={nlpActive !== provider.id}
+                  onClick={() => handleSelectNlpProvider(provider.id)}
+                />
+                {nlpKeyTarget === provider.id && (
+                  <div className="flex gap-2 px-2 py-1">
+                    <Input
+                      value={nlpKeyInput}
+                      onChange={(e) => setNlpKeyInput(e.target.value)}
+                      placeholder="api key"
+                      type="password"
+                      autoFocus
+                      className="h-8 flex-1 text-sm"
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") handleTestNlpKey();
+                        if (e.key === "Escape") {
+                          setNlpKeyTarget(null);
+                          setNlpKeyInput("");
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={nlpKeyTesting || !nlpKeyInput.trim()}
+                      onClick={handleTestNlpKey}
+                      className="h-8 text-sm"
+                    >
+                      {nlpKeyTesting ? "..." : "test & save"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </SettingsSection>
+        )}
       </div>
     </SettingsPage>
   );

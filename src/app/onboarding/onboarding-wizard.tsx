@@ -3,20 +3,14 @@
 import type { Icon } from "@phosphor-icons/react";
 import { Calendar, Columns, List } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { KeymapDef } from "@/lib/keymap-defs";
-import {
-  DEFAULT_KEYMAPS,
-  formatKey,
-  isBrowserReserved,
-  isModifierOnly,
-} from "@/lib/keymap-defs";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
 type DefaultView = "queue" | "kanban" | "calendar";
 type GeoProvider = "photon" | "mapbox" | "google_maps";
+type IntegrationTab = "geocoding" | "nlp";
 type OnboardingNlpProvider = "builtin" | "anthropic" | "openai";
 
 const STORAGE_KEY = "delta:onboarding";
@@ -108,28 +102,6 @@ const NLP_OPTIONS: {
   },
 ];
 
-const CURATED_KEYS = [
-  "global.queue",
-  "global.kanban",
-  "global.calendar",
-  "global.settings",
-  "global.undo",
-  "global.create_task",
-  "global.help",
-  "queue.move_down",
-  "queue.move_up",
-  "queue.edit",
-  "queue.complete",
-  "queue.delete",
-  "queue.search",
-  "calendar.prev_period",
-  "calendar.next_period",
-  "calendar.today",
-  "calendar.actions",
-  "nav.jump_back",
-  "nav.jump_forward",
-];
-
 export function OnboardingWizard({
   initialGeoProvider,
   initialNlpProvider,
@@ -148,11 +120,9 @@ export function OnboardingWizard({
   const [nlpProvider, setNlpProvider] =
     useState<OnboardingNlpProvider>(initialNlpProvider);
   const [nlpApiKey, setNlpApiKey] = useState("");
-  const [keymapOverrides, setKeymapOverrides] = useState<
-    Record<string, string>
-  >({});
+  const [integrationTab, setIntegrationTab] =
+    useState<IntegrationTab>("geocoding");
   const [focusIdx, setFocusIdx] = useState(0);
-  const [capturingId, setCapturingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [geoKeyTesting, setGeoKeyTesting] = useState(false);
   const [geoKeyStatus, setGeoKeyStatus] = useState<"valid" | "invalid" | null>(
@@ -249,10 +219,6 @@ export function OnboardingWizard({
           geoApiKey: geoApiKey || undefined,
           nlpProvider,
           nlpApiKey: nlpApiKey || undefined,
-          keymapOverrides:
-            Object.keys(keymapOverrides).length > 0
-              ? keymapOverrides
-              : undefined,
         }),
       });
       if (res.ok) {
@@ -264,37 +230,16 @@ export function OnboardingWizard({
     }
   }
 
-  const curatedDefs = CURATED_KEYS.map((id) =>
-    DEFAULT_KEYMAPS.find((d) => d.id === id),
-  ).filter(Boolean) as KeymapDef[];
+  const integrationItemCount =
+    integrationTab === "geocoding" ? GEO_OPTIONS.length : NLP_OPTIONS.length;
 
-  const step2ItemCount = GEO_OPTIONS.length + NLP_OPTIONS.length;
-
-  useEffect(() => {
-    if (step === 3 && capturingId) {
-      function handleCapture(e: KeyboardEvent) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.key === "Escape") {
-          setCapturingId(null);
-          return;
-        }
-        if (isModifierOnly(e.key)) return;
-        if (isBrowserReserved(e)) return;
-        setKeymapOverrides((prev) => ({
-          ...prev,
-          [capturingId as string]: e.key,
-        }));
-        setCapturingId(null);
-      }
-      window.addEventListener("keydown", handleCapture, true);
-      return () => window.removeEventListener("keydown", handleCapture, true);
-    }
-  }, [step, capturingId]);
+  const selectIntegrationTab = useCallback((tab: IntegrationTab) => {
+    setIntegrationTab(tab);
+    setFocusIdx(0);
+    countBuf.current = "";
+  }, []);
 
   useEffect(() => {
-    if (capturingId) return;
-
     function handleKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
       if (
@@ -316,15 +261,17 @@ export function OnboardingWizard({
       if (e.key === "j") {
         e.preventDefault();
         const max =
-          step === 1
-            ? VIEW_OPTIONS.length - 1
-            : step === 2
-              ? step2ItemCount - 1
-              : curatedDefs.length - 1;
+          step === 1 ? VIEW_OPTIONS.length - 1 : integrationItemCount - 1;
         setFocusIdx((prev) => Math.min(prev + count, max));
       } else if (e.key === "k") {
         e.preventDefault();
         setFocusIdx((prev) => Math.max(prev - count, 0));
+      } else if (step === 2 && (e.key === "h" || e.key === "ArrowLeft")) {
+        e.preventDefault();
+        selectIntegrationTab("geocoding");
+      } else if (step === 2 && (e.key === "l" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        selectIntegrationTab("nlp");
       } else if (e.key === "Enter" && step === 1) {
         e.preventDefault();
         if (focusIdx < VIEW_OPTIONS.length) {
@@ -332,8 +279,9 @@ export function OnboardingWizard({
         }
       } else if (e.key === "Enter" && step === 2) {
         e.preventDefault();
-        if (focusIdx < GEO_OPTIONS.length) {
+        if (integrationTab === "geocoding") {
           const opt = GEO_OPTIONS[focusIdx];
+          if (!opt) return;
           if (opt.id !== geoProvider) {
             setGeoProvider(opt.id);
             setGeoKeyStatus(null);
@@ -341,8 +289,7 @@ export function OnboardingWizard({
             if (!opt.needsKey) setGeoApiKey("");
           }
         } else {
-          const nlpIdx = focusIdx - GEO_OPTIONS.length;
-          const opt = NLP_OPTIONS[nlpIdx];
+          const opt = NLP_OPTIONS[focusIdx];
           if (opt && opt.id !== nlpProvider) {
             setNlpProvider(opt.id);
             setNlpKeyStatus(null);
@@ -352,12 +299,6 @@ export function OnboardingWizard({
             }
           }
         }
-      } else if (e.key === "Enter" && step === 3) {
-        e.preventDefault();
-        const def = curatedDefs[focusIdx];
-        if (def?.configurable !== false) {
-          setCapturingId(def.id);
-        }
       }
     }
 
@@ -366,22 +307,22 @@ export function OnboardingWizard({
   }, [
     step,
     focusIdx,
-    capturingId,
-    step2ItemCount,
-    curatedDefs,
+    integrationTab,
+    integrationItemCount,
     geoProvider,
     nlpProvider,
+    selectIntegrationTab,
   ]);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center w-full max-w-md px-4">
-        <span className="font-serif text-6xl text-foreground select-none mb-4">
+      <div className="flex flex-col items-center w-full max-w-lg px-4">
+        <span className="font-serif text-7xl text-foreground select-none mb-5">
           δ
         </span>
 
         <div className="flex gap-2 mb-6">
-          {([1, 2, 3] as const).map((s) => (
+          {([1, 2] as const).map((s) => (
             <div
               key={s}
               className={`h-px w-6 ${step === s ? "bg-foreground" : "bg-muted-foreground/30"}`}
@@ -400,7 +341,7 @@ export function OnboardingWizard({
                   <button
                     key={opt.id}
                     type="button"
-                    className={`flex items-center gap-3 w-full px-3 py-2 text-xs transition-colors ${
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm transition-colors ${
                       focused ? "bg-accent" : selected ? "bg-accent/50" : ""
                     }`}
                     onClick={() => {
@@ -421,7 +362,7 @@ export function OnboardingWizard({
                 );
               })}
             </div>
-            <div className="text-[10px] text-muted-foreground leading-relaxed h-8">
+            <div className="text-xs text-muted-foreground leading-relaxed min-h-10">
               {VIEW_OPTIONS[focusIdx]?.blurb}
             </div>
 
@@ -429,7 +370,7 @@ export function OnboardingWizard({
               value={defaultCategory}
               onChange={(e) => setDefaultCategory(e.target.value)}
               placeholder="default category"
-              className="h-8 text-xs"
+              className="h-9 text-sm"
             />
 
             <div className="flex gap-2">
@@ -454,183 +395,204 @@ export function OnboardingWizard({
 
         {step === 2 && (
           <div className="flex flex-col w-full gap-3">
-            <div className="flex flex-col border border-border">
-              <div className="text-[10px] text-muted-foreground px-3 py-1">
-                geocoding
-              </div>
-              {GEO_OPTIONS.map((opt, i) => {
-                const globalIdx = i;
-                const selected = geoProvider === opt.id;
-                const focused = focusIdx === globalIdx;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
-                      focused ? "bg-accent" : ""
-                    }`}
-                    onClick={() => {
-                      setFocusIdx(globalIdx);
-                      if (opt.id !== geoProvider) {
-                        setGeoProvider(opt.id);
-                        setGeoKeyStatus(null);
-                        setGeoKeyError("");
-                        if (!opt.needsKey) setGeoApiKey("");
-                      }
-                    }}
-                    onMouseEnter={() => setFocusIdx(globalIdx)}
-                  >
-                    <span
-                      className={
-                        selected ? "text-foreground" : "text-muted-foreground"
-                      }
-                    >
-                      {opt.label}
-                    </span>
-                  </button>
-                );
-              })}
-              {(() => {
-                const focusedGeo = GEO_OPTIONS[focusIdx];
-                const blurb = focusedGeo?.blurb;
-                return focusIdx < GEO_OPTIONS.length && blurb ? (
-                  <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
-                    {blurb}
-                  </div>
-                ) : null;
-              })()}
-              {GEO_OPTIONS.find((o) => o.id === geoProvider)?.needsKey && (
-                <div className="px-3 pb-2 flex flex-col gap-1">
-                  <div className="flex gap-2">
-                    <Input
-                      value={geoApiKey}
-                      onChange={(e) => {
-                        setGeoApiKey(e.target.value);
-                        setGeoKeyStatus(null);
-                        setGeoKeyError("");
-                      }}
-                      placeholder="api key"
-                      className="h-7 text-xs flex-1"
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") handleTestGeoKey();
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={geoKeyTesting || !geoApiKey.trim()}
-                      className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
-                      onClick={handleTestGeoKey}
-                    >
-                      {geoKeyTesting
-                        ? "..."
-                        : geoKeyStatus === "valid"
-                          ? "✓"
-                          : "test"}
-                    </button>
-                  </div>
-                  {geoKeyStatus === "invalid" && geoKeyError && (
-                    <span className="text-[10px] text-destructive">
-                      {geoKeyError}
-                    </span>
-                  )}
-                </div>
-              )}
+            <div className="grid grid-cols-2 border border-border">
+              {(
+                [
+                  ["geocoding", "geocoding"],
+                  ["nlp", "NLP"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`px-3 py-2 text-sm transition-colors ${
+                    integrationTab === id
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-accent/40"
+                  }`}
+                  onClick={() => selectIntegrationTab(id)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            <div className="flex flex-col border border-border">
-              <div className="text-[10px] text-muted-foreground px-3 py-1">
-                NLP
-              </div>
-              {NLP_OPTIONS.map((opt, i) => {
-                const globalIdx = GEO_OPTIONS.length + i;
-                const selected = nlpProvider === opt.id;
-                const focused = focusIdx === globalIdx;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    className={`flex items-center w-full px-3 py-1.5 text-xs transition-colors ${
-                      focused ? "bg-accent" : ""
-                    }`}
-                    onClick={() => {
-                      setFocusIdx(globalIdx);
-                      if (opt.id !== nlpProvider) {
-                        setNlpProvider(opt.id);
-                        setNlpKeyStatus(null);
-                        setNlpKeyError("");
-                        if (!opt.needsKey) {
-                          setNlpApiKey("");
+            {integrationTab === "geocoding" && (
+              <div className="flex flex-col border border-border">
+                <div className="text-xs text-muted-foreground px-3 py-1.5">
+                  geocoding
+                </div>
+                {GEO_OPTIONS.map((opt, i) => {
+                  const selected = geoProvider === opt.id;
+                  const focused = focusIdx === i;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`flex items-center w-full px-3 py-2 text-sm transition-colors ${
+                        focused ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setFocusIdx(i);
+                        if (opt.id !== geoProvider) {
+                          setGeoProvider(opt.id);
+                          setGeoKeyStatus(null);
+                          setGeoKeyError("");
+                          if (!opt.needsKey) setGeoApiKey("");
                         }
-                      }
-                    }}
-                    onMouseEnter={() => setFocusIdx(globalIdx)}
-                  >
-                    <span
-                      className={
-                        selected ? "text-foreground" : "text-muted-foreground"
-                      }
+                      }}
+                      onMouseEnter={() => setFocusIdx(i)}
                     >
-                      {opt.label}
-                    </span>
-                  </button>
-                );
-              })}
-              {(() => {
-                const nlpStart = GEO_OPTIONS.length;
-                const focusedNlp = NLP_OPTIONS[focusIdx - nlpStart];
-                return focusIdx >= nlpStart &&
-                  focusIdx < nlpStart + NLP_OPTIONS.length &&
-                  focusedNlp ? (
-                  <div className="px-3 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
-                    {focusedNlp.blurb}
-                  </div>
-                ) : null;
-              })()}
-              {(() => {
-                const selectedOpt = NLP_OPTIONS.find(
-                  (o) => o.id === nlpProvider,
-                );
-                if (!selectedOpt?.needsKey) return null;
-                return (
-                  <div className="px-3 pb-2 flex flex-col gap-2">
+                      <span
+                        className={
+                          selected ? "text-foreground" : "text-muted-foreground"
+                        }
+                      >
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+                {(() => {
+                  const focusedGeo = GEO_OPTIONS[focusIdx];
+                  const blurb = focusedGeo?.blurb;
+                  return focusIdx < GEO_OPTIONS.length && blurb ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground leading-relaxed">
+                      {blurb}
+                    </div>
+                  ) : null;
+                })()}
+                {GEO_OPTIONS.find((o) => o.id === geoProvider)?.needsKey && (
+                  <div className="px-3 pb-2 flex flex-col gap-1">
                     <div className="flex gap-2">
                       <Input
-                        value={nlpApiKey}
+                        value={geoApiKey}
                         onChange={(e) => {
-                          setNlpApiKey(e.target.value);
-                          setNlpKeyStatus(null);
-                          setNlpKeyError("");
+                          setGeoApiKey(e.target.value);
+                          setGeoKeyStatus(null);
+                          setGeoKeyError("");
                         }}
                         placeholder="api key"
-                        className="h-7 text-xs flex-1"
+                        className="h-8 text-sm flex-1"
                         onKeyDown={(e) => {
                           e.stopPropagation();
-                          if (e.key === "Enter") handleTestNlpKey();
+                          if (e.key === "Enter") handleTestGeoKey();
                         }}
                       />
                       <button
                         type="button"
-                        disabled={nlpKeyTesting || !nlpApiKey.trim()}
-                        className="text-xs text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
-                        onClick={handleTestNlpKey}
+                        disabled={geoKeyTesting || !geoApiKey.trim()}
+                        className="text-sm text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                        onClick={handleTestGeoKey}
                       >
-                        {nlpKeyTesting
+                        {geoKeyTesting
                           ? "..."
-                          : nlpKeyStatus === "valid"
-                            ? "✓"
+                          : geoKeyStatus === "valid"
+                            ? "ok"
                             : "test"}
                       </button>
                     </div>
-                    {nlpKeyStatus === "invalid" && nlpKeyError && (
-                      <span className="text-[10px] text-destructive">
-                        {nlpKeyError}
+                    {geoKeyStatus === "invalid" && geoKeyError && (
+                      <span className="text-xs text-destructive">
+                        {geoKeyError}
                       </span>
                     )}
                   </div>
-                );
-              })()}
-            </div>
+                )}
+              </div>
+            )}
+
+            {integrationTab === "nlp" && (
+              <div className="flex flex-col border border-border">
+                <div className="text-xs text-muted-foreground px-3 py-1.5">
+                  NLP
+                </div>
+                {NLP_OPTIONS.map((opt, i) => {
+                  const selected = nlpProvider === opt.id;
+                  const focused = focusIdx === i;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`flex items-center w-full px-3 py-2 text-sm transition-colors ${
+                        focused ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setFocusIdx(i);
+                        if (opt.id !== nlpProvider) {
+                          setNlpProvider(opt.id);
+                          setNlpKeyStatus(null);
+                          setNlpKeyError("");
+                          if (!opt.needsKey) {
+                            setNlpApiKey("");
+                          }
+                        }
+                      }}
+                      onMouseEnter={() => setFocusIdx(i)}
+                    >
+                      <span
+                        className={
+                          selected ? "text-foreground" : "text-muted-foreground"
+                        }
+                      >
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+                {(() => {
+                  const focusedNlp = NLP_OPTIONS[focusIdx];
+                  return focusedNlp ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground leading-relaxed">
+                      {focusedNlp.blurb}
+                    </div>
+                  ) : null;
+                })()}
+                {(() => {
+                  const selectedOpt = NLP_OPTIONS.find(
+                    (o) => o.id === nlpProvider,
+                  );
+                  if (!selectedOpt?.needsKey) return null;
+                  return (
+                    <div className="px-3 pb-2 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={nlpApiKey}
+                          onChange={(e) => {
+                            setNlpApiKey(e.target.value);
+                            setNlpKeyStatus(null);
+                            setNlpKeyError("");
+                          }}
+                          placeholder="api key"
+                          className="h-8 text-sm flex-1"
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") handleTestNlpKey();
+                          }}
+                        />
+                        <button
+                          type="button"
+                          disabled={nlpKeyTesting || !nlpApiKey.trim()}
+                          className="text-sm text-muted-foreground hover:text-foreground px-2 disabled:opacity-50"
+                          onClick={handleTestNlpKey}
+                        >
+                          {nlpKeyTesting
+                            ? "..."
+                            : nlpKeyStatus === "valid"
+                              ? "ok"
+                              : "test"}
+                        </button>
+                      </div>
+                      {nlpKeyStatus === "invalid" && nlpKeyError && (
+                        <span className="text-xs text-destructive">
+                          {nlpKeyError}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -646,86 +608,17 @@ export function OnboardingWizard({
                 size="sm"
                 className="flex-1"
                 disabled={
+                  submitting ||
                   (GEO_OPTIONS.find((o) => o.id === geoProvider)?.needsKey &&
                     geoKeyStatus !== "valid") ||
                   (NLP_OPTIONS.find((o) => o.id === nlpProvider)?.needsKey &&
                     nlpKeyStatus !== "valid")
                 }
-                onClick={() => setStep(3)}
-              >
-                next
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="flex flex-col w-full gap-3">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 border border-border p-3 max-h-[50vh] overflow-y-auto">
-              {curatedDefs.map((def, i) => {
-                const overrideKey = keymapOverrides[def.id];
-                const displayKey = overrideKey ?? formatKey(def);
-                const isConfigurable = def.configurable !== false;
-                const isCapturing = capturingId === def.id;
-                const focused = focusIdx === i;
-                return (
-                  <button
-                    key={def.id}
-                    type="button"
-                    className={`flex items-center justify-between gap-2 px-1 py-0.5 text-xs transition-colors ${
-                      focused ? "bg-accent" : ""
-                    } ${isConfigurable ? "cursor-pointer" : "cursor-default"}`}
-                    onClick={() => {
-                      if (isConfigurable) setCapturingId(def.id);
-                    }}
-                    onMouseEnter={() => setFocusIdx(i)}
-                  >
-                    <span className="text-muted-foreground truncate">
-                      {def.label}
-                    </span>
-                    <kbd
-                      className={`shrink-0 text-[10px] px-1 py-0.5 border border-border ${
-                        isCapturing
-                          ? "animate-pulse text-foreground"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {isCapturing ? "..." : displayKey}
-                    </kbd>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setStep(2)}
-              >
-                back
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                disabled={submitting}
                 onClick={handleFinish}
               >
                 {submitting ? "..." : "finish"}
               </Button>
             </div>
-            <button
-              type="button"
-              className="text-[10px] text-muted-foreground hover:text-foreground text-center"
-              onClick={() => {
-                setKeymapOverrides({});
-                handleFinish();
-              }}
-            >
-              use defaults
-            </button>
           </div>
         )}
       </div>
