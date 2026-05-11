@@ -1,1 +1,0 @@
-ALTER TABLE `users` ADD `keymap_overrides` text;
