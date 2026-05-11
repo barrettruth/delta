@@ -6,17 +6,12 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 export const surfaces = {
   app: {
-    label: "Web app",
     packagePath: "package.json",
   },
   cli: {
-    label: "CLI",
     packagePath: "cli/package.json",
   },
 };
-
-export const readmeStart = "<!-- delta:versions:start -->";
-export const readmeEnd = "<!-- delta:versions:end -->";
 
 export function rootPath(path) {
   return resolve(root, path);
@@ -44,25 +39,21 @@ export function readSurfaceVersion(surface) {
 }
 
 export function writeSurfaceVersion(surface, version) {
+  validateSemver(version);
   const config = surfaceConfig(surface);
   const pkg = readJson(config.packagePath);
   pkg.version = version;
   writeJson(config.packagePath, pkg);
 }
 
-export function readSurfaceVersions() {
-  return Object.fromEntries(
-    Object.keys(surfaces).map((surface) => [
-      surface,
-      readSurfaceVersion(surface),
-    ]),
-  );
-}
-
-export function bumpSemver(version, bump) {
+export function validateSemver(version) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) {
     throw new Error(`Invalid semver version: ${version}`);
   }
+}
+
+export function bumpSemver(version, bump) {
+  validateSemver(version);
   const next = version.split(".").map((part) => Number.parseInt(part, 10));
   switch (bump) {
     case "major":
@@ -81,45 +72,6 @@ export function bumpSemver(version, bump) {
       throw new Error(`Invalid bump type: ${bump}`);
   }
   return next.join(".");
-}
-
-export function renderReadmeVersionBlock() {
-  const rows = Object.entries(surfaces).map(([surface, config]) => {
-    const version = readSurfaceVersion(surface);
-    return `| ${config.label} | \`${config.packagePath}\` | \`${version}\` |`;
-  });
-
-  return [
-    readmeStart,
-    "| Surface | Canonical source | Current |",
-    "| --- | --- | --- |",
-    ...rows,
-    readmeEnd,
-  ].join("\n");
-}
-
-export function syncReadmeVersionBlock({ check = false } = {}) {
-  const path = rootPath("README.md");
-  const current = readFileSync(path, "utf8");
-  const block = renderReadmeVersionBlock();
-  const start = current.indexOf(readmeStart);
-  const end = current.indexOf(readmeEnd);
-
-  if (start < 0 || end < 0 || end < start) {
-    throw new Error("README.md is missing the delta version block markers");
-  }
-
-  const next =
-    current.slice(0, start) + block + current.slice(end + readmeEnd.length);
-
-  if (check) {
-    if (next !== current) {
-      throw new Error("README.md version block is out of sync");
-    }
-    return;
-  }
-
-  writeFileSync(path, next);
 }
 
 export function syncCliManVersion({ check = false } = {}) {

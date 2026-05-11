@@ -4,16 +4,17 @@ import {
   checkCliManVersion,
   readSurfaceVersion,
   syncCliManVersion,
-  syncReadmeVersionBlock,
+  validateSemver,
   writeSurfaceVersion,
 } from "./lib.mjs";
 
 function usage() {
   return [
     "Usage:",
+    "  node scripts/version/cli.mjs current <app|cli>",
     "  node scripts/version/cli.mjs next <app|cli> <patch|minor|major>",
     "  node scripts/version/cli.mjs bump <app|cli> <patch|minor|major>",
-    "  node scripts/version/cli.mjs sync-readme [--check]",
+    "  node scripts/version/cli.mjs set <app|cli> <version>",
     "  node scripts/version/cli.mjs check",
   ].join("\n");
 }
@@ -28,6 +29,12 @@ const [command, ...args] = process.argv.slice(2);
 
 try {
   switch (command) {
+    case "current": {
+      const [surface] = args;
+      if (!surface) fail("Missing surface.");
+      console.log(readSurfaceVersion(surface));
+      break;
+    }
     case "next": {
       const [surface, bump] = args;
       if (!surface || !bump) fail("Missing surface or bump type.");
@@ -42,16 +49,21 @@ try {
       if (surface === "cli") {
         syncCliManVersion();
       }
-      syncReadmeVersionBlock();
       console.log(version);
       break;
     }
-    case "sync-readme": {
-      syncReadmeVersionBlock({ check: args.includes("--check") });
+    case "set": {
+      const [surface, version] = args;
+      if (!surface || !version) fail("Missing surface or version.");
+      validateSemver(version);
+      writeSurfaceVersion(surface, version);
+      if (surface === "cli") {
+        syncCliManVersion();
+      }
+      console.log(version);
       break;
     }
     case "check": {
-      syncReadmeVersionBlock({ check: true });
       checkCliManVersion();
       break;
     }

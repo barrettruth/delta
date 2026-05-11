@@ -42,5 +42,8 @@ cli-build-npm: cli-install
 cli-build-publish: cli-build-npm cli-build-man
     @:
 
+version-bump surface target *args:
+    scripts/version/bump.sh {{surface}} {{target}} {{args}}
+
 ci: lint test build
     @:
