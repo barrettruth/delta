@@ -2,24 +2,17 @@
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  completeTaskAction,
-  deleteTaskAction,
-  updateTaskAction,
-} from "@/app/actions/tasks";
-import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
+import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import { Input } from "@/components/ui/input";
 import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
-import { useUndo } from "@/contexts/undo";
 import type { TaskStatus } from "@/core/types";
-import type { UndoMutation } from "@/core/undo";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
-import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { useTaskOperations } from "@/hooks/use-task-operations";
 import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
@@ -177,9 +170,7 @@ export function QueueView({
   const nav = useNavigation();
   const { openKeyboardHelp } = useKeyboardHelp();
   const statusBar = useStatusBar();
-  const undo = useUndo();
   const panel = useTaskPanel();
-  const recurrenceDelete = useRecurrenceDelete();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchActive, setSearchActive] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -196,6 +187,7 @@ export function QueueView({
     );
   }, [tasks, searchQuery]);
 
+  const taskOperations = useTaskOperations({ tasks: filtered });
   const gutterWidth = String(filtered.length).length;
   const openHelp = useCallback(() => {
     openKeyboardHelp();
@@ -204,81 +196,9 @@ export function QueueView({
   const { cursor, setCursor, selectedIds, toggleSelect, visualMode } =
     useKeyboard({
       tasks: filtered,
-      onComplete: (ids) => {
-        const entryId = `complete-${Date.now()}-${ids.join(",")}`;
-        const mutations: UndoMutation[] = ids.map((id) => {
-          const task = filtered.find((t) => t.id === id);
-          return {
-            taskId: id,
-            restore: {
-              status: (task?.status as TaskStatus) ?? "pending",
-              completedAt: task?.completedAt ?? null,
-            },
-          };
-        });
-        undo.push({
-          id: entryId,
-          op: "complete",
-          label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
-          mutations,
-          timestamp: Date.now(),
-        });
-        for (const id of ids) {
-          completeTaskAction(id).then((result) => {
-            const m = mutations.find((mut) => mut.taskId === id);
-            if (m && result && "data" in result) {
-              m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
-            }
-          });
-        }
-      },
-      onDelete: (ids) => {
-        if (ids.length === 1) {
-          const task = filtered.find((t) => t.id === ids[0]);
-          if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
-        }
-        const entryId = `delete-${Date.now()}-${ids.join(",")}`;
-        const mutations = ids.map((id) => {
-          const task = filtered.find((t) => t.id === id);
-          return {
-            taskId: id,
-            restore: {
-              status: (task?.status as TaskStatus) ?? "pending",
-              completedAt: task?.completedAt ?? null,
-            },
-          };
-        });
-        undo.push({
-          id: entryId,
-          op: "delete",
-          label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
-          mutations,
-          timestamp: Date.now(),
-        });
-        for (const id of ids) deleteTaskAction(id);
-        if (panel.taskId && ids.includes(panel.taskId)) panel.close();
-      },
-      onStatusChange: (ids, status) => {
-        const entryId = `status-${Date.now()}-${ids.join(",")}`;
-        const mutations = ids.map((id) => {
-          const task = filtered.find((t) => t.id === id);
-          return {
-            taskId: id,
-            restore: {
-              status: (task?.status as TaskStatus) ?? "pending",
-              completedAt: task?.completedAt ?? null,
-            },
-          };
-        });
-        undo.push({
-          id: entryId,
-          op: "status-change",
-          label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
-          mutations,
-          timestamp: Date.now(),
-        });
-        for (const id of ids) updateTaskAction(id, { status });
-      },
+      onComplete: taskOperations.completeTasks,
+      onDelete: taskOperations.deleteTasks,
+      onStatusChange: taskOperations.changeTaskStatus,
       onCreate: () => panel.create(),
       onSelect: (task) => {
         nav.pushJump();
@@ -415,15 +335,8 @@ export function QueueView({
           toggleSelect={toggleSelect}
         />
       </div>
-      <RecurrenceStrategyDialog
-        open={!!recurrenceDelete.pending}
-        onOpenChange={(open) => {
-          if (!open) recurrenceDelete.cancel();
-        }}
-        mode="delete"
-        onSelect={(strategy) => {
-          recurrenceDelete.executeStrategy(strategy);
-        }}
+      <TaskOperationDialogs
+        recurrenceDelete={taskOperations.recurrenceDelete}
       />
     </div>
   );

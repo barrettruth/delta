@@ -2,21 +2,14 @@
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  completeTaskAction,
-  deleteTaskAction,
-  updateTaskAction,
-} from "@/app/actions/tasks";
-import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
+import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import { Input } from "@/components/ui/input";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
-import { useUndo } from "@/contexts/undo";
 import { KANBAN_COLUMNS, type TaskStatusColumn } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
-import type { UndoMutation } from "@/core/undo";
-import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { useTaskOperations } from "@/hooks/use-task-operations";
 import { getKeymap } from "@/lib/keymap-defs";
 import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
@@ -201,9 +194,8 @@ const KanbanGrid = memo(function KanbanGrid({
 export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
   const statusBar = useStatusBar();
-  const undo = useUndo();
   const panel = useTaskPanel();
-  const recurrenceDelete = useRecurrenceDelete();
+  const taskOperations = useTaskOperations({ tasks });
 
   const k = useMemo(() => {
     const r = (id: string) => getKeymap(id).triggerKey;
@@ -255,99 +247,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countBuf = useRef("");
 
-  const kbDelete = useCallback(
-    (ids: number[]) => {
-      if (ids.length === 1) {
-        const task = tasks.find((t) => t.id === ids[0]);
-        if (task?.recurrence && recurrenceDelete.requestDelete(task)) return;
-      }
-      const entryId = `delete-${Date.now()}-${ids.join(",")}`;
-      const mutations = ids.map((id) => {
-        const task = tasks.find((t) => t.id === id);
-        return {
-          taskId: id,
-          restore: {
-            status: (task?.status as TaskStatus) ?? "pending",
-            completedAt: task?.completedAt ?? null,
-          },
-        };
-      });
-      undo.push({
-        id: entryId,
-        op: "delete",
-        label: `${ids.length} task${ids.length > 1 ? "s" : ""} deleted`,
-        mutations,
-        timestamp: Date.now(),
-      });
-      for (const id of ids) deleteTaskAction(id);
-    },
-    [tasks, undo, recurrenceDelete],
-  );
-
-  const kbComplete = useCallback(
-    (ids: number[]) => {
-      const entryId = `complete-${Date.now()}-${ids.join(",")}`;
-      const mutations: UndoMutation[] = ids.map((id) => {
-        const task = tasks.find((t) => t.id === id);
-        return {
-          taskId: id,
-          restore: {
-            status: (task?.status as TaskStatus) ?? "pending",
-            completedAt: task?.completedAt ?? null,
-          },
-        };
-      });
-      undo.push({
-        id: entryId,
-        op: "complete",
-        label: `${ids.length} task${ids.length > 1 ? "s" : ""} completed`,
-        mutations,
-        timestamp: Date.now(),
-      });
-      for (const id of ids) {
-        completeTaskAction(id).then((result) => {
-          const m = mutations.find((mut) => mut.taskId === id);
-          if (m && result && "data" in result) {
-            m.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
-          }
-        });
-      }
-    },
-    [tasks, undo],
-  );
-
-  const kbStatusChange = useCallback(
-    (ids: number[], status: TaskStatus) => {
-      const entryId = `status-${Date.now()}-${ids.join(",")}`;
-      const mutations = ids.map((id) => {
-        const task = tasks.find((t) => t.id === id);
-        return {
-          taskId: id,
-          restore: {
-            status: (task?.status as TaskStatus) ?? "pending",
-            completedAt: task?.completedAt ?? null,
-          },
-        };
-      });
-      undo.push({
-        id: entryId,
-        op: "status-change",
-        label: `${ids.length} task${ids.length > 1 ? "s" : ""} \u2192 ${status}`,
-        mutations,
-        timestamp: Date.now(),
-      });
-      for (const id of ids) updateTaskAction(id, { status });
-    },
-    [tasks, undo],
-  );
-
-  const kbMoveToStatus = useCallback(
-    (ids: number[], newStatus: TaskStatus) => {
-      if (newStatus === "done") kbComplete(ids);
-      else kbStatusChange(ids, newStatus);
-    },
-    [kbComplete, kbStatusChange],
-  );
+  const kbDelete = taskOperations.deleteTasks;
+  const kbMoveToStatus = taskOperations.moveTasksToStatus;
 
   const filteredTasks = useMemo(() => {
     if (!searchQuery) return tasks;
@@ -767,14 +668,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   }, [searchQuery, nav]);
 
   const handleDrop = useCallback(
-    async (taskId: number, newStatus: TaskStatus) => {
-      if (newStatus === "done") {
-        await completeTaskAction(taskId);
-      } else {
-        await updateTaskAction(taskId, { status: newStatus });
-      }
+    (taskId: number, newStatus: TaskStatus) => {
+      taskOperations.moveTasksToStatus([taskId], newStatus);
     },
-    [],
+    [taskOperations],
   );
 
   const visibleColumns = useMemo(
@@ -833,15 +730,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         onDropTask={handleDrop}
         onOpenTask={openTask}
       />
-      <RecurrenceStrategyDialog
-        open={!!recurrenceDelete.pending}
-        onOpenChange={(open) => {
-          if (!open) recurrenceDelete.cancel();
-        }}
-        mode="delete"
-        onSelect={(strategy) => {
-          recurrenceDelete.executeStrategy(strategy);
-        }}
+      <TaskOperationDialogs
+        recurrenceDelete={taskOperations.recurrenceDelete}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   deleteAllInstancesAction,
   deleteTaskAction,
@@ -14,11 +14,18 @@ interface PendingDelete {
   task: Task;
 }
 
-export function useRecurrenceDelete() {
+export interface RecurrenceDeleteController {
+  pending: PendingDelete | null;
+  requestDelete: (task: Task) => boolean;
+  executeStrategy: (strategy: RecurrenceStrategy) => Promise<void>;
+  cancel: () => void;
+}
+
+export function useRecurrenceDelete(): RecurrenceDeleteController {
   const [pending, setPending] = useState<PendingDelete | null>(null);
 
   const requestDelete = useCallback((task: Task): boolean => {
-    if (task.recurrence) {
+    if (task.recurrence || task.recurringTaskId) {
       setPending({ task });
       return true;
     }
@@ -60,10 +67,13 @@ export function useRecurrenceDelete() {
     setPending(null);
   }, []);
 
-  return {
-    pending,
-    requestDelete,
-    executeStrategy,
-    cancel,
-  };
+  return useMemo(
+    () => ({
+      pending,
+      requestDelete,
+      executeStrategy,
+      cancel,
+    }),
+    [pending, requestDelete, executeStrategy, cancel],
+  );
 }

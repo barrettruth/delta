@@ -4,7 +4,6 @@ import type { EventInput } from "@fullcalendar/core";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  deleteTaskAction,
   materializeInstanceAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
@@ -19,13 +18,13 @@ import {
   type FcViewMode,
 } from "@/components/calendar/fc-calendar";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
+import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
-import { useUndo } from "@/contexts/undo";
-import type { Task, TaskStatus } from "@/core/types";
-import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import type { Task } from "@/core/types";
 import { useRecurrenceEdit } from "@/hooks/use-recurrence-edit";
+import { useTaskOperations } from "@/hooks/use-task-operations";
 import {
   buildDayPreFill,
   buildRangePreFill,
@@ -61,10 +60,9 @@ export function CalendarView({
   const nav = useNavigation();
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
-  const undo = useUndo();
   const { pendingEdits, optimisticTasks, setOptimisticTask } = panel;
-  const recurrenceDelete = useRecurrenceDelete();
   const recurrenceEdit = useRecurrenceEdit();
+  const taskOperations = useTaskOperations({ tasks });
 
   const [viewMode, setViewMode] = useState<FcViewMode>(defaultViewMode);
   const isTimeGridView = viewMode === "week" || viewMode === "day";
@@ -515,31 +513,8 @@ export function CalendarView({
     if (!panel.isOpen || panel.taskId == null) return;
     const target = tasks.find((t) => t.id === panel.taskId);
     if (!target) return;
-    if (
-      (target.recurrence || target.recurringTaskId) &&
-      recurrenceDelete.requestDelete(target)
-    ) {
-      panel.close();
-      return;
-    }
-    undo.push({
-      id: `delete-${Date.now()}-${target.id}`,
-      op: "delete",
-      label: "1 task deleted",
-      mutations: [
-        {
-          taskId: target.id,
-          restore: {
-            status: (target.status as TaskStatus) ?? "pending",
-            completedAt: target.completedAt ?? null,
-          },
-        },
-      ],
-      timestamp: Date.now(),
-    });
-    deleteTaskAction(target.id);
-    panel.close();
-  }, [panel, tasks, recurrenceDelete, undo]);
+    taskOperations.deleteTasks([target.id]);
+  }, [panel.isOpen, panel.taskId, taskOperations, tasks]);
 
   // ----- Navigation helpers ---------------------------------------------------
 
@@ -914,15 +889,8 @@ export function CalendarView({
 
       <CalendarEventPopover tasks={tasks} anchor={popoverAnchor} />
 
-      <RecurrenceStrategyDialog
-        open={!!recurrenceDelete.pending}
-        onOpenChange={(open) => {
-          if (!open) recurrenceDelete.cancel();
-        }}
-        mode="delete"
-        onSelect={(strategy) => {
-          recurrenceDelete.executeStrategy(strategy);
-        }}
+      <TaskOperationDialogs
+        recurrenceDelete={taskOperations.recurrenceDelete}
       />
 
       <RecurrenceStrategyDialog
