@@ -34,9 +34,9 @@ describe("nlpTokens", () => {
     expect("apiKey" in tokens).toBe(false);
   });
 
-  it("reads legacy settings rows without writing legacy keys", () => {
-    expect(readNlpApiKey({ apiKey: "legacy-secret" })).toBe("legacy-secret");
+  it("reads only the canonical parser token field", () => {
     expect(readNlpApiKey({ api_key: "current-secret" })).toBe("current-secret");
+    expect(readNlpApiKey({ apiKey: "old-secret" })).toBeNull();
   });
 });
 

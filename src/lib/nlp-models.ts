@@ -8,7 +8,6 @@ export const NLP_MODEL: Record<NlpProvider, string> = {
 };
 
 export const NLP_TOKEN_FIELD = "api_key";
-const LEGACY_NLP_TOKEN_FIELD = "apiKey";
 
 export function isNlpProvider(provider: string): provider is NlpProvider {
   return NLP_PROVIDERS.includes(provider as NlpProvider);
@@ -25,7 +24,7 @@ export function nlpTokens(
 }
 
 export function readNlpApiKey(tokens: Record<string, unknown>): string | null {
-  const value = tokens[NLP_TOKEN_FIELD] ?? tokens[LEGACY_NLP_TOKEN_FIELD];
+  const value = tokens[NLP_TOKEN_FIELD];
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
