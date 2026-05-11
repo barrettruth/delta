@@ -63,6 +63,14 @@ describe("schema migrations", () => {
     return tableColumns(sqlite, table).map((column) => column.name);
   }
 
+  function createRetiredTables(sqlite: Database.Database) {
+    for (const table of retiredTables) {
+      sqlite.exec(
+        `CREATE TABLE "${table}" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);`,
+      );
+    }
+  }
+
   function createDeployedSchemaBeforeCompaction(sqlite: Database.Database) {
     sqlite.exec(`
       CREATE TABLE "__drizzle_migrations" (
@@ -236,14 +244,8 @@ describe("schema migrations", () => {
         '2026-05-11T00:00:00.000Z'
       );
 
-      CREATE TABLE "accounts" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);
-      CREATE TABLE "automations" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);
-      CREATE TABLE "event_share_links" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);
-      CREATE TABLE "invite_links" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);
-      CREATE TABLE "recovery_codes" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);
-      CREATE TABLE "sessions" ("id" text PRIMARY KEY NOT NULL);
-      CREATE TABLE "webauthn_credentials" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL);
     `);
+    createRetiredTables(sqlite);
   }
 
   it("uses a compact current baseline for fresh databases", () => {
@@ -308,6 +310,8 @@ describe("schema migrations", () => {
     const sqlite = new Database(":memory:");
     try {
       createDeployedSchemaBeforeCompaction(sqlite);
+      expect(tableNames(sqlite)).toEqual(expect.arrayContaining(retiredTables));
+
       const db = drizzle(sqlite, { schema });
       migrate(db, { migrationsFolder: "./drizzle" });
 
@@ -328,15 +332,7 @@ describe("schema migrations", () => {
         )
         .get();
 
-      for (const table of [
-        "accounts",
-        "automations",
-        "event_share_links",
-        "invite_links",
-        "recovery_codes",
-        "sessions",
-        "webauthn_credentials",
-      ]) {
+      for (const table of retiredTables) {
         expect(names).not.toContain(table);
       }
       expect(columnNames(sqlite, "users")).toEqual([

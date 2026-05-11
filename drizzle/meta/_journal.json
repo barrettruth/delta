@@ -15,6 +15,13 @@
       "when": 1778531400000,
       "tag": "0001_deployed_schema_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778533664604,
+      "tag": "0002_deployed_retired_schema_cleanup",
+      "breakpoints": true
     }
   ]
 }
