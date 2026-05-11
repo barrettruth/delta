@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getActiveSettingsIndex,
   getActiveSettingsSection,
   isSettingsPath,
   isSettingsSectionActive,
@@ -12,18 +13,22 @@ import {
 
 describe("settings navigation helpers", () => {
   it("defines the expected settings sections", () => {
-    expect(SETTINGS_SECTIONS.map((section) => section.href)).toEqual([
-      "/settings",
-      "/settings/calendar",
-      "/settings/integrations",
-      "/settings/preferences",
+    expect(
+      SETTINGS_SECTIONS.map(({ id, label, href }) => ({ id, label, href })),
+    ).toEqual([
+      { id: "account", label: "account", href: "/settings" },
+      { id: "calendar", label: "calendar", href: "/settings/calendar" },
+      {
+        id: "preferences",
+        label: "preferences",
+        href: "/settings/preferences",
+      },
     ]);
   });
 
   it("matches the full settings area for the main app sidebar", () => {
     expect(isSettingsPath("/settings")).toBe(true);
     expect(isSettingsPath("/settings/calendar")).toBe(true);
-    expect(isSettingsPath("/settings/integrations")).toBe(true);
     expect(isSettingsPath("/settings/preferences/advanced")).toBe(true);
     expect(isSettingsPath("/calendar")).toBe(false);
   });
@@ -35,18 +40,6 @@ describe("settings navigation helpers", () => {
     ).toBe(true);
     expect(
       isSettingsSectionActive("/settings/calendar/sync", "/settings/calendar"),
-    ).toBe(true);
-    expect(
-      isSettingsSectionActive(
-        "/settings/integrations",
-        "/settings/integrations",
-      ),
-    ).toBe(true);
-    expect(
-      isSettingsSectionActive(
-        "/settings/integrations/history",
-        "/settings/integrations",
-      ),
     ).toBe(true);
     expect(isSettingsSectionActive("/settings/calendar", "/settings")).toBe(
       false,
@@ -61,7 +54,16 @@ describe("settings navigation helpers", () => {
     expect(getActiveSettingsSection("/settings/calendar/sync").id).toBe(
       "calendar",
     );
+    expect(getActiveSettingsSection("/settings/preferences").id).toBe(
+      "preferences",
+    );
     expect(getActiveSettingsSection("/nope").id).toBe("account");
+  });
+
+  it("keeps numbered settings navigation aligned to visible sections", () => {
+    expect(getActiveSettingsIndex("/settings")).toBe(0);
+    expect(getActiveSettingsIndex("/settings/calendar")).toBe(1);
+    expect(getActiveSettingsIndex("/settings/preferences")).toBe(2);
   });
 
   it("builds settings hrefs with safe return targets", () => {

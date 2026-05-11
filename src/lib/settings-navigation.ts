@@ -1,7 +1,6 @@
 export const SETTINGS_SECTIONS = [
   { id: "account", label: "account", href: "/settings" },
   { id: "calendar", label: "calendar", href: "/settings/calendar" },
-  { id: "integrations", label: "integrations", href: "/settings/integrations" },
   { id: "preferences", label: "preferences", href: "/settings/preferences" },
 ] as const;
 
