@@ -13,6 +13,13 @@
 *.tsbuildinfo
 *.pem
 .DS_Store
+*.swp
+*.swo
+*.swn
+Session.vim
+.Session.vim
+.netrwhist
+.viminfo
 .env*
 .vercel
 .pnpm-debug.log*
