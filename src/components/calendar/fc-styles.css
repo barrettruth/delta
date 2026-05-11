@@ -22,6 +22,16 @@
   );
   --fc-highlight-color: color-mix(in oklab, var(--primary) 12%, transparent);
   --fc-small-font-size: 10px;
+  --delta-calendar-hour-line: color-mix(
+    in oklab,
+    var(--border) 68%,
+    transparent
+  );
+  --delta-calendar-half-hour-line: color-mix(
+    in oklab,
+    var(--border) 18%,
+    transparent
+  );
 
   font-size: 11px;
   height: 100%;
@@ -50,11 +60,6 @@
 
 .fc-delta-root .fc .fc-timegrid-slot {
   height: 15px;
-  border-color: color-mix(in oklab, var(--border) 50%, transparent);
-}
-
-.fc-delta-root .fc .fc-timegrid-slot-minor {
-  border-color: color-mix(in oklab, var(--border) 30%, transparent);
 }
 
 .fc-delta-root .fc .fc-timegrid-slot-label-cushion {
@@ -118,6 +123,22 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 .fc-delta-root .fc .fc-scrollgrid td,
 .fc-delta-root .fc .fc-scrollgrid th {
   border-color: var(--border);
+}
+
+/* Keep 15-minute slots in the DOM for precise selection, but only draw a
+ * quiet half-hour cue between the stronger hour boundaries. */
+.fc-delta-root .fc .fc-scrollgrid .fc-timegrid-slot {
+  border-top-color: var(--delta-calendar-hour-line);
+  border-top-style: solid;
+}
+
+.fc-delta-root .fc .fc-scrollgrid .fc-timegrid-slot-minor {
+  border-top-color: transparent;
+}
+
+.fc-delta-root .fc .fc-scrollgrid .fc-timegrid-slot-minor[data-time$=":30:00"] {
+  border-top-color: var(--delta-calendar-half-hour-line);
+  border-top-style: solid;
 }
 
 /* Also strip the outermost row's top border and the last row's bottom
@@ -265,7 +286,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 .fc-delta-root .fc .fc-timegrid-divider {
   border-top: 1px solid var(--border);
 }
-.fc-delta-root .fc tr:has(> .fc-timegrid-divider) > * {
+.fc-delta-root .fc .fc-scrollgrid tr:has(> .fc-timegrid-divider) > * {
   border: 0;
 }
 
