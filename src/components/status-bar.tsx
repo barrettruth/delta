@@ -14,7 +14,6 @@ import {
   getCompletions,
   longestCommonPrefix,
 } from "@/core/commands";
-import { focusSectionForPath } from "@/lib/keymap-defs";
 import {
   isSettingsPath,
   settingsHref,
@@ -59,9 +58,8 @@ export function StatusBar() {
       openHelp: () =>
         router.push(
           settingsHref(
-            "/settings/keymaps",
+            "/settings",
             settingsReturnToForPath(pathname, searchParams),
-            { focus: focusSectionForPath(pathname) },
           ),
         ),
       undo: () => performUndo(),

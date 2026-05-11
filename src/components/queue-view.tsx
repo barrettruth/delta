@@ -20,7 +20,6 @@ import type { UndoMutation } from "@/core/undo";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
-import { focusSectionForPath } from "@/lib/keymap-defs";
 import {
   settingsHref,
   settingsReturnToForPath,
@@ -208,9 +207,8 @@ export function QueueView({
     nav.pushJump();
     router.push(
       settingsHref(
-        "/settings/keymaps",
+        "/settings",
         settingsReturnToForPath(pathname, searchParams),
-        { focus: focusSectionForPath(pathname) },
       ),
     );
   }, [nav, pathname, router, searchParams]);

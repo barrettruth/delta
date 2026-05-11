@@ -8,7 +8,6 @@ import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
-import { focusSectionForPath } from "@/lib/keymap-defs";
 import {
   settingsHref,
   settingsReturnToForPath,
@@ -32,10 +31,9 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const settingsReturnTo = settingsReturnToForPath(pathname, searchParams);
 
   const openHelp = useCallback(() => {
-    const focus = focusSectionForPath(pathname);
     pushJump();
-    router.push(settingsHref("/settings/keymaps", settingsReturnTo, { focus }));
-  }, [pathname, pushJump, router, settingsReturnTo]);
+    router.push(settingsHref("/settings", settingsReturnTo));
+  }, [pushJump, router, settingsReturnTo]);
 
   const viewKeys = useMemo(() => {
     const map: Record<string, string> = {};

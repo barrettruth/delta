@@ -14,7 +14,6 @@ describe("settings navigation helpers", () => {
   it("defines the expected settings sections", () => {
     expect(SETTINGS_SECTIONS.map((section) => section.href)).toEqual([
       "/settings",
-      "/settings/keymaps",
       "/settings/calendar",
       "/settings/integrations",
       "/settings/preferences",
@@ -59,7 +58,6 @@ describe("settings navigation helpers", () => {
 
   it("resolves the active settings section", () => {
     expect(getActiveSettingsSection("/settings").id).toBe("account");
-    expect(getActiveSettingsSection("/settings/keymaps").id).toBe("keymaps");
     expect(getActiveSettingsSection("/settings/calendar/sync").id).toBe(
       "calendar",
     );
@@ -68,11 +66,11 @@ describe("settings navigation helpers", () => {
 
   it("builds settings hrefs with safe return targets", () => {
     expect(
-      settingsHref("/settings/keymaps", "/calendar?mode=week", {
+      settingsHref("/settings/calendar", "/calendar?mode=week", {
         focus: "calendar",
       }),
     ).toBe(
-      "/settings/keymaps?returnTo=%2Fcalendar%3Fmode%3Dweek&focus=calendar",
+      "/settings/calendar?returnTo=%2Fcalendar%3Fmode%3Dweek&focus=calendar",
     );
     expect(settingsHref("/settings", "/settings/calendar")).toBe("/settings");
     expect(settingsHref("/settings", "https://example.com")).toBe("/settings");
@@ -84,7 +82,7 @@ describe("settings navigation helpers", () => {
 
     expect(pathWithSearch("/", queueParams)).toBe("/?view=queue");
     expect(settingsReturnToForPath("/", queueParams)).toBe("/?view=queue");
-    expect(settingsReturnToForPath("/settings/keymaps", settingsParams)).toBe(
+    expect(settingsReturnToForPath("/settings/calendar", settingsParams)).toBe(
       "/calendar",
     );
     expect(safeSettingsReturnTo("//example.com")).toBe("/");
