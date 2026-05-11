@@ -30,10 +30,11 @@
             curl
             just
           ];
+          ciPackages = commonPackages ++ [ pkgs.tea ];
         in
         {
           default = pkgs.mkShell { packages = commonPackages; };
-          ci = pkgs.mkShell { packages = commonPackages; };
+          ci = pkgs.mkShell { packages = ciPackages; };
         }
       );
 
