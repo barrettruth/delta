@@ -4,10 +4,7 @@ import { DashboardContent } from "@/components/dashboard-content";
 import { GlobalKeyboard } from "@/components/global-keyboard";
 import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
-import { listCategoryColors } from "@/core/category-colors";
-import { listTasks } from "@/core/task";
-import { db } from "@/db";
-import { requireAuthUser } from "@/lib/server-auth";
+import { loadDashboardShellData } from "@/server/dashboard-data";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +15,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   modal: React.ReactNode;
 }) {
-  const user = await requireAuthUser();
-
-  const allTasks = listTasks(db, user.id);
-  const categories = [
-    ...new Set(allTasks.map((t) => t.category).filter(Boolean)),
-  ] as string[];
-
-  const colors = listCategoryColors(db, user.id);
+  const { user, tasks, categories, categoryColors } =
+    await loadDashboardShellData();
 
   return (
     <Suspense>
@@ -33,10 +24,10 @@ export default async function DashboardLayout({
         <AppSidebar
           username={user.username}
           categories={categories}
-          categoryColors={colors}
+          categoryColors={categoryColors}
         />
         <SidebarInset className="flex flex-col h-dvh">
-          <DashboardContent tasks={allTasks}>
+          <DashboardContent tasks={tasks}>
             {children}
             <GlobalKeyboard categories={categories} />
           </DashboardContent>
