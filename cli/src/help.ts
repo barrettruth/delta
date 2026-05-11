@@ -16,7 +16,6 @@ Commands:
   export                     Export as iCal to stdout
   config [get|set]           Settings management
   integration [list|test]    Integration management
-  share <id>                 Generate share link for a task
   completion [bash|zsh|fish] Shell completion scripts
   help [topic]               Built-in help topics
 

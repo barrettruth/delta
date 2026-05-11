@@ -56,7 +56,6 @@ _delta() {
                 'feed:iCal subscription management'
                 'import:Import from iCal or other sources'
                 'export:Export as iCal'
-                'share:Generate share link for a task'
                 'config:Settings management'
                 'integration:Integration management'
                 'completion:Shell completion generation'

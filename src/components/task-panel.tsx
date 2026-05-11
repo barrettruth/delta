@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Trash, X } from "@phosphor-icons/react";
+import { Trash, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -109,7 +109,6 @@ export function TaskPanel({
   const [recurrenceFocused, setRecurrenceFocused] = useState(false);
   const notesRef = useRef<string | null>(null);
   const [notesValue, setNotesValue] = useState<string | null>(null);
-  const pendingYRef = useRef(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const prevTaskIdRef = useRef<number | null>(null);
   // Snapshot of the `due` input value when the form loaded for this task.
@@ -498,24 +497,6 @@ export function TaskPanel({
     forceClose();
   }, [task, recurrenceDelete, undo, forceClose]);
 
-  const handleShare = useCallback(async () => {
-    if (!task?.startAt) return;
-    try {
-      const res = await fetch(`/api/events/${task.id}/share`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        statusBar.error(data.error ?? "failed to share");
-        return;
-      }
-      await navigator.clipboard.writeText(data.url);
-      statusBar.message("share link copied");
-    } catch {
-      statusBar.error("failed to share");
-    }
-  }, [task, statusBar]);
-
   const handleClosePanel = useCallback(async () => {
     clearAutoSaveTimer();
 
@@ -575,25 +556,6 @@ export function TaskPanel({
         handleCreate();
         return;
       }
-
-      const target = e.target as HTMLElement;
-      const isInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
-      if (!isInput && e.key === "y" && mode === "edit") {
-        e.preventDefault();
-        if (pendingYRef.current) {
-          pendingYRef.current = false;
-          handleShare();
-        } else {
-          pendingYRef.current = true;
-          setTimeout(() => {
-            pendingYRef.current = false;
-          }, 500);
-        }
-        return;
-      }
     },
     [
       mode,
@@ -602,7 +564,6 @@ export function TaskPanel({
       clearAutoSaveTimer,
       handleClosePanel,
       handleCreate,
-      handleShare,
       keymaps,
     ],
   );
@@ -718,15 +679,6 @@ export function TaskPanel({
                 mode === "create" ? "New task..." : "Task description"
               }
             />
-            {mode === "edit" && task?.startAt && (
-              <button
-                type="button"
-                className="text-muted-foreground hover:text-foreground shrink-0 p-1 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
-                onClick={handleShare}
-              >
-                <Copy size={14} />
-              </button>
-            )}
             {mode === "edit" && task && (
               <button
                 type="button"

@@ -296,20 +296,6 @@ export const accounts = sqliteTable(
   (t) => [unique().on(t.provider, t.providerAccountId)],
 );
 
-export const eventShareLinks = sqliteTable("event_share_links", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  token: text("token").notNull().unique(),
-  taskId: integer("task_id")
-    .notNull()
-    .references(() => tasks.id, { onDelete: "cascade" }),
-  createdBy: integer("created_by")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  instanceDate: text("instance_date"),
-  expiresAt: text("expires_at").notNull(),
-  createdAt: text("created_at").notNull(),
-});
-
 export const systemConfigs = sqliteTable("system_configs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   key: text("key").notNull().unique(),

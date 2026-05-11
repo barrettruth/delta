@@ -591,14 +591,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     section: "task_detail",
     label: "Create (in new task mode)",
   },
-  {
-    id: "task_detail.yank_link",
-    key: "yy",
-    triggerKey: "y",
-    configurable: false,
-    section: "task_detail",
-    label: "Copy share link",
-  },
 ];
 
 const keymapById = new Map<string, KeymapDef>();
@@ -824,7 +816,6 @@ export const HELP_SECTIONS: HelpSection[] = [
       row("task_detail.save", "<C-s>", "Save"),
       row("task_detail.close", "<Esc>", "Close"),
       row("task_detail.create", "<CR>", "Create (in new task mode)"),
-      row("task_detail.yank_link", "yy", "Copy share link"),
     ],
   },
 ];

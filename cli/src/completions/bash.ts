@@ -10,7 +10,7 @@ _delta_completions() {
     local cur prev words cword
     _init_completion || return
 
-    local nouns="task cat cron auth feed import export share config integration completion help"
+    local nouns="task cat cron auth feed import export config integration completion help"
     local universal_flags="--json --jq --quiet --no-color --server --debug --help --version --yes"
 
     local task_verbs="list add edit done delete wip block pending dep"

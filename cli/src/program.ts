@@ -11,7 +11,6 @@ import { registerImportCommand } from "./import.js";
 import { registerIntegrationCommands } from "./integration.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
-import { registerShareCommand } from "./share.js";
 import { registerTaskCommands } from "./task.js";
 
 export function createProgram(version: string): Command {
@@ -59,11 +58,6 @@ export function createProgram(version: string): Command {
   registerImportCommand(program);
   registerExportCommand(program);
 
-  const share = new Command("share").description(
-    "Generate share link for a task",
-  );
-  registerShareCommand(share);
-
   const config = new Command("config").description("Settings management");
   registerConfigCommands(config);
 
@@ -75,7 +69,6 @@ export function createProgram(version: string): Command {
   program.addCommand(task);
   program.addCommand(cat);
   program.addCommand(cron);
-  program.addCommand(share);
   program.addCommand(config);
   program.addCommand(integration);
   registerHelp(program);

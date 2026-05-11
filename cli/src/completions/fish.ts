@@ -3,7 +3,7 @@ export function fishScript(): string {
 # Installation:
 #   delta completion fish > ~/.config/fish/completions/delta.fish
 
-set -l nouns task cat cron auth feed import export share config integration completion help
+set -l nouns task cat cron auth feed import export config integration completion help
 
 complete -c delta -e
 
@@ -14,7 +14,6 @@ complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a auth -d "Authen
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a feed -d "iCal subscription management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a import -d "Import from iCal or other sources"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a export -d "Export as iCal"
-complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a share -d "Generate share link for a task"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a config -d "Settings management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a integration -d "Integration management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a completion -d "Shell completion generation"

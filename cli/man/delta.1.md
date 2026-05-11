@@ -224,11 +224,6 @@ Valid keys: `default-view`, `show-completed`, `urgency-weights`,
 * `delta integration test` provider:
   Test an integration's API key validity.
 
-### delta share
-
-* `delta share` task-id:
-  Generate or show the share link for a task.
-
 ### delta completion
 
 * `delta completion bash`:
