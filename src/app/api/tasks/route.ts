@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createTask, listTasks } from "@/core/task";
+import { listTasks } from "@/core/task";
 import type { TaskFilters, TaskStatus } from "@/core/types";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 import { validateCreateTask } from "@/lib/validation";
+import { createTaskForUser } from "@/server/task-mutations";
 
 export async function GET(request: Request) {
   const user = await getAuthUserFromRequest(request);
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const task = createTask(db, user.id, result.data);
+    const task = createTaskForUser(db, user.id, result.data);
     return NextResponse.json(task, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to create task";

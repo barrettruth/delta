@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { completeTask, getTask } from "@/core/task";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import {
+  completeTaskForUser,
+  isTaskMutationError,
+} from "@/server/task-mutations";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,15 +14,14 @@ export async function POST(request: Request, { params }: Params) {
 
   const { id } = await params;
   const taskId = Number(id);
-  const existing = getTask(db, taskId);
-  if (!existing || existing.userId !== user.id) {
-    return NextResponse.json({ error: "Task not found" }, { status: 404 });
-  }
 
   try {
-    const result = completeTask(db, user.id, taskId);
+    const result = completeTaskForUser(db, user.id, taskId);
     return NextResponse.json(result);
   } catch (e) {
+    if (isTaskMutationError(e)) {
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
     if (e instanceof Error && e.message.includes("not found")) {
       return NextResponse.json({ error: e.message }, { status: 404 });
     }

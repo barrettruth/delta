@@ -18,6 +18,11 @@ vi.mock("@/components/keyboard-shortcuts-dialog", () => ({
   KeyboardShortcutsDialog: () => null,
 }));
 
+vi.mock("@/app/actions/tasks", () => ({
+  undoCompleteTaskAction: vi.fn(),
+  undoTaskAction: vi.fn(),
+}));
+
 function ProviderProbe() {
   const keyboardHelp = useKeyboardHelp();
   const navigation = useNavigation();

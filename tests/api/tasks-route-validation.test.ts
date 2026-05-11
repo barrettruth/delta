@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
 
 const mockDb = vi.hoisted(() => ({}));
 
+vi.mock("server-only", () => ({}));
 vi.mock("@/db", () => ({ db: mockDb }));
 
 vi.mock("@/lib/auth-middleware", () => ({

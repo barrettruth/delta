@@ -2,38 +2,34 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { addDependency, removeDependency } from "@/core/dag";
-import {
-  deleteAllInstances,
-  deleteThisAndFuture,
-  deleteThisInstance,
-  editAllInstances,
-  editThisAndFuture,
-  editThisInstance,
-} from "@/core/recurrence-editing";
-import { materializeInstance } from "@/core/recurrence-expansion";
-import {
-  completeTask,
-  createTask,
-  deleteTask,
-  getTask,
-  updateTask,
-} from "@/core/task";
-import { saveTaskDetails } from "@/core/task-detail-save";
-import type {
-  CreateTaskInput,
-  Task,
-  TaskStatus,
-  UpdateTaskInput,
-} from "@/core/types";
+import type { CreateTaskInput, Task, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
-import { categoryColors, tasks } from "@/db/schema";
+import { categoryColors } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
 import {
   formatValidationErrors,
   parseCreateTaskInput,
   parseUpdateTaskInput,
 } from "@/lib/validation";
+import {
+  addDependencyForUser,
+  completeTaskForUser,
+  completeVirtualInstanceForUser,
+  createTaskForUser,
+  deleteAllInstancesForUser,
+  deleteTaskForUser,
+  deleteThisAndFutureForUser,
+  deleteThisInstanceForUser,
+  editAllInstancesForUser,
+  editRecurringInstanceForUser,
+  editThisAndFutureForUser,
+  materializeInstanceForUser,
+  removeDependencyForUser,
+  saveTaskDetailsForUser,
+  undoCompleteTaskMutationsForUser,
+  undoTaskMutationsForUser,
+  updateTaskForUser,
+} from "@/server/task-mutations";
 
 type ActionResult<T> = { data: T } | { error: string };
 
@@ -49,16 +45,9 @@ async function requireUser() {
   return user;
 }
 
-async function requireOwnedTask(taskId: number) {
-  const user = await requireUser();
-  const task = getTask(db, taskId);
-  if (!task || task.userId !== user.id) throw new Error("Task not found");
-  return { user, task };
-}
-
 export async function createTaskAction(
   input: CreateTaskInput,
-): Promise<ActionResult<ReturnType<typeof createTask>>> {
+): Promise<ActionResult<Task>> {
   try {
     const validation = parseCreateTaskInput(input);
     if (!validation.success || !validation.data) {
@@ -66,7 +55,7 @@ export async function createTaskAction(
     }
 
     const user = await requireUser();
-    const task = createTask(db, user.id, validation.data);
+    const task = createTaskForUser(db, user.id, validation.data);
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -77,16 +66,15 @@ export async function createTaskAction(
 export async function updateTaskAction(
   id: number,
   input: UpdateTaskInput,
-): Promise<ActionResult<ReturnType<typeof updateTask>>> {
+): Promise<ActionResult<Task>> {
   try {
     const validation = parseUpdateTaskInput(input);
     if (!validation.success || !validation.data) {
       return validationFailure(validation.errors);
     }
 
-    const { user } = await requireOwnedTask(id);
-    void user;
-    const task = updateTask(db, id, validation.data);
+    const user = await requireUser();
+    const task = updateTaskForUser(db, user.id, id, validation.data);
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -99,15 +87,15 @@ export async function saveTaskDetailsAction(
   input: {
     task: UpdateTaskInput;
   },
-): Promise<ActionResult<ReturnType<typeof saveTaskDetails>>> {
+): Promise<ActionResult<ReturnType<typeof saveTaskDetailsForUser>>> {
   try {
     const validation = parseUpdateTaskInput(input.task);
     if (!validation.success || !validation.data) {
       return validationFailure(validation.errors);
     }
 
-    const { user } = await requireOwnedTask(id);
-    const result = saveTaskDetails(db, user.id, id, {
+    const user = await requireUser();
+    const result = saveTaskDetailsForUser(db, user.id, id, {
       task: validation.data,
     });
     revalidatePath("/", "layout");
@@ -121,10 +109,10 @@ export async function saveTaskDetailsAction(
 
 export async function completeTaskAction(
   id: number,
-): Promise<ActionResult<ReturnType<typeof completeTask>>> {
+): Promise<ActionResult<ReturnType<typeof completeTaskForUser>>> {
   try {
-    const { user } = await requireOwnedTask(id);
-    const result = completeTask(db, user.id, id);
+    const user = await requireUser();
+    const result = completeTaskForUser(db, user.id, id);
     revalidatePath("/", "layout");
     return { data: result };
   } catch (e) {
@@ -136,12 +124,13 @@ export async function completeTaskAction(
 
 export async function deleteTaskAction(
   id: number,
-): Promise<ActionResult<ReturnType<typeof deleteTask>>> {
+): Promise<ActionResult<Task>> {
   try {
-    await requireOwnedTask(id);
-    const task = deleteTask(db, id);
+    const user = await requireUser();
+    const result = deleteTaskForUser(db, user.id, id);
+    if (result.kind !== "task") throw new Error("Failed to delete task");
     revalidatePath("/", "layout");
-    return { data: task };
+    return { data: result.task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to delete task" };
   }
@@ -152,9 +141,8 @@ export async function addDependencyAction(
   dependsOnId: number,
 ): Promise<ActionResult<null>> {
   try {
-    await requireOwnedTask(taskId);
-    await requireOwnedTask(dependsOnId);
-    addDependency(db, taskId, dependsOnId);
+    const user = await requireUser();
+    addDependencyForUser(db, user.id, taskId, dependsOnId);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -213,8 +201,8 @@ export async function removeDependencyAction(
   dependsOnId: number,
 ): Promise<ActionResult<null>> {
   try {
-    await requireOwnedTask(taskId);
-    removeDependency(db, taskId, dependsOnId);
+    const user = await requireUser();
+    removeDependencyForUser(db, user.id, taskId, dependsOnId);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -232,17 +220,8 @@ export async function undoTaskAction(
   }>,
 ): Promise<ActionResult<null>> {
   try {
-    await requireUser();
-    for (const m of mutations) {
-      db.update(tasks)
-        .set({
-          status: m.status as TaskStatus,
-          completedAt: m.completedAt,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(tasks.id, m.taskId))
-        .run();
-    }
+    const user = await requireUser();
+    undoTaskMutationsForUser(db, user.id, mutations);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -256,9 +235,12 @@ export async function materializeInstanceAction(
 ): Promise<ActionResult<Task>> {
   try {
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = materializeInstance(db, user.id, masterId, instanceDate);
+    const task = materializeInstanceForUser(
+      db,
+      user.id,
+      masterId,
+      instanceDate,
+    );
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -274,12 +256,14 @@ export async function completeVirtualInstanceAction(
 ): Promise<ActionResult<Task>> {
   try {
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = materializeInstance(db, user.id, masterId, instanceDate);
-    const result = completeTask(db, user.id, task.id);
+    const task = completeVirtualInstanceForUser(
+      db,
+      user.id,
+      masterId,
+      instanceDate,
+    );
     revalidatePath("/", "layout");
-    return { data: result.task };
+    return { data: task };
   } catch (e) {
     return {
       error:
@@ -300,9 +284,7 @@ export async function editRecurringInstanceAction(
     }
 
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = editThisInstance(
+    const task = editRecurringInstanceForUser(
       db,
       user.id,
       masterId,
@@ -330,9 +312,7 @@ export async function editThisAndFutureAction(
     }
 
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = editThisAndFuture(
+    const task = editThisAndFutureForUser(
       db,
       user.id,
       masterId,
@@ -359,9 +339,12 @@ export async function editAllInstancesAction(
     }
 
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = editAllInstances(db, user.id, masterId, validation.data);
+    const task = editAllInstancesForUser(
+      db,
+      user.id,
+      masterId,
+      validation.data,
+    );
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -377,9 +360,7 @@ export async function deleteThisInstanceAction(
 ): Promise<ActionResult<null>> {
   try {
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    deleteThisInstance(db, user.id, masterId, instanceDate);
+    deleteThisInstanceForUser(db, user.id, masterId, instanceDate);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -395,9 +376,7 @@ export async function deleteThisAndFutureAction(
 ): Promise<ActionResult<null>> {
   try {
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    deleteThisAndFuture(db, user.id, masterId, instanceDate);
+    deleteThisAndFutureForUser(db, user.id, masterId, instanceDate);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -412,9 +391,7 @@ export async function deleteAllInstancesAction(
 ): Promise<ActionResult<null>> {
   try {
     const user = await requireUser();
-    const master = getTask(db, masterId);
-    if (!master || master.userId !== user.id) throw new Error("Task not found");
-    deleteAllInstances(db, masterId);
+    deleteAllInstancesForUser(db, user.id, masterId);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -433,20 +410,8 @@ export async function undoCompleteTaskAction(
   }>,
 ): Promise<ActionResult<null>> {
   try {
-    await requireUser();
-    for (const m of mutations) {
-      db.update(tasks)
-        .set({
-          status: m.status as TaskStatus,
-          completedAt: m.completedAt,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(tasks.id, m.taskId))
-        .run();
-      if (m.spawnedTaskId) {
-        db.delete(tasks).where(eq(tasks.id, m.spawnedTaskId)).run();
-      }
-    }
+    const user = await requireUser();
+    undoCompleteTaskMutationsForUser(db, user.id, mutations);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
