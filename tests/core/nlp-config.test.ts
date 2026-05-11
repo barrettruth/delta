@@ -7,8 +7,12 @@ import {
   upsertIntegrationConfig,
 } from "@/core/integration-config";
 import { getActiveNlpConfig } from "@/core/nlp-config";
+import {
+  nlpProviderKey,
+  nlpTokens,
+  readNlpApiKey,
+} from "@/core/provider-registry";
 import type { Db } from "@/core/types";
-import { nlpProviderKey, nlpTokens, readNlpApiKey } from "@/lib/nlp-models";
 import { createTestDb, createTestUser } from "../helpers";
 
 const TEST_KEY = randomBytes(32).toString("hex");

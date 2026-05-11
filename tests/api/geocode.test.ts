@@ -5,8 +5,8 @@ import {
   type IntegrationConfig,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
+import { geocodingTokens } from "@/core/provider-registry";
 import type { Db } from "@/core/types";
-import { geocodingTokens } from "@/lib/geocoding-providers";
 import { createTestDb, createTestUser } from "../helpers";
 
 const state = vi.hoisted(() => ({

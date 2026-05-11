@@ -5,8 +5,8 @@ import {
   getIntegrationConfig,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
+import { nlpProviderKey, nlpTokens } from "@/core/provider-registry";
 import type { Db } from "@/core/types";
-import { nlpProviderKey, nlpTokens } from "@/lib/nlp-models";
 import { createTestDb, createTestUser } from "../helpers";
 
 const state = vi.hoisted(() => ({

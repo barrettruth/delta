@@ -1,9 +1,11 @@
 import { CalendarSettingsSection } from "@/components/settings/calendar-settings-section";
 import { getActiveGeocodingConfig } from "@/core/geocoding";
 import { getActiveNlpConfig } from "@/core/nlp-config";
+import type {
+  GeocodingProvider,
+  NlpProviderId,
+} from "@/core/provider-registry";
 import { db } from "@/db";
-import type { GeocodingProvider } from "@/lib/geocoding-providers";
-import type { NlpProvider } from "@/lib/nlp-models";
 import { requireAuthUser } from "@/lib/server-auth";
 
 export default async function SettingsCalendarPage() {
@@ -14,7 +16,7 @@ export default async function SettingsCalendarPage() {
     user.id,
   ).provider;
 
-  const nlpProvider: NlpProvider | null =
+  const nlpProvider: NlpProviderId | null =
     getActiveNlpConfig(db, user.id)?.provider ?? null;
 
   return (

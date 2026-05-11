@@ -1,6 +1,6 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type { NlpProviderId } from "@/core/provider-registry";
 import type * as schema from "@/db/schema";
-import type { NlpProvider } from "@/lib/nlp-models";
 
 export type Db = BetterSQLite3Database<typeof schema>;
 
@@ -73,5 +73,5 @@ export interface TaskFilters {
 
 export type ConflictResolution = "lww" | "google_wins" | "delta_wins";
 
-export type NlpSource = "local" | NlpProvider;
-export type { NlpProvider };
+export type NlpSource = "local" | NlpProviderId;
+export type { NlpProviderId };

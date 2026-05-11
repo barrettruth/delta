@@ -5,11 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
-  NLP_SETTINGS_PROVIDERS,
-  type NlpProviderId,
-  type NlpSettingsProviderId,
-} from "@/core/provider-registry";
-import {
   GEOCODING_PROVIDERS,
   type GeocodingApiKeyProvider,
   type GeocodingProvider,
@@ -17,7 +12,10 @@ import {
   geocodingProvidersToClear,
   geocodingTokens,
   isGeocodingApiKeyProvider,
-} from "@/lib/geocoding-providers";
+  NLP_SETTINGS_PROVIDERS,
+  type NlpProviderId,
+  type NlpSettingsProviderId,
+} from "@/core/provider-registry";
 import {
   SettingsPage,
   SettingsRow,

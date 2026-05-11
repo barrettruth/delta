@@ -9,13 +9,13 @@ import {
   getIntegrationConfig,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
-import type { Db } from "@/core/types";
 import {
   GEOCODING_PROVIDERS,
   geocodingProvidersToClear,
   geocodingTokens,
   readGeocodingApiKey,
-} from "@/lib/geocoding-providers";
+} from "@/core/provider-registry";
+import type { Db } from "@/core/types";
 import { createTestDb, createTestUser } from "../helpers";
 
 const TEST_KEY = randomBytes(32).toString("hex");
@@ -35,7 +35,13 @@ describe("geocoding provider contract", () => {
   });
 
   it("centralizes current geocoding provider metadata", () => {
-    expect(GEOCODING_PROVIDERS).toEqual([
+    expect(
+      GEOCODING_PROVIDERS.map(({ id, label, requiresApiKey }) => ({
+        id,
+        label,
+        requiresApiKey,
+      })),
+    ).toEqual([
       { id: "photon", label: "photon", requiresApiKey: false },
       { id: "mapbox", label: "mapbox", requiresApiKey: true },
       { id: "google_maps", label: "google maps", requiresApiKey: true },

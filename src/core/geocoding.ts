@@ -1,10 +1,10 @@
 import { getIntegrationConfig } from "@/core/integration-config";
 import {
-  GEOCODING_STORED_PROVIDER_PRIORITY,
   type GeocodingApiKeyProvider,
   type GeocodingProvider,
   readGeocodingApiKey,
-} from "@/lib/geocoding-providers";
+  STORED_GEOCODING_PROVIDER_PRIORITY,
+} from "@/core/provider-registry";
 import type { Db } from "./types";
 
 export type { GeocodingApiKeyProvider, GeocodingProvider };
@@ -59,7 +59,8 @@ export function getActiveGeocodingConfig(
   db: Db,
   userId: number,
 ): ActiveGeocodingConfig {
-  for (const provider of GEOCODING_STORED_PROVIDER_PRIORITY) {
+  for (const definition of STORED_GEOCODING_PROVIDER_PRIORITY) {
+    const provider = definition.id;
     const config = getIntegrationConfig(db, userId, provider);
     if (!config || config.enabled !== 1) continue;
 

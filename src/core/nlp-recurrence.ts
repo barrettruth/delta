@@ -1,6 +1,6 @@
 import { RRule } from "rrule";
-import { NLP_MODEL } from "@/core/provider-registry";
-import type { NlpProvider, NlpSource } from "./types";
+import { NLP_MODEL, type NlpProviderId } from "@/core/provider-registry";
+import type { NlpSource } from "./types";
 
 export interface NlpParseResult {
   rrule: string;
@@ -9,7 +9,7 @@ export interface NlpParseResult {
 }
 
 export interface LlmConfig {
-  provider: NlpProvider;
+  provider: NlpProviderId;
   apiKey: string;
   model?: string;
 }
