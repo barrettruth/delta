@@ -2,8 +2,10 @@
 /.next/
 /out/
 /build
+/dist/
 /coverage
 /data/
+/cli/node_modules/
 /cli/dist/
 /test-results/
 

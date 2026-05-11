@@ -67,7 +67,6 @@
     "@vitest/coverage-v8": "^4.1.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "^0.31.10",
-    "react-grab": "^0.1.29",
     "react-scan": "^0.5.3",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
