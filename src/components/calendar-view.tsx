@@ -41,8 +41,8 @@ import {
   tasksToEvents,
   type VirtualMeta,
 } from "@/lib/fullcalendar-adapter";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
-import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 export function CalendarView({
   tasks,
@@ -598,8 +598,15 @@ export function CalendarView({
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
-      if (isInputFocused()) return;
-      if (isBrowserShortcut(e)) return;
+      if (
+        !shouldHandleKeyboardEvent(e, {
+          scope: "view",
+          taskPanelOpen: panel.isOpen,
+          popoverOpen: actionsOpen,
+        })
+      ) {
+        return;
+      }
 
       const scrollerEl = fcRef.current?.getScrollerEl() ?? null;
 
@@ -630,12 +637,9 @@ export function CalendarView({
 
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
-      if (isModifier) return;
-
       const delKey = getKeymap("calendar.delete").triggerKey;
 
-      if (pendingOp.current && !isModifier) {
+      if (pendingOp.current) {
         const op = pendingOp.current;
         pendingOp.current = null;
         if (opTimer.current) {
@@ -805,6 +809,8 @@ export function CalendarView({
       handleDeletePanelTask,
       dismissPopover,
       hasVisibleAllDayEvents,
+      panel.isOpen,
+      actionsOpen,
     ],
   );
 

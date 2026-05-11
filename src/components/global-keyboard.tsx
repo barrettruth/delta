@@ -7,12 +7,12 @@ import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import {
   settingsHref,
   settingsReturnToForPath,
 } from "@/lib/settings-navigation";
-import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -47,9 +47,14 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
-      if (isInputFocused()) return;
-      if (isBrowserShortcut(e)) return;
-      if (document.querySelector("[role=dialog]")) return;
+      if (
+        !shouldHandleKeyboardEvent(e, {
+          scope: "global",
+          taskPanelOpen: panel.isOpen,
+        })
+      ) {
+        return;
+      }
 
       if (matchesEvent("nav.jump_back", e)) {
         e.preventDefault();
@@ -68,9 +73,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       }
 
       if (pendingG.current) {
-        const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
-        if (isModifier) return;
-
         e.preventDefault();
         const key = e.key;
         pendingG.current = false;

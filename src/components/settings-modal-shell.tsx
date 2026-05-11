@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useStatusBar } from "@/contexts/status-bar";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import {
   getActiveSettingsIndex,
   SETTINGS_RETURN_TO_PARAM,
@@ -13,7 +14,6 @@ import {
   safeSettingsReturnTo,
   settingsHref,
 } from "@/lib/settings-navigation";
-import { isInputFocused } from "@/lib/utils";
 
 export function SettingsModalShell({
   children,
@@ -68,14 +68,14 @@ export function SettingsModalShell({
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (!shouldHandleKeyboardEvent(e, { scope: "dialog" })) return;
+
       if (e.key === "Escape") {
-        if (isInputFocused()) return;
         e.preventDefault();
         close();
         return;
       }
 
-      if (isInputFocused()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (e.key === "q") {

@@ -10,8 +10,9 @@ import { useTaskPanel } from "@/contexts/task-panel";
 import { KANBAN_COLUMNS, type TaskStatusColumn } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
 import { useTaskOperations } from "@/hooks/use-task-operations";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap } from "@/lib/keymap-defs";
-import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 type BoardColumn = TaskStatusColumn;
 
@@ -287,14 +288,16 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
-      if (isInputFocused()) return;
-      if (isBrowserShortcut(e)) return;
-      if (panel.isOpen) return;
+      if (
+        !shouldHandleKeyboardEvent(e, {
+          scope: "view",
+          taskPanelOpen: panel.isOpen,
+        })
+      ) {
+        return;
+      }
 
       if (pendingOp.current) {
-        const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
-        if (isModifier) return;
-
         if (
           (e.key >= "1" && e.key <= "9") ||
           (e.key === "0" && countBuf.current.length > 0)

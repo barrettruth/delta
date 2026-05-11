@@ -1,3 +1,5 @@
+import type { KeyboardEventLike } from "@/lib/keyboard";
+
 export type KeySection =
   | "global"
   | "queue"
@@ -11,7 +13,6 @@ export interface KeymapDef {
   key: string;
   triggerKey: string;
   modifiers?: ("ctrl" | "shift" | "meta" | "alt")[];
-  configurable?: boolean;
   section: KeySection;
   label: string;
 }
@@ -112,7 +113,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "global.category_jump",
     key: "g1-9",
     triggerKey: "g",
-    configurable: false,
     section: "global",
     label: "Jump to category",
   },
@@ -120,7 +120,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "global.create_task",
     key: "gc",
     triggerKey: "g",
-    configurable: false,
     section: "global",
     label: "Create task",
   },
@@ -128,7 +127,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "global.toggle_done",
     key: "g.",
     triggerKey: "g",
-    configurable: false,
     section: "global",
     label: "Toggle done tasks",
   },
@@ -136,7 +134,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "global.help",
     key: "g?",
     triggerKey: "g",
-    configurable: false,
     section: "global",
     label: "This help",
   },
@@ -202,7 +199,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "queue.complete",
     key: "xx / xj / xk",
     triggerKey: "x",
-    configurable: false,
     section: "queue",
     label: "Complete task(s)",
   },
@@ -210,7 +206,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "queue.delete",
     key: "dd / dj / dk",
     triggerKey: "d",
-    configurable: false,
     section: "queue",
     label: "Delete task(s)",
   },
@@ -218,7 +213,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "queue.set_pending",
     key: "pp / pj / pk",
     triggerKey: "p",
-    configurable: false,
     section: "queue",
     label: "Set pending",
   },
@@ -226,7 +220,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "queue.set_wip",
     key: "ww / wj / wk",
     triggerKey: "w",
-    configurable: false,
     section: "queue",
     label: "Set wip",
   },
@@ -234,7 +227,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "queue.set_blocked",
     key: "bb / bj / bk",
     triggerKey: "b",
-    configurable: false,
     section: "queue",
     label: "Set blocked",
   },
@@ -292,7 +284,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.move_task_left",
     key: "H",
     triggerKey: "H",
-    configurable: false,
     section: "kanban",
     label: "Move task left",
   },
@@ -300,7 +291,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.move_task_right",
     key: "L",
     triggerKey: "L",
-    configurable: false,
     section: "kanban",
     label: "Move task right",
   },
@@ -350,7 +340,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.set_waiting",
     key: "w",
     triggerKey: "w",
-    configurable: false,
     section: "kanban",
     label: "Set status Waiting",
   },
@@ -358,7 +347,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.set_in_progress",
     key: "i",
     triggerKey: "i",
-    configurable: false,
     section: "kanban",
     label: "Set status In Progress",
   },
@@ -366,7 +354,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.set_blocked",
     key: "b",
     triggerKey: "b",
-    configurable: false,
     section: "kanban",
     label: "Set status Blocked",
   },
@@ -374,7 +361,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.complete",
     key: "x",
     triggerKey: "x",
-    configurable: false,
     section: "kanban",
     label: "Complete task",
   },
@@ -410,7 +396,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "kanban.delete",
     key: "dd",
     triggerKey: "d",
-    configurable: false,
     section: "kanban",
     label: "Delete task",
   },
@@ -440,7 +425,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "calendar.scroll_top",
     key: "gg",
     triggerKey: "g",
-    configurable: false,
     section: "calendar",
     label: "First hour (00:00)",
   },
@@ -448,7 +432,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "calendar.scroll_bottom",
     key: "G",
     triggerKey: "G",
-    configurable: false,
     section: "calendar",
     label: "Last hour (23:00)",
   },
@@ -457,7 +440,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     key: "e",
     triggerKey: "e",
     modifiers: ["ctrl"],
-    configurable: false,
     section: "calendar",
     label: "Scroll down 1 hour",
   },
@@ -466,7 +448,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     key: "y",
     triggerKey: "y",
     modifiers: ["ctrl"],
-    configurable: false,
     section: "calendar",
     label: "Scroll up 1 hour",
   },
@@ -475,7 +456,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     key: "d",
     triggerKey: "d",
     modifiers: ["ctrl"],
-    configurable: false,
     section: "calendar",
     label: "Scroll half page down",
   },
@@ -484,7 +464,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     key: "u",
     triggerKey: "u",
     modifiers: ["ctrl"],
-    configurable: false,
     section: "calendar",
     label: "Scroll half page up",
   },
@@ -527,7 +506,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     id: "calendar.delete",
     key: "dd",
     triggerKey: "d",
-    configurable: false,
     section: "calendar",
     label: "Delete event",
   },
@@ -603,7 +581,7 @@ export function getKeymapsBySection(section: KeySection): KeymapDef[] {
   return DEFAULT_KEYMAPS.filter((def) => def.section === section);
 }
 
-export function matchesEvent(id: string, e: KeyboardEvent): boolean {
+export function matchesEvent(id: string, e: KeyboardEventLike): boolean {
   const def = getKeymap(id);
   if (e.key !== def.triggerKey) return false;
   const wantCtrlOrMeta =
@@ -632,30 +610,6 @@ export function formatKey(def: KeymapDef): string {
   if (def.triggerKey === "Escape") return "<Esc>";
   if (def.triggerKey === "Enter") return "<CR>";
   return def.triggerKey;
-}
-
-const BROWSER_RESERVED_COMBOS = new Set([
-  "ctrl+w",
-  "ctrl+t",
-  "ctrl+n",
-  "ctrl+Tab",
-]);
-
-const BROWSER_RESERVED_KEYS = new Set(["F1", "F3", "F5", "F11", "F12"]);
-
-export function isBrowserReserved(e: KeyboardEvent): boolean {
-  if (BROWSER_RESERVED_KEYS.has(e.key)) return true;
-  if (e.ctrlKey) {
-    const combo = `ctrl+${e.key}`;
-    if (BROWSER_RESERVED_COMBOS.has(combo)) return true;
-  }
-  return false;
-}
-
-export function isModifierOnly(key: string): boolean {
-  return (
-    key === "Shift" || key === "Control" || key === "Alt" || key === "Meta"
-  );
 }
 
 export interface HelpRow {

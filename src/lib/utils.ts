@@ -48,18 +48,6 @@ export function blendColors(hexColors: string[]): string | null {
   );
 }
 
-export function isInputFocused(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
-
 const MEETING_PATTERNS = [
   { name: "Zoom", pattern: /https?:\/\/[\w.-]*zoom\.us\/(j|my)\/[\w.-]+/i },
   { name: "Meet", pattern: /https?:\/\/meet\.google\.com\/[\w-]+/i },
@@ -99,29 +87,4 @@ export function formatRelativeDate(date: Date): string {
 
 export function isOverdue(due: string): boolean {
   return new Date(due) < new Date(new Date().toDateString());
-}
-
-const BROWSER_CTRL_KEYS = new Set([
-  "-",
-  "=",
-  "+",
-  "0",
-  "t",
-  "w",
-  "n",
-  "l",
-  "r",
-  "f",
-  "p",
-  "Tab",
-]);
-
-const BROWSER_CTRL_SHIFT_KEYS = new Set(["I", "R", "Tab", "J", "T", "N"]);
-
-export function isBrowserShortcut(e: KeyboardEvent): boolean {
-  if (e.altKey && ["ArrowLeft", "ArrowRight"].includes(e.key)) return true;
-  if (e.key === "F5" || e.key === "F11" || e.key === "F12") return true;
-  if (!e.ctrlKey && !e.metaKey) return false;
-  if (e.shiftKey && BROWSER_CTRL_SHIFT_KEYS.has(e.key)) return true;
-  return BROWSER_CTRL_KEYS.has(e.key);
 }

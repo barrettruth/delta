@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Task, TaskStatus } from "@/core/types";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
-import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 interface KeyboardActions {
   tasks: Task[];
@@ -16,6 +16,7 @@ interface KeyboardActions {
   onHelp?: () => void;
   onJump?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  taskPanelOpen?: boolean;
 }
 
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
@@ -184,14 +185,19 @@ export function useKeyboard(actions: KeyboardActions) {
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
-      if (isInputFocused()) return;
-      if (isBrowserShortcut(e)) return;
+      if (
+        !shouldHandleKeyboardEvent(e, {
+          scope: "view",
+          taskPanelOpen: actionsRef.current.taskPanelOpen,
+        })
+      ) {
+        return;
+      }
 
       const k = keysRef.current;
       const { tasks, onSelect, onDeselect, onCreate } = actionsRef.current;
-      const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
 
-      if (pendingOpMotionG.current && !isModifier) {
+      if (pendingOpMotionG.current) {
         const { op, motionCount } = pendingOpMotionG.current;
         pendingOpMotionG.current = null;
         if (opMotionGTimer.current) {
@@ -216,7 +222,7 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      if (pendingOp.current && !isModifier) {
+      if (pendingOp.current) {
         const { key: op, preCount } = pendingOp.current;
 
         if (
@@ -295,7 +301,7 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
-      if (pendingG.current !== false && !isModifier) {
+      if (pendingG.current !== false) {
         const gCount = pendingG.current;
         pendingG.current = false;
         if (gTimer.current) {

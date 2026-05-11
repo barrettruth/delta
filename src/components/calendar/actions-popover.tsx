@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import {
   settingsHref,
   settingsReturnToForPath,
@@ -158,6 +159,8 @@ export function CalendarActionsPopover({
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
+      if (!shouldHandleKeyboardEvent(e, { scope: "popover" })) return;
+
       const cur = itemsRef.current;
 
       if (e.key >= "0" && e.key <= "9") {

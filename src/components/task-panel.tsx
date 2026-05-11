@@ -31,6 +31,7 @@ import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import {
   buildTaskPanelUpdateInput,
@@ -536,6 +537,15 @@ export function TaskPanel({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (
+        !shouldHandleKeyboardEvent(e.nativeEvent, {
+          scope: "task-panel",
+          ignoreInputFocus: false,
+        })
+      ) {
+        return;
+      }
+
       if (matchesEvent("task_detail.save", e.nativeEvent)) {
         e.preventDefault();
         clearAutoSaveTimer();

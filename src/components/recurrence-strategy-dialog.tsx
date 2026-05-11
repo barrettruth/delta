@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 
 export type RecurrenceStrategy = "this" | "this-and-future" | "all";
 
@@ -24,6 +25,8 @@ export function RecurrenceStrategyDialog({
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (!open) return;
+      if (!shouldHandleKeyboardEvent(e, { scope: "dialog" })) return;
+
       if (e.key === "1") {
         e.preventDefault();
         onSelect("this");

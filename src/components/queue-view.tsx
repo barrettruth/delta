@@ -13,7 +13,8 @@ import type { TaskStatus } from "@/core/types";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { useTaskOperations } from "@/hooks/use-task-operations";
-import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
+import { cn, formatRelativeDate, isOverdue } from "@/lib/utils";
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
   pending: "border-l-status-pending",
@@ -208,6 +209,7 @@ export function QueueView({
       onHelp: openHelp,
       onJump: () => nav.pushJump(),
       scrollRef,
+      taskPanelOpen: panel.isOpen,
     });
 
   useEffect(() => {
@@ -261,25 +263,26 @@ export function QueueView({
   useEffect(() => {
     function handleSearchKeys(e: KeyboardEvent) {
       if (
-        e.key === "/" &&
-        !searchActive &&
-        !e.ctrlKey &&
-        !e.metaKey &&
-        document.activeElement?.tagName !== "INPUT" &&
-        document.activeElement?.tagName !== "TEXTAREA" &&
-        !(document.activeElement as HTMLElement)?.isContentEditable
+        !shouldHandleKeyboardEvent(e, {
+          scope: "view",
+          taskPanelOpen: panel.isOpen,
+        })
       ) {
+        return;
+      }
+
+      if (e.key === "/" && !searchActive && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         openSearch();
       }
-      if (e.key === "Escape" && searchActive && !isInputFocused()) {
+      if (e.key === "Escape" && searchActive) {
         e.preventDefault();
         clearSearch();
       }
     }
     window.addEventListener("keydown", handleSearchKeys);
     return () => window.removeEventListener("keydown", handleSearchKeys);
-  }, [searchActive, openSearch, clearSearch]);
+  }, [searchActive, openSearch, clearSearch, panel.isOpen]);
 
   useEffect(() => {
     if (cursor >= 0 && cursor < filtered.length) {

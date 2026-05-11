@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { handleScopedKeyboardEvent } from "@/lib/keyboard";
 import { HELP_SECTIONS, SECTION_LABELS } from "@/lib/keymap-defs";
 
 export function KeyboardShortcutsDialog({
@@ -21,9 +22,11 @@ export function KeyboardShortcutsDialog({
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== "q") return;
-      e.preventDefault();
-      close();
+      handleScopedKeyboardEvent(e, { scope: "dialog" }, (event) => {
+        if (event.key !== "q") return;
+        event.preventDefault();
+        close();
+      });
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
