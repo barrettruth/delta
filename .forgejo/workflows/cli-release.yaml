@@ -1,0 +1,105 @@
+name: cli-release
+
+on:
+  push:
+    tags:
+      - 'cli-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish CLI
+    runs-on: nix
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify CLI tag
+        run: |
+          set -eu
+          nix develop .#ci --command bash -c '
+            set -eu
+            tag="${FORGEJO_REF_NAME:?}"
+            version="${tag#cli-v}"
+            if [ "$tag" = "$version" ] || ! printf "%s\n" "$version" | grep -Eq "^[0-9]+\.[0-9]+\.[0-9]+$"; then
+              echo "Expected cli-vX.Y.Z tag, got $tag" >&2
+              exit 1
+            fi
+            package_version="$(node -p "require(\"./cli/package.json\").version")"
+            if [ "$package_version" != "$version" ]; then
+              echo "Tag $version does not match cli/package.json version $package_version" >&2
+              exit 1
+            fi
+          '
+
+      - name: Wait for quality
+        run: nix shell nixpkgs#curl nixpkgs#jq -c bash .forgejo/scripts/wait-for-quality.sh
+
+      - name: Build CLI package
+        run: |
+          set -eu
+          nix develop .#ci --command bash -c '
+            set -eu
+            cd cli
+            bun install --frozen-lockfile
+            bun run build:npm
+            bun run build:man
+            cd ..
+            mkdir -p dist
+            cd cli
+            npm pack --pack-destination ../dist --json > ../dist/npm-pack.json
+            node -e "const fs = require(\"fs\"); const pack = JSON.parse(fs.readFileSync(\"../dist/npm-pack.json\", \"utf8\")); process.stdout.write(pack[0].filename);" > ../dist/npm-package-name
+          '
+
+      - name: Publish CLI package
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "${NPM_TOKEN:-}" ]; then
+            echo "NPM_TOKEN is not set" >&2
+            exit 1
+          fi
+          nix develop .#ci --command bash -c '
+            set -eu
+            package_name="$(node -p "require(\"./cli/package.json\").name")"
+            package_version="$(node -p "require(\"./cli/package.json\").version")"
+            published_version="$(
+              npm view "${package_name}@${package_version}" version --json 2>/dev/null \
+                | tr -d "\"" || true
+            )"
+            if [ "$published_version" = "$package_version" ]; then
+              echo "${package_name}@${package_version} is already published"
+              exit 0
+            fi
+            printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > "$HOME/.npmrc"
+            cd cli
+            npm publish --access public
+          '
+
+      - name: Configure Forgejo CLI
+        run: |
+          nix develop .#ci --command tea login delete actions || true
+          nix develop .#ci --command tea login add \
+            --name actions \
+            --url "$FORGEJO_SERVER_URL" \
+            --token "$FORGEJO_TOKEN" \
+            --no-version-check
+
+      - name: Replace Forgejo release
+        run: |
+          package_file="$(cat dist/npm-package-name)"
+          nix develop .#ci --command tea releases delete \
+            --login actions \
+            --repo "$FORGEJO_REPOSITORY" \
+            --confirm "$FORGEJO_REF_NAME" || true
+          nix develop .#ci --command tea releases create \
+            --login actions \
+            --repo "$FORGEJO_REPOSITORY" \
+            --tag "$FORGEJO_REF_NAME" \
+            --target "$FORGEJO_SHA" \
+            --title "$FORGEJO_REF_NAME" \
+            --asset "dist/${package_file}"
