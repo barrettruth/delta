@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardContent } from "@/components/dashboard-content";
@@ -18,7 +17,6 @@ export default async function DashboardLayout({
   modal: React.ReactNode;
 }) {
   const user = await requireAuthUser();
-  if (!user.onboardingCompleted) redirect("/onboarding");
 
   const allTasks = listTasks(db, user.id);
   const categories = [

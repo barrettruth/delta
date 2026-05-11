@@ -289,7 +289,7 @@ const seedTasks = [
     order: 19,
   },
   {
-    description: "Ship onboarding flow",
+    description: "Review settings defaults",
     status: "pending" as const,
     category: "Work",
     due: iso(dayOffset(4), 17, 0),
@@ -298,7 +298,7 @@ const seedTasks = [
     allDay: 0,
     timezone: tz,
     notes:
-      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"3-step wizard: view pref, integrations, keymaps. No summary step."}]}]}',
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Check view preference, integrations, and keymap defaults."}]}]}',
     order: 20,
   },
 ];
