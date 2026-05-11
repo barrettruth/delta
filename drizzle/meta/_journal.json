@@ -204,6 +204,13 @@
       "when": 1775764800000,
       "tag": "0028_drop_task_external_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1775764800001,
+      "tag": "0029_drop_system_configs",
+      "breakpoints": true
     }
   ]
 }
