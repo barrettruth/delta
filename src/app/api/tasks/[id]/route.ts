@@ -1,48 +1,34 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 import { validateUpdateTask } from "@/lib/validation";
+import { deleteTaskForUser, updateTaskForUser } from "@/server/task-mutations";
 import {
-  deleteTaskForUser,
-  findOwnedTask,
-  isTaskMutationError,
-  updateTaskForUser,
-} from "@/server/task-mutations";
+  findOwnedTaskOrResponse,
+  getTaskRouteUser,
+  parseTaskRouteId,
+  type TaskRouteParams,
+  taskMutationErrorResponse,
+  validationErrorResponse,
+} from "../route-adapters";
 
-type Params = { params: Promise<{ id: string }> };
+export async function GET(request: Request, { params }: TaskRouteParams) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-function taskMutationErrorResponse(error: unknown): NextResponse | null {
-  if (isTaskMutationError(error)) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: error.status },
-    );
-  }
-  if (error instanceof Error && error.message.includes("not found")) {
-    return NextResponse.json({ error: error.message }, { status: 404 });
-  }
-  return null;
+  const taskId = await parseTaskRouteId(params);
+  const task = findOwnedTaskOrResponse(db, user.id, taskId);
+  if (!task.ok) return task.response;
+
+  return NextResponse.json(task.value);
 }
 
-export async function GET(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
+export async function PATCH(request: Request, { params }: TaskRouteParams) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-  const { id } = await params;
-  const task = findOwnedTask(db, user.id, Number(id));
-  if (!task) {
-    return NextResponse.json({ error: "Task not found" }, { status: 404 });
-  }
-
-  return NextResponse.json(task);
-}
-
-export async function PATCH(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
-
-  const { id } = await params;
-  const taskId = Number(id);
+  const taskId = await parseTaskRouteId(params);
 
   const { searchParams } = new URL(request.url);
   const scope = searchParams.get("scope");
@@ -51,10 +37,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const { instanceDate, ...updateFields } = body;
   const result = validateUpdateTask(updateFields);
   if (!result.success || !result.data) {
-    return NextResponse.json(
-      { error: "Validation failed", details: result.errors },
-      { status: 400 },
-    );
+    return validationErrorResponse(result.errors);
   }
 
   const validated = result.data;
@@ -72,12 +55,12 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
+export async function DELETE(request: Request, { params }: TaskRouteParams) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-  const { id } = await params;
-  const taskId = Number(id);
+  const taskId = await parseTaskRouteId(params);
 
   const { searchParams } = new URL(request.url);
   const scope = searchParams.get("scope");

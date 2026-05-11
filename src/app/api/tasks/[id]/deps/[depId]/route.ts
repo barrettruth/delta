@@ -1,25 +1,28 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { removeDependencyForUser } from "@/server/task-mutations";
 import {
-  isTaskMutationError,
-  removeDependencyForUser,
-} from "@/server/task-mutations";
+  type DependencyRouteParams,
+  getTaskRouteUser,
+  parseDependencyRouteIds,
+  taskMutationErrorResponse,
+} from "../../../route-adapters";
 
-type Params = { params: Promise<{ id: string; depId: string }> };
+export async function DELETE(
+  request: Request,
+  { params }: DependencyRouteParams,
+) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-export async function DELETE(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
-
-  const { id, depId } = await params;
+  const { taskId, dependsOnId } = await parseDependencyRouteIds(params);
   try {
-    removeDependencyForUser(db, user.id, Number(id), Number(depId));
+    removeDependencyForUser(db, user.id, taskId, dependsOnId);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (isTaskMutationError(e)) {
-      return NextResponse.json({ error: e.message }, { status: e.status });
-    }
+    const response = taskMutationErrorResponse(e);
+    if (response) return response;
     throw e;
   }
 }

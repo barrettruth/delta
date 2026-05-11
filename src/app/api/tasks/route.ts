@@ -5,13 +5,18 @@ import {
   taskFilterParamsFromSearchParams,
 } from "@/core/task-filters";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 import { validateCreateTask } from "@/lib/validation";
 import { createTaskForUser } from "@/server/task-mutations";
+import {
+  getTaskRouteUser,
+  taskRouteError,
+  validationErrorResponse,
+} from "./route-adapters";
 
 export async function GET(request: Request) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
   const { searchParams } = new URL(request.url);
   const filters = parseTaskFilters(
@@ -22,17 +27,15 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
   const body = await request.json();
   const result = validateCreateTask(body);
 
   if (!result.success || !result.data) {
-    return NextResponse.json(
-      { error: "Validation failed", details: result.errors },
-      { status: 400 },
-    );
+    return validationErrorResponse(result.errors);
   }
 
   try {
@@ -40,6 +43,6 @@ export async function POST(request: Request) {
     return NextResponse.json(task, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to create task";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return taskRouteError(message, 500);
   }
 }

@@ -1,51 +1,46 @@
 import { NextResponse } from "next/server";
 import { getDependencies } from "@/core/dag";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { addDependencyForUser } from "@/server/task-mutations";
 import {
-  addDependencyForUser,
-  findOwnedTask,
-  isTaskMutationError,
-} from "@/server/task-mutations";
+  findOwnedTaskOrResponse,
+  getTaskRouteUser,
+  parseDependencyRequestBody,
+  parseTaskRouteId,
+  type TaskRouteParams,
+  taskMutationErrorResponse,
+  taskRouteError,
+} from "../../route-adapters";
 
-type Params = { params: Promise<{ id: string }> };
+export async function GET(request: Request, { params }: TaskRouteParams) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-export async function GET(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
+  const taskId = await parseTaskRouteId(params);
+  const task = findOwnedTaskOrResponse(db, user.id, taskId);
+  if (!task.ok) return task.response;
 
-  const { id } = await params;
-  const task = findOwnedTask(db, user.id, Number(id));
-  if (!task) {
-    return NextResponse.json({ error: "Task not found" }, { status: 404 });
-  }
-
-  return NextResponse.json(getDependencies(db, Number(id)));
+  return NextResponse.json(getDependencies(db, taskId));
 }
 
-export async function POST(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
+export async function POST(request: Request, { params }: TaskRouteParams) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-  const { id } = await params;
-  const body = await request.json();
-
-  if (!body.depends_on_id) {
-    return NextResponse.json(
-      { error: "depends_on_id is required" },
-      { status: 400 },
-    );
-  }
+  const taskId = await parseTaskRouteId(params);
+  const dependency = await parseDependencyRequestBody(request);
+  if (!dependency.ok) return dependency.response;
 
   try {
-    addDependencyForUser(db, user.id, Number(id), body.depends_on_id);
+    addDependencyForUser(db, user.id, taskId, dependency.value.dependsOnId);
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e) {
-    if (isTaskMutationError(e)) {
-      return NextResponse.json({ error: e.message }, { status: e.status });
-    }
+    const response = taskMutationErrorResponse(e);
+    if (response) return response;
     if (e instanceof Error) {
-      return NextResponse.json({ error: e.message }, { status: 400 });
+      return taskRouteError(e.message, 400);
     }
     throw e;
   }
