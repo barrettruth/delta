@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { StatusBar } from "@/components/status-bar";
 import { TaskPanel } from "@/components/task-panel";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { TaskPanelProvider, useTaskPanel } from "@/contexts/task-panel";
+import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -55,7 +55,7 @@ export function DashboardContent({
   tasks: Task[];
 }) {
   return (
-    <TaskPanelProvider>
+    <>
       <div className="flex flex-1 min-h-0">
         <main className="flex-1 min-w-0 overflow-hidden bg-background">
           <div className="md:hidden flex items-center h-10 px-2 border-b border-border/60 shrink-0">
@@ -69,6 +69,6 @@ export function DashboardContent({
         <MobileTaskOverlay tasks={tasks} />
       </div>
       <StatusBar />
-    </TaskPanelProvider>
+    </>
   );
 }

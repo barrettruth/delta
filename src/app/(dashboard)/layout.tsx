@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardContent } from "@/components/dashboard-content";
+import { DashboardProviders } from "@/components/dashboard-providers";
 import { GlobalKeyboard } from "@/components/global-keyboard";
-import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { loadDashboardShellData } from "@/server/dashboard-data";
 
@@ -20,7 +20,7 @@ export default async function DashboardLayout({
 
   return (
     <Suspense>
-      <NavigationWrapper>
+      <DashboardProviders>
         <AppSidebar
           username={user.username}
           categories={categories}
@@ -33,7 +33,7 @@ export default async function DashboardLayout({
           </DashboardContent>
         </SidebarInset>
         {modal}
-      </NavigationWrapper>
+      </DashboardProviders>
     </Suspense>
   );
 }

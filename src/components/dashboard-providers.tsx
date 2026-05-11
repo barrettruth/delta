@@ -3,14 +3,21 @@
 import { KeyboardHelpProvider } from "@/contexts/keyboard-help";
 import { NavigationProvider } from "@/contexts/navigation";
 import { StatusBarProvider } from "@/contexts/status-bar";
+import { TaskPanelProvider } from "@/contexts/task-panel";
 import { UndoProvider } from "@/contexts/undo";
 
-export function NavigationWrapper({ children }: { children: React.ReactNode }) {
+export function DashboardProviders({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <NavigationProvider>
       <StatusBarProvider>
         <KeyboardHelpProvider>
-          <UndoProvider>{children}</UndoProvider>
+          <UndoProvider>
+            <TaskPanelProvider>{children}</TaskPanelProvider>
+          </UndoProvider>
         </KeyboardHelpProvider>
       </StatusBarProvider>
     </NavigationProvider>

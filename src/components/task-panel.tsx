@@ -596,38 +596,6 @@ export function TaskPanel({
     return clearAutoSaveTimer;
   }, [isOpen, mode, task, clearAutoSaveTimer, currentFormValues, saveTask]);
 
-  useEffect(() => {
-    async function onSave() {
-      if (mode === "edit" && task) {
-        clearAutoSaveTimer();
-        if (await saveTask(task.id)) {
-          statusBar.message("saved");
-        }
-      } else if (mode === "create") {
-        await handleCreate();
-      }
-    }
-    function onDiscard() {
-      prevTaskIdRef.current = null;
-      clearAutoSaveTimer();
-      forceClose();
-    }
-    window.addEventListener("command-save-task", onSave);
-    window.addEventListener("command-discard-task", onDiscard);
-    return () => {
-      window.removeEventListener("command-save-task", onSave);
-      window.removeEventListener("command-discard-task", onDiscard);
-    };
-  }, [
-    mode,
-    task,
-    saveTask,
-    handleCreate,
-    forceClose,
-    statusBar,
-    clearAutoSaveTimer,
-  ]);
-
   const isMobile = useIsMobile();
 
   if (!isOpen) return null;
