@@ -15,6 +15,7 @@ import {
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task, TaskStatus } from "@/core/types";
@@ -32,6 +33,7 @@ const statusIcon: Record<TaskStatus, React.ReactNode> = {
 
 export function TaskList({ tasks }: { tasks: Task[] }) {
   const nav = useNavigation();
+  const { openKeyboardHelp } = useKeyboardHelp();
   const panel = useTaskPanel();
   const recurrenceDelete = useRecurrenceDelete();
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -58,6 +60,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
       panel.toggle(task.id);
     },
     onDeselect: () => panel.close(),
+    onHelp: openKeyboardHelp,
     onJump: () => nav.pushJump(),
   });
 

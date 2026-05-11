@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { HELP_SECTIONS, sectionsForPath } from "@/lib/keymap-defs";
+import {
+  DEFAULT_KEYMAPS,
+  HELP_SECTIONS,
+  sectionsForPath,
+} from "@/lib/keymap-defs";
 
 describe("keymap definitions", () => {
   it("falls back to global shortcuts across the settings area", () => {
@@ -21,5 +25,43 @@ describe("keymap definitions", () => {
         ),
       ),
     ).toBe(false);
+  });
+
+  it("keeps the shortcuts help backed by declared keymap ids", () => {
+    const keymapIds = new Set(DEFAULT_KEYMAPS.map((def) => def.id));
+
+    for (const section of HELP_SECTIONS) {
+      expect(section.rows.length).toBeGreaterThan(0);
+      for (const row of section.rows) {
+        for (const id of row.ids) {
+          expect(keymapIds.has(id)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("documents calendar traversal and view shortcuts", () => {
+    const calendar = HELP_SECTIONS.find(
+      (section) => section.section === "calendar",
+    );
+
+    expect(calendar?.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ids: ["calendar.prev_period", "calendar.next_period"],
+          keyDisplay: "h / l",
+          label: "Previous / next day, week, or month",
+        }),
+        expect.objectContaining({
+          ids: [
+            "calendar.day_view",
+            "calendar.week_view",
+            "calendar.month_view",
+          ],
+          keyDisplay: "D / w / m",
+          label: "Day / week / month view",
+        }),
+      ]),
+    );
   });
 });

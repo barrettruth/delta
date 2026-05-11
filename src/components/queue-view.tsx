@@ -1,7 +1,6 @@
 "use client";
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   completeTaskAction,
@@ -10,6 +9,7 @@ import {
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
+import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
@@ -20,10 +20,6 @@ import type { UndoMutation } from "@/core/undo";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
-import {
-  settingsHref,
-  settingsReturnToForPath,
-} from "@/lib/settings-navigation";
 import { cn, formatRelativeDate, isInputFocused, isOverdue } from "@/lib/utils";
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
@@ -178,10 +174,8 @@ export function QueueView({
   categoryColors: Record<string, string>;
   categoryFilter?: string;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const nav = useNavigation();
+  const { openKeyboardHelp } = useKeyboardHelp();
   const statusBar = useStatusBar();
   const undo = useUndo();
   const panel = useTaskPanel();
@@ -204,14 +198,8 @@ export function QueueView({
 
   const gutterWidth = String(filtered.length).length;
   const openHelp = useCallback(() => {
-    nav.pushJump();
-    router.push(
-      settingsHref(
-        "/settings",
-        settingsReturnToForPath(pathname, searchParams),
-      ),
-    );
-  }, [nav, pathname, router, searchParams]);
+    openKeyboardHelp();
+  }, [openKeyboardHelp]);
 
   const { cursor, setCursor, selectedIds, toggleSelect, visualMode } =
     useKeyboard({

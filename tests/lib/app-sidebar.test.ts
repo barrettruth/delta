@@ -77,9 +77,16 @@ vi.mock("@/contexts/keymaps", () => ({
           "global.kanban": "K",
           "global.calendar": "C",
           "global.category_jump": "g",
+          "global.help": "g",
           "global.settings": "S",
         }[id] ?? "?",
     }),
+  }),
+}));
+
+vi.mock("@/contexts/keyboard-help", () => ({
+  useKeyboardHelp: () => ({
+    openKeyboardHelp: () => {},
   }),
 }));
 
@@ -101,5 +108,18 @@ describe("AppSidebar", () => {
 
     expect(html).toContain("kanban");
     expect(html).not.toContain("Kanban");
+  });
+
+  it("renders a visible shortcuts entry", () => {
+    const html = renderToStaticMarkup(
+      createElement(AppSidebar, {
+        username: "barrett",
+        categories: ["work"],
+        categoryColors: {},
+      }),
+    );
+
+    expect(html).toContain("shortcuts");
+    expect(html).toContain("g?");
   });
 });

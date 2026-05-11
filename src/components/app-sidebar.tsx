@@ -1,6 +1,6 @@
 "use client";
 
-import { Gear, Palette } from "@phosphor-icons/react";
+import { Gear, Keyboard, Palette } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import {
@@ -49,6 +50,7 @@ export function AppSidebar({
   const activeCategory = searchParams.get("category");
   const nav = useNavigation();
   const keymaps = useKeymaps();
+  const { openKeyboardHelp } = useKeyboardHelp();
   const [editingColor, setEditingColor] = useState<string | null>(null);
   const settingsUrl = settingsHref(
     "/settings",
@@ -157,6 +159,13 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter className="p-2">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton type="button" onClick={openKeyboardHelp}>
+              <Keyboard className="size-4" />
+              <span className="flex-1">shortcuts</span>
+              <kbd className="text-[10px] text-muted-foreground">g?</kbd>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href={settingsUrl} />}

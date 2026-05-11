@@ -778,7 +778,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       row(
         ["calendar.prev_period", "calendar.next_period"],
         "h / l",
-        "Previous / next period",
+        "Previous / next day, week, or month",
       ),
       row("calendar.scroll_top", "gg", "First hour (00:00)"),
       row("calendar.scroll_bottom", "G", "Last hour (23:00)"),
