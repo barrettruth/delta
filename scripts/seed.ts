@@ -27,7 +27,6 @@ const user = db
   .insert(users)
   .values({
     username,
-    passwordHash: null,
     apiKey: randomBytes(32).toString("hex"),
     createdAt: new Date().toISOString(),
   })

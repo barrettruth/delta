@@ -22,12 +22,10 @@ export function createTestUser(db: Db, username?: string) {
     .insert(users)
     .values({
       username: username ?? `testuser${userCounter}`,
-      passwordHash: null,
       apiKey: randomBytes(32).toString("hex"),
       createdAt: new Date().toISOString(),
     })
     .returning()
     .get();
-  const { passwordHash: _, totpSecret: _totpSecret, ...safe } = user;
-  return safe;
+  return user;
 }

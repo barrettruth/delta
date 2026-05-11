@@ -11,34 +11,9 @@ import {
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
-  passwordHash: text("password_hash"),
-  apiKey: text("api_key").unique(),
-  totpSecret: text("totp_secret"),
-  totpEnabled: integer("totp_enabled").default(0),
+  apiKey: text("api_key").notNull().unique(),
   calendarFeedToken: text("calendar_feed_token").unique(),
   createdAt: text("created_at").notNull(),
-});
-
-export const webauthnCredentials = sqliteTable("webauthn_credentials", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  credentialId: text("credential_id").notNull().unique(),
-  publicKey: text("public_key").notNull(),
-  counter: integer("counter").notNull().default(0),
-  transports: text("transports"),
-  name: text("name").notNull(),
-  createdAt: text("created_at").notNull(),
-});
-
-export const recoveryCodes = sqliteTable("recovery_codes", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  codeHash: text("code_hash").notNull(),
-  used: integer("used").default(0),
 });
 
 export const tasks = sqliteTable("tasks", {
@@ -111,15 +86,6 @@ export const taskDependencies = sqliteTable(
   (t) => [primaryKey({ columns: [t.taskId, t.dependsOnId] })],
 );
 
-export const sessions = sqliteTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: text("expires_at").notNull(),
-  createdAt: text("created_at").notNull(),
-});
-
 export const categoryColors = sqliteTable(
   "category_colors",
   {
@@ -168,23 +134,4 @@ export const integrationConfigs = sqliteTable(
     updatedAt: text("updated_at").notNull().default(sql`(current_timestamp)`),
   },
   (t) => [unique().on(t.userId, t.provider)],
-);
-
-export const accounts = sqliteTable(
-  "accounts",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
-    accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    tokenExpiresAt: text("token_expires_at"),
-    email: text("email"),
-    name: text("name"),
-    createdAt: text("created_at").notNull(),
-  },
-  (t) => [unique().on(t.provider, t.providerAccountId)],
 );

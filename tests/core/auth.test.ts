@@ -38,7 +38,7 @@ describe("API key auth", () => {
 
   beforeEach(() => {
     const user = createTestUser(db, "barrett");
-    apiKey = user.apiKey as string;
+    apiKey = user.apiKey;
   });
 
   it("validates correct API key", () => {

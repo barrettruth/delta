@@ -17,12 +17,10 @@ echo "==> Running migrations"
 pnpm db:migrate
 
 echo ""
-echo "==> Create your account"
+echo "==> Create the owner account"
 read -rp "Username: " username
-read -rsp "Password: " password
-echo ""
 
-npx tsx scripts/seed.ts "$username" "$password"
+npx tsx scripts/seed.ts "$username"
 
 echo ""
 echo "==> Setup complete. Start the server with:"

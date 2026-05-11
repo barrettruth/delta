@@ -29,7 +29,6 @@ if (!existing) {
     .insert(users)
     .values({
       username: "barrett",
-      passwordHash: null,
       apiKey: randomBytes(32).toString("hex"),
       createdAt: new Date().toISOString(),
     })

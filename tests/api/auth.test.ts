@@ -33,7 +33,7 @@ describe("API key management", () => {
 
   beforeEach(() => {
     const user = createTestUser(db, "keyuser");
-    apiKey = user.apiKey as string;
+    apiKey = user.apiKey;
     userId = user.id;
   });
 
@@ -66,8 +66,12 @@ describe("API key management", () => {
     expect(validateApiKey(db, key3)).not.toBeNull();
   });
 
-  it("does not expose password hash via API key validation", () => {
+  it("returns the owner record for API key validation", () => {
     const user = validateApiKey(db, apiKey);
-    expect(Object.keys(user ?? {})).not.toContain("passwordHash");
+    expect(user).toMatchObject({
+      id: userId,
+      username: "keyuser",
+      apiKey,
+    });
   });
 });

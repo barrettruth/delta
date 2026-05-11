@@ -16,11 +16,23 @@ describe("schema migrations", () => {
     }
   }
 
+  function tableNames(sqlite: Database.Database): string[] {
+    const tables = sqlite
+      .prepare("SELECT name FROM sqlite_schema WHERE type = 'table'")
+      .all() as { name: string }[];
+    return tables.map((table) => table.name);
+  }
+
+  function tableColumns(sqlite: Database.Database, table: string) {
+    return sqlite.prepare(`PRAGMA table_info(${table})`).all() as {
+      name: string;
+      notnull: number;
+    }[];
+  }
+
   it("drops legacy task source columns", () => {
     withMigratedSchema((sqlite) => {
-      const columns = sqlite.prepare("PRAGMA table_info(tasks)").all() as {
-        name: string;
-      }[];
+      const columns = tableColumns(sqlite, "tasks");
 
       expect(columns.map((column) => column.name)).not.toContain(
         "source_event_id",
@@ -33,14 +45,43 @@ describe("schema migrations", () => {
 
   it("drops retired reminder tables", () => {
     withMigratedSchema((sqlite) => {
-      const tables = sqlite
-        .prepare("SELECT name FROM sqlite_schema WHERE type = 'table'")
-        .all() as { name: string }[];
-      const tableNames = tables.map((table) => table.name);
+      const names = tableNames(sqlite);
 
-      expect(tableNames).not.toContain("reminder_endpoints");
-      expect(tableNames).not.toContain("task_reminders");
-      expect(tableNames).not.toContain("reminder_deliveries");
+      expect(names).not.toContain("reminder_endpoints");
+      expect(names).not.toContain("task_reminders");
+      expect(names).not.toContain("reminder_deliveries");
+    });
+  });
+
+  it("drops retired app auth schema", () => {
+    withMigratedSchema((sqlite) => {
+      const names = tableNames(sqlite);
+      const userColumns = tableColumns(sqlite, "users");
+      const columnNames = userColumns.map((column) => column.name);
+
+      expect(names).not.toContain("accounts");
+      expect(names).not.toContain("recovery_codes");
+      expect(names).not.toContain("webauthn_credentials");
+      expect(names).not.toContain("sessions");
+      expect(columnNames).not.toContain("password_hash");
+      expect(columnNames).not.toContain("totp_secret");
+      expect(columnNames).not.toContain("totp_enabled");
+      expect(
+        userColumns.find((column) => column.name === "api_key"),
+      ).toMatchObject({ notnull: 1 });
+    });
+  });
+
+  it("keeps encrypted provider token storage", () => {
+    withMigratedSchema((sqlite) => {
+      const names = tableNames(sqlite);
+      const columnNames = tableColumns(sqlite, "integration_configs").map(
+        (column) => column.name,
+      );
+
+      expect(names).toContain("integration_configs");
+      expect(columnNames).toContain("encrypted_tokens");
+      expect(columnNames).toContain("provider");
     });
   });
 });

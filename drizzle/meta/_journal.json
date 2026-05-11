@@ -225,6 +225,13 @@
       "when": 1778529940962,
       "tag": "0031_drop_reminder_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1778530600975,
+      "tag": "0032_drop_retired_auth_schema",
+      "breakpoints": true
     }
   ]
 }
