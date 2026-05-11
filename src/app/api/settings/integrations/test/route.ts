@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { nlpModel } from "@/lib/nlp-models";
 
 type Provider = "anthropic" | "openai" | "mapbox" | "google_maps";
 
@@ -22,7 +23,7 @@ async function testAnthropic(
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: model || "claude-haiku-4-5-20251001",
+      model: model || nlpModel("anthropic"),
       max_tokens: 1,
       messages: [{ role: "user", content: "." }],
     }),
@@ -44,7 +45,7 @@ async function testOpenai(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: model || "gpt-4o-mini",
+      model: model || nlpModel("openai"),
       max_tokens: 1,
       messages: [{ role: "user", content: "." }],
     }),

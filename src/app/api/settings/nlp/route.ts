@@ -7,17 +7,15 @@ import {
 } from "@/core/integration-config";
 import { db } from "@/db";
 import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
-import { NLP_MODEL, type NlpProvider } from "@/lib/nlp-models";
-
-const NLP_PROVIDERS: NlpProvider[] = ["anthropic", "openai"];
-
-function isNlpProvider(p: string): p is NlpProvider {
-  return NLP_PROVIDERS.includes(p as NlpProvider);
-}
-
-function nlpProviderKey(provider: NlpProvider): string {
-  return `nlp_${provider}`;
-}
+import {
+  isNlpProvider,
+  NLP_PROVIDERS,
+  type NlpProvider,
+  nlpModel,
+  nlpProviderKey,
+  nlpTokens,
+  readNlpApiKey,
+} from "@/lib/nlp-models";
 
 function otherProvider(provider: NlpProvider): NlpProvider {
   return provider === "anthropic" ? "openai" : "anthropic";
@@ -32,11 +30,10 @@ export async function GET() {
   for (const p of NLP_PROVIDERS) {
     const key = nlpProviderKey(p);
     const config = getIntegrationConfig(db, user.id, key);
-    const configured = !!config;
-    const model = config?.metadata?.model as string | null;
+    const configured = !!config && !!readNlpApiKey(config.tokens);
     result[`${p}Configured`] = configured;
-    result[`${p}Model`] = model ?? NLP_MODEL[p];
-    if (config?.enabled === 1) {
+    result[`${p}Model`] = nlpModel(p, config?.metadata);
+    if (configured && config?.enabled === 1 && !result.activeProvider) {
       result.activeProvider = p;
     }
   }
@@ -63,16 +60,18 @@ export async function PUT(request: Request) {
 
   const key = nlpProviderKey(provider);
   const existing = getIntegrationConfig(db, user.id, key);
+  const trimmedApiKey = typeof apiKey === "string" ? apiKey.trim() : "";
+  const existingApiKey = existing ? readNlpApiKey(existing.tokens) : null;
 
-  const tokens = apiKey
-    ? { apiKey }
-    : existing
-      ? existing.tokens
-      : { apiKey: "" };
+  if (!trimmedApiKey && !existingApiKey) {
+    return NextResponse.json({ error: "api key is required" }, { status: 400 });
+  }
+
+  const tokens = nlpTokens(trimmedApiKey || existingApiKey || "");
 
   const metadata = {
     ...(existing?.metadata ?? {}),
-    model: NLP_MODEL[provider],
+    model: nlpModel(provider),
   };
 
   upsertIntegrationConfig(db, user.id, key, tokens, metadata);

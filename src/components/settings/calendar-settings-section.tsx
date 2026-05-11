@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
-import type { NlpProvider } from "@/lib/nlp-models";
+import { NLP_PROVIDERS, type NlpProvider } from "@/lib/nlp-models";
 import {
   SettingsPage,
   SettingsRow,
@@ -22,8 +22,7 @@ const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
 
 const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
   { id: "builtin", label: "built-in" },
-  { id: "anthropic", label: "anthropic" },
-  { id: "openai", label: "openai" },
+  ...NLP_PROVIDERS.map((id) => ({ id, label: id })),
 ];
 
 export function CalendarSettingsSection({

@@ -1,49 +1,10 @@
-import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { decrypt, getEncryptionKey } from "@/core/encryption";
-import {
-  type LlmConfig,
-  parseRecurrence,
-  parseRecurrenceLocal,
-} from "@/core/nlp-recurrence";
-import type { NlpProvider } from "@/core/types";
+import { getActiveNlpConfig } from "@/core/nlp-config";
+import { parseRecurrence, parseRecurrenceLocal } from "@/core/nlp-recurrence";
 import { db } from "@/db";
-import { integrationConfigs } from "@/db/schema";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 
 const MAX_TEXT_LENGTH = 200;
-
-function getActiveNlpConfig(userId: number): LlmConfig | null {
-  const providers: NlpProvider[] = ["anthropic", "openai"];
-
-  for (const provider of providers) {
-    const row = db
-      .select()
-      .from(integrationConfigs)
-      .where(
-        and(
-          eq(integrationConfigs.userId, userId),
-          eq(integrationConfigs.provider, `nlp_${provider}`),
-          eq(integrationConfigs.enabled, 1),
-        ),
-      )
-      .get();
-
-    if (row) {
-      const key = getEncryptionKey();
-      const tokens = JSON.parse(decrypt(row.encryptedTokens, key));
-      const metadata = row.metadata ? JSON.parse(row.metadata) : null;
-
-      return {
-        provider,
-        apiKey: tokens.api_key as string,
-        model: metadata?.model as string | undefined,
-      };
-    }
-  }
-
-  return null;
-}
 
 export async function POST(request: Request) {
   const user = await getAuthUserFromRequest(request);
@@ -76,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json(local);
   }
 
-  const llmConfig = getActiveNlpConfig(user.id);
+  const llmConfig = getActiveNlpConfig(db, user.id);
   if (!llmConfig) {
     return NextResponse.json(
       {
