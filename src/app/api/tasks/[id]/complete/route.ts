@@ -1,30 +1,26 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { completeTaskForUser } from "@/server/task-mutations";
 import {
-  completeTaskForUser,
-  isTaskMutationError,
-} from "@/server/task-mutations";
+  getTaskRouteUser,
+  parseTaskRouteId,
+  type TaskRouteParams,
+  taskMutationErrorResponse,
+} from "../../route-adapters";
 
-type Params = { params: Promise<{ id: string }> };
+export async function POST(request: Request, { params }: TaskRouteParams) {
+  const auth = await getTaskRouteUser(request);
+  if (!auth.ok) return auth.response;
+  const user = auth.value;
 
-export async function POST(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
-  if (!user) return unauthorized();
-
-  const { id } = await params;
-  const taskId = Number(id);
+  const taskId = await parseTaskRouteId(params);
 
   try {
     const result = completeTaskForUser(db, user.id, taskId);
     return NextResponse.json(result);
   } catch (e) {
-    if (isTaskMutationError(e)) {
-      return NextResponse.json({ error: e.message }, { status: e.status });
-    }
-    if (e instanceof Error && e.message.includes("not found")) {
-      return NextResponse.json({ error: e.message }, { status: 404 });
-    }
+    const response = taskMutationErrorResponse(e);
+    if (response) return response;
     throw e;
   }
 }
