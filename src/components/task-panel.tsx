@@ -253,7 +253,8 @@ export function TaskPanel({
     }
   }, [recurrence]);
 
-  const { results: locationResults } = useLocationSearch(location);
+  const { results: locationResults, error: locationLookupError } =
+    useLocationSearch(location);
 
   const getCurrentFormValues = useCallback(
     (): TaskPanelFormValues => ({
@@ -850,7 +851,9 @@ export function TaskPanel({
               className="h-7 text-xs"
             />
             {showLocationSuggestions &&
-              (filteredLocations.length > 0 || locationResults.length > 0) && (
+              (filteredLocations.length > 0 ||
+                locationResults.length > 0 ||
+                locationLookupError) && (
                 <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-border bg-popover py-1 max-h-48 overflow-y-auto">
                   {filteredLocations.map((l, i) => (
                     <button
@@ -893,6 +896,11 @@ export function TaskPanel({
                       </button>
                     );
                   })}
+                  {locationLookupError && (
+                    <div className="px-2 py-1 text-xs text-muted-foreground">
+                      {locationLookupError}
+                    </div>
+                  )}
                 </div>
               )}
           </div>

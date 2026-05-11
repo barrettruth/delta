@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
+import { GEOCODING_PROVIDER } from "@/core/geocoding";
 import type { NlpProvider } from "@/lib/nlp-models";
 import {
   SettingsPage,
@@ -11,14 +12,7 @@ import {
   SettingsSection,
 } from "./settings-primitives";
 
-type GeoProvider = "photon" | "mapbox" | "google_maps";
 type ProviderTab = "geocoding" | "nlp";
-
-const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
-  { id: "photon", label: "photon" },
-  { id: "mapbox", label: "mapbox" },
-  { id: "google_maps", label: "google maps" },
-];
 
 const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
   { id: "builtin", label: "built-in" },
@@ -27,20 +21,13 @@ const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
 ];
 
 export function CalendarSettingsSection({
-  initialGeoProvider = "photon",
   initialNlpProvider = null,
 }: {
-  initialGeoProvider?: GeoProvider;
   initialNlpProvider?: NlpProvider | null;
 }) {
   const statusBar = useStatusBar();
 
   const [activeTab, setActiveTab] = useState<ProviderTab>("geocoding");
-  const [geoProvider, setGeoProvider] =
-    useState<GeoProvider>(initialGeoProvider);
-  const [geoKeyInput, setGeoKeyInput] = useState("");
-  const [geoKeyTarget, setGeoKeyTarget] = useState<GeoProvider | null>(null);
-  const [geoKeyTesting, setGeoKeyTesting] = useState(false);
 
   const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
     initialNlpProvider ?? "builtin",
@@ -48,76 +35,6 @@ export function CalendarSettingsSection({
   const [nlpKeyInput, setNlpKeyInput] = useState("");
   const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
   const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
-
-  async function handleSelectGeoProvider(id: GeoProvider) {
-    if (id === "photon") {
-      for (const provider of ["mapbox", "google_maps"]) {
-        await fetch(`/api/settings/integrations/${provider}`, {
-          method: "DELETE",
-        });
-      }
-      setGeoProvider("photon");
-      setGeoKeyTarget(null);
-      statusBar.message("location lookup set to photon");
-      return;
-    }
-    setGeoKeyTarget(id);
-    setGeoKeyInput("");
-    setGeoProvider(id);
-  }
-
-  async function handleTestGeoKey() {
-    if (!geoKeyInput.trim()) return;
-    setGeoKeyTesting(true);
-    try {
-      const res = await fetch("/api/settings/integrations/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: geoProvider,
-          apiKey: geoKeyInput.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        statusBar.message("key is valid");
-        await handleSaveGeoKey();
-      } else {
-        statusBar.error(data.error ?? "invalid api key");
-      }
-    } catch {
-      statusBar.error("connection failed");
-    } finally {
-      setGeoKeyTesting(false);
-    }
-  }
-
-  async function handleSaveGeoKey() {
-    if (!geoKeyInput.trim()) {
-      statusBar.error("api key cannot be empty");
-      return;
-    }
-    const res = await fetch("/api/settings/integrations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: geoProvider,
-        tokens: { api_key: geoKeyInput.trim() },
-      }),
-    });
-    if (!res.ok) {
-      statusBar.error("failed to save api key");
-      return;
-    }
-    const other = geoProvider === "mapbox" ? "google_maps" : "mapbox";
-    await fetch(`/api/settings/integrations/${other}`, { method: "DELETE" });
-    setGeoKeyTarget(null);
-    setGeoKeyInput("");
-    const label =
-      GEO_PROVIDERS.find((provider) => provider.id === geoProvider)?.label ??
-      geoProvider;
-    statusBar.message(`location lookup set to ${label}`);
-  }
 
   async function handleSelectNlpProvider(id: "builtin" | NlpProvider) {
     if (id === "builtin") {
@@ -182,7 +99,7 @@ export function CalendarSettingsSection({
   return (
     <SettingsPage
       title="calendar"
-      description="Manage the providers delta uses for location lookup and recurrence parsing."
+      description="Manage location lookup and recurrence parsing."
     >
       <div className="space-y-6">
         <div className="grid grid-cols-2 border border-border/60">
@@ -210,47 +127,9 @@ export function CalendarSettingsSection({
         {activeTab === "geocoding" && (
           <SettingsSection
             title="location lookup"
-            description="Choose the provider used for location and meeting lookups."
+            description="Built-in geocoding for location suggestions."
           >
-            {GEO_PROVIDERS.map((provider) => (
-              <div key={provider.id}>
-                <SettingsRow
-                  label={provider.label}
-                  value={geoProvider === provider.id ? "active" : ""}
-                  action
-                  muted={geoProvider !== provider.id}
-                  onClick={() => handleSelectGeoProvider(provider.id)}
-                />
-                {geoKeyTarget === provider.id && (
-                  <div className="flex gap-2 px-2 py-1">
-                    <Input
-                      value={geoKeyInput}
-                      onChange={(e) => setGeoKeyInput(e.target.value)}
-                      placeholder="api key"
-                      autoFocus
-                      className="h-8 flex-1 text-sm"
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") handleTestGeoKey();
-                        if (e.key === "Escape") {
-                          setGeoKeyTarget(null);
-                          setGeoKeyInput("");
-                        }
-                      }}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={geoKeyTesting || !geoKeyInput.trim()}
-                      onClick={handleTestGeoKey}
-                      className="h-8 text-sm"
-                    >
-                      {geoKeyTesting ? "..." : "test & save"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+            <SettingsRow label={GEOCODING_PROVIDER.label} value="active" />
           </SettingsSection>
         )}
 

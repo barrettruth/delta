@@ -18,7 +18,6 @@ describe("CalendarSettingsSection", () => {
         StatusBarProvider,
         null,
         createElement(CalendarSettingsSection, {
-          initialGeoProvider: "photon",
           initialNlpProvider: null,
         }),
       ),
@@ -26,6 +25,9 @@ describe("CalendarSettingsSection", () => {
 
     expect(html).toContain("calendar");
     expect(html).toContain("location lookup");
+    expect(html).toContain("photon");
     expect(html).toContain("recurrence parsing");
+    expect(html).not.toContain("mapbox");
+    expect(html).not.toContain("google maps");
   });
 });

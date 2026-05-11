@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import type { LocationResult } from "@/core/geocoding";
 
-export interface LocationResult {
-  name: string;
-  displayName: string;
-  lat: number;
-  lon: number;
-}
+export type { LocationResult } from "@/core/geocoding";
 
 export function useLocationSearch(query: string): {
   results: LocationResult[];
   loading: boolean;
+  error: string | null;
 } {
   const [results, setResults] = useState<LocationResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const cacheRef = useRef<Map<string, LocationResult[]>>(new Map());
 
@@ -20,6 +18,7 @@ export function useLocationSearch(query: string): {
     if (query.length < 3) {
       setResults([]);
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -27,6 +26,7 @@ export function useLocationSearch(query: string): {
     if (cached) {
       setResults(cached);
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -36,20 +36,27 @@ export function useLocationSearch(query: string): {
       abortRef.current = controller;
 
       setLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
           signal: controller.signal,
         });
         if (!res.ok) {
           setResults([]);
+          const data = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          setError(data?.error ?? "Location lookup failed");
           return;
         }
         const data: LocationResult[] = await res.json();
         cacheRef.current.set(query, data);
         setResults(data);
+        setError(null);
       } catch {
         if (!controller.signal.aborted) {
           setResults([]);
+          setError("Location lookup failed");
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -64,5 +71,5 @@ export function useLocationSearch(query: string): {
     };
   }, [query]);
 
-  return { results, loading };
+  return { results, loading, error };
 }

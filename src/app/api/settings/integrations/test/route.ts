@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import type { NlpProvider } from "@/lib/nlp-models";
 
-type Provider = "anthropic" | "openai" | "mapbox" | "google_maps";
-
-const VALID_PROVIDERS = new Set<Provider>([
-  "anthropic",
-  "openai",
-  "mapbox",
-  "google_maps",
-]);
+const VALID_PROVIDERS = new Set<NlpProvider>(["anthropic", "openai"]);
 
 async function testAnthropic(
   apiKey: string,
@@ -55,26 +49,6 @@ async function testOpenai(
   return `unexpected error (${res.status})`;
 }
 
-async function testMapbox(apiKey: string): Promise<string | null> {
-  const res = await fetch(
-    `https://api.mapbox.com/geocoding/v5/mapbox.places/test.json?access_token=${encodeURIComponent(apiKey)}&limit=1`,
-  );
-  if (res.ok) return null;
-  if (res.status === 401 || res.status === 403) return "invalid api key";
-  if (res.status === 429) return "rate limited — try again shortly";
-  return `unexpected error (${res.status})`;
-}
-
-async function testGoogleMaps(apiKey: string): Promise<string | null> {
-  const res = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=test&key=${encodeURIComponent(apiKey)}`,
-  );
-  if (!res.ok) return `unexpected error (${res.status})`;
-  const body = await res.json();
-  if (body.status === "REQUEST_DENIED") return "invalid api key";
-  return null;
-}
-
 export async function POST(request: Request) {
   const user = await getAuthUserFromRequest(request);
   if (!user) return unauthorized();
@@ -86,7 +60,7 @@ export async function POST(request: Request) {
     model?: string;
   };
 
-  if (!provider || !VALID_PROVIDERS.has(provider as Provider)) {
+  if (!provider || !VALID_PROVIDERS.has(provider as NlpProvider)) {
     return NextResponse.json(
       { valid: false, error: "invalid provider" },
       { status: 400 },
@@ -102,18 +76,12 @@ export async function POST(request: Request) {
 
   let error: string | null;
   try {
-    switch (provider as Provider) {
+    switch (provider as NlpProvider) {
       case "anthropic":
         error = await testAnthropic(apiKey, model);
         break;
       case "openai":
         error = await testOpenai(apiKey, model);
-        break;
-      case "mapbox":
-        error = await testMapbox(apiKey);
-        break;
-      case "google_maps":
-        error = await testGoogleMaps(apiKey);
         break;
     }
   } catch {
