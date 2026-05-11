@@ -9,7 +9,6 @@ Usage: delta <command> [args] [--flags] [filters]
 Commands:
   task [list|add|edit|done|delete|wip|block|pending|dep]
   cat                        List categories with task counts
-  cron [list|add|edit|delete|run|enable|disable]
   auth [login|logout|status|token]
   feed [generate|revoke]     iCal subscription management
   import <file>              Import iCal file
@@ -144,8 +143,8 @@ Export:
   $ delta export --from today --until +2w > next-two-weeks.ics
 
 Automations:
-  $ delta cron add --name "Sync issues" --schedule "0 9 * * 1" --type github_issues
-  $ delta cron run 1`;
+  $ delta integration list
+  $ delta feed generate`;
 }
 
 const topics: Record<string, () => string> = {

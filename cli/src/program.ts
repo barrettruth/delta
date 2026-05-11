@@ -3,7 +3,6 @@ import { registerAuth } from "./auth.js";
 import { registerCatCommand } from "./cat.js";
 import { registerCompletionCommands } from "./completion.js";
 import { registerConfigCommands } from "./config-cmd.js";
-import { registerCronCommands } from "./cron.js";
 import { registerExportCommand } from "./export.js";
 import { registerFeedCommands } from "./feed.js";
 import { registerHelp } from "./help.js";
@@ -50,9 +49,6 @@ export function createProgram(version: string): Command {
   );
   registerCatCommand(cat);
 
-  const cron = new Command("cron").description("Automation management");
-  registerCronCommands(cron);
-
   registerAuth(program);
   registerFeedCommands(program);
   registerImportCommand(program);
@@ -68,7 +64,6 @@ export function createProgram(version: string): Command {
 
   program.addCommand(task);
   program.addCommand(cat);
-  program.addCommand(cron);
   program.addCommand(config);
   program.addCommand(integration);
   registerHelp(program);

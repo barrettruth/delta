@@ -51,7 +51,6 @@ _delta() {
             commands=(
                 'task:Task CRUD and status changes'
                 'cat:List categories with task counts'
-                'cron:Automation management'
                 'auth:Authentication'
                 'feed:iCal subscription management'
                 'import:Import from iCal or other sources'
@@ -113,29 +112,6 @@ _delta() {
                                     _arguments "\${universal_flags[@]}"
                                     ;;
                             esac
-                            ;;
-                    esac
-                    ;;
-                cron)
-                    local -a verbs
-                    verbs=(
-                        'list:List automations'
-                        'add:Create automation'
-                        'edit:Update automation'
-                        'delete:Delete automation'
-                        'run:Trigger automation manually'
-                        'enable:Enable automation'
-                        'disable:Disable automation'
-                    )
-                    _arguments -C \\
-                        '1:verb:->cron_verb' \\
-                        '*::arg:->cron_args'
-                    case $state in
-                        cron_verb)
-                            _describe 'verb' verbs
-                            ;;
-                        cron_args)
-                            _arguments "\${universal_flags[@]}"
                             ;;
                     esac
                     ;;

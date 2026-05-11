@@ -7,7 +7,7 @@ delta(1) -- CLI client for the delta productivity platform
 ## DESCRIPTION
 
 **delta** is a command-line interface for managing tasks, calendar events,
-categories, automations, and integrations on the delta productivity platform. It
+categories, and integrations on the delta productivity platform. It
 communicates with a delta server over HTTPS.
 
 The CLI follows a noun-verb grammar: `delta <noun> <verb> [args] [--flags]
@@ -107,46 +107,6 @@ Task CRUD and status changes. Running `delta task` with no verb defaults to
 
 * `delta cat`:
   List all categories with their task counts.
-
-### delta cron
-
-Manage scheduled automations. Running `delta cron` with no verb defaults to
-`delta cron list`.
-
-* `delta cron list`:
-  List all automations.
-
-* `delta cron add` \[flags\]:
-  Create an automation.
-
-* `delta cron edit` id \[flags\]:
-  Update an automation.
-
-* `delta cron delete` id:
-  Delete an automation.
-
-* `delta cron run` id:
-  Trigger an automation manually.
-
-* `delta cron enable` id:
-  Enable a disabled automation.
-
-* `delta cron disable` id:
-  Disable an automation.
-
-#### Cron add/edit flags
-
-* `--name` name:
-  Automation name.
-
-* `--schedule` cron-expr:
-  Cron expression (e.g. "0 9 \* \* 1" for every Monday at 9am).
-
-* `--type` type:
-  Recipe type: `github_issues`, `webhook`, or `custom`.
-
-* `--config` json:
-  JSON configuration blob. Pass `-` to read from stdin.
 
 ### delta auth
 
@@ -514,20 +474,6 @@ Set the server URL:
 View all settings:
 
     $ delta config
-
-### Automations
-
-Create a cron job:
-
-    $ delta cron add --name "Sync GitHub issues" --schedule "0 9 * * 1" --type github_issues --config '{"repo": "barrettruth/delta"}'
-
-List automations:
-
-    $ delta cron list
-
-Trigger an automation manually:
-
-    $ delta cron run 1
 
 ## SEE ALSO
 

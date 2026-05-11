@@ -10,13 +10,12 @@ _delta_completions() {
     local cur prev words cword
     _init_completion || return
 
-    local nouns="task cat cron auth feed import export config integration completion help"
+    local nouns="task cat auth feed import export config integration completion help"
     local universal_flags="--json --jq --quiet --no-color --server --debug --help --version --yes"
 
     local task_verbs="list add edit done delete wip block pending dep"
     local task_dep_verbs="add rm list"
     local task_mutate_flags="--due --category --priority --start --end --all-day --recurrence --recur-mode --location --meeting --notes --status --scope"
-    local cron_verbs="list add edit delete run enable disable"
     local auth_verbs="login logout status token"
     local auth_token_verbs="regenerate"
     local feed_verbs="generate revoke"
@@ -49,14 +48,6 @@ _delta_completions() {
                 COMPREPLY=($(compgen -W "\${task_verbs}" -- "\${cur}"))
                 return
             fi
-            ;;
-        cron)
-            if [[ \${cword} -eq 2 ]]; then
-                COMPREPLY=($(compgen -W "\${cron_verbs}" -- "\${cur}"))
-                return
-            fi
-            COMPREPLY=($(compgen -W "\${universal_flags}" -- "\${cur}"))
-            return
             ;;
         auth)
             case "\${words[2]}" in

@@ -3,13 +3,12 @@ export function fishScript(): string {
 # Installation:
 #   delta completion fish > ~/.config/fish/completions/delta.fish
 
-set -l nouns task cat cron auth feed import export config integration completion help
+set -l nouns task cat auth feed import export config integration completion help
 
 complete -c delta -e
 
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a task -d "Task CRUD and status changes"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a cat -d "List categories with task counts"
-complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a cron -d "Automation management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a auth -d "Authentication"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a feed -d "iCal subscription management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a import -d "Import from iCal or other sources"
@@ -59,14 +58,6 @@ complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcomma
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from dep; and not __fish_seen_subcommand_from $dep_verbs" -a rm -d "Remove dependency"
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from dep; and not __fish_seen_subcommand_from $dep_verbs" -a list -d "List dependencies"
 
-set -l cron_verbs list add edit delete run enable disable
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a list -d "List automations"
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a add -d "Create automation"
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a edit -d "Update automation"
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a delete -d "Delete automation"
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a run -d "Trigger automation manually"
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a enable -d "Enable automation"
-complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a disable -d "Disable automation"
 
 set -l auth_verbs login logout status token
 complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a login -d "Store an API token for this server"

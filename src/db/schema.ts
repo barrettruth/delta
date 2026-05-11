@@ -244,21 +244,6 @@ export const inviteLinks = sqliteTable("invite_links", {
   createdAt: text("created_at").notNull(),
 });
 
-export const automations = sqliteTable("automations", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  cron: text("cron").notNull(),
-  type: text("type").notNull(),
-  config: text("config").notNull(),
-  enabled: integer("enabled").default(1),
-  lastRunAt: text("last_run_at"),
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
-});
-
 export const integrationConfigs = sqliteTable(
   "integration_configs",
   {

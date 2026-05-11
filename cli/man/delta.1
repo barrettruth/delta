@@ -10,7 +10,7 @@ delta(1) \-\- CLI client for the delta productivity platform
 .P
 \fBdelta\fR is a command\-line interface for managing tasks, calendar events,
 .br
-categories, automations, and integrations on the delta productivity platform\. It
+categories, and integrations on the delta productivity platform\. It
 .br
 communicates with a delta server over HTTPS\.
 .P
@@ -150,64 +150,6 @@ non\-interactive mode it errors\.
 \fBdelta cat\fP:
 .br
 List all categories with their task counts\.
-
-.RE
-.SS delta cron
-.P
-Manage scheduled automations\. Running \fBdelta cron\fP with no verb defaults to
-.br
-\fBdelta cron list\fP\|\.
-
-.RS 1
-.IP \(bu 2
-\fBdelta cron list\fP:
-.br
-List all automations\.
-.IP \(bu 2
-\fBdelta cron add\fP [flags]:
-.br
-Create an automation\.
-.IP \(bu 2
-\fBdelta cron edit\fP id [flags]:
-.br
-Update an automation\.
-.IP \(bu 2
-\fBdelta cron delete\fP id:
-.br
-Delete an automation\.
-.IP \(bu 2
-\fBdelta cron run\fP id:
-.br
-Trigger an automation manually\.
-.IP \(bu 2
-\fBdelta cron enable\fP id:
-.br
-Enable a disabled automation\.
-.IP \(bu 2
-\fBdelta cron disable\fP id:
-.br
-Disable an automation\.
-
-.RE
-.SS Cron add/edit flags
-
-.RS 1
-.IP \(bu 2
-\fB\-\-name\fP name:
-.br
-Automation name\.
-.IP \(bu 2
-\fB\-\-schedule\fP cron\-expr:
-.br
-Cron expression (e\.g\. "0 9 * * 1" for every Monday at 9am)\.
-.IP \(bu 2
-\fB\-\-type\fP type:
-.br
-Recipe type: \fBgithub_issues\fP, \fBwebhook\fP, or \fBcustom\fP\|\.
-.IP \(bu 2
-\fB\-\-config\fP json:
-.br
-JSON configuration blob\. Pass \fB\-\fP to read from stdin\.
 
 .RE
 .SS delta auth
@@ -763,28 +705,6 @@ View all settings:
 .RS 2
 .nf
 $ delta config
-.fi
-.RE
-.SS Automations
-.P
-Create a cron job:
-.RS 2
-.nf
-$ delta cron add \-\-name "Sync GitHub issues" \-\-schedule "0 9 * * 1" \-\-type github_issues \-\-config '{"repo": "barrettruth/delta"}'
-.fi
-.RE
-.P
-List automations:
-.RS 2
-.nf
-$ delta cron list
-.fi
-.RE
-.P
-Trigger an automation manually:
-.RS 2
-.nf
-$ delta cron run 1
 .fi
 .RE
 .SH SEE ALSO
