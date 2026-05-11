@@ -2,6 +2,11 @@ import { and, eq } from "drizzle-orm";
 import { taskExternalLinks } from "@/db/schema";
 import type { Db } from "./types";
 
+/**
+ * task_external_links owns imported or synced task identity.
+ * Use provider for the upstream system and externalId for that system's stable
+ * event/task id; provider-specific extras belong in metadata.
+ */
 export interface CreateExternalLinkInput {
   userId: number;
   taskId: number;

@@ -73,8 +73,6 @@ export const tasks = sqliteTable("tasks", {
   rdates: text("rdates"),
   recurringTaskId: integer("recurring_task_id"),
   originalStartAt: text("original_start_at"),
-  sourceEventId: integer("source_event_id"),
-  sourceUserId: integer("source_user_id"),
 });
 
 export const taskExternalLinks = sqliteTable(
