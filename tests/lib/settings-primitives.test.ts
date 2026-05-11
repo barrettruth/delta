@@ -13,8 +13,8 @@ describe("settings primitives", () => {
       createElement(
         SettingsPage,
         {
-          title: "integrations",
-          description: "Manage interoperability and provider API keys.",
+          title: "calendar",
+          description: "Manage calendar provider behavior.",
         },
         createElement(
           SettingsSection,
@@ -30,8 +30,8 @@ describe("settings primitives", () => {
       ),
     );
 
-    expect(html).toContain("integrations");
-    expect(html).toContain("Manage interoperability and provider API keys.");
+    expect(html).toContain("calendar");
+    expect(html).toContain("Manage calendar provider behavior.");
     expect(html).toContain("location lookup");
     expect(html).toContain("Choose the provider used for location lookups.");
     expect(html).toContain("photon");
