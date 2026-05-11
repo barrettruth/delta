@@ -34,6 +34,7 @@ export function buildTaskPanelUpdateInput(
   const input: UpdateTaskInput = {
     description: normalized.description,
     category: normalized.category || null,
+    // Preserve date-only/all-day timestamps unless the user touched the field.
     ...(normalized.due !== initialDue
       ? { due: normalized.due ? new Date(normalized.due).toISOString() : null }
       : {}),
@@ -74,4 +75,23 @@ export function isTaskPanelDirty(
     normalizedInitial.recurMode !== normalizedCurrent.recurMode ||
     normalizedInitial.notes !== normalizedCurrent.notes
   );
+}
+
+export interface TaskPanelSaveQueue {
+  enqueue: (run: () => Promise<boolean>) => Promise<boolean>;
+}
+
+export function createTaskPanelSaveQueue(): TaskPanelSaveQueue {
+  let queue = Promise.resolve(true);
+
+  return {
+    enqueue(run) {
+      const queued = queue.then(run, run);
+      queue = queued.then(
+        () => true,
+        () => true,
+      );
+      return queued;
+    },
+  };
 }
