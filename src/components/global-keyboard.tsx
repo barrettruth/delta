@@ -3,7 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { useCommandBar } from "@/contexts/command-bar";
 import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -24,7 +23,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const { pushJump, jumpBack, jumpForward, goAlternate } = useNavigation();
   const { undo: performUndo } = useUndo();
   const panel = useTaskPanel();
-  const commandBar = useCommandBar();
   const keymaps = useKeymaps();
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,18 +50,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       if (isInputFocused()) return;
       if (isBrowserShortcut(e)) return;
       if (document.querySelector("[role=dialog]")) return;
-
-      if (
-        e.key === ":" &&
-        !e.ctrlKey &&
-        !e.metaKey &&
-        !e.altKey &&
-        !pendingG.current
-      ) {
-        e.preventDefault();
-        commandBar.activate();
-        return;
-      }
 
       if (keymaps.resolvedMatchesEvent("nav.jump_back", e)) {
         e.preventDefault();
@@ -208,7 +194,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       goAlternate,
       performUndo,
       panel,
-      commandBar,
       keymaps,
       viewKeys,
       openHelp,

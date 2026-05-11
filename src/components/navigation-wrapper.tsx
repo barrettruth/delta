@@ -1,6 +1,5 @@
 "use client";
 
-import { CommandBarProvider } from "@/contexts/command-bar";
 import { KeymapProvider } from "@/contexts/keymaps";
 import { NavigationProvider } from "@/contexts/navigation";
 import { StatusBarProvider } from "@/contexts/status-bar";
@@ -11,9 +10,7 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
     <KeymapProvider>
       <NavigationProvider>
         <StatusBarProvider>
-          <CommandBarProvider>
-            <UndoProvider>{children}</UndoProvider>
-          </CommandBarProvider>
+          <UndoProvider>{children}</UndoProvider>
         </StatusBarProvider>
       </NavigationProvider>
     </KeymapProvider>
