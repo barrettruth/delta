@@ -13,8 +13,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   const user = await requireAuthUser();
 
@@ -39,6 +41,7 @@ export default async function DashboardLayout({
             <GlobalKeyboard categories={categories} />
           </DashboardContent>
         </SidebarInset>
+        {modal}
       </NavigationWrapper>
     </Suspense>
   );

@@ -4,7 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
   getActiveSettingsIndex,
@@ -17,13 +17,16 @@ import { isInputFocused } from "@/lib/utils";
 
 export function SettingsModalShell({
   children,
+  intercepted = false,
 }: {
   children: React.ReactNode;
+  intercepted?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const statusBar = useStatusBar();
+  const closingRef = useRef(false);
   const returnTo = safeSettingsReturnTo(
     searchParams.get(SETTINGS_RETURN_TO_PARAM),
   );
@@ -39,8 +42,15 @@ export function SettingsModalShell({
   );
 
   const close = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+
+    if (intercepted) {
+      router.back();
+      return;
+    }
     router.replace(returnTo);
-  }, [returnTo, router]);
+  }, [intercepted, returnTo, router]);
 
   const navigateToSection = useCallback(
     (index: number) =>

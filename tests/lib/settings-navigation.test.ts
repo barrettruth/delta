@@ -76,6 +76,27 @@ describe("settings navigation helpers", () => {
     expect(settingsHref("/settings", "https://example.com")).toBe("/settings");
   });
 
+  it("preserves dashboard return targets for modal settings links", () => {
+    expect(
+      settingsHref(
+        "/settings",
+        settingsReturnToForPath("/", new URLSearchParams("view=queue")),
+      ),
+    ).toBe("/settings?returnTo=%2F%3Fview%3Dqueue");
+    expect(
+      settingsHref(
+        "/settings",
+        settingsReturnToForPath("/kanban", new URLSearchParams()),
+      ),
+    ).toBe("/settings?returnTo=%2Fkanban");
+    expect(
+      settingsHref(
+        "/settings/calendar",
+        settingsReturnToForPath("/calendar", new URLSearchParams("mode=week")),
+      ),
+    ).toBe("/settings/calendar?returnTo=%2Fcalendar%3Fmode%3Dweek");
+  });
+
   it("derives settings close targets from the current route", () => {
     const queueParams = new URLSearchParams("view=queue");
     const settingsParams = new URLSearchParams("returnTo=/calendar");
