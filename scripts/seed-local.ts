@@ -72,7 +72,7 @@ const seedTasks = [
     timezone: tz,
     meetingUrl: "https://github.com/barrettruth/delta/pull/142",
     notes:
-      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Blocked on CI green. PWA manifest needs testing."}]}]}',
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Blocked on CI green. Release checklist needs testing."}]}]}',
     order: 3,
   },
   {

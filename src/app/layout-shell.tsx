@@ -60,12 +60,6 @@ const apercuMono = localFont({
 export const metadata: Metadata = {
   title: "delta",
   description: "Personal productivity platform",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "delta",
-  },
 };
 
 export const viewport: Viewport = {
