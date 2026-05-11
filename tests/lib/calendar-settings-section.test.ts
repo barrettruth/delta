@@ -26,6 +26,9 @@ describe("CalendarSettingsSection", () => {
 
     expect(html).toContain("calendar");
     expect(html).toContain("location lookup");
+    expect(html).toContain("photon");
+    expect(html).toContain("mapbox");
+    expect(html).toContain("google maps");
     expect(html).toContain("recurrence parsing");
   });
 });

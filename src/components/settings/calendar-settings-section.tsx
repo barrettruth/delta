@@ -4,6 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
+import {
+  GEOCODING_PROVIDERS,
+  type GeocodingApiKeyProvider,
+  type GeocodingProvider,
+  geocodingProviderLabel,
+  geocodingProvidersToClear,
+  geocodingTokens,
+  isGeocodingApiKeyProvider,
+} from "@/lib/geocoding-providers";
 import { NLP_PROVIDERS, type NlpProvider } from "@/lib/nlp-models";
 import {
   SettingsPage,
@@ -11,14 +20,7 @@ import {
   SettingsSection,
 } from "./settings-primitives";
 
-type GeoProvider = "photon" | "mapbox" | "google_maps";
 type ProviderTab = "geocoding" | "nlp";
-
-const GEO_PROVIDERS: { id: GeoProvider; label: string }[] = [
-  { id: "photon", label: "photon" },
-  { id: "mapbox", label: "mapbox" },
-  { id: "google_maps", label: "google maps" },
-];
 
 const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
   { id: "builtin", label: "built-in" },
@@ -29,16 +31,17 @@ export function CalendarSettingsSection({
   initialGeoProvider = "photon",
   initialNlpProvider = null,
 }: {
-  initialGeoProvider?: GeoProvider;
+  initialGeoProvider?: GeocodingProvider;
   initialNlpProvider?: NlpProvider | null;
 }) {
   const statusBar = useStatusBar();
 
   const [activeTab, setActiveTab] = useState<ProviderTab>("geocoding");
   const [geoProvider, setGeoProvider] =
-    useState<GeoProvider>(initialGeoProvider);
+    useState<GeocodingProvider>(initialGeoProvider);
   const [geoKeyInput, setGeoKeyInput] = useState("");
-  const [geoKeyTarget, setGeoKeyTarget] = useState<GeoProvider | null>(null);
+  const [geoKeyTarget, setGeoKeyTarget] =
+    useState<GeocodingApiKeyProvider | null>(null);
   const [geoKeyTesting, setGeoKeyTesting] = useState(false);
 
   const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
@@ -48,16 +51,27 @@ export function CalendarSettingsSection({
   const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
   const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
 
-  async function handleSelectGeoProvider(id: GeoProvider) {
-    if (id === "photon") {
-      for (const provider of ["mapbox", "google_maps"]) {
+  async function handleSelectGeoProvider(id: GeocodingProvider) {
+    if (!isGeocodingApiKeyProvider(id)) {
+      const res = await fetch("/api/settings/integrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: id, tokens: {} }),
+      });
+      if (!res.ok) {
+        statusBar.error("failed to save location lookup config");
+        return;
+      }
+
+      for (const provider of geocodingProvidersToClear(id)) {
         await fetch(`/api/settings/integrations/${provider}`, {
           method: "DELETE",
         });
       }
-      setGeoProvider("photon");
+      setGeoProvider(id);
       setGeoKeyTarget(null);
-      statusBar.message("location lookup set to photon");
+      setGeoKeyInput("");
+      statusBar.message(`location lookup set to ${geocodingProviderLabel(id)}`);
       return;
     }
     setGeoKeyTarget(id);
@@ -66,14 +80,14 @@ export function CalendarSettingsSection({
   }
 
   async function handleTestGeoKey() {
-    if (!geoKeyInput.trim()) return;
+    if (!geoKeyInput.trim() || !geoKeyTarget) return;
     setGeoKeyTesting(true);
     try {
       const res = await fetch("/api/settings/integrations/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider: geoProvider,
+          provider: geoKeyTarget,
           apiKey: geoKeyInput.trim(),
         }),
       });
@@ -96,26 +110,32 @@ export function CalendarSettingsSection({
       statusBar.error("api key cannot be empty");
       return;
     }
+    const provider = geoKeyTarget;
+    if (!provider) return;
+
     const res = await fetch("/api/settings/integrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        provider: geoProvider,
-        tokens: { api_key: geoKeyInput.trim() },
+        provider,
+        tokens: geocodingTokens(geoKeyInput.trim()),
       }),
     });
     if (!res.ok) {
       statusBar.error("failed to save api key");
       return;
     }
-    const other = geoProvider === "mapbox" ? "google_maps" : "mapbox";
-    await fetch(`/api/settings/integrations/${other}`, { method: "DELETE" });
+    for (const staleProvider of geocodingProvidersToClear(provider)) {
+      await fetch(`/api/settings/integrations/${staleProvider}`, {
+        method: "DELETE",
+      });
+    }
+    setGeoProvider(provider);
     setGeoKeyTarget(null);
     setGeoKeyInput("");
-    const label =
-      GEO_PROVIDERS.find((provider) => provider.id === geoProvider)?.label ??
-      geoProvider;
-    statusBar.message(`location lookup set to ${label}`);
+    statusBar.message(
+      `location lookup set to ${geocodingProviderLabel(provider)}`,
+    );
   }
 
   async function handleSelectNlpProvider(id: "builtin" | NlpProvider) {
@@ -211,7 +231,7 @@ export function CalendarSettingsSection({
             title="location lookup"
             description="Choose the provider used for location and meeting lookups."
           >
-            {GEO_PROVIDERS.map((provider) => (
+            {GEOCODING_PROVIDERS.map((provider) => (
               <div key={provider.id}>
                 <SettingsRow
                   label={provider.label}
