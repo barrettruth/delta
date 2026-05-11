@@ -1,10 +1,9 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { removeCategoryColor, setCategoryColor } from "@/core/categories";
 import type { CreateTaskInput, Task, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
-import { categoryColors } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
 import {
   formatValidationErrors,
@@ -158,13 +157,7 @@ export async function setCategoryColorAction(
 ): Promise<ActionResult<null>> {
   try {
     const user = await requireUser();
-    db.insert(categoryColors)
-      .values({ userId: user.id, category, color })
-      .onConflictDoUpdate({
-        target: [categoryColors.userId, categoryColors.category],
-        set: { color },
-      })
-      .run();
+    setCategoryColor(db, user.id, category, color);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {
@@ -179,14 +172,7 @@ export async function removeCategoryColorAction(
 ): Promise<ActionResult<null>> {
   try {
     const user = await requireUser();
-    db.delete(categoryColors)
-      .where(
-        and(
-          eq(categoryColors.userId, user.id),
-          eq(categoryColors.category, category),
-        ),
-      )
-      .run();
+    removeCategoryColor(db, user.id, category);
     revalidatePath("/", "layout");
     return { data: null };
   } catch (e) {

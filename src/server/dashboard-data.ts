@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SafeUser } from "@/core/auth";
 import { getFeedToken } from "@/core/calendar-feed";
-import { listCategoryColors } from "@/core/category-colors";
+import { listCategoryColors } from "@/core/categories";
 import { getSettings, type ViewType } from "@/core/settings";
 import { listTasks } from "@/core/task";
 import { ACTIVE_TASK_STATUSES } from "@/core/task-status";

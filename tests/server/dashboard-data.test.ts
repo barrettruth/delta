@@ -26,7 +26,7 @@ vi.mock("@/db", () => ({ db: mocks.db }));
 vi.mock("@/core/calendar-feed", () => ({
   getFeedToken: mocks.getFeedToken,
 }));
-vi.mock("@/core/category-colors", () => ({
+vi.mock("@/core/categories", () => ({
   listCategoryColors: mocks.listCategoryColors,
 }));
 vi.mock("@/core/settings", () => ({
