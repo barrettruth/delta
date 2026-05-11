@@ -1,10 +1,4 @@
-import type { TaskReminder } from "@/core/reminders/types";
 import type { UpdateTaskInput } from "@/core/types";
-import {
-  type TaskPanelReminderDraft,
-  taskPanelRemindersEqual,
-  taskReminderToDraft,
-} from "./task-panel-reminders";
 
 export interface TaskPanelFormValues {
   description: string;
@@ -53,26 +47,9 @@ export function buildTaskPanelUpdateInput(
   };
 }
 
-export function taskPanelRemindersChanged(
-  initial: TaskPanelReminderDraft[] | null,
-  current: TaskPanelReminderDraft[] | null,
-): boolean {
-  if (!initial || !current) return false;
-  if (initial.length !== current.length) return true;
-
-  return initial.some((reminder, index) => {
-    const next = current[index];
-    if (!next) return true;
-
-    return !taskPanelRemindersEqual(reminder, next);
-  });
-}
-
 export function isTaskPanelDirty(
   initial: TaskPanelFormValues | null,
   current: TaskPanelFormValues,
-  initialReminders: TaskPanelReminderDraft[] | null,
-  currentReminders: TaskPanelReminderDraft[] | null,
 ): boolean {
   if (!initial) return false;
 
@@ -89,20 +66,6 @@ export function isTaskPanelDirty(
     normalizedInitial.meetingUrl !== normalizedCurrent.meetingUrl ||
     normalizedInitial.recurrence !== normalizedCurrent.recurrence ||
     normalizedInitial.recurMode !== normalizedCurrent.recurMode ||
-    normalizedInitial.notes !== normalizedCurrent.notes ||
-    taskPanelRemindersChanged(initialReminders, currentReminders)
-  );
-}
-
-export function mergeSavedReminderDrafts(
-  drafts: TaskPanelReminderDraft[],
-  reminders: TaskReminder[],
-): TaskPanelReminderDraft[] {
-  if (drafts.length !== reminders.length) {
-    return drafts;
-  }
-
-  return drafts.map((draft, index) =>
-    taskReminderToDraft(reminders[index], draft.clientId),
+    normalizedInitial.notes !== normalizedCurrent.notes
   );
 }

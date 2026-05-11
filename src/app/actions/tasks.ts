@@ -29,7 +29,6 @@ import type {
 import { db } from "@/db";
 import { categoryColors, tasks } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
-import type { TaskPanelReminderDraft } from "@/lib/task-panel-reminders";
 
 type ActionResult<T> = { data: T } | { error: string };
 
@@ -78,7 +77,6 @@ export async function saveTaskDetailsAction(
   id: number,
   input: {
     task: UpdateTaskInput;
-    reminders?: TaskPanelReminderDraft[] | null;
   },
 ): Promise<ActionResult<ReturnType<typeof saveTaskDetails>>> {
   try {

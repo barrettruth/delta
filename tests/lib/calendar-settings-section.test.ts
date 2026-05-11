@@ -27,6 +27,5 @@ describe("CalendarSettingsSection", () => {
     expect(html).toContain("calendar");
     expect(html).toContain("location lookup");
     expect(html).toContain("recurrence parsing");
-    expect(html).not.toContain("reminders");
   });
 });

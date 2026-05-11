@@ -2,8 +2,6 @@ import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { tasks } from "@/db/schema";
 import { updateBlockedStatus } from "./dag";
 import { getNextTaskData } from "./recurrence";
-import { suppressPendingReminderDeliveriesForTask } from "./reminders/deliveries";
-import { copyTaskReminders } from "./reminders/rules";
 import type {
   CreateTaskInput,
   Db,
@@ -152,10 +150,6 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
     .returning()
     .get();
 
-  if (isCompleting) {
-    suppressPendingReminderDeliveriesForTask(db, id);
-  }
-
   return task;
 }
 
@@ -171,7 +165,6 @@ export function completeTask(
     const nextData = getNextTaskData(task);
     if (nextData) {
       const spawned = createTask(db, userId, nextData);
-      copyTaskReminders(db, userId, task.id, spawned.id);
       spawnedTaskId = spawned.id;
     }
   }

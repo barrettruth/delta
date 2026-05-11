@@ -11,7 +11,6 @@ import {
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { ResizeHandle } from "@/components/resize-handle";
-import { TaskPanelReminders } from "@/components/task-panel-reminders";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,35 +26,18 @@ import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import { rruleToText } from "@/core/recurrence";
-import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
-import type { TaskReminder } from "@/core/reminders/types";
 import { TASK_STATUS_LABELS } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
 import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
-import { fetchJson } from "@/lib/http-client";
-import {
-  createTaskPanelReminderDraft,
-  type TaskPanelReminderDraft,
-  taskPanelRemindersEqual,
-  taskReminderToDraft,
-} from "@/lib/task-panel-reminders";
 import {
   buildTaskPanelUpdateInput,
   isTaskPanelDirty,
-  mergeSavedReminderDrafts,
   type TaskPanelFormValues,
-  taskPanelRemindersChanged,
 } from "@/lib/task-panel-save";
 import { detectMeetingPlatform } from "@/lib/utils";
-
-function cloneReminderDrafts(
-  drafts: TaskPanelReminderDraft[],
-): TaskPanelReminderDraft[] {
-  return drafts.map((draft) => ({ ...draft }));
-}
 
 export function TaskPanel({
   tasks,
@@ -136,24 +118,10 @@ export function TaskPanel({
   // shifts the stored timestamp by the local timezone offset, which can
   // push an all-day / due-only event onto the adjacent date.
   const initialDueRef = useRef<string>("");
-  const reminderClientIdRef = useRef(0);
-  const reminderDraftsRef = useRef<TaskPanelReminderDraft[]>([]);
-  const initialReminderDraftsRef = useRef<TaskPanelReminderDraft[]>([]);
   const initialFormRef = useRef<TaskPanelFormValues | null>(null);
   const saveQueueRef = useRef(Promise.resolve(true));
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handledCloseRequestRef = useRef(0);
-  const remindersReadyRef = useRef(false);
-
-  const [reminderEndpoints, setReminderEndpoints] = useState<
-    ReminderEndpointRecord[]
-  >([]);
-  const [reminderDrafts, setReminderDrafts] = useState<
-    TaskPanelReminderDraft[]
-  >([]);
-  const [remindersExpanded, setRemindersExpanded] = useState(false);
-  const [remindersLoading, setRemindersLoading] = useState(false);
-  const [reminderError, setReminderError] = useState<string | null>(null);
 
   const formDataRef = useRef({
     description: "",
@@ -181,233 +149,10 @@ export function TaskPanel({
     notes: notesRef.current,
   };
 
-  reminderDraftsRef.current = reminderDrafts;
-
-  const isAllDayTask =
-    mode === "edit" ? task?.allDay === 1 : preFill?.allDay === 1;
-  const defaultReminderAnchor =
-    !due &&
-    (mode === "edit" ? !!task?.startAt : !!preFill?.startAt) &&
-    !(mode === "edit" ? !!task?.due : !!preFill?.due)
-      ? "start"
-      : "due";
-
-  const createReminderClientId = useCallback(() => {
-    reminderClientIdRef.current += 1;
-    return `reminder-${reminderClientIdRef.current}`;
-  }, []);
-
-  const resetReminderState = useCallback(() => {
-    setReminderEndpoints([]);
-    setReminderDrafts([]);
-    setRemindersExpanded(false);
-    setRemindersLoading(false);
-    setReminderError(null);
-    initialReminderDraftsRef.current = [];
-    remindersReadyRef.current = false;
-  }, []);
-
   const handleNotesChange = useCallback((json: string) => {
     notesRef.current = json;
     setNotesValue(json);
   }, []);
-
-  const loadReminderState = useCallback(
-    async (panelMode: "edit" | "create", currentTaskId: number | null) => {
-      const endpoints = await fetchJson<ReminderEndpointRecord[]>(
-        "/api/reminders/endpoints",
-      );
-      const reminders =
-        panelMode === "edit" && currentTaskId
-          ? await fetchJson<TaskReminder[]>(
-              `/api/tasks/${currentTaskId}/reminders`,
-            )
-          : [];
-      const drafts = reminders.map((reminder) =>
-        taskReminderToDraft(reminder, createReminderClientId()),
-      );
-
-      return { endpoints, drafts };
-    },
-    [createReminderClientId],
-  );
-
-  const buildReminderPayload = useCallback(
-    (reminder: TaskPanelReminderDraft) => {
-      if (reminder.endpointId === null) {
-        throw new Error("Reminder endpoint is required");
-      }
-
-      return {
-        endpointId: reminder.endpointId,
-        anchor: reminder.anchor,
-        offsetMinutes: reminder.offsetMinutes,
-        allDayLocalTime: reminder.allDayLocalTime,
-        enabled: reminder.enabled,
-      };
-    },
-    [],
-  );
-
-  const saveTaskReminders = useCallback(
-    async (
-      currentTaskId: number,
-      input?: {
-        initial: TaskPanelReminderDraft[];
-        current: TaskPanelReminderDraft[];
-        applyState?: boolean;
-      },
-    ) => {
-      if (!remindersReadyRef.current && !input) return true;
-
-      const initial = input?.initial ?? initialReminderDraftsRef.current;
-      const current = input?.current ?? reminderDraftsRef.current;
-      const initialById = new Map(
-        initial
-          .filter((reminder) => reminder.id !== null)
-          .map((reminder) => [reminder.id as number, reminder]),
-      );
-      const currentIds = new Set(
-        current
-          .filter((reminder) => reminder.id !== null)
-          .map((reminder) => reminder.id as number),
-      );
-      const deletedIds = initial
-        .filter(
-          (reminder) => reminder.id !== null && !currentIds.has(reminder.id),
-        )
-        .map((reminder) => reminder.id as number);
-      const created = current.filter((reminder) => reminder.id === null);
-      const updated = current.filter((reminder) => {
-        if (reminder.id === null) return false;
-        const existing = initialById.get(reminder.id);
-        return existing ? !taskPanelRemindersEqual(existing, reminder) : false;
-      });
-
-      if (
-        deletedIds.length === 0 &&
-        created.length === 0 &&
-        updated.length === 0
-      ) {
-        return true;
-      }
-
-      for (const id of deletedIds) {
-        await fetchJson<{ ok: boolean }>(
-          `/api/tasks/${currentTaskId}/reminders/${id}`,
-          {
-            method: "DELETE",
-          },
-        );
-      }
-
-      const createdByClientId = new Map<string, TaskReminder>();
-      for (const reminder of created) {
-        const saved = await fetchJson<TaskReminder>(
-          `/api/tasks/${currentTaskId}/reminders`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(buildReminderPayload(reminder)),
-          },
-        );
-        createdByClientId.set(reminder.clientId, saved);
-      }
-
-      const updatedById = new Map<number, TaskReminder>();
-      for (const reminder of updated) {
-        const saved = await fetchJson<TaskReminder>(
-          `/api/tasks/${currentTaskId}/reminders/${reminder.id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(buildReminderPayload(reminder)),
-          },
-        );
-        updatedById.set(reminder.id as number, saved);
-      }
-
-      const nextDrafts = current
-        .filter(
-          (reminder) =>
-            reminder.id === null || !deletedIds.includes(reminder.id),
-        )
-        .map((reminder) => {
-          const createdReminder = createdByClientId.get(reminder.clientId);
-          if (createdReminder) {
-            return taskReminderToDraft(createdReminder, reminder.clientId);
-          }
-
-          if (reminder.id !== null && updatedById.has(reminder.id as number)) {
-            return taskReminderToDraft(
-              updatedById.get(reminder.id as number) as TaskReminder,
-              reminder.clientId,
-            );
-          }
-
-          return reminder;
-        });
-
-      if (
-        input?.applyState !== false &&
-        panelOpenRef.current &&
-        activeTaskIdRef.current === currentTaskId
-      ) {
-        initialReminderDraftsRef.current = nextDrafts;
-        reminderDraftsRef.current = nextDrafts;
-        setReminderDrafts(nextDrafts);
-      }
-
-      return true;
-    },
-    [buildReminderPayload],
-  );
-
-  const updateReminderDraft = useCallback(
-    (
-      clientId: string,
-      patch: Partial<Omit<TaskPanelReminderDraft, "clientId">>,
-    ) => {
-      setReminderDrafts((prev) =>
-        prev.map((reminder) =>
-          reminder.clientId === clientId ? { ...reminder, ...patch } : reminder,
-        ),
-      );
-    },
-    [],
-  );
-
-  const removeReminderDraft = useCallback((clientId: string) => {
-    setReminderDrafts((prev) =>
-      prev.filter((reminder) => reminder.clientId !== clientId),
-    );
-  }, []);
-
-  const addReminderDraft = useCallback(() => {
-    if (reminderEndpoints.length === 0) {
-      setRemindersExpanded(true);
-      return;
-    }
-
-    const endpoint =
-      reminderEndpoints.find((candidate) => candidate.enabled === 1) ??
-      reminderEndpoints[0];
-
-    setReminderDrafts((prev) => [
-      ...prev,
-      createTaskPanelReminderDraft(createReminderClientId(), {
-        endpointId: endpoint?.id ?? null,
-        anchor: defaultReminderAnchor,
-        allDay: isAllDayTask,
-      }),
-    ]);
-    setRemindersExpanded(true);
-  }, [
-    createReminderClientId,
-    defaultReminderAnchor,
-    isAllDayTask,
-    reminderEndpoints,
-  ]);
 
   useEffect(() => {
     // Only mirror form state into pendingEdits once we actually have the task
@@ -438,45 +183,6 @@ export function TaskPanel({
       if (taskId) clearPendingEdit(taskId);
     };
   }, [taskId, clearPendingEdit]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      resetReminderState();
-      return;
-    }
-
-    let active = true;
-    setRemindersLoading(true);
-    setReminderError(null);
-    setRemindersExpanded(false);
-    remindersReadyRef.current = false;
-
-    void loadReminderState(mode, taskId)
-      .then(({ endpoints, drafts }) => {
-        if (!active) return;
-        setReminderEndpoints(endpoints);
-        setReminderDrafts(drafts);
-        initialReminderDraftsRef.current = drafts;
-        remindersReadyRef.current = true;
-      })
-      .catch((error) => {
-        if (!active) return;
-        setReminderEndpoints([]);
-        setReminderDrafts([]);
-        initialReminderDraftsRef.current = [];
-        setReminderError(
-          error instanceof Error ? error.message : "Failed to load reminders",
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setRemindersLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [isOpen, loadReminderState, mode, resetReminderState, taskId]);
 
   const allCategories = useMemo(() => {
     const cats = new Set<string>();
@@ -592,38 +298,19 @@ export function TaskPanel({
   }, []);
 
   const saveTask = useCallback(
-    (
-      id: number,
-      options?: { applyReminderState?: boolean; includeReminders?: boolean },
-    ) => {
+    (id: number) => {
       const snapshot = {
         form: getCurrentFormValues(),
-        reminders:
-          options?.includeReminders && remindersReadyRef.current
-            ? cloneReminderDrafts(reminderDraftsRef.current)
-            : null,
         initialDue: initialDueRef.current,
       };
 
       const run = async () => {
-        const initialReminders = snapshot.reminders
-          ? cloneReminderDrafts(initialReminderDraftsRef.current)
-          : null;
-
-        if (
-          !isTaskPanelDirty(
-            initialFormRef.current,
-            snapshot.form,
-            initialReminders,
-            snapshot.reminders,
-          )
-        ) {
+        if (!isTaskPanelDirty(initialFormRef.current, snapshot.form)) {
           return true;
         }
 
         const result = await saveTaskDetailsAction(id, {
           task: buildTaskPanelUpdateInput(snapshot.form, snapshot.initialDue),
-          ...(snapshot.reminders ? { reminders: snapshot.reminders } : {}),
         });
 
         if ("error" in result) {
@@ -633,42 +320,6 @@ export function TaskPanel({
 
         initialFormRef.current = snapshot.form;
         initialDueRef.current = snapshot.form.due;
-
-        if (snapshot.reminders) {
-          const savedDrafts = mergeSavedReminderDrafts(
-            snapshot.reminders,
-            result.data.reminders,
-          );
-          initialReminderDraftsRef.current = savedDrafts;
-
-          if (
-            options?.applyReminderState !== false &&
-            panelOpenRef.current &&
-            activeTaskIdRef.current === id
-          ) {
-            setReminderDrafts((current) => {
-              const mergedIds = current.map((draft) => {
-                const saved = savedDrafts.find(
-                  (candidate) => candidate.clientId === draft.clientId,
-                );
-
-                if (!saved || draft.id !== null || saved.id === null) {
-                  return draft;
-                }
-
-                return { ...draft, id: saved.id };
-              });
-              const nextDrafts = taskPanelRemindersChanged(
-                snapshot.reminders,
-                mergedIds,
-              )
-                ? mergedIds
-                : savedDrafts;
-              reminderDraftsRef.current = nextDrafts;
-              return nextDrafts;
-            });
-          }
-        }
 
         return true;
       };
@@ -687,10 +338,7 @@ export function TaskPanel({
   useEffect(() => {
     const prevId = prevTaskIdRef.current;
     if (prevId && prevId !== taskId) {
-      void saveTask(prevId, {
-        applyReminderState: false,
-        includeReminders: true,
-      });
+      void saveTask(prevId);
     }
     prevTaskIdRef.current = taskId;
 
@@ -771,12 +419,6 @@ export function TaskPanel({
   const handleCreate = useCallback(async () => {
     const trimmed = description.trim();
     if (!trimmed) return;
-    const initialReminderDrafts = cloneReminderDrafts(
-      initialReminderDraftsRef.current,
-    );
-    const currentReminderDrafts = cloneReminderDrafts(
-      reminderDraftsRef.current,
-    );
 
     const result = await createTaskAction({
       description: trimmed,
@@ -796,19 +438,6 @@ export function TaskPanel({
     });
 
     if ("data" in result && result.data) {
-      try {
-        await saveTaskReminders(result.data.id, {
-          initial: initialReminderDrafts,
-          current: currentReminderDrafts,
-          applyState: false,
-        });
-      } catch (error) {
-        statusBar.error(
-          error instanceof Error
-            ? `task created, but ${error.message.toLowerCase()}`
-            : "task created, but reminders failed to save",
-        );
-      }
       forceClose();
       return;
     }
@@ -828,7 +457,6 @@ export function TaskPanel({
     recurMode,
     preFill,
     forceClose,
-    saveTaskReminders,
     statusBar,
   ]);
 
@@ -892,12 +520,7 @@ export function TaskPanel({
     clearAutoSaveTimer();
 
     if (mode === "edit" && task) {
-      if (
-        await saveTask(task.id, {
-          applyReminderState: false,
-          includeReminders: true,
-        })
-      ) {
+      if (await saveTask(task.id)) {
         forceClose();
       }
       return;
@@ -926,7 +549,7 @@ export function TaskPanel({
         e.preventDefault();
         clearAutoSaveTimer();
         if (mode === "edit" && task) {
-          void saveTask(task.id, { includeReminders: true });
+          void saveTask(task.id);
         } else if (mode === "create") void handleCreate();
         return;
       }
@@ -1011,9 +634,7 @@ export function TaskPanel({
       return;
     }
 
-    if (
-      !isTaskPanelDirty(initialFormRef.current, currentFormValues, null, null)
-    ) {
+    if (!isTaskPanelDirty(initialFormRef.current, currentFormValues)) {
       clearAutoSaveTimer();
       return;
     }
@@ -1029,7 +650,7 @@ export function TaskPanel({
     async function onSave() {
       if (mode === "edit" && task) {
         clearAutoSaveTimer();
-        if (await saveTask(task.id, { includeReminders: true })) {
+        if (await saveTask(task.id)) {
           statusBar.message("saved");
         }
       } else if (mode === "create") {
@@ -1324,19 +945,6 @@ export function TaskPanel({
               )}
           </div>
         </div>
-
-        <TaskPanelReminders
-          allDay={isAllDayTask}
-          endpoints={reminderEndpoints}
-          reminders={reminderDrafts}
-          loading={remindersLoading}
-          error={reminderError}
-          expanded={remindersExpanded}
-          onExpandedChange={setRemindersExpanded}
-          onAddReminder={addReminderDraft}
-          onChangeReminder={updateReminderDraft}
-          onRemoveReminder={removeReminderDraft}
-        />
 
         <div className="flex-1 min-h-0 overflow-auto px-4 pt-3 pb-4">
           <TiptapEditor

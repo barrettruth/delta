@@ -1,33 +1,17 @@
 "use client";
 
-import { ReminderEndpointsSection } from "@/components/settings/reminder-endpoints-section";
-import type { ReminderDeliveryLogRecord } from "@/core/reminders/deliveries";
-import type { ReminderEndpointRecord } from "@/core/reminders/endpoints";
-import type { ReminderAdapterManifest } from "@/core/reminders/types";
-import type { ReminderTransportConfigStatus } from "@/lib/reminder-transport-form";
-import { SettingsPage } from "./settings-primitives";
+import { SettingsPage, SettingsSection } from "./settings-primitives";
 
-export function IntegrationsSection({
-  initialReminderDeliveries = [],
-  initialReminderEndpoints = [],
-  initialReminderTransportConfigs = [],
-  reminderAdapters = [],
-}: {
-  initialReminderDeliveries?: ReminderDeliveryLogRecord[];
-  initialReminderEndpoints?: ReminderEndpointRecord[];
-  initialReminderTransportConfigs?: ReminderTransportConfigStatus[];
-  reminderAdapters?: ReminderAdapterManifest[];
-}) {
+export function IntegrationsSection() {
   return (
     <SettingsPage
       title="integrations"
-      description="Set up where delta can send reminders. Most people only need one or two destinations here."
+      description="Manage external services that connect to delta."
     >
-      <ReminderEndpointsSection
-        initialDeliveries={initialReminderDeliveries}
-        initialEndpoints={initialReminderEndpoints}
-        initialTransportConfigs={initialReminderTransportConfigs}
-        adapters={reminderAdapters}
+      <SettingsSection
+        title="connected services"
+        description="Calendar provider setup lives in the calendar settings page."
+        dividers={false}
       />
     </SettingsPage>
   );

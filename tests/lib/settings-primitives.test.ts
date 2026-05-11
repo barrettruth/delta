@@ -42,7 +42,7 @@ describe("settings primitives", () => {
       createElement(
         SettingsSection,
         {
-          title: "reminders",
+          title: "calendar",
           className: "xl:col-span-3",
         },
         "content",
@@ -50,7 +50,7 @@ describe("settings primitives", () => {
     );
 
     expect(html).toContain("xl:col-span-3");
-    expect(html).toContain("reminders");
+    expect(html).toContain("calendar");
     expect(html).toContain("content");
   });
 });
