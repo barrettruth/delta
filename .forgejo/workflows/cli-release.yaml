@@ -65,19 +65,25 @@ jobs:
           fi
           nix develop .#ci --command bash -c '
             set -eu
+            registry="https://registry.npmjs.org/"
             package_name="$(node -p "require(\"./cli/package.json\").name")"
             package_version="$(node -p "require(\"./cli/package.json\").version")"
             published_version="$(
-              npm view "${package_name}@${package_version}" version --json 2>/dev/null \
+              npm view "${package_name}@${package_version}" version --json --registry "$registry" 2>/dev/null \
                 | tr -d "\"" || true
             )"
             if [ "$published_version" = "$package_version" ]; then
               echo "${package_name}@${package_version} is already published"
               exit 0
             fi
-            printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > "$HOME/.npmrc"
+            npm_userconfig="$(mktemp)"
+            chmod 0600 "$npm_userconfig"
+            trap "rm -f \"$npm_userconfig\"" EXIT
+            export NPM_CONFIG_USERCONFIG="$npm_userconfig"
+            printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > "$NPM_CONFIG_USERCONFIG"
+            npm whoami --registry "$registry" >/dev/null
             cd cli
-            npm publish --access public
+            npm publish --access public --registry "$registry"
           '
 
       - name: Configure Forgejo CLI
