@@ -5,8 +5,9 @@ import { getFeedToken } from "@/core/calendar-feed";
 import { listCategoryColors } from "@/core/categories";
 import { getSettings, type ViewType } from "@/core/settings";
 import { listTasks } from "@/core/task";
+import { parseTaskFilters } from "@/core/task-filters";
 import { ACTIVE_TASK_STATUSES } from "@/core/task-status";
-import type { Task, TaskFilters, TaskStatus } from "@/core/types";
+import type { Task, TaskFilters } from "@/core/types";
 import { type RankedTask, rankTasks } from "@/core/urgency";
 import { db } from "@/db";
 import { requireAuthUser } from "@/lib/server-auth";
@@ -103,54 +104,47 @@ function queueFilters(
   params: DashboardQueueParams,
   settingsShowCompleted: boolean,
 ): TaskFilters {
-  const filters: TaskFilters = {};
-
-  if (params.category) filters.category = params.category;
-  if (params.status) {
-    filters.status = params.status.split(",") as TaskStatus[];
-  }
-  if (params.date) {
-    filters.dueAfter = `${params.date}T00:00:00.000Z`;
-    filters.dueBefore = `${params.date}T23:59:59.999Z`;
-  }
-
-  if (
-    !shouldShowCompleted(params.showDone, settingsShowCompleted) &&
-    !params.status
-  ) {
-    filters.status = ACTIVE_TASK_STATUSES;
-  }
-
-  return filters;
+  return parseTaskFilters(params, {
+    defaults: {
+      status: shouldShowCompleted(params.showDone, settingsShowCompleted)
+        ? undefined
+        : ACTIVE_TASK_STATUSES,
+    },
+  });
 }
 
 function kanbanFilters(
   params: DashboardKanbanParams,
   settingsShowCompleted: boolean,
 ): TaskFilters {
-  const filters: TaskFilters = {
-    sortBy: "order",
-    sortOrder: "desc",
-  };
-
-  if (!shouldShowCompleted(params.showDone, settingsShowCompleted)) {
-    filters.status = ACTIVE_TASK_STATUSES;
-  }
-
-  return filters;
+  return parseTaskFilters(
+    {},
+    {
+      defaults: {
+        sortBy: "order",
+        sortOrder: "desc",
+        status: shouldShowCompleted(params.showDone, settingsShowCompleted)
+          ? undefined
+          : ACTIVE_TASK_STATUSES,
+      },
+    },
+  );
 }
 
 function calendarFilters(
   params: DashboardCalendarParams,
   settingsShowCompleted: boolean,
 ): TaskFilters {
-  const filters: TaskFilters = {};
-
-  if (!shouldShowCompleted(params.showDone, settingsShowCompleted)) {
-    filters.status = ACTIVE_TASK_STATUSES;
-  }
-
-  return filters;
+  return parseTaskFilters(
+    {},
+    {
+      defaults: {
+        status: shouldShowCompleted(params.showDone, settingsShowCompleted)
+          ? undefined
+          : ACTIVE_TASK_STATUSES,
+      },
+    },
+  );
 }
 
 function calendarViewMode(

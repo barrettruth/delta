@@ -1,6 +1,6 @@
 import { tasksToICalendar } from "@/core/ical/serializer";
 import { listTasks } from "@/core/task";
-import type { TaskFilters, TaskStatus } from "@/core/types";
+import { parseTaskFilters } from "@/core/task-filters";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 
@@ -9,23 +9,12 @@ export async function GET(request: Request) {
   if (!user) return unauthorized();
 
   const { searchParams } = new URL(request.url);
-  const filters: TaskFilters = {};
-
-  const category = searchParams.get("category");
-  if (category) filters.category = category;
-
-  const from = searchParams.get("from");
-  if (from) filters.dueAfter = from;
-
-  const to = searchParams.get("to");
-  if (to) filters.dueBefore = to;
-
-  const status = searchParams.get("status");
-  if (status) {
-    filters.status = status.includes(",")
-      ? (status.split(",") as TaskStatus[])
-      : (status as TaskStatus);
-  }
+  const filters = parseTaskFilters({
+    category: searchParams.get("category"),
+    from: searchParams.get("from"),
+    to: searchParams.get("to"),
+    status: searchParams.get("status"),
+  });
 
   const tasks = listTasks(db, user.id, filters);
   const calendarEvents = tasks.filter((t) => t.startAt);

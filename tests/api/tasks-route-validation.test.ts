@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH } from "@/app/api/tasks/[id]/route";
-import { POST } from "@/app/api/tasks/route";
+import { GET, POST } from "@/app/api/tasks/route";
 
 const mocks = vi.hoisted(() => ({
   completeTask: vi.fn(),
@@ -92,6 +92,27 @@ describe("task route validation", () => {
       locationLon: -74.006,
       meetingUrl: "https://meet.example/planning",
     });
+  });
+
+  it("normalizes listing filters before loading tasks", async () => {
+    mocks.listTasks.mockReturnValue([{ id: 1, description: "Planning" }]);
+
+    const response = await GET(
+      new Request(
+        "http://delta.test/api/tasks?status=done,wip&category=Work&due_after=2026-05-01T00:00:00.000Z&due_before=2026-05-31T23:59:59.999Z&sort_by=due&sort_order=asc",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.listTasks).toHaveBeenCalledWith(mockDb, 1, {
+      status: ["done", "wip"],
+      category: "Work",
+      dueAfter: "2026-05-01T00:00:00.000Z",
+      dueBefore: "2026-05-31T23:59:59.999Z",
+      sortBy: "due",
+      sortOrder: "asc",
+    });
+    expect(await response.json()).toEqual([{ id: 1, description: "Planning" }]);
   });
 
   it("rejects invalid create payloads before persistence", async () => {
