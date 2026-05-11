@@ -3,6 +3,7 @@ import {
   bumpSemver,
   checkCliManVersion,
   readSurfaceVersion,
+  syncCliManVersion,
   syncReadmeVersionBlock,
   writeSurfaceVersion,
 } from "./lib.mjs";
@@ -38,6 +39,9 @@ try {
       if (!surface || !bump) fail("Missing surface or bump type.");
       const version = bumpSemver(readSurfaceVersion(surface), bump);
       writeSurfaceVersion(surface, version);
+      if (surface === "cli") {
+        syncCliManVersion();
+      }
       syncReadmeVersionBlock();
       console.log(version);
       break;

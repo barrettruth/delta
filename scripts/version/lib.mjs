@@ -122,13 +122,32 @@ export function syncReadmeVersionBlock({ check = false } = {}) {
   writeFileSync(path, next);
 }
 
-export function checkCliManVersion() {
+export function syncCliManVersion({ check = false } = {}) {
   const cliVersion = readSurfaceVersion("cli");
-  const man = readFileSync(rootPath("cli/man/delta.1"), "utf8");
-  const firstLine = man.split("\n", 1)[0] ?? "";
+  const path = rootPath("cli/man/delta.1");
+  const man = readFileSync(path, "utf8");
+  const lines = man.split("\n");
+  const firstLine = lines[0] ?? "";
   if (!firstLine.includes(`"${cliVersion}"`)) {
-    throw new Error(
-      `cli/man/delta.1 version is out of sync with cli/package.json (${cliVersion})`,
-    );
+    if (check) {
+      throw new Error(
+        `cli/man/delta.1 version is out of sync with cli/package.json (${cliVersion})`,
+      );
+    }
+    const nextFirstLine = replaceCliManVersionLine(firstLine, cliVersion);
+    lines[0] = nextFirstLine;
+    writeFileSync(path, lines.join("\n"));
   }
+}
+
+export function checkCliManVersion() {
+  syncCliManVersion({ check: true });
+}
+
+export function replaceCliManVersionLine(firstLine, cliVersion) {
+  const nextFirstLine = firstLine.replace(/"\d+\.\d+\.\d+"/, `"${cliVersion}"`);
+  if (nextFirstLine === firstLine) {
+    throw new Error("cli/man/delta.1 is missing a semver version string");
+  }
+  return nextFirstLine;
 }
