@@ -65,4 +65,24 @@ describe("task panel save helpers", () => {
 
     expect(dirty).toBe(false);
   });
+
+  it("uses the shared update parser for save validation", () => {
+    expect(() =>
+      buildTaskPanelUpdateInput(
+        {
+          description: "Write tests",
+          category: "Work",
+          due: "2026-04-24T09:30",
+          location: "Desk",
+          locationLat: null,
+          locationLon: null,
+          meetingUrl: "meet.example/test",
+          recurrence: null,
+          recurMode: "scheduled",
+          notes: null,
+        },
+        "2026-04-24T09:30",
+      ),
+    ).toThrow("meetingUrl must be a valid URL");
+  });
 });

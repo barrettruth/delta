@@ -29,8 +29,19 @@ import type {
 import { db } from "@/db";
 import { categoryColors, tasks } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth-middleware";
+import {
+  formatValidationErrors,
+  parseCreateTaskInput,
+  parseUpdateTaskInput,
+} from "@/lib/validation";
 
 type ActionResult<T> = { data: T } | { error: string };
+
+function validationFailure(
+  errors?: Parameters<typeof formatValidationErrors>[0],
+) {
+  return { error: formatValidationErrors(errors) };
+}
 
 async function requireUser() {
   const user = await getAuthUser();
@@ -49,8 +60,13 @@ export async function createTaskAction(
   input: CreateTaskInput,
 ): Promise<ActionResult<ReturnType<typeof createTask>>> {
   try {
+    const validation = parseCreateTaskInput(input);
+    if (!validation.success || !validation.data) {
+      return validationFailure(validation.errors);
+    }
+
     const user = await requireUser();
-    const task = createTask(db, user.id, input);
+    const task = createTask(db, user.id, validation.data);
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -63,9 +79,14 @@ export async function updateTaskAction(
   input: UpdateTaskInput,
 ): Promise<ActionResult<ReturnType<typeof updateTask>>> {
   try {
+    const validation = parseUpdateTaskInput(input);
+    if (!validation.success || !validation.data) {
+      return validationFailure(validation.errors);
+    }
+
     const { user } = await requireOwnedTask(id);
     void user;
-    const task = updateTask(db, id, input);
+    const task = updateTask(db, id, validation.data);
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -80,8 +101,15 @@ export async function saveTaskDetailsAction(
   },
 ): Promise<ActionResult<ReturnType<typeof saveTaskDetails>>> {
   try {
+    const validation = parseUpdateTaskInput(input.task);
+    if (!validation.success || !validation.data) {
+      return validationFailure(validation.errors);
+    }
+
     const { user } = await requireOwnedTask(id);
-    const result = saveTaskDetails(db, user.id, id, input);
+    const result = saveTaskDetails(db, user.id, id, {
+      task: validation.data,
+    });
     revalidatePath("/", "layout");
     return { data: result };
   } catch (e) {
@@ -266,10 +294,21 @@ export async function editRecurringInstanceAction(
   updates: UpdateTaskInput,
 ): Promise<ActionResult<Task>> {
   try {
+    const validation = parseUpdateTaskInput(updates);
+    if (!validation.success || !validation.data) {
+      return validationFailure(validation.errors);
+    }
+
     const user = await requireUser();
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = editThisInstance(db, user.id, masterId, instanceDate, updates);
+    const task = editThisInstance(
+      db,
+      user.id,
+      masterId,
+      instanceDate,
+      validation.data,
+    );
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {
@@ -285,6 +324,11 @@ export async function editThisAndFutureAction(
   updates: UpdateTaskInput,
 ): Promise<ActionResult<Task>> {
   try {
+    const validation = parseUpdateTaskInput(updates);
+    if (!validation.success || !validation.data) {
+      return validationFailure(validation.errors);
+    }
+
     const user = await requireUser();
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
@@ -293,7 +337,7 @@ export async function editThisAndFutureAction(
       user.id,
       masterId,
       instanceDate,
-      updates,
+      validation.data,
     );
     revalidatePath("/", "layout");
     return { data: task };
@@ -309,10 +353,15 @@ export async function editAllInstancesAction(
   updates: UpdateTaskInput,
 ): Promise<ActionResult<Task>> {
   try {
+    const validation = parseUpdateTaskInput(updates);
+    if (!validation.success || !validation.data) {
+      return validationFailure(validation.errors);
+    }
+
     const user = await requireUser();
     const master = getTask(db, masterId);
     if (!master || master.userId !== user.id) throw new Error("Task not found");
-    const task = editAllInstances(db, user.id, masterId, updates);
+    const task = editAllInstances(db, user.id, masterId, validation.data);
     revalidatePath("/", "layout");
     return { data: task };
   } catch (e) {

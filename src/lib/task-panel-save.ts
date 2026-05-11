@@ -1,4 +1,5 @@
 import type { UpdateTaskInput } from "@/core/types";
+import { formatValidationErrors, parseUpdateTaskInput } from "@/lib/validation";
 
 export interface TaskPanelFormValues {
   description: string;
@@ -30,8 +31,7 @@ export function buildTaskPanelUpdateInput(
   initialDue: string,
 ): UpdateTaskInput {
   const normalized = normalizeTaskPanelFormValues(values);
-
-  return {
+  const input: UpdateTaskInput = {
     description: normalized.description,
     category: normalized.category || null,
     ...(normalized.due !== initialDue
@@ -45,6 +45,12 @@ export function buildTaskPanelUpdateInput(
     recurrence: normalized.recurrence || null,
     recurMode: normalized.recurrence ? normalized.recurMode : null,
   };
+  const result = parseUpdateTaskInput(input);
+  if (!result.success || !result.data) {
+    throw new Error(formatValidationErrors(result.errors));
+  }
+
+  return result.data;
 }
 
 export function isTaskPanelDirty(

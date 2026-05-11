@@ -63,6 +63,65 @@ describe("validateCreateTask", () => {
     expect(result.data?.due).toBeUndefined();
   });
 
+  it("normalizes the shared task detail fields", () => {
+    const result = validateCreateTask({
+      description: "  <b>Planning</b>  ",
+      due: "2026-04-01",
+      startAt: "2026-04-01T09:00:00.000Z",
+      endAt: "2026-04-01T10:00:00.000Z",
+      allDay: 0,
+      timezone: "America/New_York",
+      recurrence: "FREQ=WEEKLY",
+      recurMode: "scheduled",
+      notes: "<p>Bring notes</p>",
+      location: "  <i>Office</i>  ",
+      locationLat: 40.7128,
+      locationLon: -74.006,
+      meetingUrl: "  https://meet.example/planning  ",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toMatchObject({
+      description: "Planning",
+      due: "2026-04-01",
+      startAt: "2026-04-01T09:00:00.000Z",
+      endAt: "2026-04-01T10:00:00.000Z",
+      allDay: 0,
+      timezone: "America/New_York",
+      recurrence: "FREQ=WEEKLY",
+      recurMode: "scheduled",
+      notes: "Bring notes",
+      location: "Office",
+      locationLat: 40.7128,
+      locationLon: -74.006,
+      meetingUrl: "https://meet.example/planning",
+    });
+  });
+
+  it("rejects date-only scheduled start and end fields", () => {
+    const result = validateCreateTask({
+      description: "Event",
+      startAt: "2026-04-01",
+      endAt: "2026-04-02",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errors?.map((e) => e.field)).toEqual(["startAt", "endAt"]);
+  });
+
+  it("rejects invalid recurrence mode and non-string recurrence", () => {
+    const result = validateCreateTask({
+      description: "Recurring",
+      due: "2026-04-01T09:00:00.000Z",
+      recurrence: 1,
+      recurMode: "manual",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errors?.some((e) => e.field === "recurrence")).toBe(true);
+    expect(result.errors?.some((e) => e.field === "recurMode")).toBe(true);
+  });
+
   it("sanitizes description with HTML", () => {
     const result = validateCreateTask({
       description: "<b>Bold task</b>",
@@ -120,10 +179,47 @@ describe("validateUpdateTask", () => {
     expect(result.errors?.some((e) => e.field === "status")).toBe(true);
   });
 
+  it("rejects null description updates", () => {
+    const result = validateUpdateTask({ description: null });
+    expect(result.success).toBe(false);
+    expect(result.errors?.some((e) => e.field === "description")).toBe(true);
+  });
+
   it("accepts null due date", () => {
     const result = validateUpdateTask({ due: null });
     expect(result.success).toBe(true);
     expect(result.data?.due).toBeNull();
+  });
+
+  it("accepts date-only due updates", () => {
+    const result = validateUpdateTask({ due: "2026-04-01" });
+    expect(result.success).toBe(true);
+    expect(result.data?.due).toBe("2026-04-01");
+  });
+
+  it("normalizes nullable task detail clears", () => {
+    const result = validateUpdateTask({
+      category: null,
+      recurrence: null,
+      recurMode: null,
+      notes: null,
+      location: null,
+      locationLat: null,
+      locationLon: null,
+      meetingUrl: null,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({
+      category: null,
+      recurrence: null,
+      recurMode: null,
+      notes: null,
+      location: null,
+      locationLat: null,
+      locationLon: null,
+      meetingUrl: null,
+    });
   });
 
   it("sanitizes description on update", () => {

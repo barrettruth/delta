@@ -307,9 +307,20 @@ export function TaskPanel({
           return true;
         }
 
-        const result = await saveTaskDetailsAction(id, {
-          task: buildTaskPanelUpdateInput(snapshot.form, snapshot.initialDue),
-        });
+        let taskInput: ReturnType<typeof buildTaskPanelUpdateInput>;
+        try {
+          taskInput = buildTaskPanelUpdateInput(
+            snapshot.form,
+            snapshot.initialDue,
+          );
+        } catch (e) {
+          statusBar.error(
+            e instanceof Error ? e.message : "Failed to save task details",
+          );
+          return false;
+        }
+
+        const result = await saveTaskDetailsAction(id, { task: taskInput });
 
         if ("error" in result) {
           statusBar.error(result.error);
