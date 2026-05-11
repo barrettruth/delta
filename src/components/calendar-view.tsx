@@ -38,6 +38,7 @@ import {
   startOfMonth,
 } from "@/lib/calendar-utils";
 import {
+  hasAllDayEventInRange,
   type OptimisticUpdate,
   tasksToEvents,
   type VirtualMeta,
@@ -67,6 +68,7 @@ export function CalendarView({
   const recurrenceEdit = useRecurrenceEdit();
 
   const [viewMode, setViewMode] = useState<FcViewMode>(defaultViewMode);
+  const isTimeGridView = viewMode === "week" || viewMode === "day";
   const [anchor, setAnchor] = useState<Date | null>(null);
   const [visibleRange, setVisibleRange] = useState<{
     start: Date;
@@ -141,20 +143,6 @@ export function CalendarView({
   useEffect(() => {
     nav.saveViewState("cal:viewMode", viewMode);
   }, [viewMode, nav]);
-
-  // Register the FC internal scroller so other parts of the app
-  // (e.g. global scroll jumps) can address it. Re-runs whenever FC remounts
-  // its scroll container (view switch, all-day bar toggle).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: viewMode + allDayVisible gate re-registration
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      nav.registerScrollContainer(fcRef.current?.getScrollerEl() ?? null);
-    }, 0);
-    return () => {
-      window.clearTimeout(id);
-      nav.registerScrollContainer(null);
-    };
-  }, [nav.registerScrollContainer, viewMode, allDayVisible]);
 
   // Keep FC in sync when anchor or view change from keyboard.
   // FullCalendar's gotoDate / changeView synchronously fire datesSet which
@@ -288,6 +276,35 @@ export function CalendarView({
   const eventsWithDraft = useMemo(() => {
     return draftEvent ? [...events, draftEvent] : events;
   }, [events, draftEvent]);
+
+  const hasVisibleAllDayEvents = useMemo(() => {
+    if (!isTimeGridView) return true;
+    return hasAllDayEventInRange(eventsWithDraft, rangeStart, rangeEnd);
+  }, [eventsWithDraft, isTimeGridView, rangeStart, rangeEnd]);
+
+  useEffect(() => {
+    if (isTimeGridView && !hasVisibleAllDayEvents && !allDayVisible) {
+      setAllDayVisible(true);
+    }
+  }, [allDayVisible, hasVisibleAllDayEvents, isTimeGridView]);
+
+  const allDaySlotVisible = isTimeGridView
+    ? allDayVisible && hasVisibleAllDayEvents
+    : true;
+
+  // Register the FC internal scroller so other parts of the app
+  // (e.g. global scroll jumps) can address it. Re-runs whenever FC remounts
+  // its scroll container (view switch, all-day slot visibility changes).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: viewMode + allDaySlotVisible gate re-registration
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      nav.registerScrollContainer(fcRef.current?.getScrollerEl() ?? null);
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      nav.registerScrollContainer(null);
+    };
+  }, [nav.registerScrollContainer, viewMode, allDaySlotVisible]);
 
   const headerTitle = useMemo(() => {
     if (!anchor) return "";
@@ -764,7 +781,7 @@ export function CalendarView({
       if (e.key === alldayKey && isTimeGrid) {
         e.preventDefault();
         countBuf.current = "";
-        setAllDayVisible((prev) => !prev);
+        if (hasVisibleAllDayEvents) setAllDayVisible((prev) => !prev);
         return;
       }
 
@@ -829,6 +846,7 @@ export function CalendarView({
       keymaps,
       handleDeletePanelTask,
       dismissPopover,
+      hasVisibleAllDayEvents,
     ],
   );
 
@@ -901,9 +919,7 @@ export function CalendarView({
           events={eventsWithDraft}
           viewMode={viewMode}
           initialDate={anchor}
-          allDaySlot={
-            viewMode === "week" || viewMode === "day" ? allDayVisible : true
-          }
+          allDaySlot={allDaySlotVisible}
           onEventClick={openTaskFromEvent}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventResize}

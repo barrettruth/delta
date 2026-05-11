@@ -306,7 +306,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           headerToolbar={false}
           dayHeaderFormat={{ weekday: "short", day: "numeric" }}
           allDaySlot={allDaySlot}
-          allDayText="all day"
+          allDayText=""
           editable
           selectable
           selectMirror

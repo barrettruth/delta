@@ -1,4 +1,4 @@
-import type { EventInput } from "@fullcalendar/core";
+import type { DateInput, EventInput } from "@fullcalendar/core";
 import { expandInstances } from "@/core/recurrence-expansion";
 import type { Task } from "@/core/types";
 
@@ -24,6 +24,69 @@ export interface AdapterOptions {
 export interface AdapterResult {
   events: EventInput[];
   virtualMeta: Map<number, VirtualMeta>;
+}
+
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidDate(date: Date): boolean {
+  return !Number.isNaN(date.getTime());
+}
+
+function dateOnlyStringToLocalDate(value: string): Date | null {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return isValidDate(date) ? date : null;
+}
+
+function dateInputToDate(value: DateInput | undefined): Date | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return isValidDate(value) ? new Date(value.getTime()) : null;
+  }
+  if (typeof value === "string") {
+    if (DATE_ONLY_RE.test(value)) return dateOnlyStringToLocalDate(value);
+    const date = new Date(value);
+    return isValidDate(date) ? date : null;
+  }
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return isValidDate(date) ? date : null;
+  }
+  const [year, month = 0, day = 1, hour = 0, minute = 0, second = 0, ms = 0] =
+    value;
+  const date = new Date(year, month, day, hour, minute, second, ms);
+  return isValidDate(date) ? date : null;
+}
+
+function addLocalDay(date: Date): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+  return next;
+}
+
+export function hasAllDayEventInRange(
+  events: EventInput[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): boolean {
+  const rangeStartMs = rangeStart.getTime();
+  const rangeEndMs = rangeEnd.getTime();
+  if (Number.isNaN(rangeStartMs) || Number.isNaN(rangeEndMs)) return false;
+  if (rangeEndMs <= rangeStartMs) return false;
+
+  return events.some((event) => {
+    if (event.allDay !== true) return false;
+
+    const eventStart = dateInputToDate(event.start);
+    if (!eventStart) return false;
+
+    const eventEnd = dateInputToDate(event.end) ?? addLocalDay(eventStart);
+    const eventStartMs = eventStart.getTime();
+    const eventEndMs = eventEnd.getTime();
+    if (eventEndMs <= eventStartMs) return false;
+
+    return eventStartMs < rangeEndMs && eventEndMs > rangeStartMs;
+  });
 }
 
 /**

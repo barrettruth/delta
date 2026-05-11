@@ -64,28 +64,6 @@
   padding: 0 4px;
 }
 
-.fc-delta-root .fc .fc-timegrid-axis-cushion {
-  color: var(--muted-foreground);
-  font-size: 10px;
-}
-
-/* All-day row axis label: wrap "all day" onto two lines and center it
- * vertically, without widening the time-axis column. 
- * This trick is a bit hacky bit works in this version of css xd*/
-.fc-delta-root .fc .fc-timegrid-axis-frame {
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-.fc-delta-root .fc .fc-timegrid-axis .fc-timegrid-axis-cushion {
-  white-space: normal;
-  word-spacing: 9999px;
-  text-align: center;
-  line-height: 1.1;
-  max-width: 100%;
-  padding: 0 2px;
-}
-
 /*
  * The surrounding chrome (calendar header, left sidebar, status bar) already
  * provides a 1px border on every edge of the calendar area. Drawing FC's
