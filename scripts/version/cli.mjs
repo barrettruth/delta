@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {
   bumpSemver,
+  checkCliManpageDrift,
   checkCliManVersion,
   readSurfaceVersion,
   syncCliManVersion,
@@ -65,6 +66,7 @@ try {
     }
     case "check": {
       checkCliManVersion();
+      checkCliManpageDrift();
       break;
     }
     default:
