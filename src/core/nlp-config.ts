@@ -4,7 +4,7 @@ import {
   nlpModel,
   nlpProviderKey,
   readNlpApiKey,
-} from "@/lib/nlp-models";
+} from "@/core/provider-registry";
 import type { LlmConfig } from "./nlp-recurrence";
 import type { Db } from "./types";
 

@@ -3,6 +3,10 @@ import {
   listIntegrationConfigs,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
+import {
+  getSettingsIntegrationProviderDefinition,
+  readProviderApiKey,
+} from "@/core/provider-registry";
 import { db } from "@/db";
 import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 
@@ -37,6 +41,18 @@ export async function POST(request: Request) {
       { error: "tokens is required and must be an object" },
       { status: 400 },
     );
+  }
+
+  const providerDefinition = getSettingsIntegrationProviderDefinition(provider);
+  if (!providerDefinition) {
+    return NextResponse.json({ error: "invalid provider" }, { status: 400 });
+  }
+
+  if (
+    providerDefinition.tokenField &&
+    !readProviderApiKey(providerDefinition, tokens)
+  ) {
+    return NextResponse.json({ error: "api key is required" }, { status: 400 });
   }
 
   const config = upsertIntegrationConfig(

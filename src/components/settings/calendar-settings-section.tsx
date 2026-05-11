@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
+  NLP_SETTINGS_PROVIDERS,
+  type NlpProviderId,
+  type NlpSettingsProviderId,
+} from "@/core/provider-registry";
+import {
   GEOCODING_PROVIDERS,
   type GeocodingApiKeyProvider,
   type GeocodingProvider,
@@ -13,7 +18,6 @@ import {
   geocodingTokens,
   isGeocodingApiKeyProvider,
 } from "@/lib/geocoding-providers";
-import { NLP_PROVIDERS, type NlpProvider } from "@/lib/nlp-models";
 import {
   SettingsPage,
   SettingsRow,
@@ -22,17 +26,12 @@ import {
 
 type ProviderTab = "geocoding" | "nlp";
 
-const NLP_PROVIDERS_LIST: { id: "builtin" | NlpProvider; label: string }[] = [
-  { id: "builtin", label: "built-in" },
-  ...NLP_PROVIDERS.map((id) => ({ id, label: id })),
-];
-
 export function CalendarSettingsSection({
   initialGeoProvider = "photon",
   initialNlpProvider = null,
 }: {
   initialGeoProvider?: GeocodingProvider;
-  initialNlpProvider?: NlpProvider | null;
+  initialNlpProvider?: NlpProviderId | null;
 }) {
   const statusBar = useStatusBar();
 
@@ -44,11 +43,11 @@ export function CalendarSettingsSection({
     useState<GeocodingApiKeyProvider | null>(null);
   const [geoKeyTesting, setGeoKeyTesting] = useState(false);
 
-  const [nlpActive, setNlpActive] = useState<"builtin" | NlpProvider>(
+  const [nlpActive, setNlpActive] = useState<NlpSettingsProviderId>(
     initialNlpProvider ?? "builtin",
   );
   const [nlpKeyInput, setNlpKeyInput] = useState("");
-  const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProvider | null>(null);
+  const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProviderId | null>(null);
   const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
 
   async function handleSelectGeoProvider(id: GeocodingProvider) {
@@ -138,7 +137,7 @@ export function CalendarSettingsSection({
     );
   }
 
-  async function handleSelectNlpProvider(id: "builtin" | NlpProvider) {
+  async function handleSelectNlpProvider(id: NlpSettingsProviderId) {
     if (id === "builtin") {
       await fetch("/api/settings/nlp", { method: "DELETE" });
       setNlpActive("builtin");
@@ -278,7 +277,7 @@ export function CalendarSettingsSection({
             title="recurrence parsing"
             description="Choose the parser used for natural-language input."
           >
-            {NLP_PROVIDERS_LIST.map((provider) => (
+            {NLP_SETTINGS_PROVIDERS.map((provider) => (
               <div key={provider.id}>
                 <SettingsRow
                   label={provider.label}

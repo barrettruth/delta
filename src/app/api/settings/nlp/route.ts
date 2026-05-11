@@ -5,21 +5,20 @@ import {
   setIntegrationEnabled,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
-import { db } from "@/db";
-import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
 import {
+  formatNlpProviderList,
+  getNlpProviderDefinition,
+  getOtherNlpProviderDefinitions,
   isNlpProvider,
   NLP_PROVIDERS,
-  type NlpProvider,
+  nlpMetadata,
   nlpModel,
   nlpProviderKey,
   nlpTokens,
   readNlpApiKey,
-} from "@/lib/nlp-models";
-
-function otherProvider(provider: NlpProvider): NlpProvider {
-  return provider === "anthropic" ? "openai" : "anthropic";
-}
+} from "@/core/provider-registry";
+import { db } from "@/db";
+import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -53,7 +52,7 @@ export async function PUT(request: Request) {
 
   if (!provider || !isNlpProvider(provider)) {
     return NextResponse.json(
-      { error: "Invalid provider. Must be 'anthropic' or 'openai'." },
+      { error: `Invalid provider. Must be ${formatNlpProviderList()}.` },
       { status: 400 },
     );
   }
@@ -70,19 +69,23 @@ export async function PUT(request: Request) {
   const tokens = nlpTokens(trimmedApiKey || existingApiKey || "");
 
   const metadata = {
+    ...nlpMetadata(provider),
     ...(existing?.metadata ?? {}),
-    model: nlpModel(provider),
   };
 
   upsertIntegrationConfig(db, user.id, key, tokens, metadata);
 
   setIntegrationEnabled(db, user.id, key, 1);
 
-  const other = otherProvider(provider);
-  const otherKey = nlpProviderKey(other);
-  const otherConfig = getIntegrationConfig(db, user.id, otherKey);
-  if (otherConfig) {
-    setIntegrationEnabled(db, user.id, otherKey, 0);
+  for (const other of getOtherNlpProviderDefinitions(provider)) {
+    const otherConfig = getIntegrationConfig(
+      db,
+      user.id,
+      other.integrationProviderId,
+    );
+    if (otherConfig) {
+      setIntegrationEnabled(db, user.id, other.integrationProviderId, 0);
+    }
   }
 
   return NextResponse.json({ ok: true, provider, model: metadata.model });
@@ -111,11 +114,15 @@ export async function PATCH(request: Request) {
 
   setIntegrationEnabled(db, user.id, key, 1);
 
-  const other = otherProvider(provider);
-  const otherKey = nlpProviderKey(other);
-  const otherConfig = getIntegrationConfig(db, user.id, otherKey);
-  if (otherConfig) {
-    setIntegrationEnabled(db, user.id, otherKey, 0);
+  for (const other of getOtherNlpProviderDefinitions(provider)) {
+    const otherConfig = getIntegrationConfig(
+      db,
+      user.id,
+      other.integrationProviderId,
+    );
+    if (otherConfig) {
+      setIntegrationEnabled(db, user.id, other.integrationProviderId, 0);
+    }
   }
 
   return NextResponse.json({ ok: true });
@@ -125,9 +132,11 @@ export async function DELETE() {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
-  for (const p of NLP_PROVIDERS) {
-    const key = nlpProviderKey(p);
-    deleteIntegrationConfig(db, user.id, key);
+  for (const provider of NLP_PROVIDERS) {
+    const definition = getNlpProviderDefinition(provider);
+    if (definition) {
+      deleteIntegrationConfig(db, user.id, definition.integrationProviderId);
+    }
   }
 
   return NextResponse.json({ ok: true });

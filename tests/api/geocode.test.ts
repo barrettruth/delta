@@ -27,6 +27,10 @@ vi.mock("@/lib/auth-middleware", () => ({
 
 const TEST_KEY = randomBytes(32).toString("hex");
 
+function geocodeRequest(query: string) {
+  return new Request(`http://delta.test/api/geocode?q=${query}`);
+}
+
 function saveGeocodingProvider(
   provider: string,
   tokens: Record<string, unknown>,
@@ -43,6 +47,7 @@ describe("GET /api/geocode", () => {
 
   afterEach(() => {
     vi.resetModules();
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
@@ -65,9 +70,7 @@ describe("GET /api/geocode", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET(
-      new Request("http://delta.test/api/geocode?q=New York"),
-    );
+    const response = await GET(geocodeRequest("New York"));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://photon.komoot.io/api?q=New%20York&limit=10",
@@ -101,9 +104,7 @@ describe("GET /api/geocode", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET(
-      new Request("http://delta.test/api/geocode?q=Central Library"),
-    );
+    const response = await GET(geocodeRequest("Central Library"));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.mapbox.com/search/geocode/v6/forward?q=Central%20Library&access_token=stored-mapbox-token&limit=10",
@@ -120,14 +121,48 @@ describe("GET /api/geocode", () => {
     ]);
   });
 
+  it("uses stored Google Maps before Mapbox env fallback", async () => {
+    const { GET } = await import("@/app/api/geocode/route");
+    saveGeocodingProvider(
+      "google_maps",
+      geocodingTokens("stored-google-token"),
+    );
+    vi.stubEnv("MAPBOX_ACCESS_TOKEN", "env-mapbox-token");
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        results: [
+          {
+            formatted_address: "Austin, TX, USA",
+            geometry: { location: { lat: 30.2672, lng: -97.7431 } },
+            address_components: [{ long_name: "Austin", types: ["locality"] }],
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(geocodeRequest("Austin"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://maps.googleapis.com/maps/api/geocode/json?address=Austin&key=stored-google-token",
+    );
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual([
+      {
+        name: "Austin",
+        displayName: "Austin, TX, USA",
+        lat: 30.2672,
+        lon: -97.7431,
+      },
+    ]);
+  });
+
   it("returns a visible non-credential failure when lookup fails", async () => {
     const { GET } = await import("@/app/api/geocode/route");
     const fetchMock = vi.fn(async () => new Response(null, { status: 503 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET(
-      new Request("http://delta.test/api/geocode?q=Berlin"),
-    );
+    const response = await GET(geocodeRequest("Berlin"));
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({

@@ -1,5 +1,5 @@
 import { RRule } from "rrule";
-import { NLP_MODEL } from "@/lib/nlp-models";
+import { NLP_MODEL } from "@/core/provider-registry";
 import type { NlpProvider, NlpSource } from "./types";
 
 export interface NlpParseResult {

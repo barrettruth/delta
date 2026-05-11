@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { testGeocodingApiKey } from "@/core/geocoding";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 import {
-  type GeocodingApiKeyProvider,
-  isGeocodingApiKeyProvider,
-} from "@/lib/geocoding-providers";
-import { isNlpProvider, type NlpProvider, nlpModel } from "@/lib/nlp-models";
-
-type Provider = NlpProvider | GeocodingApiKeyProvider;
+  getTestableSettingsProviderDefinition,
+  type NlpProviderDefinition,
+  type TestableSettingsProviderDefinition,
+  type TestableSettingsProviderId,
+} from "@/core/provider-registry";
+import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 
 async function testAnthropic(
+  provider: NlpProviderDefinition,
   apiKey: string,
   model?: string,
 ): Promise<string | null> {
@@ -21,7 +21,7 @@ async function testAnthropic(
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: model || nlpModel("anthropic"),
+      model: model || provider.defaultModel,
       max_tokens: 1,
       messages: [{ role: "user", content: "." }],
     }),
@@ -33,6 +33,7 @@ async function testAnthropic(
 }
 
 async function testOpenai(
+  provider: NlpProviderDefinition,
   apiKey: string,
   model?: string,
 ): Promise<string | null> {
@@ -43,7 +44,7 @@ async function testOpenai(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: model || nlpModel("openai"),
+      model: model || provider.defaultModel,
       max_tokens: 1,
       messages: [{ role: "user", content: "." }],
     }),
@@ -54,9 +55,21 @@ async function testOpenai(
   return `unexpected error (${res.status})`;
 }
 
-function isProvider(provider: string): provider is Provider {
-  return isNlpProvider(provider) || isGeocodingApiKeyProvider(provider);
-}
+type ProviderTest = (
+  provider: TestableSettingsProviderDefinition,
+  apiKey: string,
+  model?: string,
+) => Promise<string | null>;
+
+const PROVIDER_TESTS: Record<TestableSettingsProviderId, ProviderTest> = {
+  anthropic: (provider, apiKey, model) =>
+    testAnthropic(provider as NlpProviderDefinition, apiKey, model),
+  openai: (provider, apiKey, model) =>
+    testOpenai(provider as NlpProviderDefinition, apiKey, model),
+  mapbox: (_provider, apiKey) => testGeocodingApiKey("mapbox", apiKey),
+  google_maps: (_provider, apiKey) =>
+    testGeocodingApiKey("google_maps", apiKey),
+};
 
 export async function POST(request: Request) {
   const user = await getAuthUserFromRequest(request);
@@ -69,7 +82,10 @@ export async function POST(request: Request) {
     model?: string;
   };
 
-  if (!provider || !isProvider(provider)) {
+  const providerDefinition = provider
+    ? getTestableSettingsProviderDefinition(provider)
+    : null;
+  if (!providerDefinition) {
     return NextResponse.json(
       { valid: false, error: "invalid provider" },
       { status: 400 },
@@ -85,18 +101,11 @@ export async function POST(request: Request) {
 
   let error: string | null;
   try {
-    switch (provider) {
-      case "anthropic":
-        error = await testAnthropic(apiKey, model);
-        break;
-      case "openai":
-        error = await testOpenai(apiKey, model);
-        break;
-      case "mapbox":
-      case "google_maps":
-        error = await testGeocodingApiKey(provider, apiKey);
-        break;
-    }
+    error = await PROVIDER_TESTS[providerDefinition.id](
+      providerDefinition,
+      apiKey,
+      model,
+    );
   } catch {
     return NextResponse.json({ valid: false, error: "connection failed" });
   }
