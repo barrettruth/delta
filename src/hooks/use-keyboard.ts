@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useKeymaps } from "@/contexts/keymaps";
 import type { Task, TaskStatus } from "@/core/types";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 interface KeyboardActions {
@@ -37,28 +37,20 @@ function targetIds(tasks: Task[], cursor: number, count: number): number[] {
 }
 
 export function useKeyboard(actions: KeyboardActions) {
-  const keymaps = useKeymaps();
-
   const keys = useMemo(() => {
-    const deleteKey = keymaps.getResolvedKeymap("queue.delete").triggerKey;
-    const pendingKey =
-      keymaps.getResolvedKeymap("queue.set_pending").triggerKey;
-    const wipKey = keymaps.getResolvedKeymap("queue.set_wip").triggerKey;
-    const blockedKey =
-      keymaps.getResolvedKeymap("queue.set_blocked").triggerKey;
-    const completeKey = keymaps.getResolvedKeymap("queue.complete").triggerKey;
-    const moveDownKey = keymaps.getResolvedKeymap("queue.move_down").triggerKey;
-    const moveUpKey = keymaps.getResolvedKeymap("queue.move_up").triggerKey;
-    const jumpBottomKey =
-      keymaps.getResolvedKeymap("queue.jump_bottom").triggerKey;
-    const jumpTopKey = keymaps.getResolvedKeymap("queue.jump_top").triggerKey;
-    const editKey = keymaps.getResolvedKeymap("queue.edit").triggerKey;
-    const toggleSelectKey = keymaps.getResolvedKeymap(
-      "queue.toggle_select",
-    ).triggerKey;
-    const visualModeKey =
-      keymaps.getResolvedKeymap("queue.visual_mode").triggerKey;
-    const escapeKey = keymaps.getResolvedKeymap("queue.escape").triggerKey;
+    const deleteKey = getKeymap("queue.delete").triggerKey;
+    const pendingKey = getKeymap("queue.set_pending").triggerKey;
+    const wipKey = getKeymap("queue.set_wip").triggerKey;
+    const blockedKey = getKeymap("queue.set_blocked").triggerKey;
+    const completeKey = getKeymap("queue.complete").triggerKey;
+    const moveDownKey = getKeymap("queue.move_down").triggerKey;
+    const moveUpKey = getKeymap("queue.move_up").triggerKey;
+    const jumpBottomKey = getKeymap("queue.jump_bottom").triggerKey;
+    const jumpTopKey = getKeymap("queue.jump_top").triggerKey;
+    const editKey = getKeymap("queue.edit").triggerKey;
+    const toggleSelectKey = getKeymap("queue.toggle_select").triggerKey;
+    const visualModeKey = getKeymap("queue.visual_mode").triggerKey;
+    const escapeKey = getKeymap("queue.escape").triggerKey;
     const gPrefix = jumpTopKey[0];
 
     const statusOps: Record<string, TaskStatus> = {
@@ -90,7 +82,7 @@ export function useKeyboard(actions: KeyboardActions) {
       statusOps,
       opKeys,
     };
-  }, [keymaps]);
+  }, []);
 
   const [cursor, setCursor] = useState(-1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -331,8 +323,8 @@ export function useKeyboard(actions: KeyboardActions) {
       }
 
       if (
-        keymaps.resolvedMatchesEvent("queue.half_page_down", e) ||
-        keymaps.resolvedMatchesEvent("queue.half_page_up", e)
+        matchesEvent("queue.half_page_down", e) ||
+        matchesEvent("queue.half_page_up", e)
       ) {
         e.preventDefault();
         countBuf.current = "";
@@ -345,9 +337,7 @@ export function useKeyboard(actions: KeyboardActions) {
         const viewportRows = container
           ? Math.max(1, Math.floor(container.clientHeight / avgRowHeight / 2))
           : 10;
-        const hpDownKey = keymaps.getResolvedKeymap(
-          "queue.half_page_down",
-        ).triggerKey;
+        const hpDownKey = getKeymap("queue.half_page_down").triggerKey;
         const delta = e.key === hpDownKey ? viewportRows : -viewportRows;
         setCursor((i) => Math.max(0, Math.min(i + delta, tasks.length - 1)));
         return;
@@ -457,7 +447,6 @@ export function useKeyboard(actions: KeyboardActions) {
       applyOp,
       consumeCount,
       resolveMotion,
-      keymaps,
     ],
   );
 

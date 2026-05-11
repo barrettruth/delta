@@ -1,11 +1,54 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_KEYMAPS,
+  getKeymap,
   HELP_SECTIONS,
+  matchesEvent,
   sectionsForPath,
 } from "@/lib/keymap-defs";
 
+function keyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
+  return {
+    key: "",
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    altKey: false,
+    ...overrides,
+  } as KeyboardEvent;
+}
+
 describe("keymap definitions", () => {
+  it("resolves static keymap definitions by id", () => {
+    expect(getKeymap("global.help")).toEqual(
+      expect.objectContaining({
+        id: "global.help",
+        triggerKey: "g",
+        key: "g?",
+        label: "This help",
+      }),
+    );
+    expect(() => getKeymap("global.missing")).toThrow(
+      "Unknown keymap id: global.missing",
+    );
+  });
+
+  it("matches static keymaps against keyboard events", () => {
+    expect(
+      matchesEvent("nav.jump_back", keyEvent({ key: "o", ctrlKey: true })),
+    ).toBe(true);
+    expect(
+      matchesEvent("nav.jump_back", keyEvent({ key: "o", metaKey: true })),
+    ).toBe(true);
+    expect(matchesEvent("nav.jump_back", keyEvent({ key: "o" }))).toBe(false);
+    expect(
+      matchesEvent(
+        "nav.jump_back",
+        keyEvent({ key: "o", ctrlKey: true, shiftKey: true }),
+      ),
+    ).toBe(false);
+  });
+
   it("falls back to global shortcuts across the settings area", () => {
     expect(sectionsForPath("/settings")).toEqual(["global"]);
     expect(sectionsForPath("/settings/calendar")).toEqual(["global"]);

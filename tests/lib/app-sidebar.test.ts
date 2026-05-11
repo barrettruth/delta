@@ -68,22 +68,6 @@ vi.mock("@/components/ui/sidebar", () => {
   };
 });
 
-vi.mock("@/contexts/keymaps", () => ({
-  useKeymaps: () => ({
-    getResolvedKeymap: (id: string) => ({
-      triggerKey:
-        {
-          "global.queue": "Q",
-          "global.kanban": "K",
-          "global.calendar": "C",
-          "global.category_jump": "g",
-          "global.help": "g",
-          "global.settings": "S",
-        }[id] ?? "?",
-    }),
-  }),
-}));
-
 vi.mock("@/contexts/keyboard-help", () => ({
   useKeyboardHelp: () => ({
     openKeyboardHelp: () => {},

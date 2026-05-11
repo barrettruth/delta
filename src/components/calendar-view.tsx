@@ -19,7 +19,6 @@ import {
   type FcViewMode,
 } from "@/components/calendar/fc-calendar";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
-import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -43,6 +42,7 @@ import {
   tasksToEvents,
   type VirtualMeta,
 } from "@/lib/fullcalendar-adapter";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 export function CalendarView({
@@ -62,7 +62,6 @@ export function CalendarView({
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
   const undo = useUndo();
-  const keymaps = useKeymaps();
   const { pendingEdits, optimisticTasks, setOptimisticTask } = panel;
   const recurrenceDelete = useRecurrenceDelete();
   const recurrenceEdit = useRecurrenceEdit();
@@ -632,22 +631,22 @@ export function CalendarView({
       const isTimeGrid = viewMode === "week" || viewMode === "day";
       if (isTimeGrid && scrollerEl) {
         const HOUR = 60; // approx scroll unit (px per hour in FC default slots)
-        if (keymaps.resolvedMatchesEvent("calendar.scroll_down_hour", e)) {
+        if (matchesEvent("calendar.scroll_down_hour", e)) {
           e.preventDefault();
           scrollerEl.scrollBy({ top: HOUR });
           return;
         }
-        if (keymaps.resolvedMatchesEvent("calendar.scroll_up_hour", e)) {
+        if (matchesEvent("calendar.scroll_up_hour", e)) {
           e.preventDefault();
           scrollerEl.scrollBy({ top: -HOUR });
           return;
         }
-        if (keymaps.resolvedMatchesEvent("calendar.half_page_down", e)) {
+        if (matchesEvent("calendar.half_page_down", e)) {
           e.preventDefault();
           scrollerEl.scrollBy({ top: scrollerEl.clientHeight / 2 });
           return;
         }
-        if (keymaps.resolvedMatchesEvent("calendar.half_page_up", e)) {
+        if (matchesEvent("calendar.half_page_up", e)) {
           e.preventDefault();
           scrollerEl.scrollBy({ top: -scrollerEl.clientHeight / 2 });
           return;
@@ -659,7 +658,7 @@ export function CalendarView({
       const isModifier = ["Shift", "Control", "Alt", "Meta"].includes(e.key);
       if (isModifier) return;
 
-      const delKey = keymaps.getResolvedKeymap("calendar.delete").triggerKey;
+      const delKey = getKeymap("calendar.delete").triggerKey;
 
       if (pendingOp.current && !isModifier) {
         const op = pendingOp.current;
@@ -682,9 +681,7 @@ export function CalendarView({
         return n;
       };
 
-      const scrollTopKey = keymaps.getResolvedKeymap(
-        "calendar.scroll_top",
-      ).triggerKey;
+      const scrollTopKey = getKeymap("calendar.scroll_top").triggerKey;
 
       if (pendingG.current) {
         pendingG.current = false;
@@ -701,8 +698,7 @@ export function CalendarView({
           fcRef.current?.scrollToTime(hour);
           return;
         }
-        const actionsKey =
-          keymaps.getResolvedKeymap("calendar.actions").triggerKey;
+        const actionsKey = getKeymap("calendar.actions").triggerKey;
         if (e.key === actionsKey) {
           e.preventDefault();
           setActionsOpen(true);
@@ -733,9 +729,7 @@ export function CalendarView({
         return;
       }
 
-      const scrollBottomKey = keymaps.getResolvedKeymap(
-        "calendar.scroll_bottom",
-      ).triggerKey;
+      const scrollBottomKey = getKeymap("calendar.scroll_bottom").triggerKey;
       if (e.key === scrollBottomKey && isTimeGrid) {
         e.preventDefault();
         const n = countBuf.current
@@ -746,9 +740,7 @@ export function CalendarView({
         return;
       }
 
-      const prevKey = keymaps.getResolvedKeymap(
-        "calendar.prev_period",
-      ).triggerKey;
+      const prevKey = getKeymap("calendar.prev_period").triggerKey;
       if (e.key === prevKey) {
         e.preventDefault();
         dismissPopover();
@@ -760,9 +752,7 @@ export function CalendarView({
         }
         return;
       }
-      const nextKey = keymaps.getResolvedKeymap(
-        "calendar.next_period",
-      ).triggerKey;
+      const nextKey = getKeymap("calendar.next_period").triggerKey;
       if (e.key === nextKey) {
         e.preventDefault();
         dismissPopover();
@@ -775,9 +765,7 @@ export function CalendarView({
         return;
       }
 
-      const alldayKey = keymaps.getResolvedKeymap(
-        "calendar.toggle_allday",
-      ).triggerKey;
+      const alldayKey = getKeymap("calendar.toggle_allday").triggerKey;
       if (e.key === alldayKey && isTimeGrid) {
         e.preventDefault();
         countBuf.current = "";
@@ -785,8 +773,7 @@ export function CalendarView({
         return;
       }
 
-      const dayViewKey =
-        keymaps.getResolvedKeymap("calendar.day_view").triggerKey;
+      const dayViewKey = getKeymap("calendar.day_view").triggerKey;
       if (e.key === dayViewKey) {
         e.preventDefault();
         countBuf.current = "";
@@ -794,8 +781,7 @@ export function CalendarView({
         setViewMode("day");
         return;
       }
-      const weekViewKey =
-        keymaps.getResolvedKeymap("calendar.week_view").triggerKey;
+      const weekViewKey = getKeymap("calendar.week_view").triggerKey;
       if (e.key === weekViewKey) {
         e.preventDefault();
         countBuf.current = "";
@@ -803,9 +789,7 @@ export function CalendarView({
         setViewMode("week");
         return;
       }
-      const monthViewKey = keymaps.getResolvedKeymap(
-        "calendar.month_view",
-      ).triggerKey;
+      const monthViewKey = getKeymap("calendar.month_view").triggerKey;
       if (e.key === monthViewKey) {
         e.preventDefault();
         countBuf.current = "";
@@ -813,7 +797,7 @@ export function CalendarView({
         setViewMode("month");
         return;
       }
-      const todayKey = keymaps.getResolvedKeymap("calendar.today").triggerKey;
+      const todayKey = getKeymap("calendar.today").triggerKey;
       if (e.key === todayKey) {
         e.preventDefault();
         countBuf.current = "";
@@ -843,7 +827,6 @@ export function CalendarView({
       prevMonth,
       nextMonth,
       goToday,
-      keymaps,
       handleDeletePanelTask,
       dismissPopover,
       hasVisibleAllDayEvents,

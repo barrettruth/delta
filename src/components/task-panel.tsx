@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -32,6 +31,7 @@ import { TASK_STATUSES } from "@/core/types";
 import { useLocationSearch } from "@/hooks/use-location-search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import {
   buildTaskPanelUpdateInput,
   isTaskPanelDirty,
@@ -48,7 +48,6 @@ export function TaskPanel({
 }) {
   const panel = useTaskPanel();
   const nav = useNavigation();
-  const keymaps = useKeymaps();
   const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
   const undo = useUndo();
@@ -526,7 +525,7 @@ export function TaskPanel({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (keymaps.resolvedMatchesEvent("task_detail.save", e.nativeEvent)) {
+      if (matchesEvent("task_detail.save", e.nativeEvent)) {
         e.preventDefault();
         clearAutoSaveTimer();
         if (mode === "edit" && task) {
@@ -535,8 +534,7 @@ export function TaskPanel({
         return;
       }
 
-      const closeKey =
-        keymaps.getResolvedKeymap("task_detail.close").triggerKey;
+      const closeKey = getKeymap("task_detail.close").triggerKey;
       if (e.key === closeKey) {
         e.preventDefault();
         e.stopPropagation();
@@ -544,8 +542,7 @@ export function TaskPanel({
         return;
       }
 
-      const createKey =
-        keymaps.getResolvedKeymap("task_detail.create").triggerKey;
+      const createKey = getKeymap("task_detail.create").triggerKey;
       if (
         mode === "create" &&
         e.key === createKey &&
@@ -557,15 +554,7 @@ export function TaskPanel({
         return;
       }
     },
-    [
-      mode,
-      task,
-      saveTask,
-      clearAutoSaveTimer,
-      handleClosePanel,
-      handleCreate,
-      keymaps,
-    ],
+    [mode, task, saveTask, clearAutoSaveTimer, handleClosePanel, handleCreate],
   );
 
   useEffect(() => {

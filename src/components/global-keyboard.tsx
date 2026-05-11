@@ -4,10 +4,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useKeyboardHelp } from "@/contexts/keyboard-help";
-import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import {
   settingsHref,
   settingsReturnToForPath,
@@ -25,7 +25,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const { undo: performUndo } = useUndo();
   const panel = useTaskPanel();
   const { openKeyboardHelp } = useKeyboardHelp();
-  const keymaps = useKeymaps();
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsReturnTo = settingsReturnToForPath(pathname, searchParams);
@@ -36,15 +35,15 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
 
   const viewKeys = useMemo(() => {
     const map: Record<string, string> = {};
-    map[keymaps.getResolvedKeymap("global.queue").triggerKey] = "/?view=queue";
-    map[keymaps.getResolvedKeymap("global.kanban").triggerKey] = "/kanban";
-    map[keymaps.getResolvedKeymap("global.calendar").triggerKey] = "/calendar";
-    map[keymaps.getResolvedKeymap("global.settings").triggerKey] = settingsHref(
+    map[getKeymap("global.queue").triggerKey] = "/?view=queue";
+    map[getKeymap("global.kanban").triggerKey] = "/kanban";
+    map[getKeymap("global.calendar").triggerKey] = "/calendar";
+    map[getKeymap("global.settings").triggerKey] = settingsHref(
       "/settings",
       settingsReturnTo,
     );
     return map;
-  }, [keymaps, settingsReturnTo]);
+  }, [settingsReturnTo]);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
@@ -52,17 +51,17 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       if (isBrowserShortcut(e)) return;
       if (document.querySelector("[role=dialog]")) return;
 
-      if (keymaps.resolvedMatchesEvent("nav.jump_back", e)) {
+      if (matchesEvent("nav.jump_back", e)) {
         e.preventDefault();
         jumpBack();
         return;
       }
-      if (keymaps.resolvedMatchesEvent("nav.jump_forward", e)) {
+      if (matchesEvent("nav.jump_forward", e)) {
         e.preventDefault();
         jumpForward();
         return;
       }
-      if (keymaps.resolvedMatchesEvent("nav.alternate", e)) {
+      if (matchesEvent("nav.alternate", e)) {
         e.preventDefault();
         goAlternate();
         return;
@@ -102,7 +101,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      const gTrigger = keymaps.getResolvedKeymap("global.help").triggerKey;
+      const gTrigger = getKeymap("global.help").triggerKey;
       if (
         e.key === gTrigger &&
         !e.shiftKey &&
@@ -119,18 +118,14 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      const sidebarKey = keymaps.getResolvedKeymap(
-        "global.toggle_sidebar",
-      ).triggerKey;
+      const sidebarKey = getKeymap("global.toggle_sidebar").triggerKey;
       if (e.key === sidebarKey) {
         e.preventDefault();
         toggleSidebar();
         return;
       }
 
-      const dayKey = keymaps.getResolvedKeymap(
-        "global.calendar_day",
-      ).triggerKey;
+      const dayKey = getKeymap("global.calendar_day").triggerKey;
       if (
         e.key === dayKey &&
         pathname !== "/calendar" &&
@@ -141,9 +136,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         router.push("/calendar?mode=day");
         return;
       }
-      const weekKey = keymaps.getResolvedKeymap(
-        "global.calendar_week",
-      ).triggerKey;
+      const weekKey = getKeymap("global.calendar_week").triggerKey;
       if (
         e.key === weekKey &&
         pathname !== "/calendar" &&
@@ -154,9 +147,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         router.push("/calendar?mode=week");
         return;
       }
-      const monthKey = keymaps.getResolvedKeymap(
-        "global.calendar_month",
-      ).triggerKey;
+      const monthKey = getKeymap("global.calendar_month").triggerKey;
       if (
         e.key === monthKey &&
         pathname !== "/calendar" &&
@@ -168,7 +159,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      const undoKey = keymaps.getResolvedKeymap("global.undo").triggerKey;
+      const undoKey = getKeymap("global.undo").triggerKey;
       if (e.key === undoKey && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         performUndo();
@@ -195,7 +186,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       goAlternate,
       performUndo,
       panel,
-      keymaps,
       viewKeys,
       openHelp,
     ],

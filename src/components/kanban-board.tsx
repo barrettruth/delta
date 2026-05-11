@@ -9,7 +9,6 @@ import {
 } from "@/app/actions/tasks";
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { Input } from "@/components/ui/input";
-import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -18,6 +17,7 @@ import { KANBAN_COLUMNS, type TaskStatusColumn } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
 import type { UndoMutation } from "@/core/undo";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { getKeymap } from "@/lib/keymap-defs";
 import { formatDate, isBrowserShortcut, isInputFocused } from "@/lib/utils";
 
 type BoardColumn = TaskStatusColumn;
@@ -203,11 +203,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const statusBar = useStatusBar();
   const undo = useUndo();
   const panel = useTaskPanel();
-  const keymaps = useKeymaps();
   const recurrenceDelete = useRecurrenceDelete();
 
   const k = useMemo(() => {
-    const r = (id: string) => keymaps.getResolvedKeymap(id).triggerKey;
+    const r = (id: string) => getKeymap(id).triggerKey;
     return {
       columnHints: [
         r("kanban.jump_waiting"),
@@ -237,7 +236,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       escape: r("kanban.escape"),
       jumpBottom: r("queue.jump_bottom"),
     };
-  }, [keymaps]);
+  }, []);
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
   const [colIdx, setColIdx] = useState(0);

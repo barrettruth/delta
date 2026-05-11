@@ -18,8 +18,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useKeyboardHelp } from "@/contexts/keyboard-help";
-import { useKeymaps } from "@/contexts/keymaps";
 import { useNavigation } from "@/contexts/navigation";
+import { getKeymap } from "@/lib/keymap-defs";
 import {
   isSettingsPath,
   settingsHref,
@@ -49,7 +49,6 @@ export function AppSidebar({
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const nav = useNavigation();
-  const keymaps = useKeymaps();
   const { openKeyboardHelp } = useKeyboardHelp();
   const [editingColor, setEditingColor] = useState<string | null>(null);
   const settingsUrl = settingsHref(
@@ -86,7 +85,7 @@ export function AppSidebar({
                   >
                     <span className="flex-1">{view.label}</span>
                     <kbd className="text-[10px] text-muted-foreground">
-                      {keymaps.getResolvedKeymap(view.keymapId).triggerKey}
+                      {getKeymap(view.keymapId).triggerKey}
                     </kbd>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -119,10 +118,7 @@ export function AppSidebar({
                         <span className="flex-1">{cat}</span>
                         {shortcutKey && (
                           <kbd className="text-[10px] text-muted-foreground">
-                            {
-                              keymaps.getResolvedKeymap("global.category_jump")
-                                .triggerKey
-                            }
+                            {getKeymap("global.category_jump").triggerKey}
                             {shortcutKey}
                           </kbd>
                         )}
@@ -175,7 +171,7 @@ export function AppSidebar({
               <Gear className="size-4" />
               <span className="flex-1">{username}</span>
               <kbd className="text-[10px] text-muted-foreground">
-                {keymaps.getResolvedKeymap("global.settings").triggerKey}
+                {getKeymap("global.settings").triggerKey}
               </kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
