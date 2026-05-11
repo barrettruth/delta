@@ -12,20 +12,18 @@ _delta() {
     universal_flags=(
         '--json[JSON output (optional comma-separated field list)]'
         '--jq[Filter JSON output (implies --json)]:expr:'
-        '(-q --quiet)'{-q,--quiet}'[IDs only or nothing on success]'
+        '(-q --quiet)'{-q,--quiet}'[IDs only for list output]'
         '--no-color[Disable color output]'
         '--server[Override server URL]:url:'
         '--debug[Print HTTP requests and responses to stderr]'
         '--help[Show help]'
         '--version[Show version]'
-        '(-y --yes)'{-y,--yes}'[Skip confirmation prompts]'
     )
 
     local -a task_mutate_flags
     task_mutate_flags=(
         '--due[Due date]:date:'
         '--category[Category name]:name:'
-        '--priority[Priority]:n:'
         '--start[Start time]:datetime:'
         '--end[End time]:datetime:'
         '--all-day[All-day event]'
@@ -53,7 +51,7 @@ _delta() {
                 'cat:List categories with task counts'
                 'auth:Authentication'
                 'feed:iCal subscription management'
-                'import:Import from iCal or other sources'
+                'import:Import iCal file'
                 'export:Export as iCal'
                 'config:Settings management'
                 'integration:Integration management'

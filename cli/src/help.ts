@@ -21,11 +21,10 @@ Commands:
 Universal flags:
   --json [fields]   JSON output (optional field list)
   --jq <expr>       Filter JSON (implies --json)
-  -q, --quiet       IDs only / silent success
+  -q, --quiet       IDs only for list output
   --no-color        Disable color (also: NO_COLOR env)
   --server <url>    Override server URL
   --debug           Print HTTP traffic to stderr
-  -y, --yes         Skip confirmation prompts
 
 Bare 'delta' is equivalent to 'delta task list'.
 
@@ -44,19 +43,15 @@ Date keys support .before and .after modifiers.
 
   status:pending         Exact status match (pending|wip|done|blocked|cancelled)
   category:work          Exact category match
-  priority:2             Exact priority match
   due.before:friday      Due before a date
   due.after:today        Due after a date
-  created.before:2026-01-01
-  updated.after:yesterday
-  sort:urgency           Sort field (urgency|due|created|priority)
-  limit:20               Max results
+  sort:due               Sort field (due|createdAt|order)
 
-Date range shorthand (on startAt):
+Date range shorthand (on due date):
   --from monday --until friday
 
 Combine freely:
-  delta task list category:work priority:2 due.before:eow sort:due`;
+  delta task list category:work due.before:eow sort:due`;
 }
 
 function dates(): string {
@@ -119,12 +114,12 @@ function examples(): string {
 Basic CRUD:
   $ delta task add "Buy groceries" --due tomorrow -c personal
   $ delta task done 5
-  $ delta task edit 5 --priority 2 --due friday
+  $ delta task edit 5 --due friday
   $ delta task delete 5
 
 Filtering:
   $ delta task list category:work
-  $ delta task list priority:2 due.before:eow
+  $ delta task list category:work due.before:eow
   $ delta task list --from monday --until friday status:pending
 
 Calendar events:
@@ -133,7 +128,7 @@ Calendar events:
   $ delta task add "Review" --recurrence "every monday" --start "monday 10:00"
 
 Piping with quiet mode:
-  $ delta task list -q status:done | xargs delta task delete -y
+  $ delta task list -q status:done | xargs delta task delete
 
 JSON scripting:
   $ delta task list --json id,description,status

@@ -24,7 +24,7 @@ export function createProgram(version: string): Command {
       "JSON output (optional comma-separated field list)",
     )
     .option("--jq <expr>", "Filter JSON output (implies --json)")
-    .option("-q, --quiet", "IDs only or nothing on success")
+    .option("-q, --quiet", "IDs only for list output")
     .option("--no-color", "Disable color output")
     .option("--server <url>", "Override server URL")
     .option("--debug", "Print HTTP requests and responses to stderr")

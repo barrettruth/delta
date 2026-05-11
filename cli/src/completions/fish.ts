@@ -11,7 +11,7 @@ complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a task -d "Task C
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a cat -d "List categories with task counts"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a auth -d "Authentication"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a feed -d "iCal subscription management"
-complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a import -d "Import from iCal or other sources"
+complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a import -d "Import iCal file"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a export -d "Export as iCal"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a config -d "Settings management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a integration -d "Integration management"
@@ -20,13 +20,12 @@ complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a help -d "Built-
 
 complete -c delta -l json -d "JSON output (optional comma-separated field list)"
 complete -c delta -l jq -r -d "Filter JSON output (implies --json)"
-complete -c delta -s q -l quiet -d "IDs only or nothing on success"
+complete -c delta -s q -l quiet -d "IDs only for list output"
 complete -c delta -l no-color -d "Disable color output"
 complete -c delta -l server -r -d "Override server URL"
 complete -c delta -l debug -d "Print HTTP requests and responses to stderr"
 complete -c delta -l help -d "Show help"
 complete -c delta -l version -d "Show version"
-complete -c delta -s y -l yes -d "Skip confirmation prompts"
 
 set -l task_verbs list add edit done delete wip block pending dep
 complete -c delta -n "__fish_seen_subcommand_from task; and not __fish_seen_subcommand_from $task_verbs" -a list -d "List tasks with filters"
@@ -41,7 +40,6 @@ complete -c delta -n "__fish_seen_subcommand_from task; and not __fish_seen_subc
 
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from add edit" -l due -r -d "Due date"
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from add edit" -l category -r -d "Category name"
-complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from add edit" -l priority -r -d "Priority"
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from add edit" -l start -r -d "Start time"
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from add edit" -l end -r -d "End time"
 complete -c delta -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from add edit" -l all-day -d "All-day event"

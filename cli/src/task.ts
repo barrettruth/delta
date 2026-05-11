@@ -30,7 +30,6 @@ function buildTaskBody(opts: Record<string, unknown>): Record<string, unknown> {
 
   if (opts.due !== undefined) body.due = parseDate(opts.due as string);
   if (opts.category !== undefined) body.category = opts.category;
-  if (opts.priority !== undefined) body.priority = Number(opts.priority);
   if (opts.start !== undefined) body.startAt = parseDate(opts.start as string);
   if (opts.end !== undefined) body.endAt = parseDate(opts.end as string);
   if (opts.allDay) body.allDay = 1;
@@ -48,7 +47,6 @@ function addTaskFlags(cmd: Command): Command {
   return cmd
     .option("-d, --due <date>", "Due date")
     .option("-c, --category <name>", "Category name")
-    .option("-p, --priority <n>", "Priority")
     .option("--start <datetime>", "Start time")
     .option("--end <datetime>", "End time")
     .option("--all-day", "All-day event")
@@ -64,8 +62,8 @@ export function registerTaskCommands(task: Command): void {
   task
     .command("list")
     .description("List tasks with filters")
-    .option("--from <date>", "Start date filter (on startAt)")
-    .option("--until <date>", "End date filter (on startAt)")
+    .option("--from <date>", "Due date lower bound")
+    .option("--until <date>", "Due date upper bound")
     .allowUnknownOption(false)
     .action(async (opts: Record<string, string>, cmd: Command) => {
       const client = createClient();
@@ -85,7 +83,6 @@ export function registerTaskCommands(task: Command): void {
       if (filters["due.after"])
         params.due_after = parseDate(filters["due.after"].value);
       if (filters.sort) params.sort_by = filters.sort.value;
-      if (filters.limit) params.limit = filters.limit.value;
 
       if (opts.from) params.due_after = parseDate(opts.from);
       if (opts.until) params.due_before = parseDate(opts.until);

@@ -18,7 +18,7 @@ The CLI follows a noun\-verb grammar: \fBdelta <noun> <verb> [args] [\-\-flags] 
 .P
 Running \fBdelta\fP with no arguments is equivalent to \fBdelta task list\fP, showing
 .br
-pending tasks sorted by urgency\.
+pending tasks\.
 .SH COMMANDS
 .SS delta task
 .P
@@ -48,9 +48,7 @@ Mark one or more tasks as complete\.
 .IP \(bu 2
 \fBdelta task delete\fP id\.\.\.:
 .br
-Soft\-delete (cancel) one or more tasks\. Bulk deletes require \fB\-y\fP or
-.br
-interactive confirmation\.
+Soft\-delete (cancel) one or more tasks\.
 .IP \(bu 2
 \fBdelta task wip\fP id\.\.\.:
 .br
@@ -89,10 +87,6 @@ Due date\. Accepts natural language (see DATE FORMATS) or ISO 8601\.
 .br
 Category name\. Categories are created implicitly\.
 .IP \(bu 2
-\fB\-p\fP, \fB\-\-priority\fP n:
-.br
-Priority level\. 0 = none, 1+ = ascending urgency\.
-.IP \(bu 2
 \fB\-\-start\fP datetime:
 .br
 Start time\. Creates a calendar event when used with \fB\-\-end\fP\|\.
@@ -123,7 +117,7 @@ Meeting URL\.
 .IP \(bu 2
 \fB\-\-notes\fP text:
 .br
-Plain text notes\. Pass \fB\-\fP to read from stdin\.
+Plain text notes\.
 .IP \(bu 2
 \fB\-\-status\fP status:
 .br
@@ -209,14 +203,6 @@ Revoke the current subscription URL\.
 Import events from an iCal file\. Optionally assign all imported events to a
 .br
 category\.
-.IP \(bu 2
-\fBdelta import taskwarrior\fP export\-file:
-.br
-Import tasks from a Taskwarrior JSON export\.
-.IP \(bu 2
-\fBdelta import pending\fP export\-file:
-.br
-Import tasks from a pending\.nvim export\.
 
 .RE
 .SS delta export
@@ -334,7 +320,7 @@ Filter JSON output with a jq expression (implies \fB\-\-json\fP)\.
 .IP \(bu 2
 \fB\-q\fP, \fB\-\-quiet\fP:
 .br
-Quiet mode\. Print only IDs on list commands, nothing on success for mutations\.
+Quiet mode\. Print only IDs on list commands\.
 .IP \(bu 2
 \fB\-\-no\-color\fP:
 .br
@@ -351,10 +337,6 @@ or the config file\.
 \fB\-\-debug\fP:
 .br
 Print HTTP requests and responses to stderr\.
-.IP \(bu 2
-\fB\-y\fP, \fB\-\-yes\fP:
-.br
-Skip confirmation prompts for destructive bulk operations\.
 
 .RE
 .SH FILTERS
@@ -376,36 +358,20 @@ Filter by task status\. Values: \fBpending\fP, \fBwip\fP, \fBdone\fP, \fBblocked
 .br
 Filter by category name\.
 .IP \(bu 2
-\fBpriority\fP:n:
+\fBdue\.before\fP:date, \fBdue\.after\fP:date:
 .br
-Filter by priority level\.
-.IP \(bu 2
-\fBdue\fP:date, \fBdue\.before\fP:date, \fBdue\.after\fP:date:
-.br
-Filter by due date, or tasks due before/after a date\.
-.IP \(bu 2
-\fBcreated\.before\fP:date, \fBcreated\.after\fP:date:
-.br
-Filter by creation date\.
-.IP \(bu 2
-\fBupdated\.before\fP:date, \fBupdated\.after\fP:date:
-.br
-Filter by last\-updated date\.
+Filter by tasks due before/after a date\.
 .IP \(bu 2
 \fBsort\fP:field:
 .br
-Sort results\. Fields: \fBurgency\fP (default), \fBdue\fP, \fBcreated\fP, \fBpriority\fP\|\.
-.IP \(bu 2
-\fBlimit\fP:n:
-.br
-Maximum number of results to return\.
+Sort results\. Fields: \fBcreatedAt\fP (default), \fBdue\fP, \fBorder\fP\|\.
 
 .RE
 .SS Date range shorthand
 .P
 The \fB\-\-from\fP and \fB\-\-until\fP flags on \fBdelta task list\fP and \fBdelta export\fP are
 .br
-shorthand for date ranges on \fBstartAt\fP:
+shorthand for date ranges on due date:
 .RS 2
 .nf
 delta task list \-\-from monday \-\-until friday
@@ -562,10 +528,10 @@ $ delta task wip 3 7 12
 .fi
 .RE
 .P
-Edit a task's priority and due date:
+Edit a task's due date:
 .RS 2
 .nf
-$ delta task edit 5 \-\-priority 2 \-\-due friday
+$ delta task edit 5 \-\-due friday
 .fi
 .RE
 .P
@@ -584,17 +550,17 @@ $ delta task list category:work
 .fi
 .RE
 .P
-List high\-priority tasks due before end of week:
+List work tasks due before end of week:
 .RS 2
 .nf
-$ delta task list priority:2 due\.before:eow
+$ delta task list category:work due\.before:eow
 .fi
 .RE
 .P
-List tasks created in the last week, sorted by due date:
+List tasks sorted by due date:
 .RS 2
 .nf
-$ delta task list created\.after:\-7d sort:due
+$ delta task list sort:due
 .fi
 .RE
 .P
@@ -638,7 +604,7 @@ $ delta task edit 15 \-\-due tomorrow \-\-scope this
 Get IDs of completed tasks and delete them:
 .RS 2
 .nf
-$ delta task list \-q status:done | xargs delta task delete \-y
+$ delta task list \-q status:done | xargs delta task delete
 .fi
 .RE
 .P

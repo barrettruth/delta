@@ -11,11 +11,11 @@ _delta_completions() {
     _init_completion || return
 
     local nouns="task cat auth feed import export config integration completion help"
-    local universal_flags="--json --jq --quiet --no-color --server --debug --help --version --yes"
+    local universal_flags="--json --jq --quiet --no-color --server --debug --help --version"
 
     local task_verbs="list add edit done delete wip block pending dep"
     local task_dep_verbs="add rm list"
-    local task_mutate_flags="--due --category --priority --start --end --all-day --recurrence --recur-mode --location --meeting --notes --status --scope"
+    local task_mutate_flags="--due --category --start --end --all-day --recurrence --recur-mode --location --meeting --notes --status --scope"
     local auth_verbs="login logout status token"
     local auth_token_verbs="regenerate"
     local feed_verbs="generate revoke"

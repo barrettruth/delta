@@ -7,8 +7,8 @@ export function registerExportCommand(program: Command): void {
   program
     .command("export")
     .description("Export events as iCal")
-    .option("--from <date>", "Start date filter")
-    .option("--until <date>", "End date filter")
+    .option("--from <date>", "Due date lower bound")
+    .option("--until <date>", "Due date upper bound")
     .option("--id <id>", "Export single event by ID")
     .allowUnknownOption(false)
     .action(async (opts: Record<string, string>, cmd: Command) => {

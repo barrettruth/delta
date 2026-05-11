@@ -14,7 +14,7 @@ The CLI follows a noun-verb grammar: `delta <noun> <verb> [args] [--flags]
 [filters]`. Flags are used for writes, filters for reads.
 
 Running `delta` with no arguments is equivalent to `delta task list`, showing
-pending tasks sorted by urgency.
+pending tasks.
 
 ## COMMANDS
 
@@ -37,8 +37,7 @@ Task CRUD and status changes. Running `delta task` with no verb defaults to
   Mark one or more tasks as complete.
 
 * `delta task delete` id...:
-  Soft-delete (cancel) one or more tasks. Bulk deletes require `-y` or
-  interactive confirmation.
+  Soft-delete (cancel) one or more tasks.
 
 * `delta task wip` id...:
   Set one or more tasks to wip status.
@@ -66,9 +65,6 @@ Task CRUD and status changes. Running `delta task` with no verb defaults to
 * `-c`, `--category` name:
   Category name. Categories are created implicitly.
 
-* `-p`, `--priority` n:
-  Priority level. 0 = none, 1+ = ascending urgency.
-
 * `--start` datetime:
   Start time. Creates a calendar event when used with `--end`.
 
@@ -91,7 +87,7 @@ Task CRUD and status changes. Running `delta task` with no verb defaults to
   Meeting URL.
 
 * `--notes` text:
-  Plain text notes. Pass `-` to read from stdin.
+  Plain text notes.
 
 * `--status` status:
   Initial status (default: pending).
@@ -146,12 +142,6 @@ iCal subscription management. Running `delta feed` with no verb shows the curren
 * `delta import` file.ics \[`--category` name\]:
   Import events from an iCal file. Optionally assign all imported events to a
   category.
-
-* `delta import taskwarrior` export-file:
-  Import tasks from a Taskwarrior JSON export.
-
-* `delta import pending` export-file:
-  Import tasks from a pending.nvim export.
 
 ### delta export
 
@@ -229,7 +219,7 @@ Universal flags accepted by every command:
   Filter JSON output with a jq expression (implies `--json`).
 
 * `-q`, `--quiet`:
-  Quiet mode. Print only IDs on list commands, nothing on success for mutations.
+  Quiet mode. Print only IDs on list commands.
 
 * `--no-color`:
   Disable colored output. Also respected via the `NO_COLOR` environment
@@ -241,9 +231,6 @@ Universal flags accepted by every command:
 
 * `--debug`:
   Print HTTP requests and responses to stderr.
-
-* `-y`, `--yes`:
-  Skip confirmation prompts for destructive bulk operations.
 
 ## FILTERS
 
@@ -259,28 +246,16 @@ commands. Date-type keys support `.before` and `.after` modifiers.
 * `category`:name:
   Filter by category name.
 
-* `priority`:n:
-  Filter by priority level.
-
-* `due`:date, `due.before`:date, `due.after`:date:
-  Filter by due date, or tasks due before/after a date.
-
-* `created.before`:date, `created.after`:date:
-  Filter by creation date.
-
-* `updated.before`:date, `updated.after`:date:
-  Filter by last-updated date.
+* `due.before`:date, `due.after`:date:
+  Filter by tasks due before/after a date.
 
 * `sort`:field:
-  Sort results. Fields: `urgency` (default), `due`, `created`, `priority`.
-
-* `limit`:n:
-  Maximum number of results to return.
+  Sort results. Fields: `createdAt` (default), `due`, `order`.
 
 ### Date range shorthand
 
 The `--from` and `--until` flags on `delta task list` and `delta export` are
-shorthand for date ranges on `startAt`:
+shorthand for date ranges on due date:
 
     delta task list --from monday --until friday
 
@@ -384,9 +359,9 @@ Set multiple tasks to wip:
 
     $ delta task wip 3 7 12
 
-Edit a task's priority and due date:
+Edit a task's due date:
 
-    $ delta task edit 5 --priority 2 --due friday
+    $ delta task edit 5 --due friday
 
 Delete (cancel) a task:
 
@@ -398,13 +373,13 @@ List tasks in a category:
 
     $ delta task list category:work
 
-List high-priority tasks due before end of week:
+List work tasks due before end of week:
 
-    $ delta task list priority:2 due.before:eow
+    $ delta task list category:work due.before:eow
 
-List tasks created in the last week, sorted by due date:
+List tasks sorted by due date:
 
-    $ delta task list created.after:-7d sort:due
+    $ delta task list sort:due
 
 List tasks for a date range:
 
@@ -432,7 +407,7 @@ Edit a single instance of a recurring task:
 
 Get IDs of completed tasks and delete them:
 
-    $ delta task list -q status:done | xargs delta task delete -y
+    $ delta task list -q status:done | xargs delta task delete
 
 JSON output for scripting:
 

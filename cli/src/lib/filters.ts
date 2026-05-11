@@ -3,8 +3,9 @@ export interface FilterValue {
   modifier?: string;
 }
 
-const KNOWN_KEYS = new Set(["status", "category", "priority", "sort", "limit"]);
-const DATE_KEYS = new Set(["due", "created", "updated"]);
+const KNOWN_KEYS = new Set(["status", "category"]);
+const DATE_MODIFIERS = new Set(["before", "after"]);
+const SORT_FIELDS = new Set(["due", "createdAt", "order"]);
 const FILTER_PATTERN = /^([a-z]+)(?:\.([a-z]+))?:(.+)$/;
 
 export function parseFilters(args: string[]): Record<string, FilterValue> {
@@ -16,14 +17,19 @@ export function parseFilters(args: string[]): Record<string, FilterValue> {
 
     const [, key, modifier, value] = match;
 
-    if (KNOWN_KEYS.has(key)) {
+    if (KNOWN_KEYS.has(key) && !modifier) {
       filters[key] = { value };
       continue;
     }
 
-    if (DATE_KEYS.has(key)) {
-      const filterKey = modifier ? `${key}.${modifier}` : key;
+    if (key === "due" && modifier && DATE_MODIFIERS.has(modifier)) {
+      const filterKey = `${key}.${modifier}`;
       filters[filterKey] = { value, modifier };
+      continue;
+    }
+
+    if (key === "sort" && !modifier && SORT_FIELDS.has(value)) {
+      filters[key] = { value };
     }
   }
 
