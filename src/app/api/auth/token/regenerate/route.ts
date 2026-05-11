@@ -8,5 +8,5 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
 
   const apiKey = regenerateApiKey(db, user.id);
-  return NextResponse.json({ apiKey });
+  return NextResponse.json({ apiKey, token: apiKey });
 }

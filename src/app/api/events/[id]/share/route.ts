@@ -1,20 +1,14 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { validateSession } from "@/core/auth";
 import { generateShareLink } from "@/core/event-share";
 import { db } from "@/db";
+import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId)
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const user = validateSession(db, sessionId);
-  if (!user)
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await getAuthUserFromRequest(request);
+  if (!user) return unauthorized();
 
   const { id } = await params;
   const taskId = Number.parseInt(id, 10);

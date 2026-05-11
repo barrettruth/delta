@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  createSession,
-  deleteSession,
+  findLocalUser,
+  getOrCreateLocalUser,
   regenerateApiKey,
   validateApiKey,
-  validateSession,
 } from "@/core/auth";
 import type { Db } from "@/core/types";
 import { createTestDb, createTestUser } from "../helpers";
@@ -15,31 +14,22 @@ beforeEach(() => {
   db = createTestDb();
 });
 
-describe("sessions", () => {
-  let userId: number;
-
-  beforeEach(() => {
-    const user = createTestUser(db, "barrett");
-    userId = user.id;
+describe("local self-hosted user", () => {
+  it("creates a local user when none exists", () => {
+    const user = getOrCreateLocalUser(db);
+    expect(user.username).toBe("delta");
+    expect(user.apiKey).toBeTruthy();
   });
 
-  it("creates and validates a session", () => {
-    const sessionId = createSession(db, userId);
-    expect(sessionId).toBeTruthy();
-
-    const user = validateSession(db, sessionId);
-    expect(user).not.toBeNull();
-    expect(user?.username).toBe("barrett");
+  it("reuses the first local user", () => {
+    const existing = createTestUser(db, "barrett");
+    const user = getOrCreateLocalUser(db);
+    expect(user.id).toBe(existing.id);
+    expect(user.username).toBe("barrett");
   });
 
-  it("returns null for invalid session", () => {
-    expect(validateSession(db, "nonexistent")).toBeNull();
-  });
-
-  it("deletes a session", () => {
-    const sessionId = createSession(db, userId);
-    deleteSession(db, sessionId);
-    expect(validateSession(db, sessionId)).toBeNull();
+  it("returns null when no local user exists", () => {
+    expect(findLocalUser(db)).toBeNull();
   });
 });
 

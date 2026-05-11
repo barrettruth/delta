@@ -10,27 +10,18 @@ import {
   SettingsSection,
 } from "./settings-primitives";
 
-interface ConnectedAccount {
-  id: number;
-  provider: string;
-  providerAccountId: string;
-  email: string | null;
-  name: string | null;
-  createdAt: string;
-}
-
 export function AccountSection({
   username: initialUsername,
-  connectedAccounts: initialAccounts,
+  apiKey: initialApiKey,
 }: {
   username: string;
-  connectedAccounts: ConnectedAccount[];
+  apiKey: string | null;
 }) {
   const router = useRouter();
   const statusBar = useStatusBar();
   const [username, setUsername] = useState(initialUsername);
   const [editing, setEditing] = useState(false);
-  const [connectedAccounts, setConnectedAccounts] = useState(initialAccounts);
+  const [apiKey, setApiKey] = useState(initialApiKey);
 
   async function handleSaveUsername() {
     const trimmed = username.trim();
@@ -54,23 +45,31 @@ export function AccountSection({
     setEditing(false);
   }
 
-  async function handleUnlinkProvider(provider: string) {
-    const res = await fetch(`/api/auth/unlink/${provider}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      statusBar.error(data.error ?? "failed to unlink provider");
+  async function handleCopyApiKey() {
+    if (!apiKey) {
+      statusBar.error("api key is not set");
       return;
     }
-    setConnectedAccounts((prev) => prev.filter((a) => a.provider !== provider));
-    statusBar.message(`${provider} unlinked`);
+    await navigator.clipboard.writeText(apiKey);
+    statusBar.message("api key copied");
+  }
+
+  async function handleRegenerateApiKey() {
+    const res = await fetch("/api/auth/token/regenerate", { method: "POST" });
+    if (!res.ok) {
+      const data = await res.json();
+      statusBar.error(data.error ?? "failed to regenerate api key");
+      return;
+    }
+    const data = await res.json();
+    setApiKey(data.apiKey);
+    statusBar.message("api key regenerated");
   }
 
   return (
     <SettingsPage
       title="account"
-      description="Manage your profile and the providers you use to sign in."
+      description="Manage your local self-hosted profile and API access."
     >
       <SettingsSection
         title="profile"
@@ -104,23 +103,21 @@ export function AccountSection({
       </SettingsSection>
 
       <SettingsSection
-        title="connected accounts"
-        description="Linked providers you can use for sign-in."
+        title="API access"
+        description="Use this key for scripts and CLI clients."
       >
-        {connectedAccounts.map((account) => (
-          <SettingsRow
-            key={account.id}
-            label={account.provider}
-            value={account.name ?? account.email ?? account.providerAccountId}
-            action
-            muted
-            prefix={{ text: "-", className: "text-destructive" }}
-            onClick={() => handleUnlinkProvider(account.provider)}
-          />
-        ))}
-        {connectedAccounts.length === 0 && (
-          <SettingsRow label="no accounts linked" muted />
-        )}
+        <SettingsRow
+          label="copy API key"
+          value={apiKey ? `${apiKey.slice(0, 8)}...` : "not set"}
+          action
+          onClick={handleCopyApiKey}
+        />
+        <SettingsRow
+          label="regenerate API key"
+          action
+          muted
+          onClick={handleRegenerateApiKey}
+        />
       </SettingsSection>
     </SettingsPage>
   );

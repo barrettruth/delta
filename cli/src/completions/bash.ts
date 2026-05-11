@@ -10,7 +10,7 @@ _delta_completions() {
     local cur prev words cword
     _init_completion || return
 
-    local nouns="task cat cron auth feed import export invite share config integration completion help"
+    local nouns="task cat cron auth feed import export share config integration completion help"
     local universal_flags="--json --jq --quiet --no-color --server --debug --help --version --yes"
 
     local task_verbs="list add edit done delete wip block pending dep"
@@ -20,7 +20,6 @@ _delta_completions() {
     local auth_verbs="login logout status token"
     local auth_token_verbs="regenerate"
     local feed_verbs="generate revoke"
-    local invite_verbs="list create"
     local config_verbs="get set"
     local integration_verbs="list test"
     local completion_verbs="bash zsh fish"
@@ -80,14 +79,6 @@ _delta_completions() {
         feed)
             if [[ \${cword} -eq 2 ]]; then
                 COMPREPLY=($(compgen -W "\${feed_verbs}" -- "\${cur}"))
-                return
-            fi
-            COMPREPLY=($(compgen -W "\${universal_flags}" -- "\${cur}"))
-            return
-            ;;
-        invite)
-            if [[ \${cword} -eq 2 ]]; then
-                COMPREPLY=($(compgen -W "\${invite_verbs}" -- "\${cur}"))
                 return
             fi
             COMPREPLY=($(compgen -W "\${universal_flags}" -- "\${cur}"))

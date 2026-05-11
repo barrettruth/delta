@@ -56,7 +56,6 @@ _delta() {
                 'feed:iCal subscription management'
                 'import:Import from iCal or other sources'
                 'export:Export as iCal'
-                'invite:Invite link management'
                 'share:Generate share link for a task'
                 'config:Settings management'
                 'integration:Integration management'
@@ -149,9 +148,9 @@ _delta() {
                         auth_verb)
                             local -a verbs
                             verbs=(
-                                'login:Authenticate with the server'
+                                'login:Store an API token for this server'
                                 'logout:Clear stored credentials'
-                                'status:Show current user and auth method'
+                                'status:Show current user and token source'
                                 'token:Display or manage API token'
                             )
                             _describe 'verb' verbs
@@ -196,24 +195,6 @@ _delta() {
                             _describe 'verb' verbs
                             ;;
                         feed_args)
-                            _arguments "\${universal_flags[@]}"
-                            ;;
-                    esac
-                    ;;
-                invite)
-                    local -a verbs
-                    verbs=(
-                        'list:List invite links'
-                        'create:Generate invite link'
-                    )
-                    _arguments -C \\
-                        '1:verb:->invite_verb' \\
-                        '*::arg:->invite_args'
-                    case $state in
-                        invite_verb)
-                            _describe 'verb' verbs
-                            ;;
-                        invite_args)
                             _arguments "\${universal_flags[@]}"
                             ;;
                     esac

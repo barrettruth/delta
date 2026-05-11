@@ -16,7 +16,8 @@ interface MeResponse {
 }
 
 interface RegenerateResponse {
-  token: string;
+  apiKey?: string;
+  token?: string;
 }
 
 function getTokenSource(): "env" | "file" | null {
@@ -45,12 +46,7 @@ async function validateToken(token: string): Promise<MeResponse> {
 
 async function handleLogin(opts: { token?: boolean }): Promise<void> {
   const isTTY = process.stdin.isTTY;
-
-  if (!opts.token && isTTY) {
-    process.stderr.write(
-      "Device flow is not yet available. Falling back to token paste.\n",
-    );
-  }
+  void opts;
 
   let token: string;
 
@@ -138,8 +134,12 @@ async function handleTokenRegenerate(): Promise<void> {
     const result = await client.post<RegenerateResponse>(
       "/api/auth/token/regenerate",
     );
-    setToken(result.token);
-    process.stdout.write(`${result.token}\n`);
+    const token = result.token ?? result.apiKey;
+    if (!token) {
+      throw new Error("Token regeneration response did not include a token.");
+    }
+    setToken(token);
+    process.stdout.write(`${token}\n`);
   } catch (e) {
     if (e instanceof DeltaClientError && e.status === 404) {
       process.stderr.write(
@@ -156,8 +156,8 @@ export function registerAuth(program: Command): Command {
 
   auth
     .command("login")
-    .description("Authenticate with the server")
-    .option("--token", "Paste API token (headless/CI)")
+    .description("Store an API token for this server")
+    .option("--token", "Read API token from prompt or stdin")
     .action(async (opts: { token?: boolean }) => {
       await handleLogin(opts);
     });
@@ -171,7 +171,7 @@ export function registerAuth(program: Command): Command {
 
   auth
     .command("status")
-    .description("Show current user and auth method")
+    .description("Show current user and token source")
     .action(async () => {
       await handleStatus();
     });

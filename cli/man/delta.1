@@ -218,13 +218,13 @@ Authentication commands\.
 .IP \(bu 2
 \fBdelta auth login\fP:
 .br
-Start device flow authentication\. Opens a browser URL and waits for
+Store an API token for this server\. Paste the token from Settings when
 .br
-confirmation\.
+prompted\.
 .IP \(bu 2
 \fBdelta auth login \-\-token\fP:
 .br
-Paste an API token directly (for headless/CI environments)\.
+Read an API token from stdin or the prompt for headless/CI environments\.
 .IP \(bu 2
 \fBdelta auth logout\fP:
 .br
@@ -232,7 +232,7 @@ Clear stored credentials from keyring and credentials file\.
 .IP \(bu 2
 \fBdelta auth status\fP:
 .br
-Show the current authenticated user and auth method\.
+Show the current authenticated user and token source\.
 .IP \(bu 2
 \fBdelta auth token\fP:
 .br
@@ -324,23 +324,6 @@ defaults to list\.
 \fBdelta integration test\fP provider:
 .br
 Test an integration's API key validity\.
-
-.RE
-.SS delta invite
-.P
-Invite link management\. Running \fBdelta invite\fP with no verb defaults to
-.br
-\fBdelta invite list\fP\|\.
-
-.RS 1
-.IP \(bu 2
-\fBdelta invite list\fP:
-.br
-List invite links\.
-.IP \(bu 2
-\fBdelta invite create\fP:
-.br
-Generate a new invite link\.
 
 .RE
 .SS delta share
@@ -748,7 +731,7 @@ $ delta export \-\-from today \-\-until +2w > next\-two\-weeks\.ics
 .RE
 .SS Auth setup
 .P
-Interactive device flow login:
+Store an API token locally:
 .RS 2
 .nf
 $ delta auth login

@@ -1,23 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
-import { validateSession } from "@/core/auth";
 import {
   getSettings,
   type UserSettings,
   updateSettings,
 } from "@/core/settings";
 import { db } from "@/db";
+import { getAuthUser } from "@/lib/auth-middleware";
 
 type ActionResult<T> = { data: T } | { error: string };
 
 async function getAuthenticatedUserId(): Promise<number | null> {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId) return null;
-  const user = validateSession(db, sessionId);
-  return user?.id ?? null;
+  const user = await getAuthUser();
+  return user.id;
 }
 
 export async function getSettingsAction(): Promise<ActionResult<UserSettings>> {

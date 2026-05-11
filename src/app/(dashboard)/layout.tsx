@@ -7,7 +7,6 @@ import { NavigationWrapper } from "@/components/navigation-wrapper";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { listCategoryColors } from "@/core/category-colors";
 import { listTasks } from "@/core/task";
-import { userHas2FA } from "@/core/two-factor";
 import { db } from "@/db";
 import { requireAuthUser } from "@/lib/server-auth";
 
@@ -19,7 +18,6 @@ export default async function DashboardLayout({
   modal: React.ReactNode;
 }) {
   const user = await requireAuthUser();
-  if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
   if (!user.onboardingCompleted) redirect("/onboarding");
 
   const allTasks = listTasks(db, user.id);

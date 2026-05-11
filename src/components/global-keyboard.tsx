@@ -143,15 +143,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         return;
       }
 
-      const logoutKey = keymaps.getResolvedKeymap("global.logout").triggerKey;
-      if (e.key === logoutKey && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        fetch("/api/auth/logout", { method: "POST" }).then(() => {
-          router.push("/login");
-        });
-        return;
-      }
-
       const dayKey = keymaps.getResolvedKeymap(
         "global.calendar_day",
       ).triggerKey;

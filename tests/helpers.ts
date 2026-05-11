@@ -28,6 +28,6 @@ export function createTestUser(db: Db, username?: string) {
     })
     .returning()
     .get();
-  const { passwordHash: _, ...safe } = user;
+  const { passwordHash: _, totpSecret: _totpSecret, ...safe } = user;
   return safe;
 }

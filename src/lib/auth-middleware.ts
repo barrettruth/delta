@@ -1,28 +1,26 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { SafeUser } from "@/core/auth";
-import { validateApiKey, validateSession } from "@/core/auth";
+import { getOrCreateLocalUser, validateApiKey } from "@/core/auth";
 import { db } from "@/db";
 
-export async function getAuthUser(): Promise<SafeUser | null> {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (sessionId) {
-    return validateSession(db, sessionId);
-  }
-
-  return null;
+export async function getAuthUser(): Promise<SafeUser> {
+  return getOrCreateLocalUser(db);
 }
 
 export async function getAuthUserFromRequest(
   request: Request,
 ): Promise<SafeUser | null> {
-  const apiKey = request.headers.get("x-api-key");
+  const authorization = request.headers.get("authorization");
+  const bearer =
+    authorization?.toLowerCase().startsWith("bearer ") === true
+      ? authorization.slice("bearer ".length).trim()
+      : null;
+  const apiKey = request.headers.get("x-api-key") ?? bearer;
   if (apiKey) {
     return validateApiKey(db, apiKey);
   }
 
-  return getAuthUser();
+  return getOrCreateLocalUser(db);
 }
 
 export function unauthorized(): NextResponse {

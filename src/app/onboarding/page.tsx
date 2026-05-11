@@ -1,13 +1,11 @@
 import { redirect } from "next/navigation";
 import { getIntegrationConfig } from "@/core/integration-config";
-import { userHas2FA } from "@/core/two-factor";
 import { db } from "@/db";
 import { requireAuthUser } from "@/lib/server-auth";
 import { OnboardingWizard } from "./onboarding-wizard";
 
 export default async function OnboardingPage() {
   const user = await requireAuthUser();
-  if (!userHas2FA(db, user.id)) redirect("/setup-2fa");
   if (user.onboardingCompleted) redirect("/");
 
   let geoProvider: "photon" | "mapbox" | "google_maps" = "photon";

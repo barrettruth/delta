@@ -55,12 +55,6 @@ export function StatusBar() {
         push: route,
         refresh: () => router.refresh(),
       },
-      logout: (force?: boolean) => {
-        void force;
-        fetch("/api/auth/logout", { method: "POST" }).then(() => {
-          router.push("/login");
-        });
-      },
       toggleSidebar,
       openHelp: () =>
         router.push(

@@ -153,17 +153,17 @@ Manage scheduled automations. Running `delta cron` with no verb defaults to
 Authentication commands.
 
 * `delta auth login`:
-  Start device flow authentication. Opens a browser URL and waits for
-  confirmation.
+  Store an API token for this server. Paste the token from Settings when
+  prompted.
 
 * `delta auth login --token`:
-  Paste an API token directly (for headless/CI environments).
+  Read an API token from stdin or the prompt for headless/CI environments.
 
 * `delta auth logout`:
   Clear stored credentials from keyring and credentials file.
 
 * `delta auth status`:
-  Show the current authenticated user and auth method.
+  Show the current authenticated user and token source.
 
 * `delta auth token`:
   Display the current API token.
@@ -223,17 +223,6 @@ Valid keys: `default-view`, `show-completed`, `urgency-weights`,
 
 * `delta integration test` provider:
   Test an integration's API key validity.
-
-### delta invite
-
-Invite link management. Running `delta invite` with no verb defaults to
-`delta invite list`.
-
-* `delta invite list`:
-  List invite links.
-
-* `delta invite create`:
-  Generate a new invite link.
 
 ### delta share
 
@@ -504,7 +493,7 @@ Export calendar to file:
 
 ### Auth setup
 
-Interactive device flow login:
+Store an API token locally:
 
     $ delta auth login
 

@@ -3,7 +3,7 @@ export function fishScript(): string {
 # Installation:
 #   delta completion fish > ~/.config/fish/completions/delta.fish
 
-set -l nouns task cat cron auth feed import export invite share config integration completion help
+set -l nouns task cat cron auth feed import export share config integration completion help
 
 complete -c delta -e
 
@@ -14,7 +14,6 @@ complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a auth -d "Authen
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a feed -d "iCal subscription management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a import -d "Import from iCal or other sources"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a export -d "Export as iCal"
-complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a invite -d "Invite link management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a share -d "Generate share link for a task"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a config -d "Settings management"
 complete -c delta -n "not __fish_seen_subcommand_from $nouns" -a integration -d "Integration management"
@@ -71,9 +70,9 @@ complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subc
 complete -c delta -n "__fish_seen_subcommand_from cron; and not __fish_seen_subcommand_from $cron_verbs" -a disable -d "Disable automation"
 
 set -l auth_verbs login logout status token
-complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a login -d "Authenticate with the server"
+complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a login -d "Store an API token for this server"
 complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a logout -d "Clear stored credentials"
-complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a status -d "Show current user and auth method"
+complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a status -d "Show current user and token source"
 complete -c delta -n "__fish_seen_subcommand_from auth; and not __fish_seen_subcommand_from $auth_verbs" -a token -d "Display or manage API token"
 
 complete -c delta -n "__fish_seen_subcommand_from auth; and __fish_seen_subcommand_from token" -a regenerate -d "Regenerate API token"
@@ -81,10 +80,6 @@ complete -c delta -n "__fish_seen_subcommand_from auth; and __fish_seen_subcomma
 set -l feed_verbs generate revoke
 complete -c delta -n "__fish_seen_subcommand_from feed; and not __fish_seen_subcommand_from $feed_verbs" -a generate -d "Generate/regenerate subscription URL"
 complete -c delta -n "__fish_seen_subcommand_from feed; and not __fish_seen_subcommand_from $feed_verbs" -a revoke -d "Revoke subscription URL"
-
-set -l invite_verbs list create
-complete -c delta -n "__fish_seen_subcommand_from invite; and not __fish_seen_subcommand_from $invite_verbs" -a list -d "List invite links"
-complete -c delta -n "__fish_seen_subcommand_from invite; and not __fish_seen_subcommand_from $invite_verbs" -a create -d "Generate invite link"
 
 set -l config_verbs get set
 complete -c delta -n "__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from $config_verbs" -a get -d "Get a setting value"

@@ -1,11 +1,10 @@
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { validateSession } from "@/core/auth";
 import { upsertIntegrationConfig } from "@/core/integration-config";
 import { updateSettings } from "@/core/settings";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { getAuthUser } from "@/lib/auth-middleware";
 
 interface OnboardingPayload {
   defaultView: "queue" | "kanban" | "calendar";
@@ -17,15 +16,7 @@ interface OnboardingPayload {
 }
 
 export async function POST(req: Request) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
-  if (!sessionId)
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const user = validateSession(db, sessionId);
-  if (!user)
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+  const user = await getAuthUser();
   const body = (await req.json()) as OnboardingPayload;
 
   updateSettings(db, user.id, {

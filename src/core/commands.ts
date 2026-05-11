@@ -15,7 +15,6 @@ export interface CommandDefinition {
 
 export interface CommandContext {
   router: { push: (url: string) => void; refresh: () => void };
-  logout: (force?: boolean) => void;
   toggleSidebar: () => void;
   openHelp: () => void;
   undo: () => void;
@@ -107,11 +106,6 @@ export function executeCommand(
   const result = resolveCommand(parsed.name, registry);
   if (typeof result === "string") return result;
 
-  if (parsed.bang && result.name === "quit") {
-    ctx.logout(true);
-    return null;
-  }
-
   const argErr = validateArgs(result, parsed.args);
   if (argErr) return argErr;
 
@@ -123,14 +117,12 @@ export const commandRegistry: CommandDefinition[] = [
   {
     name: "quit",
     aliases: ["q"],
-    description: "Close panel or logout",
+    description: "Close task panel",
     category: "general",
     expectedArgs: [],
     execute: (_args, ctx) => {
       if (ctx.taskPanel.isOpen) {
         ctx.discardTask();
-      } else {
-        ctx.logout();
       }
     },
   },

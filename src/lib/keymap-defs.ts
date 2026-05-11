@@ -107,13 +107,6 @@ export const DEFAULT_KEYMAPS: KeymapDef[] = [
     label: "Toggle sidebar",
   },
   {
-    id: "global.logout",
-    key: "q",
-    triggerKey: "q",
-    section: "global",
-    label: "Logout",
-  },
-  {
     id: "global.undo",
     key: "u",
     triggerKey: "u",
@@ -715,7 +708,6 @@ export const HELP_SECTIONS: HelpSection[] = [
         "Calendar day / week / month view",
       ),
       row("global.toggle_sidebar", "-", "Toggle sidebar"),
-      row("global.logout", "q", "Logout"),
       row("global.undo", "u", "Undo"),
       row("global.category_jump", "g1-9", "Jump to category"),
       row("global.create_task", "gc", "Create task"),

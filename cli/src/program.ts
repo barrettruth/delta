@@ -9,7 +9,6 @@ import { registerFeedCommands } from "./feed.js";
 import { registerHelp } from "./help.js";
 import { registerImportCommand } from "./import.js";
 import { registerIntegrationCommands } from "./integration.js";
-import { registerInviteCommands } from "./invite.js";
 import { setDebug } from "./lib/client.js";
 import { configure } from "./lib/output.js";
 import { registerShareCommand } from "./share.js";
@@ -60,9 +59,6 @@ export function createProgram(version: string): Command {
   registerImportCommand(program);
   registerExportCommand(program);
 
-  const invite = new Command("invite").description("Invite link management");
-  registerInviteCommands(invite);
-
   const share = new Command("share").description(
     "Generate share link for a task",
   );
@@ -79,7 +75,6 @@ export function createProgram(version: string): Command {
   program.addCommand(task);
   program.addCommand(cat);
   program.addCommand(cron);
-  program.addCommand(invite);
   program.addCommand(share);
   program.addCommand(config);
   program.addCommand(integration);

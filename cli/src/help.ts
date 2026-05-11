@@ -16,7 +16,6 @@ Commands:
   export                     Export as iCal to stdout
   config [get|set]           Settings management
   integration [list|test]    Integration management
-  invite [list|create]       Invite link management
   share <id>                 Generate share link for a task
   completion [bash|zsh|fish] Shell completion scripts
   help [topic]               Built-in help topics
@@ -88,16 +87,16 @@ values accept these formats.`;
 function authHelp(): string {
   return `Authentication Setup
 
-1. Interactive login (device flow):
+1. Token storage:
    $ delta auth login
 
-   Opens a URL in your browser. Enter the displayed code, then
-   authenticate via OAuth + 2FA. The CLI waits and stores the token.
+   Paste the API key from the web UI under Settings. The CLI validates
+   it with the server and stores it locally.
 
-2. Token paste (headless / CI):
+2. Non-interactive token storage:
    $ delta auth login --token
 
-   Generate a token in the web UI under Settings, then paste it.
+   Read the API key from stdin for headless environments.
 
 3. Environment variable:
    $ export DELTA_TOKEN="your-api-token"
@@ -110,7 +109,7 @@ Token storage precedence:
    3. $XDG_DATA_HOME/delta/credentials.json (0600, fallback)
 
 Other commands:
-   delta auth status            Show current user and method
+   delta auth status            Show current user and token source
    delta auth logout            Clear stored credentials
    delta auth token             Display current token
    delta auth token regenerate  Regenerate token (invalidates old one)`;

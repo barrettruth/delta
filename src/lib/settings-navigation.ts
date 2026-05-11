@@ -1,11 +1,9 @@
 export const SETTINGS_SECTIONS = [
   { id: "account", label: "account", href: "/settings" },
-  { id: "security", label: "security", href: "/settings/security" },
   { id: "keymaps", label: "keymaps", href: "/settings/keymaps" },
   { id: "calendar", label: "calendar", href: "/settings/calendar" },
   { id: "integrations", label: "integrations", href: "/settings/integrations" },
   { id: "preferences", label: "preferences", href: "/settings/preferences" },
-  { id: "invites", label: "invites", href: "/settings/invites" },
 ] as const;
 
 export const SETTINGS_RETURN_TO_PARAM = "returnTo";

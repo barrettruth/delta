@@ -112,7 +112,6 @@ describe("executeCommand", () => {
   ): CommandContext {
     return {
       router: { push: () => {}, refresh: () => {} },
-      logout: () => {},
       toggleSidebar: () => {},
       openHelp: () => {},
       undo: () => {},
@@ -145,26 +144,28 @@ describe("executeCommand", () => {
     expect(result).toBe("unknown command: foobar");
   });
 
-  it("calls logout on :quit", () => {
-    let called = false;
+  it("closes the task panel on :quit", () => {
+    let discarded = false;
     const ctx = makeMockContext({
-      logout: () => {
-        called = true;
+      taskPanel: {
+        isOpen: true,
+        mode: "edit",
+        taskId: 1,
+        open: () => {},
+        create: () => {},
+        close: () => {},
+      },
+      discardTask: () => {
+        discarded = true;
       },
     });
     executeCommand("quit", commandRegistry, ctx);
-    expect(called).toBe(true);
+    expect(discarded).toBe(true);
   });
 
-  it("calls logout with force on :quit!", () => {
-    let forceCalled = false;
-    const ctx = makeMockContext({
-      logout: (force) => {
-        forceCalled = !!force;
-      },
-    });
-    executeCommand("quit!", commandRegistry, ctx);
-    expect(forceCalled).toBe(true);
+  it("does nothing on :quit when no task panel is open", () => {
+    const ctx = makeMockContext();
+    expect(executeCommand("quit", commandRegistry, ctx)).toBeNull();
   });
 
   it("navigates to calendar with mode argument", () => {

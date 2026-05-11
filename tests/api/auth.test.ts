@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  createSession,
-  deleteSession,
+  findLocalUser,
+  getOrCreateLocalUser,
   regenerateApiKey,
   validateApiKey,
-  validateSession,
 } from "@/core/auth";
 import type { Db } from "@/core/types";
 import { createTestDb, createTestUser } from "../helpers";
@@ -15,49 +14,16 @@ beforeEach(() => {
   db = createTestDb();
 });
 
-describe("session management", () => {
-  let userId: number;
-
-  beforeEach(() => {
-    const user = createTestUser(db, "sessionuser");
-    userId = user.id;
+describe("local self-hosted user", () => {
+  it("creates a local user with an API key", () => {
+    const user = getOrCreateLocalUser(db);
+    expect(user.id).toBeGreaterThan(0);
+    expect(user.apiKey).toBeTruthy();
   });
 
-  it("creates unique session IDs", () => {
-    const s1 = createSession(db, userId);
-    const s2 = createSession(db, userId);
-    expect(s1).not.toBe(s2);
-  });
-
-  it("validates active session", () => {
-    const sessionId = createSession(db, userId);
-    const user = validateSession(db, sessionId);
-    expect(user).not.toBeNull();
-    expect(user?.id).toBe(userId);
-  });
-
-  it("returns null for nonexistent session", () => {
-    expect(validateSession(db, "fake-session-id-12345")).toBeNull();
-  });
-
-  it("returns null after session deletion", () => {
-    const sessionId = createSession(db, userId);
-    deleteSession(db, sessionId);
-    expect(validateSession(db, sessionId)).toBeNull();
-  });
-
-  it("deleting one session does not affect others", () => {
-    const s1 = createSession(db, userId);
-    const s2 = createSession(db, userId);
-
-    deleteSession(db, s1);
-
-    expect(validateSession(db, s1)).toBeNull();
-    expect(validateSession(db, s2)).not.toBeNull();
-  });
-
-  it("deleting nonexistent session is a no-op", () => {
-    expect(() => deleteSession(db, "nonexistent")).not.toThrow();
+  it("finds the existing local user", () => {
+    const existing = createTestUser(db, "local");
+    expect(findLocalUser(db)?.id).toBe(existing.id);
   });
 });
 

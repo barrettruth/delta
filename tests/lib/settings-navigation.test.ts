@@ -14,12 +14,10 @@ describe("settings navigation helpers", () => {
   it("defines the expected settings sections", () => {
     expect(SETTINGS_SECTIONS.map((section) => section.href)).toEqual([
       "/settings",
-      "/settings/security",
       "/settings/keymaps",
       "/settings/calendar",
       "/settings/integrations",
       "/settings/preferences",
-      "/settings/invites",
     ]);
   });
 
@@ -51,11 +49,11 @@ describe("settings navigation helpers", () => {
         "/settings/integrations",
       ),
     ).toBe(true);
-    expect(isSettingsSectionActive("/settings/security", "/settings")).toBe(
+    expect(isSettingsSectionActive("/settings/calendar", "/settings")).toBe(
       false,
     );
     expect(
-      isSettingsSectionActive("/settings/preferences", "/settings/security"),
+      isSettingsSectionActive("/settings/preferences", "/settings/calendar"),
     ).toBe(false);
   });
 
@@ -76,7 +74,7 @@ describe("settings navigation helpers", () => {
     ).toBe(
       "/settings/keymaps?returnTo=%2Fcalendar%3Fmode%3Dweek&focus=calendar",
     );
-    expect(settingsHref("/settings", "/settings/security")).toBe("/settings");
+    expect(settingsHref("/settings", "/settings/calendar")).toBe("/settings");
     expect(settingsHref("/settings", "https://example.com")).toBe("/settings");
   });
 
