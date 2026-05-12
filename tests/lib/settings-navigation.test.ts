@@ -23,6 +23,11 @@ describe("settings navigation helpers", () => {
         label: "preferences",
         href: "/settings/preferences",
       },
+      {
+        id: "shortcuts",
+        label: "shortcuts",
+        href: "/settings/shortcuts",
+      },
     ]);
   });
 
@@ -30,6 +35,7 @@ describe("settings navigation helpers", () => {
     expect(isSettingsPath("/settings")).toBe(true);
     expect(isSettingsPath("/settings/calendar")).toBe(true);
     expect(isSettingsPath("/settings/preferences/advanced")).toBe(true);
+    expect(isSettingsPath("/settings/shortcuts")).toBe(true);
     expect(isSettingsPath("/calendar")).toBe(false);
   });
 
@@ -53,6 +59,9 @@ describe("settings navigation helpers", () => {
     expect(
       isSettingsSectionActive("/settings/preferences", "/settings/calendar"),
     ).toBe(false);
+    expect(
+      isSettingsSectionActive("/settings/shortcuts", "/settings/shortcuts"),
+    ).toBe(true);
   });
 
   it("resolves the active settings section", () => {
@@ -63,6 +72,9 @@ describe("settings navigation helpers", () => {
     expect(getActiveSettingsSection("/settings/preferences").id).toBe(
       "preferences",
     );
+    expect(getActiveSettingsSection("/settings/shortcuts").id).toBe(
+      "shortcuts",
+    );
     expect(getActiveSettingsSection("/nope").id).toBe("account");
   });
 
@@ -70,6 +82,7 @@ describe("settings navigation helpers", () => {
     expect(getActiveSettingsIndex("/settings")).toBe(0);
     expect(getActiveSettingsIndex("/settings/calendar")).toBe(1);
     expect(getActiveSettingsIndex("/settings/preferences")).toBe(2);
+    expect(getActiveSettingsIndex("/settings/shortcuts")).toBe(3);
   });
 
   it("builds settings hrefs with safe return targets", () => {

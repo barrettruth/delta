@@ -2,6 +2,7 @@ export const SETTINGS_SECTIONS = [
   { id: "account", label: "account", href: "/settings" },
   { id: "calendar", label: "calendar", href: "/settings/calendar" },
   { id: "preferences", label: "preferences", href: "/settings/preferences" },
+  { id: "shortcuts", label: "shortcuts", href: "/settings/shortcuts" },
 ] as const;
 
 export const SETTINGS_RETURN_TO_PARAM = "returnTo";

@@ -88,15 +88,15 @@ describe("AppSidebar", () => {
     expect(html).not.toContain("Kanban");
   });
 
-  it("renders a visible shortcuts entry", () => {
+  it("does not render a dedicated shortcuts footer entry", () => {
     const html = renderToStaticMarkup(
       createElement(AppSidebar, {
         username: "barrett",
       }),
     );
 
-    expect(html).toContain("shortcuts");
-    expect(html).toContain("g?");
+    expect(html).not.toContain("shortcuts");
+    expect(html).not.toContain("g?");
   });
 
   it("does not render category navigation", () => {

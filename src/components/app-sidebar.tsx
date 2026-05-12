@@ -1,6 +1,6 @@
 "use client";
 
-import { Gear, Keyboard } from "@phosphor-icons/react";
+import { Gear } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -15,7 +15,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { useNavigation } from "@/contexts/navigation";
 import { getKeymap } from "@/lib/keymap-defs";
 import {
@@ -38,7 +37,6 @@ export function AppSidebar({ username }: { username: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const nav = useNavigation();
-  const { openKeyboardHelp } = useKeyboardHelp();
   const settingsUrl = settingsHref(
     "/settings",
     settingsReturnToForPath(pathname, searchParams),
@@ -84,13 +82,6 @@ export function AppSidebar({ username }: { username: string }) {
       </SidebarContent>
       <SidebarFooter className="p-2">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton type="button" onClick={openKeyboardHelp}>
-              <Keyboard className="size-4" />
-              <span className="flex-1">shortcuts</span>
-              <kbd className="text-[10px] text-muted-foreground">g?</kbd>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href={settingsUrl} />}

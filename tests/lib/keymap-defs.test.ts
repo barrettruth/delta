@@ -170,6 +170,7 @@ describe("keymap definitions", () => {
     expect(sectionsForPath("/settings/preferences/advanced")).toEqual([
       "global",
     ]);
+    expect(sectionsForPath("/settings/shortcuts")).toEqual(["global"]);
   });
 
   it("does not advertise settings-specific movement shortcuts", () => {
