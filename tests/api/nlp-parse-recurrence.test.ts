@@ -1,60 +1,34 @@
-import { randomBytes } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SafeUser } from "@/core/auth";
+import { describe, expect, it, vi } from "vitest";
 import {
   setIntegrationEnabled,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
 import { nlpProviderKey, nlpTokens } from "@/core/provider-registry";
-import type { Db } from "@/core/types";
-import { createTestDb, createTestUser } from "../helpers";
+import {
+  type ApiRouteTestState,
+  installApiRouteTestHarness,
+  jsonRequest,
+  responseJson,
+} from "./helpers";
 
-const state = vi.hoisted(() => ({
-  db: undefined as unknown as Db,
-  user: undefined as unknown as SafeUser,
-}));
+const state = vi.hoisted(
+  (): ApiRouteTestState => ({
+    db: undefined as unknown as ApiRouteTestState["db"],
+    user: undefined as unknown as ApiRouteTestState["user"],
+  }),
+);
 
-vi.mock("@/db", () => ({
-  get db() {
-    return state.db;
-  },
-}));
-
-vi.mock("@/lib/auth-responses", () => ({
-  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
-}));
-
-vi.mock("@/lib/request-auth", () => ({
-  getApiKeyUserOrLocalOwnerFromRequest: vi.fn(async () => state.user),
-}));
-
-const TEST_KEY = randomBytes(32).toString("hex");
+installApiRouteTestHarness(state, {
+  restoreMocks: true,
+  stubFetch: true,
+  username: "parsenlp",
+});
 
 function parseRequest(text: string) {
-  return new Request("http://delta.test/api/nlp/parse-recurrence", {
-    method: "POST",
-    body: JSON.stringify({ text }),
-  });
-}
-
-async function json(response: Response) {
-  return response.json() as Promise<Record<string, unknown>>;
+  return jsonRequest("/api/nlp/parse-recurrence", { text });
 }
 
 describe("/api/nlp/parse-recurrence", () => {
-  beforeEach(() => {
-    vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
-    vi.stubGlobal("fetch", vi.fn());
-    state.db = createTestDb();
-    state.user = createTestUser(state.db, "parsenlp");
-  });
-
-  afterEach(() => {
-    vi.resetModules();
-    vi.restoreAllMocks();
-    vi.unstubAllEnvs();
-  });
-
   it("uses the enabled NLP provider when local parsing needs fallback", async () => {
     const { POST } = await import("@/app/api/nlp/parse-recurrence/route");
     upsertIntegrationConfig(
@@ -80,7 +54,7 @@ describe("/api/nlp/parse-recurrence", () => {
     );
 
     const response = await POST(parseRequest("on the 15th of every month"));
-    const body = await json(response);
+    const body = await responseJson(response);
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({
@@ -114,7 +88,7 @@ describe("/api/nlp/parse-recurrence", () => {
     );
 
     const response = await POST(parseRequest("daily"));
-    const body = await json(response);
+    const body = await responseJson(response);
 
     expect(response.status).toBe(200);
     expect(body.source).toBe("local");
@@ -131,7 +105,7 @@ describe("/api/nlp/parse-recurrence", () => {
     );
 
     const response = await POST(parseRequest("weekly"));
-    const body = await json(response);
+    const body = await responseJson(response);
 
     expect(response.status).toBe(200);
     expect(body.source).toBe("local");

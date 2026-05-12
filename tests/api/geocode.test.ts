@@ -1,37 +1,30 @@
-import { randomBytes } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SafeUser } from "@/core/auth";
+import { describe, expect, it, vi } from "vitest";
 import {
   type IntegrationConfig,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
 import { geocodingTokens } from "@/core/provider-registry";
-import type { Db } from "@/core/types";
-import { createTestDb, createTestUser } from "../helpers";
+import {
+  type ApiRouteTestState,
+  apiRequest,
+  installApiRouteTestHarness,
+} from "./helpers";
 
-const state = vi.hoisted(() => ({
-  db: undefined as unknown as Db,
-  user: undefined as unknown as SafeUser,
-}));
+const state = vi.hoisted(
+  (): ApiRouteTestState => ({
+    db: undefined as unknown as ApiRouteTestState["db"],
+    user: undefined as unknown as ApiRouteTestState["user"],
+  }),
+);
 
-vi.mock("@/db", () => ({
-  get db() {
-    return state.db;
-  },
-}));
-
-vi.mock("@/lib/auth-responses", () => ({
-  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
-}));
-
-vi.mock("@/lib/request-auth", () => ({
-  getApiKeyUserOrLocalOwnerFromRequest: vi.fn(async () => state.user),
-}));
-
-const TEST_KEY = randomBytes(32).toString("hex");
+installApiRouteTestHarness(state, {
+  restoreMocks: true,
+  unstubGlobals: true,
+  username: "geocodeapi",
+});
 
 function geocodeRequest(query: string) {
-  return new Request(`http://delta.test/api/geocode?q=${query}`);
+  return apiRequest(`/api/geocode?q=${query}`);
 }
 
 function saveGeocodingProvider(
@@ -42,19 +35,6 @@ function saveGeocodingProvider(
 }
 
 describe("GET /api/geocode", () => {
-  beforeEach(() => {
-    vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
-    state.db = createTestDb();
-    state.user = createTestUser(state.db, "geocodeapi");
-  });
-
-  afterEach(() => {
-    vi.resetModules();
-    vi.restoreAllMocks();
-    vi.unstubAllEnvs();
-    vi.unstubAllGlobals();
-  });
-
   it("uses Photon on a no-credential fresh instance", async () => {
     const { GET } = await import("@/app/api/geocode/route");
     const fetchMock = vi.fn(async () =>

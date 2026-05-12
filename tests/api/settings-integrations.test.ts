@@ -1,53 +1,27 @@
-import { randomBytes } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SafeUser } from "@/core/auth";
-import type { Db } from "@/core/types";
-import { createTestDb, createTestUser } from "../helpers";
+import { describe, expect, it, vi } from "vitest";
+import {
+  type ApiRouteTestState,
+  installApiRouteTestHarness,
+  jsonRequest,
+  responseJson,
+} from "./helpers";
 
-const state = vi.hoisted(() => ({
-  db: undefined as unknown as Db,
-  user: undefined as unknown as SafeUser,
-}));
+const state = vi.hoisted(
+  (): ApiRouteTestState => ({
+    db: undefined as unknown as ApiRouteTestState["db"],
+    user: undefined as unknown as ApiRouteTestState["user"],
+  }),
+);
 
-vi.mock("@/db", () => ({
-  get db() {
-    return state.db;
-  },
-}));
-
-vi.mock("@/lib/auth-responses", () => ({
-  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
-}));
-
-vi.mock("@/lib/request-auth", () => ({
-  getApiKeyUserOrLocalOwnerFromRequest: vi.fn(async () => state.user),
-}));
-
-const TEST_KEY = randomBytes(32).toString("hex");
+installApiRouteTestHarness(state, {
+  username: "settingsintegrations",
+});
 
 function request(body: Record<string, unknown>) {
-  return new Request("http://delta.test/api/settings/integrations", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-async function json(response: Response) {
-  return response.json() as Promise<Record<string, unknown>>;
+  return jsonRequest("/api/settings/integrations", body);
 }
 
 describe("POST /api/settings/integrations", () => {
-  beforeEach(() => {
-    vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
-    state.db = createTestDb();
-    state.user = createTestUser(state.db, "settingsintegrations");
-  });
-
-  afterEach(() => {
-    vi.resetModules();
-    vi.unstubAllEnvs();
-  });
-
   it("accepts registered settings providers with the canonical token field", async () => {
     const { POST } = await import("@/app/api/settings/integrations/route");
 
@@ -59,7 +33,7 @@ describe("POST /api/settings/integrations", () => {
     );
 
     expect(response.status).toBe(201);
-    const body = await json(response);
+    const body = await responseJson(response);
     expect(body).toMatchObject({
       provider: "mapbox",
       enabled: 1,
@@ -71,7 +45,7 @@ describe("POST /api/settings/integrations", () => {
     const { POST } = await import("@/app/api/settings/integrations/route");
 
     expect(
-      await json(
+      await responseJson(
         await POST(
           request({
             provider: "unknown",
@@ -89,7 +63,7 @@ describe("POST /api/settings/integrations", () => {
     );
 
     expect(response.status).toBe(400);
-    await expect(json(response)).resolves.toEqual({
+    await expect(responseJson(response)).resolves.toEqual({
       error: "api key is required",
     });
   });

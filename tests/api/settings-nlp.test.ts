@@ -1,66 +1,47 @@
-import { randomBytes } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SafeUser } from "@/core/auth";
+import { describe, expect, it, vi } from "vitest";
 import {
   getIntegrationConfig,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
 import { nlpProviderKey, nlpTokens } from "@/core/provider-registry";
-import type { Db } from "@/core/types";
-import { createTestDb, createTestUser } from "../helpers";
+import {
+  type ApiRouteTestState,
+  installApiRouteTestHarness,
+  jsonRequest,
+  responseJson,
+} from "./helpers";
 
-const state = vi.hoisted(() => ({
-  db: undefined as unknown as Db,
-  user: undefined as unknown as SafeUser,
-}));
+const state = vi.hoisted(
+  (): ApiRouteTestState => ({
+    db: undefined as unknown as ApiRouteTestState["db"],
+    user: undefined as unknown as ApiRouteTestState["user"],
+  }),
+);
 
-vi.mock("@/db", () => ({
-  get db() {
-    return state.db;
-  },
-}));
-
-vi.mock("@/lib/auth-responses", () => ({
-  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
-}));
-
-vi.mock("@/lib/local-owner", () => ({
-  getLocalOwner: vi.fn(async () => state.user),
-}));
-
-const TEST_KEY = randomBytes(32).toString("hex");
-
-async function json(response: Response) {
-  return response.json() as Promise<Record<string, unknown>>;
-}
+installApiRouteTestHarness(state, {
+  auth: "local-owner",
+  username: "settingsnlp",
+});
 
 describe("/api/settings/nlp", () => {
-  beforeEach(() => {
-    vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
-    state.db = createTestDb();
-    state.user = createTestUser(state.db, "settingsnlp");
-  });
-
-  afterEach(() => {
-    vi.resetModules();
-    vi.unstubAllEnvs();
-  });
-
   it("stores the selected provider token under the parser contract", async () => {
     const { GET, PUT } = await import("@/app/api/settings/nlp/route");
 
     const response = await PUT(
-      new Request("http://delta.test/api/settings/nlp", {
-        method: "PUT",
-        body: JSON.stringify({
+      jsonRequest(
+        "/api/settings/nlp",
+        {
           provider: "anthropic",
           apiKey: "test-secret",
-        }),
-      }),
+        },
+        {
+          method: "PUT",
+        },
+      ),
     );
 
     expect(response.status).toBe(200);
-    await expect(json(response)).resolves.toMatchObject({
+    await expect(responseJson(response)).resolves.toMatchObject({
       ok: true,
       provider: "anthropic",
       model: "claude-haiku-4-5-latest",
@@ -74,7 +55,7 @@ describe("/api/settings/nlp", () => {
     expect(config?.tokens).toEqual({ api_key: "test-secret" });
     expect(config?.tokens).not.toHaveProperty("apiKey");
 
-    const settings = await json(await GET());
+    const settings = await responseJson(await GET());
     expect(settings.activeProvider).toBe("anthropic");
     expect(settings.anthropicConfigured).toBe(true);
     expect(JSON.stringify(settings)).not.toContain("test-secret");
@@ -96,10 +77,13 @@ describe("/api/settings/nlp", () => {
     );
 
     const response = await PATCH(
-      new Request("http://delta.test/api/settings/nlp", {
-        method: "PATCH",
-        body: JSON.stringify({ provider: "openai" }),
-      }),
+      jsonRequest(
+        "/api/settings/nlp",
+        { provider: "openai" },
+        {
+          method: "PATCH",
+        },
+      ),
     );
 
     expect(response.status).toBe(200);
@@ -122,7 +106,7 @@ describe("/api/settings/nlp", () => {
       {},
     );
 
-    const settings = await json(await GET());
+    const settings = await responseJson(await GET());
 
     expect(settings.activeProvider).toBeNull();
     expect(settings.anthropicConfigured).toBe(false);
