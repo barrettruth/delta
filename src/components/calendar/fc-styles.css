@@ -192,13 +192,22 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 .fc-delta-root .fc .fc-event {
   box-sizing: border-box;
   border: 1px solid transparent;
-  box-shadow: inset 0 0 0 1px var(--fc-event-border-color);
   padding: 1px 4px;
   border-radius: 0;
   cursor: pointer;
   overflow: hidden;
   font-size: 10px;
   line-height: 1.2;
+  position: relative;
+}
+
+.fc-delta-root .fc .fc-event::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid;
+  border-color: inherit;
 }
 
 .fc-delta-root .fc .fc-event:hover {
