@@ -15,17 +15,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   modal: React.ReactNode;
 }) {
-  const { user, tasks, categories, categoryColors } =
-    await loadDashboardShellData();
+  const { user, tasks, categories } = await loadDashboardShellData();
 
   return (
     <Suspense>
       <DashboardProviders>
-        <AppSidebar
-          username={user.username}
-          categories={categories}
-          categoryColors={categoryColors}
-        />
+        <AppSidebar username={user.username} />
         <SidebarInset className="flex flex-col h-dvh">
           <DashboardContent tasks={tasks}>
             {children}

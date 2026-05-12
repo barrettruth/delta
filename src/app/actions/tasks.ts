@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { removeCategoryColor, setCategoryColor } from "@/core/categories";
 import type { CreateTaskInput, Task, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
 import { getLocalOwner } from "@/lib/local-owner";
@@ -146,37 +145,6 @@ export async function addDependencyAction(
   } catch (e) {
     return {
       error: e instanceof Error ? e.message : "Failed to add dependency",
-    };
-  }
-}
-
-export async function setCategoryColorAction(
-  category: string,
-  color: string,
-): Promise<ActionResult<null>> {
-  try {
-    const user = await requireUser();
-    setCategoryColor(db, user.id, category, color);
-    revalidatePath("/", "layout");
-    return { data: null };
-  } catch (e) {
-    return {
-      error: e instanceof Error ? e.message : "Failed to set category color",
-    };
-  }
-}
-
-export async function removeCategoryColorAction(
-  category: string,
-): Promise<ActionResult<null>> {
-  try {
-    const user = await requireUser();
-    removeCategoryColor(db, user.id, category);
-    revalidatePath("/", "layout");
-    return { data: null };
-  } catch (e) {
-    return {
-      error: e instanceof Error ? e.message : "Failed to remove category color",
     };
   }
 }

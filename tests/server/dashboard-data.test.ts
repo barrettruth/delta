@@ -89,20 +89,17 @@ describe("dashboard data loaders", () => {
       task(3, "Work"),
       task(4, "Home"),
     ];
-    const categoryColors = { Work: "#111111" };
     mocks.listTasks.mockReturnValue(tasks);
-    mocks.listCategoryColors.mockReturnValue(categoryColors);
 
     const data = await loadDashboardShellData();
 
     expect(mocks.requireAuthUser).toHaveBeenCalledOnce();
     expect(mocks.listTasks).toHaveBeenCalledWith(mocks.db, user.id);
-    expect(mocks.listCategoryColors).toHaveBeenCalledWith(mocks.db, user.id);
+    expect(mocks.listCategoryColors).not.toHaveBeenCalled();
     expect(data).toEqual({
       user,
       tasks,
       categories: ["Work", "Home"],
-      categoryColors,
     });
   });
 

@@ -1,10 +1,8 @@
 "use client";
 
-import { Gear, Keyboard, Palette } from "@phosphor-icons/react";
+import { Gear, Keyboard } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { CategoryColorPicker } from "@/components/category-color-picker";
 import {
   Sidebar,
   SidebarContent,
@@ -36,21 +34,11 @@ const VIEW_KEYMAP_IDS: {
   { label: "Calendar", href: "/calendar", keymapId: "global.calendar" },
 ];
 
-export function AppSidebar({
-  username,
-  categories,
-  categoryColors,
-}: {
-  username: string;
-  categories: string[];
-  categoryColors: Record<string, string>;
-}) {
+export function AppSidebar({ username }: { username: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeCategory = searchParams.get("category");
   const nav = useNavigation();
   const { openKeyboardHelp } = useKeyboardHelp();
-  const [editingColor, setEditingColor] = useState<string | null>(null);
   const settingsUrl = settingsHref(
     "/settings",
     settingsReturnToForPath(pathname, searchParams),
@@ -90,65 +78,6 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Categories</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {categories.map((cat, idx) => {
-                const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
-                const shortcutKey = idx < KEYS.length ? KEYS[idx] : null;
-                return (
-                  <SidebarMenuItem key={cat}>
-                    <div className="relative">
-                      <SidebarMenuButton
-                        render={
-                          <Link
-                            href={`/?category=${encodeURIComponent(cat)}`}
-                          />
-                        }
-                        isActive={activeCategory === cat}
-                        onClick={() => nav.pushJump()}
-                      >
-                        <span className="text-xs font-bold shrink-0 text-muted-foreground">
-                          #
-                        </span>
-                        <span className="flex-1">{cat}</span>
-                        {shortcutKey && (
-                          <kbd className="text-[10px] text-muted-foreground">
-                            {getKeymap("global.category_jump").triggerKey}
-                            {shortcutKey}
-                          </kbd>
-                        )}
-                      </SidebarMenuButton>
-                      <button
-                        type="button"
-                        className="absolute right-0 top-1/2 -translate-y-1/2 p-1 hover:bg-accent transition-colors opacity-0 group-hover/sidebar:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingColor(editingColor === cat ? null : cat);
-                        }}
-                      >
-                        <Palette
-                          className="size-3 text-muted-foreground"
-                          weight="bold"
-                        />
-                      </button>
-                    </div>
-                    {editingColor === cat && (
-                      <div className="mt-1 ml-2 border border-border bg-popover">
-                        <CategoryColorPicker
-                          category={cat}
-                          currentColor={categoryColors[cat] ?? null}
-                          onClose={() => setEditingColor(null)}
-                        />
-                      </div>
-                    )}
-                  </SidebarMenuItem>
-                );
-              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

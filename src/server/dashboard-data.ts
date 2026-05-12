@@ -22,7 +22,6 @@ export interface DashboardShellData {
   user: SafeUser;
   tasks: Task[];
   categories: string[];
-  categoryColors: Record<string, string>;
 }
 
 export interface DashboardQueueParams {
@@ -162,7 +161,6 @@ export async function loadDashboardShellData(): Promise<DashboardShellData> {
     user,
     tasks,
     categories: taskCategories(tasks),
-    categoryColors: listCategoryColors(db, user.id),
   };
 }
 

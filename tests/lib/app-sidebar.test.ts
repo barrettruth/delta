@@ -29,10 +29,6 @@ vi.mock("next/link", () => ({
   }),
 }));
 
-vi.mock("@/components/category-color-picker", () => ({
-  CategoryColorPicker: () => createElement("div"),
-}));
-
 vi.mock("@/components/ui/sidebar", () => {
   function wrap(tag: string) {
     return ({
@@ -85,8 +81,6 @@ describe("AppSidebar", () => {
     const html = renderToStaticMarkup(
       createElement(AppSidebar, {
         username: "barrett",
-        categories: ["work"],
-        categoryColors: {},
       }),
     );
 
@@ -98,12 +92,22 @@ describe("AppSidebar", () => {
     const html = renderToStaticMarkup(
       createElement(AppSidebar, {
         username: "barrett",
-        categories: ["work"],
-        categoryColors: {},
       }),
     );
 
     expect(html).toContain("shortcuts");
     expect(html).toContain("g?");
+  });
+
+  it("does not render category navigation", () => {
+    const html = renderToStaticMarkup(
+      createElement(AppSidebar, {
+        username: "barrett",
+      }),
+    );
+
+    expect(html).not.toContain("Categories");
+    expect(html).not.toContain("category=");
+    expect(html).not.toContain("Palette");
   });
 });
