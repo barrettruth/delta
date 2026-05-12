@@ -33,6 +33,8 @@ describe("CalendarSettingsSection", () => {
 
     expect(html).toContain("calendar");
     expect(html).toContain("google");
+    expect(html).toContain("recurrence");
+    expect(html).not.toContain("NLP");
     expect(html).toContain("connect google");
     expect(html).toContain("google tasks");
     expect(html).toContain("pull now");

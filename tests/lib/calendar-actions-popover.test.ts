@@ -54,6 +54,7 @@ describe("CalendarActionsPopover", () => {
     expect(html).toContain("generate subscription");
     expect(html).not.toContain("copy subscription url");
     expect(html).not.toContain("revoke subscription");
+    expect(html).not.toContain("calendar settings");
   });
 
   it("offers copy and revoke actions for an existing subscription token", () => {

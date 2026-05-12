@@ -270,7 +270,7 @@ export function CalendarSettingsSection({
             [
               ["google", "google"],
               ["geocoding", "geocoding"],
-              ["nlp", "NLP"],
+              ["nlp", "recurrence"],
             ] as const
           ).map(([id, label]) => (
             <button
