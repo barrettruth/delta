@@ -36,13 +36,41 @@ describe("tasksToEvents — plain tasks", () => {
     expect(events[0].allDay).toBe(false);
   });
 
-  it("skips tasks without startAt", () => {
+  it("skips tasks without a start or due date", () => {
     const t = createTask(db, userId, { description: "No date" });
     const { events } = tasksToEvents([t], {
       rangeStart: RANGE_START,
       rangeEnd: RANGE_END,
     });
     expect(events).toHaveLength(0);
+  });
+
+  it("renders due-only tasks as all-day deadline markers", () => {
+    const t = createTask(db, userId, {
+      description: "Pay bill",
+      due: "2026-03-06T22:15:00.000Z",
+    });
+
+    const { events } = tasksToEvents([t], {
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      id: String(t.id),
+      title: "Pay bill",
+      start: "2026-03-06",
+      allDay: true,
+      durationEditable: false,
+      extendedProps: {
+        task: t,
+        isVirtual: false,
+        isRecurring: false,
+        isDueOnly: true,
+      },
+    });
+    expect(events[0].end).toBeUndefined();
   });
 
   it("marks all-day tasks with allDay: true", () => {
@@ -136,7 +164,7 @@ describe("tasksToEvents — recurring masters", () => {
     expect(events.find((e) => e.id === String(master.id))).toBeUndefined();
   });
 
-  it("does not expand cancelled masters (matches legacy behavior)", () => {
+  it("renders cancelled scheduled masters as direct task events", () => {
     const master = createTask(db, userId, {
       description: "Dead",
       startAt: "2026-03-02T14:00:00.000Z",
@@ -148,8 +176,6 @@ describe("tasksToEvents — recurring masters", () => {
       rangeStart: RANGE_START,
       rangeEnd: RANGE_END,
     });
-    // No virtual instances expanded, but the master row still emits once
-    // (falls through to the plain-task branch — matches legacy CalendarView).
     expect(virtualMeta.size).toBe(0);
     expect(events).toHaveLength(1);
     expect(events[0].id).toBe(String(master.id));

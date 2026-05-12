@@ -90,8 +90,9 @@ export function hasAllDayEventInRange(
 }
 
 /**
- * Encode a synthetic negative ID for a virtual (non-materialized) recurring
- * instance. Must exactly match the encoding used in the legacy calendar-view.
+ * Encode the stable synthetic negative ID for a virtual (non-materialized)
+ * recurring instance. Callers use this as both the FullCalendar event id and
+ * the virtualMeta lookup key when materializing an instance.
  */
 export function syntheticIdFor(masterId: number, instanceDate: Date): number {
   return -(
@@ -165,14 +166,15 @@ function taskToEvent(
 }
 
 /**
- * Build FullCalendar EventInput[] from delta Task[].
+ * Build the canonical FullCalendar EventInput[] contract from delta Task[].
  *
- * Mirrors the bucket logic from the legacy CalendarView memos:
- *  - non-recurring tasks with startAt/due -> direct event
- *  - recurrence masters (recurMode === "scheduled") -> expand via expandInstances
- *  - exceptions (recurringTaskId set) consumed by their master's expansion
- *  - optimistic updates + panel pendingEdits merged in
- *  - deleted (optimistic) dropped
+ * Adapter rules:
+ *  - tasks with startAt or due -> direct event unless consumed as exceptions
+ *  - due-only tasks -> all-day, non-duration-editable deadline markers
+ *  - active scheduled recurrence masters -> expanded via expandInstances
+ *  - exception rows -> emitted through their master's expansion
+ *  - optimistic updates and panel pendingEdits -> merged into emitted events
+ *  - optimistic deletes -> dropped before emission
  *
  * Returns both the events and the virtualMeta map so the caller can map
  * synthetic ids back to {masterId, instanceDate}.
