@@ -4,6 +4,7 @@ import type {
   DateSelectArg,
   DatesSetArg,
   EventClickArg,
+  EventContentArg,
   EventDropArg,
   EventInput,
 } from "@fullcalendar/core";
@@ -363,6 +364,11 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
       [focusedDate],
     );
 
+    const eventClassNames = useCallback(
+      (arg: EventContentArg) => (arg.isPast ? ["is-elapsed"] : []),
+      [],
+    );
+
     useEffect(() => {
       const root = containerRef.current;
       if (!root) return;
@@ -468,6 +474,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           height="100%"
           events={events}
           eventDisplay="block"
+          eventClassNames={eventClassNames}
           eventContent={renderCalendarEventContent}
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}

@@ -242,6 +242,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   opacity: 0.6;
 }
 
+.fc-delta-root .fc .fc-event.is-elapsed,
 .fc-delta-root .fc .fc-day-past .fc-event {
   opacity: 0.55;
   background-image: repeating-linear-gradient(
@@ -251,6 +252,8 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   );
 }
 
+.fc-delta-root .fc .fc-event.is-elapsed.status-done,
+.fc-delta-root .fc .fc-event.is-elapsed.status-cancelled,
 .fc-delta-root .fc .fc-day-past .fc-event.status-done,
 .fc-delta-root .fc .fc-day-past .fc-event.status-cancelled {
   opacity: 0.4;
