@@ -8,10 +8,11 @@ import {
   readProviderApiKey,
 } from "@/core/provider-registry";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 export async function GET(request: Request) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const configs = listIntegrationConfigs(db, user.id);
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const body = await request.json();

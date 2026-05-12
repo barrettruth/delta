@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { tasksToICalendar } from "@/core/ical/serializer";
 import { getTask } from "@/core/task";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const { id } = await params;

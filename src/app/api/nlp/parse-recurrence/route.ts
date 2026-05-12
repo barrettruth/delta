@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { getActiveNlpConfig } from "@/core/nlp-config";
 import { parseRecurrence, parseRecurrenceLocal } from "@/core/nlp-recurrence";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 const MAX_TEXT_LENGTH = 200;
 
 export async function POST(request: Request) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   let body: { text?: string; referenceDate?: string };

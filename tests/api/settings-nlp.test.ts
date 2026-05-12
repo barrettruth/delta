@@ -20,9 +20,12 @@ vi.mock("@/db", () => ({
   },
 }));
 
-vi.mock("@/lib/auth-middleware", () => ({
-  getAuthUser: vi.fn(async () => state.user),
+vi.mock("@/lib/auth-responses", () => ({
   unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
+}));
+
+vi.mock("@/lib/local-owner", () => ({
+  getLocalOwner: vi.fn(async () => state.user),
 }));
 
 const TEST_KEY = randomBytes(32).toString("hex");

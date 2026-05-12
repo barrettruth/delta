@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   findLocalUser,
   getOrCreateLocalUser,
@@ -8,10 +8,21 @@ import {
 import type { Db } from "@/core/types";
 import { createTestDb, createTestUser } from "../helpers";
 
+const state = vi.hoisted(() => ({
+  db: undefined as unknown as Db,
+}));
+
+vi.mock("@/db", () => ({
+  get db() {
+    return state.db;
+  },
+}));
+
 let db: Db;
 
 beforeEach(() => {
   db = createTestDb();
+  state.db = db;
 });
 
 describe("local self-hosted user", () => {
@@ -73,5 +84,64 @@ describe("API key management", () => {
       username: "keyuser",
       apiKey,
     });
+  });
+});
+
+describe("request auth helper", () => {
+  it("uses the local owner when the request has no API key", async () => {
+    const { getApiKeyUserOrLocalOwnerFromRequest } = await import(
+      "@/lib/request-auth"
+    );
+
+    const user = await getApiKeyUserOrLocalOwnerFromRequest(
+      new Request("http://delta.test/api/auth/me"),
+    );
+
+    expect(user?.id).toBe(findLocalUser(db)?.id);
+  });
+
+  it("validates x-api-key credentials", async () => {
+    const existing = createTestUser(db, "request-key");
+    const { getApiKeyUserOrLocalOwnerFromRequest } = await import(
+      "@/lib/request-auth"
+    );
+
+    const user = await getApiKeyUserOrLocalOwnerFromRequest(
+      new Request("http://delta.test/api/auth/me", {
+        headers: { "x-api-key": existing.apiKey },
+      }),
+    );
+
+    expect(user?.id).toBe(existing.id);
+  });
+
+  it("validates bearer credentials", async () => {
+    const existing = createTestUser(db, "bearer-key");
+    const { getApiKeyUserOrLocalOwnerFromRequest } = await import(
+      "@/lib/request-auth"
+    );
+
+    const user = await getApiKeyUserOrLocalOwnerFromRequest(
+      new Request("http://delta.test/api/auth/me", {
+        headers: { Authorization: `Bearer ${existing.apiKey}` },
+      }),
+    );
+
+    expect(user?.id).toBe(existing.id);
+  });
+
+  it("returns null for invalid API-key credentials", async () => {
+    createTestUser(db, "request-key");
+    const { getApiKeyUserOrLocalOwnerFromRequest } = await import(
+      "@/lib/request-auth"
+    );
+
+    const user = await getApiKeyUserOrLocalOwnerFromRequest(
+      new Request("http://delta.test/api/auth/me", {
+        headers: { "x-api-key": "wrong-key" },
+      }),
+    );
+
+    expect(user).toBeNull();
   });
 });

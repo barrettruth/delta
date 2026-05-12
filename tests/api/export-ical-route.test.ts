@@ -10,16 +10,19 @@ const mockDb = vi.hoisted(() => ({}));
 
 vi.mock("@/db", () => ({ db: mockDb }));
 
-vi.mock("@/lib/auth-middleware", () => ({
-  getAuthUserFromRequest: vi.fn(async () => ({
+vi.mock("@/lib/auth-responses", () => ({
+  unauthorized: vi.fn(() =>
+    Response.json({ error: "Unauthorized" }, { status: 401 }),
+  ),
+}));
+
+vi.mock("@/lib/request-auth", () => ({
+  getApiKeyUserOrLocalOwnerFromRequest: vi.fn(async () => ({
     id: 1,
     username: "test",
     apiKey: "key",
     createdAt: "2026-04-01T00:00:00.000Z",
   })),
-  unauthorized: vi.fn(() =>
-    Response.json({ error: "Unauthorized" }, { status: 401 }),
-  ),
 }));
 
 vi.mock("@/core/task", () => ({

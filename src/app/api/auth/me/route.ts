@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 export async function GET(request: Request) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
   return NextResponse.json({ user });
 }

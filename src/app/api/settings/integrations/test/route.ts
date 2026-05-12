@@ -6,7 +6,8 @@ import {
   type TestableSettingsProviderDefinition,
   type TestableSettingsProviderId,
 } from "@/core/provider-registry";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 async function testAnthropic(
   provider: NlpProviderDefinition,
@@ -72,7 +73,7 @@ const PROVIDER_TESTS: Record<TestableSettingsProviderId, ProviderTest> = {
 };
 
 export async function POST(request: Request) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const body = await request.json();

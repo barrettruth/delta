@@ -18,11 +18,10 @@ import {
   readNlpApiKey,
 } from "@/core/provider-registry";
 import { db } from "@/db";
-import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
+import { getLocalOwner } from "@/lib/local-owner";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   const result: Record<string, unknown> = { activeProvider: null };
 
@@ -41,8 +40,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   const body = await request.json();
   const { provider, apiKey } = body as {
@@ -92,8 +90,7 @@ export async function PUT(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   const body = await request.json();
   const { provider } = body as { provider: string };
@@ -129,8 +126,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   for (const provider of NLP_PROVIDERS) {
     const definition = getNlpProviderDefinition(provider);

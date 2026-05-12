@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { SafeUser } from "@/core/auth";
 import type { Db, Task } from "@/core/types";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 import { findOwnedTask, isTaskMutationError } from "@/server/task-mutations";
 
 type RouteAdapterResult<T> =
@@ -31,7 +32,7 @@ export function validationErrorResponse(details: unknown): NextResponse {
 export async function getTaskRouteUser(
   request: Request,
 ): Promise<RouteAdapterResult<SafeUser>> {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return { ok: false, response: unauthorized() };
   return { ok: true, value: user };
 }

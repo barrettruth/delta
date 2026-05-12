@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { removeCategoryColor, setCategoryColor } from "@/core/categories";
 import type { CreateTaskInput, Task, UpdateTaskInput } from "@/core/types";
 import { db } from "@/db";
-import { getAuthUser } from "@/lib/auth-middleware";
+import { getLocalOwner } from "@/lib/local-owner";
 import {
   formatValidationErrors,
   parseCreateTaskInput,
@@ -39,8 +39,7 @@ function validationFailure(
 }
 
 async function requireUser() {
-  const user = await getAuthUser();
-  if (!user) throw new Error("Not authenticated");
+  const user = await getLocalOwner();
   return user;
 }
 

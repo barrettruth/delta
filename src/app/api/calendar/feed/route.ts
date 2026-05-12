@@ -5,27 +5,24 @@ import {
   revokeFeedToken,
 } from "@/core/calendar-feed";
 import { db } from "@/db";
-import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
+import { getLocalOwner } from "@/lib/local-owner";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   const token = getFeedToken(db, user.id);
   return NextResponse.json({ token });
 }
 
 export async function POST() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   const token = generateFeedToken(db, user.id);
   return NextResponse.json({ token });
 }
 
 export async function DELETE() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   revokeFeedToken(db, user.id);
   return NextResponse.json({ token: null });

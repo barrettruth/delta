@@ -5,12 +5,13 @@ import {
   upsertIntegrationConfig,
 } from "@/core/integration-config";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 type Params = { params: Promise<{ provider: string }> };
 
 export async function DELETE(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const { provider } = await params;
@@ -27,7 +28,7 @@ export async function DELETE(request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const { provider } = await params;

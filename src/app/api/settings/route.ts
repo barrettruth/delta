@@ -7,18 +7,16 @@ import {
 } from "@/core/settings";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { getAuthUser, unauthorized } from "@/lib/auth-middleware";
+import { getLocalOwner } from "@/lib/local-owner";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   return NextResponse.json(getSettings(db, user.id));
 }
 
 export async function PATCH(request: Request) {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
+  const user = await getLocalOwner();
 
   const body = await request.json();
   const { username: newUsername, ...partial } =

@@ -2,10 +2,11 @@ import { tasksToICalendar } from "@/core/ical/serializer";
 import { listTasks } from "@/core/task";
 import { parseTaskFilters } from "@/core/task-filters";
 import { db } from "@/db";
-import { getAuthUserFromRequest, unauthorized } from "@/lib/auth-middleware";
+import { unauthorized } from "@/lib/auth-responses";
+import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 export async function GET(request: Request) {
-  const user = await getAuthUserFromRequest(request);
+  const user = await getApiKeyUserOrLocalOwnerFromRequest(request);
   if (!user) return unauthorized();
 
   const { searchParams } = new URL(request.url);

@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/auth-middleware", () => ({
-  getAuthUserFromRequest: vi.fn(async () => ({
+vi.mock("@/lib/auth-responses", () => ({
+  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
+}));
+
+vi.mock("@/lib/request-auth", () => ({
+  getApiKeyUserOrLocalOwnerFromRequest: vi.fn(async () => ({
     id: 1,
     username: "local",
     apiKey: "test-user-key",
     createdAt: new Date().toISOString(),
   })),
-  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
 }));
 
 afterEach(() => {
