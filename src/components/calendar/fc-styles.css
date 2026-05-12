@@ -1,4 +1,19 @@
 .fc-delta-root {
+  --delta-calendar-selected-bg: color-mix(
+    in oklab,
+    var(--foreground) 5%,
+    transparent
+  );
+  --delta-calendar-selected-border: color-mix(
+    in oklab,
+    var(--border) 70%,
+    var(--foreground) 30%
+  );
+  --delta-calendar-today-marker: color-mix(
+    in oklab,
+    var(--primary) 45%,
+    var(--muted-foreground)
+  );
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -51,16 +66,34 @@
   font-weight: 500;
   text-decoration: none;
   padding: 4px 4px;
+  position: relative;
 }
 
 .fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion {
-  color: var(--primary);
-  font-weight: 700;
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 16px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: var(--delta-calendar-today-marker);
+  opacity: 0.75;
+}
+
+.fc-delta-root .fc .fc-delta-focused-date,
+.fc-delta-root .fc .fc-delta-focused-date-header {
+  background: var(--delta-calendar-selected-bg);
 }
 
 .fc-delta-root .fc .fc-delta-focused-date-header .fc-col-header-cell-cushion {
-  color: var(--primary);
-  font-weight: 700;
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .fc-delta-root .fc .fc-timegrid-slot {
@@ -169,11 +202,24 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   color: var(--foreground);
   padding: 2px 4px;
   text-decoration: none;
+  position: relative;
 }
 
 .fc-delta-root .fc .fc-day-today .fc-daygrid-day-number {
-  color: var(--primary);
-  font-weight: 700;
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.fc-delta-root .fc .fc-day-today .fc-daygrid-day-number::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 10px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: var(--delta-calendar-today-marker);
+  opacity: 0.75;
 }
 
 .fc-delta-root .fc .fc-day-other .fc-daygrid-day-number {
@@ -185,7 +231,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   position: absolute;
   pointer-events: none;
   box-sizing: border-box;
-  border: 2px solid var(--primary);
+  box-shadow: inset 0 0 0 1px var(--delta-calendar-selected-border);
   z-index: 6;
 }
 
