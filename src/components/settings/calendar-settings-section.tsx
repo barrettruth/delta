@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
   GEOCODING_PROVIDERS,
@@ -15,6 +13,11 @@ import {
   type NlpProviderId,
   type NlpSettingsProviderId,
 } from "@/core/provider-registry";
+import {
+  ProviderSettingsList,
+  testSettingsProviderApiKey,
+  useProviderKeyEditor,
+} from "./provider-settings-primitives";
 import {
   SettingsPage,
   SettingsRow,
@@ -65,17 +68,12 @@ export function CalendarSettingsSection({
   const [googlePulling, setGooglePulling] = useState(false);
   const [geoProvider, setGeoProvider] =
     useState<GeocodingProvider>(initialGeoProvider);
-  const [geoKeyInput, setGeoKeyInput] = useState("");
-  const [geoKeyTarget, setGeoKeyTarget] =
-    useState<GeocodingApiKeyProvider | null>(null);
-  const [geoKeyTesting, setGeoKeyTesting] = useState(false);
+  const geoKey = useProviderKeyEditor<GeocodingApiKeyProvider>();
 
   const [nlpActive, setNlpActive] = useState<NlpSettingsProviderId>(
     initialNlpProvider ?? "builtin",
   );
-  const [nlpKeyInput, setNlpKeyInput] = useState("");
-  const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProviderId | null>(null);
-  const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
+  const nlpKey = useProviderKeyEditor<NlpProviderId>();
 
   async function saveGeoProvider(provider: GeocodingProvider, apiKey?: string) {
     return fetch("/api/settings/geocoding", {
@@ -94,29 +92,22 @@ export function CalendarSettingsSection({
       }
 
       setGeoProvider(id);
-      setGeoKeyTarget(null);
-      setGeoKeyInput("");
+      geoKey.close();
       statusBar.message(`location lookup set to ${geocodingProviderLabel(id)}`);
       return;
     }
-    setGeoKeyTarget(id);
-    setGeoKeyInput("");
+    geoKey.open(id);
     setGeoProvider(id);
   }
 
   async function handleTestGeoKey() {
-    if (!geoKeyInput.trim() || !geoKeyTarget) return;
-    setGeoKeyTesting(true);
+    if (!geoKey.input.trim() || !geoKey.target) return;
+    geoKey.setTesting(true);
     try {
-      const res = await fetch("/api/settings/integrations/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: geoKeyTarget,
-          apiKey: geoKeyInput.trim(),
-        }),
-      });
-      const data = await res.json();
+      const data = await testSettingsProviderApiKey(
+        geoKey.target,
+        geoKey.input.trim(),
+      );
       if (data.valid) {
         statusBar.message("key is valid");
         await handleSaveGeoKey();
@@ -126,26 +117,25 @@ export function CalendarSettingsSection({
     } catch {
       statusBar.error("connection failed");
     } finally {
-      setGeoKeyTesting(false);
+      geoKey.setTesting(false);
     }
   }
 
   async function handleSaveGeoKey() {
-    if (!geoKeyInput.trim()) {
+    if (!geoKey.input.trim()) {
       statusBar.error("api key cannot be empty");
       return;
     }
-    const provider = geoKeyTarget;
+    const provider = geoKey.target;
     if (!provider) return;
 
-    const res = await saveGeoProvider(provider, geoKeyInput.trim());
+    const res = await saveGeoProvider(provider, geoKey.input.trim());
     if (!res.ok) {
       statusBar.error("failed to save api key");
       return;
     }
     setGeoProvider(provider);
-    setGeoKeyTarget(null);
-    setGeoKeyInput("");
+    geoKey.close();
     statusBar.message(
       `location lookup set to ${geocodingProviderLabel(provider)}`,
     );
@@ -155,28 +145,22 @@ export function CalendarSettingsSection({
     if (id === "builtin") {
       await fetch("/api/settings/nlp", { method: "DELETE" });
       setNlpActive("builtin");
-      setNlpKeyTarget(null);
+      nlpKey.close();
       statusBar.message("recurrence parsing set to built-in");
       return;
     }
     setNlpActive(id);
-    setNlpKeyTarget(id);
-    setNlpKeyInput("");
+    nlpKey.open(id);
   }
 
   async function handleTestNlpKey() {
-    if (!nlpKeyInput.trim() || !nlpKeyTarget) return;
-    setNlpKeyTesting(true);
+    if (!nlpKey.input.trim() || !nlpKey.target) return;
+    nlpKey.setTesting(true);
     try {
-      const res = await fetch("/api/settings/integrations/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: nlpKeyTarget,
-          apiKey: nlpKeyInput.trim(),
-        }),
-      });
-      const data = await res.json();
+      const data = await testSettingsProviderApiKey(
+        nlpKey.target,
+        nlpKey.input.trim(),
+      );
       if (data.valid) {
         statusBar.message("key is valid");
         await handleSaveNlpKey();
@@ -186,28 +170,27 @@ export function CalendarSettingsSection({
     } catch {
       statusBar.error("connection failed");
     } finally {
-      setNlpKeyTesting(false);
+      nlpKey.setTesting(false);
     }
   }
 
   async function handleSaveNlpKey() {
-    if (!nlpKeyInput.trim()) {
+    if (!nlpKey.input.trim()) {
       statusBar.error("api key cannot be empty");
       return;
     }
-    const provider = nlpKeyTarget;
+    const provider = nlpKey.target;
     if (!provider) return;
     const res = await fetch("/api/settings/nlp", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider, apiKey: nlpKeyInput.trim() }),
+      body: JSON.stringify({ provider, apiKey: nlpKey.input.trim() }),
     });
     if (!res.ok) {
       statusBar.error("failed to save recurrence parser config");
       return;
     }
-    setNlpKeyTarget(null);
-    setNlpKeyInput("");
+    nlpKey.close();
     statusBar.message(`recurrence parsing set to ${provider}`);
   }
 
@@ -363,45 +346,17 @@ export function CalendarSettingsSection({
             title="location lookup"
             description="Choose the provider used for location and meeting lookups."
           >
-            {GEOCODING_PROVIDERS.map((provider) => (
-              <div key={provider.id}>
-                <SettingsRow
-                  label={provider.label}
-                  value={geoProvider === provider.id ? "active" : ""}
-                  action
-                  muted={geoProvider !== provider.id}
-                  onClick={() => handleSelectGeoProvider(provider.id)}
-                />
-                {geoKeyTarget === provider.id && (
-                  <div className="flex gap-2 px-2 py-1">
-                    <Input
-                      value={geoKeyInput}
-                      onChange={(e) => setGeoKeyInput(e.target.value)}
-                      placeholder="api key"
-                      autoFocus
-                      className="h-8 flex-1 text-sm"
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") handleTestGeoKey();
-                        if (e.key === "Escape") {
-                          setGeoKeyTarget(null);
-                          setGeoKeyInput("");
-                        }
-                      }}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={geoKeyTesting || !geoKeyInput.trim()}
-                      onClick={handleTestGeoKey}
-                      className="h-8 text-sm"
-                    >
-                      {geoKeyTesting ? "..." : "test & save"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+            <ProviderSettingsList
+              activeProvider={geoProvider}
+              keyInput={geoKey.input}
+              keyTarget={geoKey.target}
+              keyTesting={geoKey.testing}
+              onCancelKeyInput={geoKey.close}
+              onKeyInputChange={geoKey.setInput}
+              onProviderSelect={handleSelectGeoProvider}
+              onTestKey={handleTestGeoKey}
+              providers={GEOCODING_PROVIDERS}
+            />
           </SettingsSection>
         )}
 
@@ -410,46 +365,18 @@ export function CalendarSettingsSection({
             title="recurrence parsing"
             description="Choose the parser used for natural-language input."
           >
-            {NLP_SETTINGS_PROVIDERS.map((provider) => (
-              <div key={provider.id}>
-                <SettingsRow
-                  label={provider.label}
-                  value={nlpActive === provider.id ? "active" : ""}
-                  action
-                  muted={nlpActive !== provider.id}
-                  onClick={() => handleSelectNlpProvider(provider.id)}
-                />
-                {nlpKeyTarget === provider.id && (
-                  <div className="flex gap-2 px-2 py-1">
-                    <Input
-                      value={nlpKeyInput}
-                      onChange={(e) => setNlpKeyInput(e.target.value)}
-                      placeholder="api key"
-                      type="password"
-                      autoFocus
-                      className="h-8 flex-1 text-sm"
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") handleTestNlpKey();
-                        if (e.key === "Escape") {
-                          setNlpKeyTarget(null);
-                          setNlpKeyInput("");
-                        }
-                      }}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={nlpKeyTesting || !nlpKeyInput.trim()}
-                      onClick={handleTestNlpKey}
-                      className="h-8 text-sm"
-                    >
-                      {nlpKeyTesting ? "..." : "test & save"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+            <ProviderSettingsList
+              activeProvider={nlpActive}
+              inputType="password"
+              keyInput={nlpKey.input}
+              keyTarget={nlpKey.target}
+              keyTesting={nlpKey.testing}
+              onCancelKeyInput={nlpKey.close}
+              onKeyInputChange={nlpKey.setInput}
+              onProviderSelect={handleSelectNlpProvider}
+              onTestKey={handleTestNlpKey}
+              providers={NLP_SETTINGS_PROVIDERS}
+            />
           </SettingsSection>
         )}
       </div>

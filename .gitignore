@@ -23,6 +23,7 @@ Session.vim
 .netrwhist
 .viminfo
 .env*
+.direnv/
 .vercel
 .pnpm-debug.log*
 next-env.d.ts
