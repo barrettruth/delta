@@ -1,4 +1,8 @@
-import { EXTERNAL_LINK_PROVIDER } from "../external-link-providers";
+import {
+  CALENDAR_EXTERNAL_LINK_PROVIDER,
+  calendarExternalIdentity,
+  calendarRecurrenceInstanceIdentity,
+} from "../calendar-external-identity";
 import {
   createExternalLink,
   getExternalLinkByProviderId,
@@ -7,7 +11,7 @@ import { createTask } from "../task";
 import type { CreateTaskInput, Db, TaskStatus } from "../types";
 import type { ParsedEvent } from "./parser";
 
-const ICAL_EXTERNAL_LINK_PROVIDER = EXTERNAL_LINK_PROVIDER.ical;
+const ICAL_EXTERNAL_LINK_PROVIDER = CALENDAR_EXTERNAL_LINK_PROVIDER.ical;
 
 export interface ImportResult {
   created: number;
@@ -162,11 +166,14 @@ function getMeetingUrl(
   return looksLikeMeetingUrl(url) ?? looksLikeMeetingUrl(location) ?? undefined;
 }
 
-function eventExternalId(event: ParsedEvent): string {
-  if (event.recurrenceId) {
-    return `${event.uid}::${event.recurrenceId.toISOString()}`;
-  }
-  return event.uid;
+function eventExternalIdentity(event: ParsedEvent) {
+  return calendarExternalIdentity({
+    provider: ICAL_EXTERNAL_LINK_PROVIDER,
+    upstreamEventId: event.uid,
+    recurrenceInstanceIdentity: event.recurrenceId
+      ? calendarRecurrenceInstanceIdentity(event.recurrenceId)
+      : null,
+  });
 }
 
 function uniqueIsoDates(dates: Date[] | undefined): string[] {
@@ -181,12 +188,12 @@ function importSingleEvent(
   defaultCategory: string | undefined,
   result: ImportResult,
 ): void {
-  const externalId = eventExternalId(event);
+  const identity = eventExternalIdentity(event);
   const existing = getExternalLinkByProviderId(
     db,
     userId,
-    ICAL_EXTERNAL_LINK_PROVIDER,
-    externalId,
+    identity.provider,
+    identity.externalId,
   );
   if (existing) {
     result.skipped++;
@@ -198,8 +205,8 @@ function importSingleEvent(
   createExternalLink(db, {
     userId,
     taskId: task.id,
-    provider: ICAL_EXTERNAL_LINK_PROVIDER,
-    externalId,
+    provider: identity.provider,
+    externalId: identity.externalId,
   });
   result.created++;
 }
@@ -222,13 +229,13 @@ function importRecurringGroup(
     return;
   }
 
-  const masterExternalId = eventExternalId(master);
+  const masterIdentity = eventExternalIdentity(master);
   let masterTaskId: number | null = null;
   const existingMaster = getExternalLinkByProviderId(
     db,
     userId,
-    ICAL_EXTERNAL_LINK_PROVIDER,
-    masterExternalId,
+    masterIdentity.provider,
+    masterIdentity.externalId,
   );
 
   if (existingMaster) {
@@ -255,8 +262,8 @@ function importRecurringGroup(
     createExternalLink(db, {
       userId,
       taskId: masterTask.id,
-      provider: ICAL_EXTERNAL_LINK_PROVIDER,
-      externalId: masterExternalId,
+      provider: masterIdentity.provider,
+      externalId: masterIdentity.externalId,
     });
     result.created++;
   }
@@ -266,12 +273,12 @@ function importRecurringGroup(
   for (const event of events) {
     if (!event.recurrenceId) continue;
 
-    const externalId = eventExternalId(event);
+    const identity = eventExternalIdentity(event);
     const existing = getExternalLinkByProviderId(
       db,
       userId,
-      ICAL_EXTERNAL_LINK_PROVIDER,
-      externalId,
+      identity.provider,
+      identity.externalId,
     );
     if (existing) {
       result.skipped++;
@@ -295,8 +302,8 @@ function importRecurringGroup(
     createExternalLink(db, {
       userId,
       taskId: task.id,
-      provider: ICAL_EXTERNAL_LINK_PROVIDER,
-      externalId,
+      provider: identity.provider,
+      externalId: identity.externalId,
     });
     result.created++;
   }
