@@ -29,6 +29,7 @@ import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
+import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 
 export function TaskPanel({
@@ -196,6 +197,15 @@ export function TaskPanel({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      if (
+        !shouldHandleKeyboardEvent(event.nativeEvent, {
+          scope: "task-panel",
+          ignoreInputFocus: false,
+        })
+      ) {
+        return;
+      }
+
       if (matchesEvent("task_detail.save", event.nativeEvent)) {
         event.preventDefault();
         clearAutoSaveTimer();

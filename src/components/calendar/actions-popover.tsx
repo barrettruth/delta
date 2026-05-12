@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useStatusBar } from "@/contexts/status-bar";
+import { registerScopedKeydown } from "@/lib/keyboard";
 import {
   settingsHref,
   settingsReturnToForPath,
@@ -188,8 +189,7 @@ export function CalendarActionsPopover({
         setFocusIdx(cur.length - 1);
       }
     }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    return registerScopedKeydown(window, { scope: "popover" }, handleKey);
   }, [open, focusIdx, onOpenChange]);
 
   const feedItems = items.filter((i) => i.id.startsWith("feed-"));

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { registerScopedKeydown } from "@/lib/keyboard";
 import { HELP_SECTIONS, SECTION_LABELS } from "@/lib/keymap-defs";
 
 export function KeyboardShortcutsDialog({
@@ -25,8 +26,7 @@ export function KeyboardShortcutsDialog({
       e.preventDefault();
       close();
     }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return registerScopedKeydown(window, { scope: "dialog" }, handleKeyDown);
   }, [close, open]);
 
   return (

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { registerScopedKeydown } from "@/lib/keyboard";
 
 export type RecurrenceStrategy = "this" | "this-and-future" | "all";
 
@@ -40,8 +41,7 @@ export function RecurrenceStrategyDialog({
 
   useEffect(() => {
     if (!open) return;
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    return registerScopedKeydown(window, { scope: "dialog" }, handleKey);
   }, [open, handleKey]);
 
   const label = mode === "edit" ? "Edit" : "Delete";

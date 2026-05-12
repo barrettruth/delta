@@ -82,6 +82,10 @@ describe("keymap definitions", () => {
     }
   });
 
+  it("keeps keymap definitions free of customization metadata", () => {
+    expect(DEFAULT_KEYMAPS.some((def) => "configurable" in def)).toBe(false);
+  });
+
   it("documents calendar traversal and view shortcuts", () => {
     const calendar = HELP_SECTIONS.find(
       (section) => section.section === "calendar",
