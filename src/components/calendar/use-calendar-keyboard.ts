@@ -6,6 +6,8 @@ import { registerScopedKeydown } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import type { FcCalendarHandle, FcViewMode } from "./fc-calendar";
 
+const LEADER_TIMEOUT_MS = 1200;
+
 export function useCalendarKeyboard({
   actionsOpen,
   dismissPopover,
@@ -13,7 +15,6 @@ export function useCalendarKeyboard({
   goNextPeriod,
   goPrevPeriod,
   goToday,
-  handleDeletePanelTask,
   hasVisibleAllDayEvents,
   setActionsOpen,
   setAllDayVisible,
@@ -26,7 +27,6 @@ export function useCalendarKeyboard({
   goNextPeriod: () => void;
   goPrevPeriod: () => void;
   goToday: () => void;
-  handleDeletePanelTask: () => void;
   hasVisibleAllDayEvents: boolean;
   setActionsOpen: Dispatch<SetStateAction<boolean>>;
   setAllDayVisible: Dispatch<SetStateAction<boolean>>;
@@ -35,9 +35,7 @@ export function useCalendarKeyboard({
 }) {
   const countBuf = useRef("");
   const pendingG = useRef(false);
-  const pendingOp = useRef<string | null>(null);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleKey = useCallback(
     (event: KeyboardEvent) => {
@@ -69,23 +67,6 @@ export function useCalendarKeyboard({
       }
 
       if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-      const delKey = getKeymap("calendar.delete").triggerKey;
-
-      if (pendingOp.current) {
-        const op = pendingOp.current;
-        pendingOp.current = null;
-        if (opTimer.current) {
-          clearTimeout(opTimer.current);
-          opTimer.current = null;
-        }
-        if (event.key === op && op === delKey) {
-          event.preventDefault();
-          handleDeletePanelTask();
-        }
-        countBuf.current = "";
-        return;
-      }
 
       const consumeCount = () => {
         const count = countBuf.current
@@ -139,7 +120,7 @@ export function useCalendarKeyboard({
           pendingG.current = false;
           countBuf.current = "";
           gTimer.current = null;
-        }, 500);
+        }, LEADER_TIMEOUT_MS);
         return;
       }
 
@@ -216,16 +197,6 @@ export function useCalendarKeyboard({
         return;
       }
 
-      if (event.key === delKey) {
-        event.preventDefault();
-        pendingOp.current = delKey;
-        opTimer.current = setTimeout(() => {
-          pendingOp.current = null;
-          opTimer.current = null;
-        }, 500);
-        return;
-      }
-
       countBuf.current = "";
     },
     [
@@ -234,7 +205,6 @@ export function useCalendarKeyboard({
       goNextPeriod,
       goPrevPeriod,
       goToday,
-      handleDeletePanelTask,
       hasVisibleAllDayEvents,
       setActionsOpen,
       setAllDayVisible,
@@ -254,9 +224,7 @@ export function useCalendarKeyboard({
   useEffect(() => {
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
-      if (opTimer.current) clearTimeout(opTimer.current);
       pendingG.current = false;
-      pendingOp.current = null;
       countBuf.current = "";
     };
   }, []);

@@ -15,6 +15,7 @@ import {
 } from "@/lib/settings-navigation";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const LEADER_TIMEOUT_MS = 1200;
 
 export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const router = useRouter();
@@ -64,7 +65,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       }
 
       if (pendingG.current) {
-        e.preventDefault();
         const key = e.key;
         pendingG.current = false;
         if (gTimer.current) {
@@ -74,13 +74,17 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
 
         const catIdx = DIGIT_KEYS.indexOf(key);
         if (catIdx !== -1 && catIdx < categories.length) {
+          e.preventDefault();
           pushJump();
           router.push(`/?category=${encodeURIComponent(categories[catIdx])}`);
         } else if (key === "?") {
+          e.preventDefault();
           openHelp();
         } else if (key === "c") {
+          e.preventDefault();
           panel.create();
         } else if (key === ".") {
+          e.preventDefault();
           const params = new URLSearchParams(searchParams.toString());
           if (params.has("showDone")) {
             params.delete("showDone");
@@ -107,7 +111,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         gTimer.current = setTimeout(() => {
           pendingG.current = false;
           gTimer.current = null;
-        }, 500);
+        }, LEADER_TIMEOUT_MS);
         return;
       }
 

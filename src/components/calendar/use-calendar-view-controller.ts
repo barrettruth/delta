@@ -252,13 +252,6 @@ export function useCalendarViewController({
     [panel, setAnchor],
   );
 
-  const handleDeletePanelTask = useCallback(() => {
-    if (!panel.isOpen || panel.taskId == null) return;
-    const target = tasks.find((task) => task.id === panel.taskId);
-    if (!target) return;
-    taskOperations.deleteTasks([target.id]);
-  }, [panel.isOpen, panel.taskId, taskOperations, tasks]);
-
   const goPrev = useCallback(() => {
     dismissPopover();
     goPrevPeriod();
@@ -295,7 +288,6 @@ export function useCalendarViewController({
     goNextPeriod,
     goPrevPeriod,
     goToday,
-    handleDeletePanelTask,
     hasVisibleAllDayEvents,
     setActionsOpen,
     setAllDayVisible,

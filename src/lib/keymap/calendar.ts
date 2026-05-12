@@ -64,8 +64,8 @@ export const CALENDAR_KEYMAPS: KeymapDef[] = [
   },
   {
     id: "calendar.day_view",
-    key: "D",
-    triggerKey: "D",
+    key: "d",
+    triggerKey: "d",
     section: "calendar",
     label: "Day view",
   },
@@ -98,15 +98,8 @@ export const CALENDAR_KEYMAPS: KeymapDef[] = [
     label: "Toggle all-day bar",
   },
   {
-    id: "calendar.delete",
-    key: "dd",
-    triggerKey: "d",
-    section: "calendar",
-    label: "Delete event",
-  },
-  {
     id: "calendar.actions",
-    key: "a",
+    key: "ga",
     triggerKey: "a",
     section: "calendar",
     label: "Calendar management",
@@ -127,11 +120,10 @@ export const CALENDAR_HELP_ROWS: HelpRow[] = [
   helpRow("calendar.half_page_up", "<C-u>", "Scroll half page up"),
   helpRow(
     ["calendar.day_view", "calendar.week_view", "calendar.month_view"],
-    "D / w / m",
+    "d / w / m",
     "Day / week / month view",
   ),
   helpRow("calendar.today", "t", "Jump to today"),
   helpRow("calendar.toggle_allday", "a", "Toggle all-day bar"),
-  helpRow("calendar.delete", "dd", "Delete event"),
   helpRow("calendar.actions", "ga", "Calendar management"),
 ];

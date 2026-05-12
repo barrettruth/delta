@@ -94,7 +94,7 @@ export function TaskPanelHeader({
         <button
           type="button"
           aria-label="close task panel"
-          className="text-muted-foreground hover:text-foreground shrink-0 p-1 border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+          className="text-muted-foreground hover:text-foreground shrink-0 p-1 transition-colors cursor-pointer"
           onClick={onClose}
         >
           <X size={14} />

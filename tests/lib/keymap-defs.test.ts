@@ -85,7 +85,6 @@ const EXPECTED_KEYMAP_IDS = [
   "calendar.month_view",
   "calendar.today",
   "calendar.toggle_allday",
-  "calendar.delete",
   "calendar.actions",
   "nav.jump_back",
   "nav.jump_forward",
@@ -110,6 +109,18 @@ describe("keymap definitions", () => {
         triggerKey: "g",
         key: "g?",
         label: "This help",
+      }),
+    );
+    expect(getKeymap("calendar.day_view")).toEqual(
+      expect.objectContaining({
+        key: "d",
+        triggerKey: "d",
+      }),
+    );
+    expect(getKeymap("calendar.actions")).toEqual(
+      expect.objectContaining({
+        key: "ga",
+        triggerKey: "a",
       }),
     );
     expect(() => getKeymap("global.missing")).toThrow(
@@ -260,7 +271,7 @@ describe("keymap definitions", () => {
             "calendar.week_view",
             "calendar.month_view",
           ],
-          keyDisplay: "D / w / m",
+          keyDisplay: "d / w / m",
           label: "Day / week / month view",
         }),
       ]),
