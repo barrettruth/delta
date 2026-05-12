@@ -36,7 +36,6 @@ export function CalendarActionsPopover({
   const [importing, setImporting] = useState(false);
   const [feedToken, setFeedToken] = useState(initialFeedToken);
   const [focusIdx, setFocusIdx] = useState(0);
-  const countBuf = useRef("");
 
   async function handleImport() {
     const file = fileRef.current?.files?.[0];
@@ -133,7 +132,6 @@ export function CalendarActionsPopover({
   useEffect(() => {
     if (open) {
       setFocusIdx(0);
-      countBuf.current = "";
     }
   }, [open]);
 
@@ -142,21 +140,12 @@ export function CalendarActionsPopover({
     function handleKey(e: KeyboardEvent) {
       const cur = itemsRef.current;
 
-      if (e.key >= "0" && e.key <= "9") {
-        countBuf.current += e.key;
-        e.preventDefault();
-        return;
-      }
-
-      const count = Math.max(1, Number.parseInt(countBuf.current, 10) || 1);
-      countBuf.current = "";
-
       if (e.key === "j") {
         e.preventDefault();
-        setFocusIdx((prev) => Math.min(prev + count, cur.length - 1));
+        setFocusIdx((prev) => Math.min(prev + 1, cur.length - 1));
       } else if (e.key === "k") {
         e.preventDefault();
-        setFocusIdx((prev) => Math.max(prev - count, 0));
+        setFocusIdx((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Enter") {
         e.preventDefault();
         const item = cur[focusIdx];

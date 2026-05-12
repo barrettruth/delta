@@ -121,6 +121,13 @@ function viewName(
   return "dayGridMonth";
 }
 
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 /** Build a zero-width DOMRect at the pointer location for popover anchoring. */
 function getPointerRect(evt: MouseEvent | TouchEvent | null): DOMRect {
   let x = 0;
@@ -314,6 +321,49 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           : [],
       [focusedDate],
     );
+
+    useEffect(() => {
+      const root = containerRef.current;
+      if (!root) return;
+
+      const syncFocusedDate = () => {
+        root
+          .querySelectorAll(
+            ".fc-delta-focused-date, .fc-delta-focused-date-header",
+          )
+          .forEach((el) => {
+            el.classList.remove(
+              "fc-delta-focused-date",
+              "fc-delta-focused-date-header",
+            );
+          });
+
+        if (!focusedDate) return;
+
+        const dateKey = formatDateKey(focusedDate);
+        root
+          .querySelectorAll(
+            `.fc-daygrid-day[data-date="${dateKey}"], .fc-timegrid-col[data-date="${dateKey}"]`,
+          )
+          .forEach((el) => {
+            el.classList.add("fc-delta-focused-date");
+          });
+        root
+          .querySelectorAll(`.fc-col-header-cell[data-date="${dateKey}"]`)
+          .forEach((el) => {
+            el.classList.add("fc-delta-focused-date-header");
+          });
+      };
+
+      syncFocusedDate();
+      const observer = new MutationObserver(syncFocusedDate);
+      observer.observe(root, { childList: true, subtree: true });
+      const rafId = window.requestAnimationFrame(syncFocusedDate);
+      return () => {
+        observer.disconnect();
+        window.cancelAnimationFrame(rafId);
+      };
+    }, [focusedDate]);
 
     return (
       <div ref={containerRef} className="fc-delta-root flex-1 min-h-0">

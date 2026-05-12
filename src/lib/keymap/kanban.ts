@@ -144,7 +144,7 @@ export const KANBAN_KEYMAPS: KeymapDef[] = [
   },
   {
     id: "kanban.delete",
-    key: "dd",
+    key: "d",
     triggerKey: "d",
     section: "kanban",
     label: "Delete task",
@@ -202,6 +202,6 @@ export const KANBAN_HELP_ROWS: HelpRow[] = [
     "v / V",
     "Toggle / visual select",
   ),
-  helpRow("kanban.delete", "dd", "Delete task"),
+  helpRow("kanban.delete", "d", "Delete task"),
   helpRow("kanban.escape", "<Esc>", "Deactivate keyboard"),
 ];

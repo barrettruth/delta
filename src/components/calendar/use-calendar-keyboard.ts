@@ -35,7 +35,6 @@ export function useCalendarKeyboard({
   setViewMode: (mode: FcViewMode) => void;
   viewMode: FcViewMode;
 }) {
-  const countBuf = useRef("");
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,14 +69,6 @@ export function useCalendarKeyboard({
 
       if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-      const consumeCount = () => {
-        const count = countBuf.current
-          ? Number.parseInt(countBuf.current, 10)
-          : 1;
-        countBuf.current = "";
-        return count;
-      };
-
       const scrollTopKey = getKeymap("calendar.scroll_top").triggerKey;
 
       if (pendingG.current) {
@@ -88,30 +79,15 @@ export function useCalendarKeyboard({
         }
         if (event.key === scrollTopKey && isTimeGrid) {
           event.preventDefault();
-          const hour = countBuf.current
-            ? Math.min(23, Number.parseInt(countBuf.current, 10))
-            : 0;
-          countBuf.current = "";
-          fcRef.current?.scrollToTime(hour);
+          fcRef.current?.scrollToTime(0);
           return;
         }
         const actionsKey = getKeymap("calendar.actions").triggerKey;
         if (event.key === actionsKey) {
           event.preventDefault();
           setActionsOpen(true);
-          countBuf.current = "";
           return;
         }
-        countBuf.current = "";
-        return;
-      }
-
-      if (event.key >= "1" && event.key <= "9") {
-        countBuf.current += event.key;
-        return;
-      }
-      if (event.key === "0" && countBuf.current) {
-        countBuf.current += "0";
         return;
       }
 
@@ -120,7 +96,6 @@ export function useCalendarKeyboard({
         pendingG.current = true;
         gTimer.current = setTimeout(() => {
           pendingG.current = false;
-          countBuf.current = "";
           gTimer.current = null;
         }, LEADER_TIMEOUT_MS);
         return;
@@ -129,11 +104,7 @@ export function useCalendarKeyboard({
       const scrollBottomKey = getKeymap("calendar.scroll_bottom").triggerKey;
       if (event.key === scrollBottomKey && isTimeGrid) {
         event.preventDefault();
-        const count = countBuf.current
-          ? Math.min(23, Number.parseInt(countBuf.current, 10))
-          : 23;
-        countBuf.current = "";
-        fcRef.current?.scrollToTime(count);
+        fcRef.current?.scrollToTime(23);
         return;
       }
 
@@ -141,8 +112,7 @@ export function useCalendarKeyboard({
       if (event.key === prevKey) {
         event.preventDefault();
         dismissPopover();
-        const count = consumeCount();
-        moveFocusedDate(-count);
+        moveFocusedDate(-1);
         return;
       }
 
@@ -150,8 +120,7 @@ export function useCalendarKeyboard({
       if (event.key === nextKey) {
         event.preventDefault();
         dismissPopover();
-        const count = consumeCount();
-        moveFocusedDate(count);
+        moveFocusedDate(1);
         return;
       }
 
@@ -159,8 +128,7 @@ export function useCalendarKeyboard({
       if (event.key === prevWeekKey) {
         event.preventDefault();
         dismissPopover();
-        const count = consumeCount();
-        moveFocusedDate(-7 * count);
+        moveFocusedDate(-7);
         return;
       }
 
@@ -168,8 +136,7 @@ export function useCalendarKeyboard({
       if (event.key === nextWeekKey) {
         event.preventDefault();
         dismissPopover();
-        const count = consumeCount();
-        moveFocusedDate(7 * count);
+        moveFocusedDate(7);
         return;
       }
 
@@ -177,8 +144,7 @@ export function useCalendarKeyboard({
       if (event.key === prevPeriodKey) {
         event.preventDefault();
         dismissPopover();
-        const count = consumeCount();
-        for (let index = 0; index < count; index++) goPrevPeriod();
+        goPrevPeriod();
         return;
       }
 
@@ -186,15 +152,13 @@ export function useCalendarKeyboard({
       if (event.key === nextPeriodKey) {
         event.preventDefault();
         dismissPopover();
-        const count = consumeCount();
-        for (let index = 0; index < count; index++) goNextPeriod();
+        goNextPeriod();
         return;
       }
 
       const alldayKey = getKeymap("calendar.toggle_allday").triggerKey;
       if (event.key === alldayKey && isTimeGrid) {
         event.preventDefault();
-        countBuf.current = "";
         if (hasVisibleAllDayEvents) setAllDayVisible((prev) => !prev);
         return;
       }
@@ -202,7 +166,6 @@ export function useCalendarKeyboard({
       const dayViewKey = getKeymap("calendar.day_view").triggerKey;
       if (event.key === dayViewKey) {
         event.preventDefault();
-        countBuf.current = "";
         dismissPopover();
         setViewMode("day");
         return;
@@ -211,7 +174,6 @@ export function useCalendarKeyboard({
       const weekViewKey = getKeymap("calendar.week_view").triggerKey;
       if (event.key === weekViewKey) {
         event.preventDefault();
-        countBuf.current = "";
         dismissPopover();
         setViewMode("week");
         return;
@@ -220,7 +182,6 @@ export function useCalendarKeyboard({
       const monthViewKey = getKeymap("calendar.month_view").triggerKey;
       if (event.key === monthViewKey) {
         event.preventDefault();
-        countBuf.current = "";
         dismissPopover();
         setViewMode("month");
         return;
@@ -229,13 +190,10 @@ export function useCalendarKeyboard({
       const todayKey = getKeymap("calendar.today").triggerKey;
       if (event.key === todayKey) {
         event.preventDefault();
-        countBuf.current = "";
         dismissPopover();
         goToday();
         return;
       }
-
-      countBuf.current = "";
     },
     [
       dismissPopover,
@@ -264,7 +222,6 @@ export function useCalendarKeyboard({
     return () => {
       if (gTimer.current) clearTimeout(gTimer.current);
       pendingG.current = false;
-      countBuf.current = "";
     };
   }, []);
 }

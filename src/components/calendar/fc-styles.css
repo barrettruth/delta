@@ -32,6 +32,11 @@
     var(--border) 18%,
     transparent
   );
+  --delta-calendar-focus-border: color-mix(
+    in oklab,
+    var(--border) 72%,
+    var(--foreground)
+  );
 
   font-size: 11px;
   height: 100%;
@@ -189,18 +194,27 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-delta-focused-date {
-  box-shadow: inset 0 0 0 1px
-    color-mix(in oklab, var(--primary) 60%, var(--foreground));
+  box-shadow:
+    inset 1px 0 0 var(--delta-calendar-focus-border),
+    inset -1px 0 0 var(--delta-calendar-focus-border);
 }
 
 .fc-delta-root .fc .fc-daygrid-day.fc-delta-focused-date {
   position: relative;
   z-index: 1;
+  box-shadow: inset 0 0 0 1px var(--delta-calendar-focus-border);
 }
 
 .fc-delta-root .fc .fc-timegrid-col.fc-delta-focused-date {
   position: relative;
   z-index: 1;
+}
+
+.fc-delta-root .fc .fc-col-header-cell.fc-delta-focused-date-header {
+  box-shadow:
+    inset 1px 0 0 var(--delta-calendar-focus-border),
+    inset -1px 0 0 var(--delta-calendar-focus-border),
+    inset 0 -1px 0 var(--delta-calendar-focus-border);
 }
 
 .fc-delta-root .fc .fc-event {
@@ -220,7 +234,12 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 
 .fc-delta-root .fc.fc-direction-ltr .fc-timegrid-col-events,
 .fc-delta-root .fc.fc-direction-rtl .fc-timegrid-col-events {
-  margin: 0 2px;
+  margin: 0 1px;
+}
+
+.fc-delta-root .fc .fc-timegrid-event-harness > .fc-timegrid-event {
+  left: 1px;
+  right: 1px;
 }
 
 .fc-delta-root .fc .fc-timegrid-event-harness-inset .fc-timegrid-event,

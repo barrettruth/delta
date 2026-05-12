@@ -127,6 +127,24 @@ describe("keymap definitions", () => {
         triggerKey: "a",
       }),
     );
+    expect(getKeymap("queue.delete")).toEqual(
+      expect.objectContaining({
+        key: "d",
+        triggerKey: "d",
+      }),
+    );
+    expect(getKeymap("queue.complete")).toEqual(
+      expect.objectContaining({
+        key: "x",
+        triggerKey: "x",
+      }),
+    );
+    expect(getKeymap("kanban.delete")).toEqual(
+      expect.objectContaining({
+        key: "d",
+        triggerKey: "d",
+      }),
+    );
     expect(() => getKeymap("global.missing")).toThrow(
       "Unknown keymap id: global.missing",
     );
@@ -290,5 +308,25 @@ describe("keymap definitions", () => {
         }),
       ]),
     );
+  });
+
+  it("keeps queue and kanban help free of operator-motion shortcuts", () => {
+    const keyDisplays = HELP_SECTIONS.flatMap((section) =>
+      section.rows.map((row) => row.keyDisplay),
+    );
+    const removedOperatorKeys = [
+      ["d", "d"],
+      ["d", "j"],
+      ["d", "k"],
+      ["x", "x"],
+      ["x", "j"],
+      ["x", "k"],
+    ].map((parts) => parts.join(""));
+
+    for (const key of removedOperatorKeys) {
+      expect(keyDisplays).not.toContain(key);
+    }
+    expect(keyDisplays).toContain("d");
+    expect(keyDisplays).toContain("x");
   });
 });

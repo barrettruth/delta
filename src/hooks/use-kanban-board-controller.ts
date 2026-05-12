@@ -37,7 +37,6 @@ interface KanbanKeyBindings {
   deleteKey: string;
   edit: string;
   escape: string;
-  jumpBottom: string;
   moveLeft: string;
   moveRight: string;
   rowDown: string;
@@ -112,7 +111,6 @@ function getKanbanKeyBindings(): KanbanKeyBindings {
     deleteKey: r("kanban.delete"),
     search: r("kanban.search"),
     escape: r("kanban.escape"),
-    jumpBottom: r("queue.jump_bottom"),
   };
 }
 
@@ -136,11 +134,6 @@ export function useKanbanBoardController({
   const [visualMode, setVisualMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const visualAnchor = useRef(-1);
-  const pendingOp = useRef<{ key: string; preCount: number | null } | null>(
-    null,
-  );
-  const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countBuf = useRef("");
 
   const kbDelete = taskOperations.deleteTasks;
   const kbMoveToStatus = taskOperations.moveTasksToStatus;
@@ -197,116 +190,6 @@ export function useKanbanBoardController({
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
-      if (pendingOp.current) {
-        if (
-          (e.key >= "1" && e.key <= "9") ||
-          (e.key === "0" && countBuf.current.length > 0)
-        ) {
-          e.preventDefault();
-          countBuf.current += e.key;
-          if (opTimer.current) {
-            clearTimeout(opTimer.current);
-          }
-          opTimer.current = setTimeout(() => {
-            pendingOp.current = null;
-            opTimer.current = null;
-            countBuf.current = "";
-          }, 500);
-          return;
-        }
-
-        const motionCount = countBuf.current
-          ? Number.parseInt(countBuf.current, 10)
-          : null;
-        countBuf.current = "";
-        const { key: op, preCount } = pendingOp.current;
-        pendingOp.current = null;
-        if (opTimer.current) {
-          clearTimeout(opTimer.current);
-          opTimer.current = null;
-        }
-        const pre = preCount ?? 1;
-        if (e.key === op) {
-          e.preventDefault();
-          if (selectedIds.size > 0) {
-            kbDelete([...selectedIds]);
-            setSelectedIds(new Set());
-            setVisualMode(false);
-          } else if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              const ids: number[] = [];
-              for (
-                let i = rowIdx;
-                i < Math.min(rowIdx + pre, colTasks.length);
-                i++
-              ) {
-                ids.push(colTasks[i].id);
-              }
-              if (ids.length > 0) kbDelete(ids);
-            }
-          }
-        } else if (e.key === k.rowDown) {
-          e.preventDefault();
-          if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              const n = pre * (motionCount ?? 1);
-              const lo = rowIdx;
-              const hi = Math.min(rowIdx + n, colTasks.length - 1);
-              const ids: number[] = [];
-              for (let i = lo; i <= hi; i++) ids.push(colTasks[i].id);
-              if (ids.length > 0) kbDelete(ids);
-            }
-          }
-        } else if (e.key === k.rowUp) {
-          e.preventDefault();
-          if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              const n = pre * (motionCount ?? 1);
-              const lo = Math.max(rowIdx - n, 0);
-              const hi = rowIdx;
-              const ids: number[] = [];
-              for (let i = lo; i <= hi; i++) ids.push(colTasks[i].id);
-              if (ids.length > 0) kbDelete(ids);
-            }
-          }
-        } else if (e.key === k.jumpBottom) {
-          e.preventDefault();
-          if (kbActive) {
-            const colTasks = getColTasks(colIdx);
-            if (colTasks.length > 0 && rowIdx < colTasks.length) {
-              const ids: number[] = [];
-              for (let i = rowIdx; i < colTasks.length; i++)
-                ids.push(colTasks[i].id);
-              if (ids.length > 0) kbDelete(ids);
-            }
-          }
-        }
-        return;
-      }
-
-      if (e.key >= "1" && e.key <= "9" && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        countBuf.current += e.key;
-        return;
-      }
-      if (
-        e.key === "0" &&
-        countBuf.current.length > 0 &&
-        !e.ctrlKey &&
-        !e.metaKey
-      ) {
-        e.preventDefault();
-        countBuf.current += e.key;
-        return;
-      }
-
-      const rawCount = countBuf.current;
-      countBuf.current = "";
-      const n = rawCount ? Number.parseInt(rawCount, 10) : 1;
-
       if (e.key === k.colLeft) {
         e.preventDefault();
         if (!visualMode) {
@@ -315,7 +198,7 @@ export function useKanbanBoardController({
             moveKanbanVisibleColumnIndex({
               columns,
               currentIndex: c,
-              delta: -n,
+              delta: -1,
               grouped,
             }),
           );
@@ -329,7 +212,7 @@ export function useKanbanBoardController({
             moveKanbanVisibleColumnIndex({
               columns,
               currentIndex: c,
-              delta: n,
+              delta: 1,
               grouped,
             }),
           );
@@ -340,12 +223,13 @@ export function useKanbanBoardController({
         setKbActive(true);
         setRowIdx((r) => {
           const colTasks = getColTasks(colIdx);
-          return Math.min(r + n, colTasks.length - 1);
+          if (colTasks.length === 0) return 0;
+          return Math.min(r + 1, colTasks.length - 1);
         });
       } else if (e.key === k.rowUp) {
         e.preventDefault();
         setKbActive(true);
-        setRowIdx((r) => Math.max(r - n, 0));
+        setRowIdx((r) => Math.max(r - 1, 0));
       } else if (e.key === k.moveLeft) {
         e.preventDefault();
         const newColH = Math.max(colIdx - 1, 0);
@@ -475,13 +359,11 @@ export function useKanbanBoardController({
           kbDelete([...selectedIds]);
           setSelectedIds(new Set());
           setVisualMode(false);
-        } else {
-          const parsedCount = rawCount ? Number.parseInt(rawCount, 10) : null;
-          pendingOp.current = { key: k.deleteKey, preCount: parsedCount };
-          opTimer.current = setTimeout(() => {
-            pendingOp.current = null;
-            opTimer.current = null;
-          }, 500);
+        } else if (kbActive) {
+          const colTasks = getColTasks(colIdx);
+          if (colTasks.length > 0 && rowIdx < colTasks.length) {
+            kbDelete([colTasks[rowIdx].id]);
+          }
         }
       } else if (e.key === k.search) {
         e.preventDefault();
