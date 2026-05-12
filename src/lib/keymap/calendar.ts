@@ -31,6 +31,20 @@ export const CALENDAR_KEYMAPS: KeymapDef[] = [
     label: "Focus next week",
   },
   {
+    id: "calendar.prev_period",
+    key: "[",
+    triggerKey: "[",
+    section: "calendar",
+    label: "Previous period",
+  },
+  {
+    id: "calendar.next_period",
+    key: "]",
+    triggerKey: "]",
+    section: "calendar",
+    label: "Next period",
+  },
+  {
     id: "calendar.scroll_top",
     key: "gg",
     triggerKey: "g",
@@ -130,6 +144,11 @@ export const CALENDAR_HELP_ROWS: HelpRow[] = [
     ["calendar.focus_prev_week", "calendar.focus_next_week"],
     "k / j",
     "Focus previous / next week",
+  ),
+  helpRow(
+    ["calendar.prev_period", "calendar.next_period"],
+    "[ / ]",
+    "Previous / next visible period",
   ),
   helpRow("calendar.scroll_top", "gg", "First hour (00:00)"),
   helpRow("calendar.scroll_bottom", "G", "Last hour (23:00)"),

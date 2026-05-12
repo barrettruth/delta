@@ -287,6 +287,8 @@ export function useCalendarViewController({
     actionsOpen,
     dismissPopover,
     fcRef,
+    goNextPeriod,
+    goPrevPeriod,
     goToday,
     hasVisibleAllDayEvents,
     moveFocusedDate,

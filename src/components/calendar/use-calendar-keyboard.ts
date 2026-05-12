@@ -12,6 +12,8 @@ export function useCalendarKeyboard({
   actionsOpen,
   dismissPopover,
   fcRef,
+  goNextPeriod,
+  goPrevPeriod,
   goToday,
   hasVisibleAllDayEvents,
   moveFocusedDate,
@@ -23,6 +25,8 @@ export function useCalendarKeyboard({
   actionsOpen: boolean;
   dismissPopover: () => void;
   fcRef: RefObject<FcCalendarHandle | null>;
+  goNextPeriod: () => void;
+  goPrevPeriod: () => void;
   goToday: () => void;
   hasVisibleAllDayEvents: boolean;
   moveFocusedDate: (days: number) => void;
@@ -169,6 +173,24 @@ export function useCalendarKeyboard({
         return;
       }
 
+      const prevPeriodKey = getKeymap("calendar.prev_period").triggerKey;
+      if (event.key === prevPeriodKey) {
+        event.preventDefault();
+        dismissPopover();
+        const count = consumeCount();
+        for (let index = 0; index < count; index++) goPrevPeriod();
+        return;
+      }
+
+      const nextPeriodKey = getKeymap("calendar.next_period").triggerKey;
+      if (event.key === nextPeriodKey) {
+        event.preventDefault();
+        dismissPopover();
+        const count = consumeCount();
+        for (let index = 0; index < count; index++) goNextPeriod();
+        return;
+      }
+
       const alldayKey = getKeymap("calendar.toggle_allday").triggerKey;
       if (event.key === alldayKey && isTimeGrid) {
         event.preventDefault();
@@ -218,6 +240,8 @@ export function useCalendarKeyboard({
     [
       dismissPopover,
       fcRef,
+      goNextPeriod,
+      goPrevPeriod,
       goToday,
       hasVisibleAllDayEvents,
       moveFocusedDate,

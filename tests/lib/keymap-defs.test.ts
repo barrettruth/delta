@@ -76,6 +76,8 @@ const EXPECTED_KEYMAP_IDS = [
   "calendar.focus_next_day",
   "calendar.focus_prev_week",
   "calendar.focus_next_week",
+  "calendar.prev_period",
+  "calendar.next_period",
   "calendar.scroll_top",
   "calendar.scroll_bottom",
   "calendar.scroll_down_hour",
@@ -271,6 +273,11 @@ describe("keymap definitions", () => {
           ids: ["calendar.focus_prev_week", "calendar.focus_next_week"],
           keyDisplay: "k / j",
           label: "Focus previous / next week",
+        }),
+        expect.objectContaining({
+          ids: ["calendar.prev_period", "calendar.next_period"],
+          keyDisplay: "[ / ]",
+          label: "Previous / next visible period",
         }),
         expect.objectContaining({
           ids: [
