@@ -44,19 +44,29 @@ function keyboardDocument({
 
 class KeyboardTarget {
   private listeners = new Set<(event: KeyboardEventLike) => void>();
+  lastAddOptions: AddEventListenerOptions | undefined;
+  lastRemoveOptions: EventListenerOptions | undefined;
 
   addEventListener(
     type: "keydown",
     listener: (event: KeyboardEventLike) => void,
+    options?: AddEventListenerOptions,
   ) {
-    if (type === "keydown") this.listeners.add(listener);
+    if (type === "keydown") {
+      this.lastAddOptions = options;
+      this.listeners.add(listener);
+    }
   }
 
   removeEventListener(
     type: "keydown",
     listener: (event: KeyboardEventLike) => void,
+    options?: EventListenerOptions,
   ) {
-    if (type === "keydown") this.listeners.delete(listener);
+    if (type === "keydown") {
+      this.lastRemoveOptions = options;
+      this.listeners.delete(listener);
+    }
   }
 
   dispatch(event: KeyboardEventLike) {
@@ -175,5 +185,19 @@ describe("keyboard scope helpers", () => {
     });
     target.dispatch(keyEvent({ key: "j" }));
     expect(calls).toBe(1);
+  });
+
+  it("passes listener options through to scoped keydown registration", () => {
+    const target = new KeyboardTarget();
+    const unregister = registerScopedKeydown(
+      target,
+      { scope: "view" },
+      () => {},
+      { capture: true },
+    );
+
+    expect(target.lastAddOptions).toEqual({ capture: true });
+    unregister();
+    expect(target.lastRemoveOptions).toEqual({ capture: true });
   });
 });

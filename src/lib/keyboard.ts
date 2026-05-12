@@ -31,8 +31,16 @@ type KeyboardScopeOptionsInput =
   | (() => KeyboardScopeOptions);
 
 interface KeyboardListenerTarget<TEvent extends KeyboardEventLike> {
-  addEventListener(type: "keydown", listener: (event: TEvent) => void): void;
-  removeEventListener(type: "keydown", listener: (event: TEvent) => void): void;
+  addEventListener(
+    type: "keydown",
+    listener: (event: TEvent) => void,
+    options?: AddEventListenerOptions,
+  ): void;
+  removeEventListener(
+    type: "keydown",
+    listener: (event: TEvent) => void,
+    options?: EventListenerOptions,
+  ): void;
 }
 
 const MODIFIER_ONLY_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
@@ -152,11 +160,12 @@ export function registerScopedKeydown<TEvent extends KeyboardEventLike>(
   target: KeyboardListenerTarget<TEvent>,
   options: KeyboardScopeOptionsInput,
   handler: (event: TEvent) => void,
+  eventOptions?: AddEventListenerOptions,
 ): () => void {
   const listener = (event: TEvent) => {
     handleScopedKeyboardEvent(event, options, handler);
   };
 
-  target.addEventListener("keydown", listener);
-  return () => target.removeEventListener("keydown", listener);
+  target.addEventListener("keydown", listener, eventOptions);
+  return () => target.removeEventListener("keydown", listener, eventOptions);
 }

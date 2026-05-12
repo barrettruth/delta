@@ -215,6 +215,7 @@ export function useCalendarKeyboard({
       window,
       { scope: "view", popoverOpen: actionsOpen },
       handleKey,
+      { capture: true },
     );
   }, [handleKey, actionsOpen]);
 
