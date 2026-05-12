@@ -1,7 +1,15 @@
-import { getIntegrationConfig } from "@/core/integration-config";
+import {
+  deleteIntegrationConfig,
+  getIntegrationConfig,
+  setIntegrationEnabled,
+  upsertIntegrationConfig,
+} from "@/core/integration-config";
 import {
   type GeocodingApiKeyProvider,
   type GeocodingProvider,
+  geocodingProvidersToClear,
+  geocodingTokens,
+  getGeocodingProviderDefinition,
   readGeocodingApiKey,
   STORED_GEOCODING_PROVIDER_PRIORITY,
 } from "@/core/provider-registry";
@@ -20,6 +28,18 @@ export interface ActiveGeocodingConfig {
   provider: GeocodingProvider;
   apiKey: string | null;
 }
+
+export interface SelectGeocodingProviderInput {
+  provider: string;
+  apiKey?: string | null;
+}
+
+export interface SelectGeocodingProviderResult {
+  provider: GeocodingProvider;
+  apiKeyConfigured: boolean;
+}
+
+export class GeocodingProviderSelectionError extends Error {}
 
 interface MapboxFeature {
   properties: {
@@ -77,6 +97,43 @@ export function getActiveGeocodingConfig(
   if (envMapbox) return { provider: "mapbox", apiKey: envMapbox };
 
   return { provider: "photon", apiKey: null };
+}
+
+export function selectGeocodingProvider(
+  db: Db,
+  userId: number,
+  input: SelectGeocodingProviderInput,
+): SelectGeocodingProviderResult {
+  const definition = getGeocodingProviderDefinition(input.provider);
+  if (!definition) {
+    throw new GeocodingProviderSelectionError("invalid geocoding provider");
+  }
+
+  const provider = definition.id;
+  const apiKey = typeof input.apiKey === "string" ? input.apiKey.trim() : null;
+
+  if (definition.requiresApiKey && !apiKey) {
+    throw new GeocodingProviderSelectionError("api key is required");
+  }
+
+  const tokens = definition.requiresApiKey ? geocodingTokens(apiKey ?? "") : {};
+
+  return db.transaction((tx) => {
+    const txDb = tx as Db;
+    const integrationProvider = definition.integrationProviderId;
+
+    upsertIntegrationConfig(txDb, userId, integrationProvider, tokens);
+    setIntegrationEnabled(txDb, userId, integrationProvider, 1);
+
+    for (const staleProvider of geocodingProvidersToClear(provider)) {
+      deleteIntegrationConfig(txDb, userId, staleProvider);
+    }
+
+    return {
+      provider,
+      apiKeyConfigured: definition.requiresApiKey,
+    };
+  });
 }
 
 export function buildGeocodingUrl(

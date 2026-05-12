@@ -138,6 +138,9 @@ export type TestableSettingsProviderId =
   TestableSettingsProviderDefinition["id"];
 export type SettingsIntegrationProviderDefinition =
   (typeof SETTINGS_INTEGRATION_PROVIDERS)[number];
+export type SettingsIntegrationProviderId = NonNullable<
+  SettingsIntegrationProviderDefinition["integrationProviderId"]
+>;
 
 export function getNlpProviderDefinition(
   provider: string,

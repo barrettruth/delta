@@ -10,8 +10,6 @@ import {
   type GeocodingApiKeyProvider,
   type GeocodingProvider,
   geocodingProviderLabel,
-  geocodingProvidersToClear,
-  geocodingTokens,
   isGeocodingApiKeyProvider,
   NLP_SETTINGS_PROVIDERS,
   type NlpProviderId,
@@ -79,23 +77,22 @@ export function CalendarSettingsSection({
   const [nlpKeyTarget, setNlpKeyTarget] = useState<NlpProviderId | null>(null);
   const [nlpKeyTesting, setNlpKeyTesting] = useState(false);
 
+  async function saveGeoProvider(provider: GeocodingProvider, apiKey?: string) {
+    return fetch("/api/settings/geocoding", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider, apiKey }),
+    });
+  }
+
   async function handleSelectGeoProvider(id: GeocodingProvider) {
     if (!isGeocodingApiKeyProvider(id)) {
-      const res = await fetch("/api/settings/integrations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: id, tokens: {} }),
-      });
+      const res = await saveGeoProvider(id);
       if (!res.ok) {
         statusBar.error("failed to save location lookup config");
         return;
       }
 
-      for (const provider of geocodingProvidersToClear(id)) {
-        await fetch(`/api/settings/integrations/${provider}`, {
-          method: "DELETE",
-        });
-      }
       setGeoProvider(id);
       setGeoKeyTarget(null);
       setGeoKeyInput("");
@@ -141,22 +138,10 @@ export function CalendarSettingsSection({
     const provider = geoKeyTarget;
     if (!provider) return;
 
-    const res = await fetch("/api/settings/integrations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider,
-        tokens: geocodingTokens(geoKeyInput.trim()),
-      }),
-    });
+    const res = await saveGeoProvider(provider, geoKeyInput.trim());
     if (!res.ok) {
       statusBar.error("failed to save api key");
       return;
-    }
-    for (const staleProvider of geocodingProvidersToClear(provider)) {
-      await fetch(`/api/settings/integrations/${staleProvider}`, {
-        method: "DELETE",
-      });
     }
     setGeoProvider(provider);
     setGeoKeyTarget(null);

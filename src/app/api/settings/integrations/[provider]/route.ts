@@ -4,6 +4,7 @@ import {
   getIntegrationConfig,
   upsertIntegrationConfig,
 } from "@/core/integration-config";
+import { getSettingsIntegrationProviderDefinition } from "@/core/provider-registry";
 import { db } from "@/db";
 import { unauthorized } from "@/lib/auth-responses";
 import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
@@ -15,8 +16,16 @@ export async function DELETE(request: Request, { params }: Params) {
   if (!user) return unauthorized();
 
   const { provider } = await params;
+  const providerDefinition = getSettingsIntegrationProviderDefinition(provider);
+  if (!providerDefinition) {
+    return NextResponse.json({ error: "invalid provider" }, { status: 400 });
+  }
 
-  const deleted = deleteIntegrationConfig(db, user.id, provider);
+  const deleted = deleteIntegrationConfig(
+    db,
+    user.id,
+    providerDefinition.integrationProviderId,
+  );
   if (!deleted) {
     return NextResponse.json(
       { error: "Integration not found" },
@@ -32,6 +41,11 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!user) return unauthorized();
 
   const { provider } = await params;
+  const providerDefinition = getSettingsIntegrationProviderDefinition(provider);
+  if (!providerDefinition) {
+    return NextResponse.json({ error: "invalid provider" }, { status: 400 });
+  }
+
   const body = await request.json();
   const { metadata: patch } = body as {
     metadata: Record<string, unknown>;
@@ -44,7 +58,11 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
-  const existing = getIntegrationConfig(db, user.id, provider);
+  const existing = getIntegrationConfig(
+    db,
+    user.id,
+    providerDefinition.integrationProviderId,
+  );
   if (!existing) {
     return NextResponse.json(
       { error: "Integration not found" },
@@ -56,7 +74,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const config = upsertIntegrationConfig(
     db,
     user.id,
-    provider,
+    providerDefinition.integrationProviderId,
     existing.tokens,
     merged,
   );

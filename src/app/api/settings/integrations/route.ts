@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   const config = upsertIntegrationConfig(
     db,
     user.id,
-    provider,
+    providerDefinition.integrationProviderId,
     tokens,
     metadata,
   );
