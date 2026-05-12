@@ -177,10 +177,8 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-event {
-  border-left: 0;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
+  box-sizing: border-box;
+  border: 1px solid var(--fc-event-border-color);
   padding: 1px 4px;
   border-radius: 0;
   cursor: pointer;
