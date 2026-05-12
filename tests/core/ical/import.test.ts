@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
 import { listExternalLinksForTask } from "@/core/external-links";
 import { importICalEvents } from "@/core/ical/import";
 import type { ParsedEvent } from "@/core/ical/parser";
@@ -72,7 +73,7 @@ describe("importICalEvents", () => {
 
     const links = listExternalLinksForTask(db, task.id);
     expect(links).toHaveLength(1);
-    expect(links[0].provider).toBe("ical");
+    expect(links[0].provider).toBe(EXTERNAL_LINK_PROVIDER.ical);
     expect(links[0].externalId).toBe("full-event@example.com");
   });
 

@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { describe, expect, it } from "vitest";
+import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
 import * as schema from "@/db/schema";
 
 describe("schema migrations", () => {
@@ -202,7 +203,7 @@ describe("schema migrations", () => {
       VALUES (
         1,
         1,
-        'google_calendar',
+        '${EXTERNAL_LINK_PROVIDER.googleCalendar}',
         'encrypted-token',
         NULL,
         1,
@@ -238,7 +239,7 @@ describe("schema migrations", () => {
         1,
         1,
         1,
-        'google_tasks',
+        '${EXTERNAL_LINK_PROVIDER.googleTasks}',
         'task-external-id',
         '2026-05-11T00:00:00.000Z',
         '2026-05-11T00:00:00.000Z'

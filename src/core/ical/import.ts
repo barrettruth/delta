@@ -1,3 +1,4 @@
+import { EXTERNAL_LINK_PROVIDER } from "../external-link-providers";
 import {
   createExternalLink,
   getExternalLinkByProviderId,
@@ -5,6 +6,8 @@ import {
 import { createTask } from "../task";
 import type { CreateTaskInput, Db, TaskStatus } from "../types";
 import type { ParsedEvent } from "./parser";
+
+const ICAL_EXTERNAL_LINK_PROVIDER = EXTERNAL_LINK_PROVIDER.ical;
 
 export interface ImportResult {
   created: number;
@@ -179,7 +182,12 @@ function importSingleEvent(
   result: ImportResult,
 ): void {
   const externalId = eventExternalId(event);
-  const existing = getExternalLinkByProviderId(db, userId, "ical", externalId);
+  const existing = getExternalLinkByProviderId(
+    db,
+    userId,
+    ICAL_EXTERNAL_LINK_PROVIDER,
+    externalId,
+  );
   if (existing) {
     result.skipped++;
     return;
@@ -190,7 +198,7 @@ function importSingleEvent(
   createExternalLink(db, {
     userId,
     taskId: task.id,
-    provider: "ical",
+    provider: ICAL_EXTERNAL_LINK_PROVIDER,
     externalId,
   });
   result.created++;
@@ -219,7 +227,7 @@ function importRecurringGroup(
   const existingMaster = getExternalLinkByProviderId(
     db,
     userId,
-    "ical",
+    ICAL_EXTERNAL_LINK_PROVIDER,
     masterExternalId,
   );
 
@@ -247,7 +255,7 @@ function importRecurringGroup(
     createExternalLink(db, {
       userId,
       taskId: masterTask.id,
-      provider: "ical",
+      provider: ICAL_EXTERNAL_LINK_PROVIDER,
       externalId: masterExternalId,
     });
     result.created++;
@@ -262,7 +270,7 @@ function importRecurringGroup(
     const existing = getExternalLinkByProviderId(
       db,
       userId,
-      "ical",
+      ICAL_EXTERNAL_LINK_PROVIDER,
       externalId,
     );
     if (existing) {
@@ -287,7 +295,7 @@ function importRecurringGroup(
     createExternalLink(db, {
       userId,
       taskId: task.id,
-      provider: "ical",
+      provider: ICAL_EXTERNAL_LINK_PROVIDER,
       externalId,
     });
     result.created++;

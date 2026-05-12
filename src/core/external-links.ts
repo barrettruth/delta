@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { taskExternalLinks } from "@/db/schema";
+import type { ExternalLinkProviderId } from "./external-link-providers";
 import type { Db } from "./types";
 
 /**
@@ -10,7 +11,7 @@ import type { Db } from "./types";
 export interface CreateExternalLinkInput {
   userId: number;
   taskId: number;
-  provider: string;
+  provider: ExternalLinkProviderId;
   externalId: string;
   metadata?: Record<string, unknown> | null;
   lastSyncedAt?: string | null;
@@ -44,7 +45,7 @@ export function createExternalLink(
 export function getExternalLinkByProviderId(
   db: Db,
   userId: number,
-  provider: string,
+  provider: ExternalLinkProviderId,
   externalId: string,
 ): typeof taskExternalLinks.$inferSelect | undefined {
   return db

@@ -71,7 +71,5 @@ export interface TaskFilters {
   sortOrder?: "asc" | "desc";
 }
 
-export type ConflictResolution = "lww" | "google_wins" | "delta_wins";
-
 export type NlpSource = "local" | NlpProviderId;
 export type { NlpProviderId };

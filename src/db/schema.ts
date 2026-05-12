@@ -7,6 +7,7 @@ import {
   text,
   unique,
 } from "drizzle-orm/sqlite-core";
+import type { ExternalLinkProviderId } from "@/core/external-link-providers";
 
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -60,7 +61,7 @@ export const taskExternalLinks = sqliteTable(
     taskId: integer("task_id")
       .notNull()
       .references(() => tasks.id, { onDelete: "cascade" }),
-    provider: text("provider").notNull(),
+    provider: text("provider").$type<ExternalLinkProviderId>().notNull(),
     externalId: text("external_id").notNull(),
     metadata: text("metadata"),
     lastSyncedAt: text("last_synced_at"),
