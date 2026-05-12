@@ -31,7 +31,7 @@ export function KeyboardShortcutsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[min(680px,calc(100vh-1rem))] w-[min(760px,calc(100vw-1rem))] max-w-none grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden bg-popover p-0 text-xs">
+      <DialogContent className="flex max-h-[calc(100vh-1rem)] w-[min(1180px,calc(100vw-1rem))] max-w-none flex-col gap-0 overflow-hidden bg-popover p-0 text-xs sm:max-w-none">
         <DialogHeader className="h-9 shrink-0 justify-center border-b border-border/60 px-4 pr-10">
           <DialogTitle className="font-mono text-[11px] font-medium uppercase text-muted-foreground">
             keyboard
@@ -39,7 +39,7 @@ export function KeyboardShortcutsDialog({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3 md:p-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {HELP_SECTIONS.map((section) => (
               <section key={section.section} className="min-w-0 space-y-2">
                 <h2 className="px-0.5 font-mono text-[10px] uppercase text-muted-foreground/70">
@@ -49,9 +49,9 @@ export function KeyboardShortcutsDialog({
                   {section.rows.map((row) => (
                     <div
                       key={`${section.section}-${row.keyDisplay}-${row.label}`}
-                      className="grid min-h-7 grid-cols-[minmax(4.75rem,max-content)_1fr] items-center gap-3 px-2 py-1.5"
+                      className="grid min-h-7 grid-cols-[max-content_minmax(0,1fr)] items-center gap-2 px-2 py-1.5"
                     >
-                      <kbd className="min-w-16 max-w-32 border border-border bg-muted/40 px-1.5 py-0.5 text-center font-mono text-[11px] leading-tight text-foreground break-words">
+                      <kbd className="inline-flex w-fit max-w-[40vw] justify-self-start border border-border bg-muted/40 px-1.5 py-0.5 text-center font-mono text-[11px] leading-tight text-foreground break-words sm:max-w-40">
                         {row.keyDisplay}
                       </kbd>
                       <span className="min-w-0 text-muted-foreground">
