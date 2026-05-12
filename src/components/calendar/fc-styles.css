@@ -191,6 +191,17 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   filter: brightness(0.92);
 }
 
+.fc-delta-root .fc.fc-direction-ltr .fc-timegrid-col-events,
+.fc-delta-root .fc.fc-direction-rtl .fc-timegrid-col-events {
+  margin: 0 2px;
+}
+
+.fc-delta-root .fc .fc-timegrid-event-harness-inset .fc-timegrid-event,
+.fc-delta-root .fc .fc-timegrid-event.fc-event-mirror,
+.fc-delta-root .fc .fc-timegrid-more-link {
+  box-shadow: none;
+}
+
 .fc-delta-root .fc .fc-event.is-virtual {
   /* subtle marker for virtual (non-materialized) recurring instances */
   background-image: repeating-linear-gradient(
