@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,18 +23,48 @@ import {
   SettingsSection,
 } from "./settings-primitives";
 
-type ProviderTab = "geocoding" | "nlp";
+type ProviderTab = "google" | "geocoding" | "nlp";
+
+interface GoogleSummary {
+  connected: boolean;
+  email: string | null;
+  name: string | null;
+  tasksLastPulledAt: string | null;
+  tasksLastError: string | null;
+}
+
+interface GoogleTasksPullResult {
+  lists: number;
+  seen: number;
+  created: number;
+  updated: number;
+  cancelled: number;
+  skipped: number;
+}
 
 export function CalendarSettingsSection({
   initialGeoProvider = "photon",
   initialNlpProvider = null,
+  initialGoogle,
 }: {
   initialGeoProvider?: GeocodingProvider;
   initialNlpProvider?: NlpProviderId | null;
+  initialGoogle?: GoogleSummary;
 }) {
   const statusBar = useStatusBar();
+  const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<ProviderTab>("geocoding");
+  const [activeTab, setActiveTab] = useState<ProviderTab>("google");
+  const [google, setGoogle] = useState<GoogleSummary>(
+    initialGoogle ?? {
+      connected: false,
+      email: null,
+      name: null,
+      tasksLastPulledAt: null,
+      tasksLastError: null,
+    },
+  );
+  const [googlePulling, setGooglePulling] = useState(false);
   const [geoProvider, setGeoProvider] =
     useState<GeocodingProvider>(initialGeoProvider);
   const [geoKeyInput, setGeoKeyInput] = useState("");
@@ -195,15 +226,81 @@ export function CalendarSettingsSection({
     statusBar.message(`recurrence parsing set to ${provider}`);
   }
 
+  function handleGoogleConnect() {
+    window.location.href = "/api/integrations/google/connect";
+  }
+
+  async function handleGoogleDisconnect() {
+    const res = await fetch("/api/integrations/google", { method: "DELETE" });
+    if (!res.ok) {
+      statusBar.error("failed to disconnect google");
+      return;
+    }
+    setGoogle({
+      connected: false,
+      email: null,
+      name: null,
+      tasksLastPulledAt: null,
+      tasksLastError: null,
+    });
+    statusBar.message("google disconnected");
+    router.refresh();
+  }
+
+  async function handleGoogleTasksPull() {
+    if (!google.connected || googlePulling) return;
+    setGooglePulling(true);
+    statusBar.setOperation("pulling google tasks...");
+    try {
+      const res = await fetch("/api/integrations/google/tasks/pull", {
+        method: "POST",
+      });
+      const data = (await res.json()) as
+        | GoogleTasksPullResult
+        | { error?: string };
+      statusBar.clearOperation();
+      if (!res.ok) {
+        statusBar.error(
+          "error" in data && data.error
+            ? data.error
+            : "google tasks pull failed",
+        );
+        return;
+      }
+
+      const result = data as GoogleTasksPullResult;
+      setGoogle((current) => ({
+        ...current,
+        tasksLastPulledAt: new Date().toISOString(),
+        tasksLastError: null,
+      }));
+      statusBar.message(
+        `pulled ${result.created} new, updated ${result.updated}, cancelled ${result.cancelled}`,
+      );
+      router.refresh();
+    } catch {
+      statusBar.clearOperation();
+      statusBar.error("google tasks pull failed");
+    } finally {
+      setGooglePulling(false);
+    }
+  }
+
+  function lastPulledLabel(): string {
+    if (!google.tasksLastPulledAt) return "never";
+    return new Date(google.tasksLastPulledAt).toLocaleString();
+  }
+
   return (
     <SettingsPage
       title="calendar"
-      description="Manage the providers delta uses for location lookup and recurrence parsing."
+      description="Manage the providers delta uses for Google sync, location lookup, and recurrence parsing."
     >
       <div className="space-y-6">
-        <div className="grid grid-cols-2 border border-border/60">
+        <div className="grid grid-cols-3 border border-border/60">
           {(
             [
+              ["google", "google"],
               ["geocoding", "geocoding"],
               ["nlp", "NLP"],
             ] as const
@@ -222,6 +319,59 @@ export function CalendarSettingsSection({
             </button>
           ))}
         </div>
+
+        {activeTab === "google" && (
+          <div className="space-y-6">
+            <SettingsSection
+              title="google account"
+              description="Connect one Google account for first-party calendar and task sync."
+            >
+              {google.connected ? (
+                <>
+                  <SettingsRow
+                    label={google.email ?? google.name ?? "google"}
+                    value="connected"
+                  />
+                  <SettingsRow
+                    label="disconnect"
+                    action
+                    destructive
+                    prefix={{ text: "-", className: "text-destructive" }}
+                    onClick={handleGoogleDisconnect}
+                  />
+                </>
+              ) : (
+                <SettingsRow
+                  label="connect google"
+                  action
+                  prefix={{ text: "+", className: "text-status-done" }}
+                  onClick={handleGoogleConnect}
+                />
+              )}
+            </SettingsSection>
+
+            <SettingsSection
+              title="google tasks"
+              description="Pull Google Tasks into delta without creating duplicates."
+            >
+              <SettingsRow
+                label={googlePulling ? "pulling google tasks..." : "pull now"}
+                value={google.connected ? "" : "not connected"}
+                action={google.connected && !googlePulling}
+                muted={!google.connected}
+                onClick={handleGoogleTasksPull}
+              />
+              <SettingsRow label="last pull" value={lastPulledLabel()} />
+              {google.tasksLastError && (
+                <SettingsRow
+                  label={google.tasksLastError}
+                  value="error"
+                  destructive
+                />
+              )}
+            </SettingsSection>
+          </div>
+        )}
 
         {activeTab === "geocoding" && (
           <SettingsSection

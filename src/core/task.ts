@@ -42,6 +42,7 @@ export function createTask(
       endAt: input.endAt ?? null,
       allDay: input.allDay ?? 0,
       timezone: input.timezone ?? null,
+      completedAt: input.completedAt ?? null,
       due: input.due ?? null,
       recurrence: input.recurrence ?? null,
       recurMode: input.recurMode ?? null,
@@ -138,13 +139,21 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
     input.status !== "cancelled" &&
     (existing.status === "done" || existing.status === "cancelled");
 
+  const completedAt =
+    input.completedAt !== undefined
+      ? input.completedAt
+      : isCompleting
+        ? timestamp()
+        : isReopening
+          ? null
+          : undefined;
+
   const task = db
     .update(tasks)
     .set({
       ...input,
       updatedAt: timestamp(),
-      ...(isCompleting ? { completedAt: timestamp() } : {}),
-      ...(isReopening ? { completedAt: null } : {}),
+      ...(completedAt !== undefined ? { completedAt } : {}),
     })
     .where(eq(tasks.id, id))
     .returning()

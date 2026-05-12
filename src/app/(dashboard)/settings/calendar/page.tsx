@@ -1,5 +1,6 @@
 import { CalendarSettingsSection } from "@/components/settings/calendar-settings-section";
 import { getActiveGeocodingConfig } from "@/core/geocoding";
+import { googleIntegrationSummary } from "@/core/google/oauth";
 import { getActiveNlpConfig } from "@/core/nlp-config";
 import type {
   GeocodingProvider,
@@ -18,11 +19,13 @@ export default async function SettingsCalendarPage() {
 
   const nlpProvider: NlpProviderId | null =
     getActiveNlpConfig(db, user.id)?.provider ?? null;
+  const google = googleIntegrationSummary(db, user.id);
 
   return (
     <CalendarSettingsSection
       initialGeoProvider={geoProvider}
       initialNlpProvider={nlpProvider}
+      initialGoogle={google}
     />
   );
 }

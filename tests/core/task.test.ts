@@ -177,6 +177,15 @@ describe("updateTask", () => {
     expect(updated.completedAt).toBeTruthy();
   });
 
+  it("uses an explicit completedAt when supplied by a sync source", () => {
+    const task = createTask(db, userId, { description: "Test" });
+    const updated = updateTask(db, task.id, {
+      status: "done",
+      completedAt: "2026-05-11T12:00:00.000Z",
+    });
+    expect(updated.completedAt).toBe("2026-05-11T12:00:00.000Z");
+  });
+
   it("clears completedAt when reopening", () => {
     const task = createTask(db, userId, { description: "Test" });
     updateTask(db, task.id, { status: "done" });

@@ -22,14 +22,15 @@ export interface CreateTaskInput {
   description: string;
   status?: TaskStatus;
   category?: string;
-  due?: string;
+  due?: string | null;
+  completedAt?: string | null;
   startAt?: string;
   endAt?: string;
   allDay?: number;
   timezone?: string;
   recurrence?: string;
   recurMode?: RecurMode;
-  notes?: string;
+  notes?: string | null;
   order?: number;
   location?: string;
   locationLat?: number;
@@ -46,6 +47,7 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   category?: string | null;
   due?: string | null;
+  completedAt?: string | null;
   startAt?: string | null;
   endAt?: string | null;
   allDay?: number | null;

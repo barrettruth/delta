@@ -17,6 +17,11 @@ export interface CreateExternalLinkInput {
   lastSyncedAt?: string | null;
 }
 
+export interface UpdateExternalLinkInput {
+  metadata?: Record<string, unknown> | null;
+  lastSyncedAt?: string | null;
+}
+
 function now(): string {
   return new Date().toISOString();
 }
@@ -38,6 +43,29 @@ export function createExternalLink(
       createdAt: ts,
       updatedAt: ts,
     })
+    .returning()
+    .get();
+}
+
+export function updateExternalLink(
+  db: Db,
+  id: number,
+  input: UpdateExternalLinkInput,
+): typeof taskExternalLinks.$inferSelect {
+  const patch: Partial<typeof taskExternalLinks.$inferInsert> = {
+    updatedAt: now(),
+  };
+  if ("metadata" in input) {
+    patch.metadata = input.metadata ? JSON.stringify(input.metadata) : null;
+  }
+  if ("lastSyncedAt" in input) {
+    patch.lastSyncedAt = input.lastSyncedAt ?? null;
+  }
+
+  return db
+    .update(taskExternalLinks)
+    .set(patch)
+    .where(eq(taskExternalLinks.id, id))
     .returning()
     .get();
 }

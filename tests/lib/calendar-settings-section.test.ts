@@ -20,15 +20,21 @@ describe("CalendarSettingsSection", () => {
         createElement(CalendarSettingsSection, {
           initialGeoProvider: "photon",
           initialNlpProvider: null,
+          initialGoogle: {
+            connected: false,
+            email: null,
+            name: null,
+            tasksLastPulledAt: null,
+            tasksLastError: null,
+          },
         }),
       ),
     );
 
     expect(html).toContain("calendar");
-    expect(html).toContain("location lookup");
-    expect(html).toContain("photon");
-    expect(html).toContain("mapbox");
-    expect(html).toContain("google maps");
-    expect(html).toContain("recurrence parsing");
+    expect(html).toContain("google");
+    expect(html).toContain("connect google");
+    expect(html).toContain("google tasks");
+    expect(html).toContain("pull now");
   });
 });

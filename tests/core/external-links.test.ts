@@ -8,6 +8,7 @@ import {
   createExternalLink,
   getExternalLinkByProviderId,
   listExternalLinksForTask,
+  updateExternalLink,
 } from "@/core/external-links";
 import { createTask } from "@/core/task";
 import type { Db } from "@/core/types";
@@ -127,5 +128,23 @@ describe("external links", () => {
         externalId: "uid@example.com",
       }),
     ).toThrow();
+  });
+
+  it("updates metadata and sync timestamps", () => {
+    const task = createTask(db, userId, { description: "Imported event" });
+    const link = createExternalLink(db, {
+      userId,
+      taskId: task.id,
+      provider: EXTERNAL_LINK_PROVIDER.googleTasks,
+      externalId: "list-1:task-1",
+    });
+
+    const updated = updateExternalLink(db, link.id, {
+      metadata: { etag: "etag-1" },
+      lastSyncedAt: "2026-05-11T12:00:00.000Z",
+    });
+
+    expect(JSON.parse(updated.metadata ?? "{}")).toEqual({ etag: "etag-1" });
+    expect(updated.lastSyncedAt).toBe("2026-05-11T12:00:00.000Z");
   });
 });
