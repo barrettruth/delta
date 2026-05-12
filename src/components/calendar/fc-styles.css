@@ -4,6 +4,7 @@
   min-height: 0;
   height: 100%;
   width: 100%;
+  position: relative;
 }
 
 .fc-delta-root .fc {
@@ -32,12 +33,6 @@
     var(--border) 18%,
     transparent
   );
-  --delta-calendar-focus-border: color-mix(
-    in oklab,
-    var(--border) 72%,
-    var(--foreground)
-  );
-
   font-size: 11px;
   height: 100%;
   color: var(--foreground);
@@ -64,15 +59,8 @@
 }
 
 .fc-delta-root .fc .fc-delta-focused-date-header .fc-col-header-cell-cushion {
-  color: var(--foreground);
-  font-weight: 700;
-}
-
-.fc-delta-root
-  .fc
-  .fc-day-today.fc-delta-focused-date-header
-  .fc-col-header-cell-cushion {
   color: var(--primary);
+  font-weight: 700;
 }
 
 .fc-delta-root .fc .fc-timegrid-slot {
@@ -193,28 +181,12 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   opacity: 0.6;
 }
 
-.fc-delta-root .fc .fc-delta-focused-date {
-  box-shadow:
-    inset 1px 0 0 var(--delta-calendar-focus-border),
-    inset -1px 0 0 var(--delta-calendar-focus-border);
-}
-
-.fc-delta-root .fc .fc-daygrid-day.fc-delta-focused-date {
-  position: relative;
-  z-index: 1;
-  box-shadow: inset 0 0 0 1px var(--delta-calendar-focus-border);
-}
-
-.fc-delta-root .fc .fc-timegrid-col.fc-delta-focused-date {
-  position: relative;
-  z-index: 1;
-}
-
-.fc-delta-root .fc .fc-col-header-cell.fc-delta-focused-date-header {
-  box-shadow:
-    inset 1px 0 0 var(--delta-calendar-focus-border),
-    inset -1px 0 0 var(--delta-calendar-focus-border),
-    inset 0 -1px 0 var(--delta-calendar-focus-border);
+.fc-delta-root .fc-delta-focus-outline {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid var(--primary);
+  z-index: 6;
 }
 
 .fc-delta-root .fc .fc-event {
