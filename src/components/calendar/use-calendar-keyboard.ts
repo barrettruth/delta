@@ -1,0 +1,263 @@
+"use client";
+
+import type { Dispatch, RefObject, SetStateAction } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { registerScopedKeydown } from "@/lib/keyboard";
+import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
+import type { FcCalendarHandle, FcViewMode } from "./fc-calendar";
+
+export function useCalendarKeyboard({
+  actionsOpen,
+  dismissPopover,
+  fcRef,
+  goNextPeriod,
+  goPrevPeriod,
+  goToday,
+  handleDeletePanelTask,
+  hasVisibleAllDayEvents,
+  setActionsOpen,
+  setAllDayVisible,
+  setViewMode,
+  viewMode,
+}: {
+  actionsOpen: boolean;
+  dismissPopover: () => void;
+  fcRef: RefObject<FcCalendarHandle | null>;
+  goNextPeriod: () => void;
+  goPrevPeriod: () => void;
+  goToday: () => void;
+  handleDeletePanelTask: () => void;
+  hasVisibleAllDayEvents: boolean;
+  setActionsOpen: Dispatch<SetStateAction<boolean>>;
+  setAllDayVisible: Dispatch<SetStateAction<boolean>>;
+  setViewMode: Dispatch<SetStateAction<FcViewMode>>;
+  viewMode: FcViewMode;
+}) {
+  const countBuf = useRef("");
+  const pendingG = useRef(false);
+  const pendingOp = useRef<string | null>(null);
+  const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleKey = useCallback(
+    (event: KeyboardEvent) => {
+      const scrollerEl = fcRef.current?.getScrollerEl() ?? null;
+      const isTimeGrid = viewMode === "week" || viewMode === "day";
+
+      if (isTimeGrid && scrollerEl) {
+        const HOUR = 60;
+        if (matchesEvent("calendar.scroll_down_hour", event)) {
+          event.preventDefault();
+          scrollerEl.scrollBy({ top: HOUR });
+          return;
+        }
+        if (matchesEvent("calendar.scroll_up_hour", event)) {
+          event.preventDefault();
+          scrollerEl.scrollBy({ top: -HOUR });
+          return;
+        }
+        if (matchesEvent("calendar.half_page_down", event)) {
+          event.preventDefault();
+          scrollerEl.scrollBy({ top: scrollerEl.clientHeight / 2 });
+          return;
+        }
+        if (matchesEvent("calendar.half_page_up", event)) {
+          event.preventDefault();
+          scrollerEl.scrollBy({ top: -scrollerEl.clientHeight / 2 });
+          return;
+        }
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      const delKey = getKeymap("calendar.delete").triggerKey;
+
+      if (pendingOp.current) {
+        const op = pendingOp.current;
+        pendingOp.current = null;
+        if (opTimer.current) {
+          clearTimeout(opTimer.current);
+          opTimer.current = null;
+        }
+        if (event.key === op && op === delKey) {
+          event.preventDefault();
+          handleDeletePanelTask();
+        }
+        countBuf.current = "";
+        return;
+      }
+
+      const consumeCount = () => {
+        const count = countBuf.current
+          ? Number.parseInt(countBuf.current, 10)
+          : 1;
+        countBuf.current = "";
+        return count;
+      };
+
+      const scrollTopKey = getKeymap("calendar.scroll_top").triggerKey;
+
+      if (pendingG.current) {
+        pendingG.current = false;
+        if (gTimer.current) {
+          clearTimeout(gTimer.current);
+          gTimer.current = null;
+        }
+        if (event.key === scrollTopKey && isTimeGrid) {
+          event.preventDefault();
+          const hour = countBuf.current
+            ? Math.min(23, Number.parseInt(countBuf.current, 10))
+            : 0;
+          countBuf.current = "";
+          fcRef.current?.scrollToTime(hour);
+          return;
+        }
+        const actionsKey = getKeymap("calendar.actions").triggerKey;
+        if (event.key === actionsKey) {
+          event.preventDefault();
+          setActionsOpen(true);
+          countBuf.current = "";
+          return;
+        }
+        countBuf.current = "";
+        return;
+      }
+
+      if (event.key >= "1" && event.key <= "9") {
+        countBuf.current += event.key;
+        return;
+      }
+      if (event.key === "0" && countBuf.current) {
+        countBuf.current += "0";
+        return;
+      }
+
+      if (event.key === scrollTopKey) {
+        event.preventDefault();
+        pendingG.current = true;
+        gTimer.current = setTimeout(() => {
+          pendingG.current = false;
+          countBuf.current = "";
+          gTimer.current = null;
+        }, 500);
+        return;
+      }
+
+      const scrollBottomKey = getKeymap("calendar.scroll_bottom").triggerKey;
+      if (event.key === scrollBottomKey && isTimeGrid) {
+        event.preventDefault();
+        const count = countBuf.current
+          ? Math.min(23, Number.parseInt(countBuf.current, 10))
+          : 23;
+        countBuf.current = "";
+        fcRef.current?.scrollToTime(count);
+        return;
+      }
+
+      const prevKey = getKeymap("calendar.prev_period").triggerKey;
+      if (event.key === prevKey) {
+        event.preventDefault();
+        dismissPopover();
+        const count = consumeCount();
+        for (let index = 0; index < count; index++) goPrevPeriod();
+        return;
+      }
+
+      const nextKey = getKeymap("calendar.next_period").triggerKey;
+      if (event.key === nextKey) {
+        event.preventDefault();
+        dismissPopover();
+        const count = consumeCount();
+        for (let index = 0; index < count; index++) goNextPeriod();
+        return;
+      }
+
+      const alldayKey = getKeymap("calendar.toggle_allday").triggerKey;
+      if (event.key === alldayKey && isTimeGrid) {
+        event.preventDefault();
+        countBuf.current = "";
+        if (hasVisibleAllDayEvents) setAllDayVisible((prev) => !prev);
+        return;
+      }
+
+      const dayViewKey = getKeymap("calendar.day_view").triggerKey;
+      if (event.key === dayViewKey) {
+        event.preventDefault();
+        countBuf.current = "";
+        dismissPopover();
+        setViewMode("day");
+        return;
+      }
+
+      const weekViewKey = getKeymap("calendar.week_view").triggerKey;
+      if (event.key === weekViewKey) {
+        event.preventDefault();
+        countBuf.current = "";
+        dismissPopover();
+        setViewMode("week");
+        return;
+      }
+
+      const monthViewKey = getKeymap("calendar.month_view").triggerKey;
+      if (event.key === monthViewKey) {
+        event.preventDefault();
+        countBuf.current = "";
+        dismissPopover();
+        setViewMode("month");
+        return;
+      }
+
+      const todayKey = getKeymap("calendar.today").triggerKey;
+      if (event.key === todayKey) {
+        event.preventDefault();
+        countBuf.current = "";
+        dismissPopover();
+        goToday();
+        return;
+      }
+
+      if (event.key === delKey) {
+        event.preventDefault();
+        pendingOp.current = delKey;
+        opTimer.current = setTimeout(() => {
+          pendingOp.current = null;
+          opTimer.current = null;
+        }, 500);
+        return;
+      }
+
+      countBuf.current = "";
+    },
+    [
+      dismissPopover,
+      fcRef,
+      goNextPeriod,
+      goPrevPeriod,
+      goToday,
+      handleDeletePanelTask,
+      hasVisibleAllDayEvents,
+      setActionsOpen,
+      setAllDayVisible,
+      setViewMode,
+      viewMode,
+    ],
+  );
+
+  useEffect(() => {
+    return registerScopedKeydown(
+      window,
+      { scope: "view", popoverOpen: actionsOpen },
+      handleKey,
+    );
+  }, [handleKey, actionsOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (gTimer.current) clearTimeout(gTimer.current);
+      if (opTimer.current) clearTimeout(opTimer.current);
+      pendingG.current = false;
+      pendingOp.current = null;
+      countBuf.current = "";
+    };
+  }, []);
+}
