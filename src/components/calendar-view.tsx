@@ -80,6 +80,7 @@ export function CalendarView({
           events={calendar.events}
           viewMode={calendar.viewMode}
           initialDate={calendar.anchor}
+          focusedDate={calendar.focusedDate}
           allDaySlot={calendar.allDaySlotVisible}
           onEventClick={calendar.openTaskFromEvent}
           onEventDrop={calendar.handleEventDrop}

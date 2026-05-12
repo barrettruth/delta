@@ -46,17 +46,19 @@ export function useCalendarViewController({
   const navigation = useCalendarNavigation({ defaultViewMode, fcRef });
   const {
     anchor,
+    focusedDate,
     goNextPeriod,
     goPrevPeriod,
     goToday,
     handleDatesSet,
     headerTitle,
     isTimeGridView,
+    moveFocusedDate,
     nav,
     rangeEnd,
     rangeStart,
-    setAnchor,
-    setViewMode,
+    setFocusedDate,
+    setFocusedViewMode,
     viewMode,
   } = navigation;
 
@@ -221,7 +223,7 @@ export function useCalendarViewController({
 
   const handleDateSelect = useCallback(
     (start: Date, end: Date, allDay: boolean, anchorRect: DOMRect) => {
-      setAnchor(start);
+      setFocusedDate(start);
       setPopoverAnchor({ rect: anchorRect });
       if (allDay) {
         panel.create(buildDayPreFill(start));
@@ -235,12 +237,12 @@ export function useCalendarViewController({
         panel.create(buildRangePreFill(start, startMin, endMin));
       }
     },
-    [panel, setAnchor],
+    [panel, setFocusedDate],
   );
 
   const handleDateClick = useCallback(
     (date: Date, allDay: boolean, anchorEl: HTMLElement) => {
-      setAnchor(date);
+      setFocusedDate(date);
       setPopoverAnchor(anchorEl);
       if (allDay) {
         panel.create(buildDayPreFill(date));
@@ -249,7 +251,7 @@ export function useCalendarViewController({
         panel.create(buildSlotPreFill(date, minute));
       }
     },
-    [panel, setAnchor],
+    [panel, setFocusedDate],
   );
 
   const goPrev = useCallback(() => {
@@ -285,13 +287,12 @@ export function useCalendarViewController({
     actionsOpen,
     dismissPopover,
     fcRef,
-    goNextPeriod,
-    goPrevPeriod,
     goToday,
     hasVisibleAllDayEvents,
+    moveFocusedDate,
     setActionsOpen,
     setAllDayVisible,
-    setViewMode,
+    setViewMode: setFocusedViewMode,
     viewMode,
   });
 
@@ -301,6 +302,7 @@ export function useCalendarViewController({
     anchor,
     events: eventsWithDraft,
     fcRef,
+    focusedDate,
     goNext,
     goPrev,
     goTodayWithDismiss,

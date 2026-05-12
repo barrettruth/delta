@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  addCalendarDays,
   buildCalendarDraftEvent,
   getCalendarHeaderTitle,
   getCalendarRange,
+  isSameCalendarDay,
   mergeOptimisticCalendarTasks,
   pruneOptimisticMasterExdates,
+  startOfCalendarDay,
 } from "@/components/calendar/calendar-view-model";
 import { createTask } from "@/core/task";
 import type { Db } from "@/core/types";
@@ -19,6 +22,24 @@ beforeEach(() => {
 });
 
 describe("calendar view range and title model", () => {
+  it("normalizes and compares focused calendar dates by local day", () => {
+    expect(startOfCalendarDay(new Date(2026, 2, 18, 14, 30))).toEqual(
+      new Date(2026, 2, 18, 0, 0, 0, 0),
+    );
+    expect(addCalendarDays(new Date(2026, 2, 18, 14, 30), 7)).toEqual(
+      new Date(2026, 2, 25, 0, 0, 0, 0),
+    );
+    expect(
+      isSameCalendarDay(
+        new Date(2026, 2, 18, 0, 1),
+        new Date(2026, 2, 18, 23, 59),
+      ),
+    ).toBe(true);
+    expect(
+      isSameCalendarDay(new Date(2026, 2, 18), new Date(2026, 2, 19)),
+    ).toBe(false);
+  });
+
   it("derives a day range from the anchor", () => {
     const anchor = new Date(2026, 2, 18, 14, 30);
     const { start, end } = getCalendarRange({

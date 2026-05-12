@@ -72,8 +72,10 @@ const EXPECTED_KEYMAP_IDS = [
   "kanban.visual_mode",
   "kanban.delete",
   "kanban.escape",
-  "calendar.prev_period",
-  "calendar.next_period",
+  "calendar.focus_prev_day",
+  "calendar.focus_next_day",
+  "calendar.focus_prev_week",
+  "calendar.focus_next_week",
   "calendar.scroll_top",
   "calendar.scroll_bottom",
   "calendar.scroll_down_hour",
@@ -261,9 +263,14 @@ describe("keymap definitions", () => {
     expect(calendar?.rows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ids: ["calendar.prev_period", "calendar.next_period"],
+          ids: ["calendar.focus_prev_day", "calendar.focus_next_day"],
           keyDisplay: "h / l",
-          label: "Previous / next day, week, or month",
+          label: "Focus previous / next day",
+        }),
+        expect.objectContaining({
+          ids: ["calendar.focus_prev_week", "calendar.focus_next_week"],
+          keyDisplay: "k / j",
+          label: "Focus previous / next week",
         }),
         expect.objectContaining({
           ids: [

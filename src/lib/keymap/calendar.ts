@@ -3,18 +3,32 @@ import type { HelpRow, KeymapDef } from "@/lib/keymap/types";
 
 export const CALENDAR_KEYMAPS: KeymapDef[] = [
   {
-    id: "calendar.prev_period",
+    id: "calendar.focus_prev_day",
     key: "h",
     triggerKey: "h",
     section: "calendar",
-    label: "Previous period",
+    label: "Focus previous day",
   },
   {
-    id: "calendar.next_period",
+    id: "calendar.focus_next_day",
     key: "l",
     triggerKey: "l",
     section: "calendar",
-    label: "Next period",
+    label: "Focus next day",
+  },
+  {
+    id: "calendar.focus_prev_week",
+    key: "k",
+    triggerKey: "k",
+    section: "calendar",
+    label: "Focus previous week",
+  },
+  {
+    id: "calendar.focus_next_week",
+    key: "j",
+    triggerKey: "j",
+    section: "calendar",
+    label: "Focus next week",
   },
   {
     id: "calendar.scroll_top",
@@ -108,9 +122,14 @@ export const CALENDAR_KEYMAPS: KeymapDef[] = [
 
 export const CALENDAR_HELP_ROWS: HelpRow[] = [
   helpRow(
-    ["calendar.prev_period", "calendar.next_period"],
+    ["calendar.focus_prev_day", "calendar.focus_next_day"],
     "h / l",
-    "Previous / next day, week, or month",
+    "Focus previous / next day",
+  ),
+  helpRow(
+    ["calendar.focus_prev_week", "calendar.focus_next_week"],
+    "k / j",
+    "Focus previous / next week",
   ),
   helpRow("calendar.scroll_top", "gg", "First hour (00:00)"),
   helpRow("calendar.scroll_bottom", "G", "Last hour (23:00)"),

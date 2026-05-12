@@ -12,10 +12,9 @@ export function useCalendarKeyboard({
   actionsOpen,
   dismissPopover,
   fcRef,
-  goNextPeriod,
-  goPrevPeriod,
   goToday,
   hasVisibleAllDayEvents,
+  moveFocusedDate,
   setActionsOpen,
   setAllDayVisible,
   setViewMode,
@@ -24,13 +23,12 @@ export function useCalendarKeyboard({
   actionsOpen: boolean;
   dismissPopover: () => void;
   fcRef: RefObject<FcCalendarHandle | null>;
-  goNextPeriod: () => void;
-  goPrevPeriod: () => void;
   goToday: () => void;
   hasVisibleAllDayEvents: boolean;
+  moveFocusedDate: (days: number) => void;
   setActionsOpen: Dispatch<SetStateAction<boolean>>;
   setAllDayVisible: Dispatch<SetStateAction<boolean>>;
-  setViewMode: Dispatch<SetStateAction<FcViewMode>>;
+  setViewMode: (mode: FcViewMode) => void;
   viewMode: FcViewMode;
 }) {
   const countBuf = useRef("");
@@ -135,21 +133,39 @@ export function useCalendarKeyboard({
         return;
       }
 
-      const prevKey = getKeymap("calendar.prev_period").triggerKey;
+      const prevKey = getKeymap("calendar.focus_prev_day").triggerKey;
       if (event.key === prevKey) {
         event.preventDefault();
         dismissPopover();
         const count = consumeCount();
-        for (let index = 0; index < count; index++) goPrevPeriod();
+        moveFocusedDate(-count);
         return;
       }
 
-      const nextKey = getKeymap("calendar.next_period").triggerKey;
+      const nextKey = getKeymap("calendar.focus_next_day").triggerKey;
       if (event.key === nextKey) {
         event.preventDefault();
         dismissPopover();
         const count = consumeCount();
-        for (let index = 0; index < count; index++) goNextPeriod();
+        moveFocusedDate(count);
+        return;
+      }
+
+      const prevWeekKey = getKeymap("calendar.focus_prev_week").triggerKey;
+      if (event.key === prevWeekKey) {
+        event.preventDefault();
+        dismissPopover();
+        const count = consumeCount();
+        moveFocusedDate(-7 * count);
+        return;
+      }
+
+      const nextWeekKey = getKeymap("calendar.focus_next_week").triggerKey;
+      if (event.key === nextWeekKey) {
+        event.preventDefault();
+        dismissPopover();
+        const count = consumeCount();
+        moveFocusedDate(7 * count);
         return;
       }
 
@@ -202,10 +218,9 @@ export function useCalendarKeyboard({
     [
       dismissPopover,
       fcRef,
-      goNextPeriod,
-      goPrevPeriod,
       goToday,
       hasVisibleAllDayEvents,
+      moveFocusedDate,
       setActionsOpen,
       setAllDayVisible,
       setViewMode,

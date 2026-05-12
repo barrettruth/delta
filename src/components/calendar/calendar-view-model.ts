@@ -21,6 +21,26 @@ export function isCalendarTimeGridView(viewMode: FcViewMode): boolean {
   return viewMode === "week" || viewMode === "day";
 }
 
+export function startOfCalendarDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+export function addCalendarDays(date: Date, days: number): Date {
+  const result = startOfCalendarDay(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+export function isSameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export function getCalendarRange({
   visibleRange,
   anchor,

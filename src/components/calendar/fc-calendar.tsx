@@ -25,6 +25,7 @@ import {
   useRef,
 } from "react";
 import type { Task } from "@/core/types";
+import { isSameCalendarDay } from "./calendar-view-model";
 
 import "./fc-styles.css";
 
@@ -44,6 +45,7 @@ interface FcCalendarProps {
   events: EventInput[];
   viewMode: FcViewMode;
   initialDate: Date;
+  focusedDate: Date | null;
   allDaySlot: boolean;
   onEventClick: (task: Task, isVirtual: boolean, anchor: HTMLElement) => void;
   onEventDrop: (
@@ -141,6 +143,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
       events,
       viewMode,
       initialDate,
+      focusedDate,
       allDaySlot,
       onEventClick,
       onEventDrop,
@@ -296,6 +299,22 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
       [onDatesSet],
     );
 
+    const dayCellClassNames = useCallback(
+      (arg: { date: Date }) =>
+        focusedDate && isSameCalendarDay(arg.date, focusedDate)
+          ? ["fc-delta-focused-date"]
+          : [],
+      [focusedDate],
+    );
+
+    const dayHeaderClassNames = useCallback(
+      (arg: { date: Date }) =>
+        focusedDate && isSameCalendarDay(arg.date, focusedDate)
+          ? ["fc-delta-focused-date-header"]
+          : [],
+      [focusedDate],
+    );
+
     return (
       <div ref={containerRef} className="fc-delta-root flex-1 min-h-0">
         <FullCalendar
@@ -337,6 +356,8 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           select={handleSelect}
           dateClick={handleDateClick}
           datesSet={handleDatesSet}
+          dayCellClassNames={dayCellClassNames}
+          dayHeaderClassNames={dayHeaderClassNames}
           dayMaxEvents
           fixedWeekCount
           scrollTime={`${String(Math.max(0, new Date().getHours() - 1)).padStart(2, "0")}:00:00`}
