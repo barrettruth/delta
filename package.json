@@ -20,7 +20,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "version:check": "node scripts/version/cli.mjs check",
-    "release": "scripts/version/bump.sh",
+    "release": "just release",
     "ci": "just ci"
   },
   "dependencies": {

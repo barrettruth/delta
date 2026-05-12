@@ -55,10 +55,16 @@ current Forgejo self-hosted runner is still a token-based publisher.
    ```
 
 4. When the version bump PR has merged and the package version is ready to tag,
-   run the release command:
+   run the release command from the Delta checkout:
 
    ```sh
    just release cli 0.0.7 --tag
+   ```
+
+   The package script delegates to the same `just release` recipe:
+
+   ```sh
+   pnpm release cli 0.0.7 --tag
    ```
 
 5. Revoke the old npm token after the new token has published successfully.
