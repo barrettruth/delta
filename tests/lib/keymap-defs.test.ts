@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_KEYMAPS,
   getKeymap,
+  getKeymapsBySection,
   HELP_SECTIONS,
   matchesEvent,
   sectionsForPath,
@@ -18,7 +19,89 @@ function keyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
   } as KeyboardEvent;
 }
 
+const EXPECTED_KEYMAP_IDS = [
+  "global.queue",
+  "global.kanban",
+  "global.calendar",
+  "global.settings",
+  "global.calendar_day",
+  "global.calendar_week",
+  "global.calendar_month",
+  "global.toggle_sidebar",
+  "global.undo",
+  "global.category_jump",
+  "global.create_task",
+  "global.toggle_done",
+  "global.help",
+  "queue.move_down",
+  "queue.move_up",
+  "queue.jump_top",
+  "queue.jump_bottom",
+  "queue.half_page_down",
+  "queue.half_page_up",
+  "queue.search",
+  "queue.edit",
+  "queue.complete",
+  "queue.delete",
+  "queue.set_pending",
+  "queue.set_wip",
+  "queue.set_blocked",
+  "queue.toggle_select",
+  "queue.visual_mode",
+  "queue.escape",
+  "kanban.col_left",
+  "kanban.col_right",
+  "kanban.row_down",
+  "kanban.row_up",
+  "kanban.move_task_left",
+  "kanban.move_task_right",
+  "kanban.swap_col_left",
+  "kanban.swap_col_right",
+  "kanban.jump_waiting",
+  "kanban.jump_in_progress",
+  "kanban.jump_blocked",
+  "kanban.jump_done",
+  "kanban.set_waiting",
+  "kanban.set_in_progress",
+  "kanban.set_blocked",
+  "kanban.complete",
+  "kanban.search",
+  "kanban.edit",
+  "kanban.toggle_select",
+  "kanban.visual_mode",
+  "kanban.delete",
+  "kanban.escape",
+  "calendar.prev_period",
+  "calendar.next_period",
+  "calendar.scroll_top",
+  "calendar.scroll_bottom",
+  "calendar.scroll_down_hour",
+  "calendar.scroll_up_hour",
+  "calendar.half_page_down",
+  "calendar.half_page_up",
+  "calendar.day_view",
+  "calendar.week_view",
+  "calendar.month_view",
+  "calendar.today",
+  "calendar.toggle_allday",
+  "calendar.delete",
+  "calendar.actions",
+  "nav.jump_back",
+  "nav.jump_forward",
+  "nav.alternate",
+  "task_detail.save",
+  "task_detail.close",
+  "task_detail.create",
+];
+
 describe("keymap definitions", () => {
+  it("keeps the declared keymap ids stable across split modules", () => {
+    const ids = DEFAULT_KEYMAPS.map((def) => def.id);
+
+    expect(ids).toEqual(EXPECTED_KEYMAP_IDS);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("resolves static keymap definitions by id", () => {
     expect(getKeymap("global.help")).toEqual(
       expect.objectContaining({
@@ -31,6 +114,17 @@ describe("keymap definitions", () => {
     expect(() => getKeymap("global.missing")).toThrow(
       "Unknown keymap id: global.missing",
     );
+  });
+
+  it("groups declared keymap definitions by their sections", () => {
+    expect(getKeymapsBySection("calendar").map((def) => def.id)).toEqual(
+      EXPECTED_KEYMAP_IDS.filter((id) => id.startsWith("calendar.")),
+    );
+    expect(getKeymapsBySection("task_detail").map((def) => def.id)).toEqual([
+      "task_detail.save",
+      "task_detail.close",
+      "task_detail.create",
+    ]);
   });
 
   it("matches static keymaps against keyboard events", () => {
@@ -47,6 +141,27 @@ describe("keymap definitions", () => {
         keyEvent({ key: "o", ctrlKey: true, shiftKey: true }),
       ),
     ).toBe(false);
+  });
+
+  it("resolves view paths to global, view, navigation, and task panel sections", () => {
+    expect(sectionsForPath("/queue")).toEqual([
+      "global",
+      "queue",
+      "navigation",
+      "task_detail",
+    ]);
+    expect(sectionsForPath("/kanban")).toEqual([
+      "global",
+      "kanban",
+      "navigation",
+      "task_detail",
+    ]);
+    expect(sectionsForPath("/calendar")).toEqual([
+      "global",
+      "calendar",
+      "navigation",
+      "task_detail",
+    ]);
   });
 
   it("falls back to global shortcuts across the settings area", () => {
@@ -80,6 +195,18 @@ describe("keymap definitions", () => {
         }
       }
     }
+  });
+
+  it("advertises every declared keymap id in shortcuts help", () => {
+    const helpIds = new Set(
+      HELP_SECTIONS.flatMap((section) =>
+        section.rows.flatMap((row) => row.ids),
+      ),
+    );
+
+    expect(
+      DEFAULT_KEYMAPS.map((def) => def.id).filter((id) => !helpIds.has(id)),
+    ).toEqual([]);
   });
 
   it("keeps keymap definitions free of customization metadata", () => {

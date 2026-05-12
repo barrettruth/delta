@@ -1,0 +1,114 @@
+import { helpRow } from "@/lib/keymap/help-row";
+import type { HelpRow, KeymapDef } from "@/lib/keymap/types";
+
+export const GLOBAL_KEYMAPS: KeymapDef[] = [
+  {
+    id: "global.queue",
+    key: "Q",
+    triggerKey: "Q",
+    section: "global",
+    label: "Queue view",
+  },
+  {
+    id: "global.kanban",
+    key: "K",
+    triggerKey: "K",
+    section: "global",
+    label: "Kanban view",
+  },
+  {
+    id: "global.calendar",
+    key: "C",
+    triggerKey: "C",
+    section: "global",
+    label: "Calendar view",
+  },
+  {
+    id: "global.settings",
+    key: "S",
+    triggerKey: "S",
+    section: "global",
+    label: "Settings",
+  },
+  {
+    id: "global.calendar_day",
+    key: "D",
+    triggerKey: "D",
+    section: "global",
+    label: "Calendar day view",
+  },
+  {
+    id: "global.calendar_week",
+    key: "w",
+    triggerKey: "w",
+    section: "global",
+    label: "Calendar week view",
+  },
+  {
+    id: "global.calendar_month",
+    key: "m",
+    triggerKey: "m",
+    section: "global",
+    label: "Calendar month view",
+  },
+  {
+    id: "global.toggle_sidebar",
+    key: "-",
+    triggerKey: "-",
+    section: "global",
+    label: "Toggle sidebar",
+  },
+  {
+    id: "global.undo",
+    key: "u",
+    triggerKey: "u",
+    section: "global",
+    label: "Undo",
+  },
+  {
+    id: "global.category_jump",
+    key: "g1-9",
+    triggerKey: "g",
+    section: "global",
+    label: "Jump to category",
+  },
+  {
+    id: "global.create_task",
+    key: "gc",
+    triggerKey: "g",
+    section: "global",
+    label: "Create task",
+  },
+  {
+    id: "global.toggle_done",
+    key: "g.",
+    triggerKey: "g",
+    section: "global",
+    label: "Toggle done tasks",
+  },
+  {
+    id: "global.help",
+    key: "g?",
+    triggerKey: "g",
+    section: "global",
+    label: "This help",
+  },
+];
+
+export const GLOBAL_HELP_ROWS: HelpRow[] = [
+  helpRow("global.queue", "Q", "Queue view"),
+  helpRow("global.kanban", "K", "Kanban view"),
+  helpRow("global.calendar", "C", "Calendar view"),
+  helpRow("global.settings", "S", "Settings"),
+  helpRow(
+    ["global.calendar_day", "global.calendar_week", "global.calendar_month"],
+    "D / w / m",
+    "Calendar day / week / month view",
+  ),
+  helpRow("global.toggle_sidebar", "-", "Toggle sidebar"),
+  helpRow("global.undo", "u", "Undo"),
+  helpRow("global.category_jump", "g1-9", "Jump to category"),
+  helpRow("global.create_task", "gc", "Create task"),
+  helpRow("global.toggle_done", "g.", "Toggle done tasks"),
+  helpRow("global.help", "g?", "This help"),
+];
