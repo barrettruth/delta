@@ -13,8 +13,16 @@ export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   apiKey: text("api_key").notNull().unique(),
-  calendarFeedToken: text("calendar_feed_token").unique(),
   createdAt: text("created_at").notNull(),
+});
+
+export const calendarFeedTokens = sqliteTable("calendar_feed_tokens", {
+  userId: integer("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 export const tasks = sqliteTable("tasks", {

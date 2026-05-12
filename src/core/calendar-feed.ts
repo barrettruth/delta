@@ -1,28 +1,43 @@
 import { randomBytes } from "node:crypto";
 import { and, eq, isNotNull, max } from "drizzle-orm";
-import { tasks, users } from "@/db/schema";
+import { calendarFeedTokens, tasks, users } from "@/db/schema";
 import { tasksToICalendar } from "./ical/serializer";
 import type { Db } from "./types";
 
 export function generateFeedToken(db: Db, userId: number): string {
   const token = randomBytes(32).toString("hex");
-  db.update(users)
-    .set({ calendarFeedToken: token })
-    .where(eq(users.id, userId))
+  const now = new Date().toISOString();
+  db.insert(calendarFeedTokens)
+    .values({
+      userId,
+      token,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: calendarFeedTokens.userId,
+      set: {
+        token,
+        updatedAt: now,
+      },
+    })
     .run();
   return token;
 }
 
 export function revokeFeedToken(db: Db, userId: number): void {
-  db.update(users)
-    .set({ calendarFeedToken: null })
-    .where(eq(users.id, userId))
+  db.delete(calendarFeedTokens)
+    .where(eq(calendarFeedTokens.userId, userId))
     .run();
 }
 
 export function getFeedToken(db: Db, userId: number): string | null {
-  const user = db.select().from(users).where(eq(users.id, userId)).get();
-  return user?.calendarFeedToken ?? null;
+  const feed = db
+    .select({ token: calendarFeedTokens.token })
+    .from(calendarFeedTokens)
+    .where(eq(calendarFeedTokens.userId, userId))
+    .get();
+  return feed?.token ?? null;
 }
 
 export function getUserByFeedToken(
@@ -31,8 +46,9 @@ export function getUserByFeedToken(
 ): { id: number; username: string } | null {
   const user = db
     .select({ id: users.id, username: users.username })
-    .from(users)
-    .where(eq(users.calendarFeedToken, token))
+    .from(calendarFeedTokens)
+    .innerJoin(users, eq(users.id, calendarFeedTokens.userId))
+    .where(eq(calendarFeedTokens.token, token))
     .get();
   return user ?? null;
 }

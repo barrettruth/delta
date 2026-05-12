@@ -7,6 +7,7 @@ import * as schema from "@/db/schema";
 
 describe("schema migrations", () => {
   const currentTables = [
+    "calendar_feed_tokens",
     "category_colors",
     "integration_configs",
     "task_dependencies",
@@ -258,6 +259,7 @@ describe("schema migrations", () => {
   it("does not create retired product surfaces for fresh databases", () => {
     withMigratedSchema((sqlite) => {
       const names = tableNames(sqlite);
+      const feedColumns = columnNames(sqlite, "calendar_feed_tokens");
       const taskColumns = columnNames(sqlite, "tasks");
       const userColumns = columnNames(sqlite, "users");
 
@@ -265,12 +267,19 @@ describe("schema migrations", () => {
         expect(names).not.toContain(table);
       }
 
+      expect(feedColumns).toEqual([
+        "user_id",
+        "token",
+        "created_at",
+        "updated_at",
+      ]);
       expect(taskColumns).not.toContain("external_id");
       expect(taskColumns).not.toContain("external_source");
       expect(taskColumns).not.toContain("label");
       expect(taskColumns).not.toContain("priority");
       expect(taskColumns).not.toContain("source_event_id");
       expect(taskColumns).not.toContain("source_user_id");
+      expect(userColumns).not.toContain("calendar_feed_token");
       expect(userColumns).not.toContain("keymap_overrides");
       expect(userColumns).not.toContain("onboarding_completed");
       expect(userColumns).not.toContain("password_hash");
@@ -318,14 +327,21 @@ describe("schema migrations", () => {
 
       const names = tableNames(sqlite);
       const user = sqlite
-        .prepare(
-          `SELECT username, api_key, calendar_feed_token, created_at FROM users WHERE id = 1`,
-        )
+        .prepare(`SELECT username, api_key, created_at FROM users WHERE id = 1`)
         .get() as {
         username: string;
         api_key: string;
-        calendar_feed_token: string;
         created_at: string;
+      };
+      const feed = sqlite
+        .prepare(
+          `SELECT user_id, token, created_at, updated_at FROM calendar_feed_tokens WHERE user_id = 1`,
+        )
+        .get() as {
+        user_id: number;
+        token: string;
+        created_at: string;
+        updated_at: string;
       };
       const task = sqlite
         .prepare(
@@ -340,13 +356,17 @@ describe("schema migrations", () => {
         "id",
         "username",
         "api_key",
-        "calendar_feed_token",
         "created_at",
       ]);
       expect(user.username).toBe("owner");
       expect(user.api_key).toMatch(/^[a-f0-9]{64}$/);
-      expect(user.calendar_feed_token).toBe("feed-token");
       expect(user.created_at).toBe("2026-05-11T00:00:00.000Z");
+      expect(feed).toEqual({
+        user_id: 1,
+        token: "feed-token",
+        created_at: "2026-05-11T00:00:00.000Z",
+        updated_at: "2026-05-11T00:00:00.000Z",
+      });
       expect(task).toMatchObject({
         description: "Preserve calendar task",
         location: "Charlottesville",
