@@ -125,14 +125,19 @@ function buildFocusOutlineStyle({
   root: HTMLElement;
   viewMode: FcViewMode;
 }): CSSProperties | null {
+  const header = root.querySelector<HTMLElement>(
+    `.fc-col-header-cell[data-date="${dateKey}"]`,
+  );
   const targets =
     viewMode === "month"
       ? [
+          header,
           root.querySelector<HTMLElement>(
             `.fc-daygrid-day[data-date="${dateKey}"]`,
           ),
         ]
       : [
+          header,
           root.querySelector<HTMLElement>(
             `.fc-daygrid-day[data-date="${dateKey}"]`,
           ),

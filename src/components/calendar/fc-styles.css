@@ -1,10 +1,5 @@
 .fc-delta-root {
-  --delta-calendar-selected-bg: color-mix(
-    in oklab,
-    var(--foreground) 5%,
-    transparent
-  );
-  --delta-calendar-selected-border: color-mix(
+  --delta-calendar-focus-outline: color-mix(
     in oklab,
     var(--border) 70%,
     var(--foreground) 30%
@@ -84,11 +79,6 @@
   transform: translateX(-50%);
   background: var(--delta-calendar-today-marker);
   opacity: 0.75;
-}
-
-.fc-delta-root .fc .fc-delta-focused-date,
-.fc-delta-root .fc .fc-delta-focused-date-header {
-  background: var(--delta-calendar-selected-bg);
 }
 
 .fc-delta-root .fc .fc-delta-focused-date-header .fc-col-header-cell-cushion {
@@ -231,7 +221,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   position: absolute;
   pointer-events: none;
   box-sizing: border-box;
-  box-shadow: inset 0 0 0 1px var(--delta-calendar-selected-border);
+  box-shadow: inset 0 0 0 1px var(--delta-calendar-focus-outline);
   z-index: 6;
 }
 
