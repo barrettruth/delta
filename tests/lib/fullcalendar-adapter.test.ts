@@ -99,7 +99,7 @@ describe("tasksToEvents — category colors + classNames", () => {
       rangeEnd: RANGE_END,
       categoryColors: { Work: "#ff0000" },
     });
-    expect(events[0].backgroundColor).toBe("#ff000020");
+    expect(events[0].backgroundColor).toBe("#ff000040");
     expect(events[0].borderColor).toBe("#ff0000");
   });
 

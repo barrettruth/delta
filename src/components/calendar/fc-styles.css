@@ -286,8 +286,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-timegrid-now-indicator-arrow {
-  border-color: var(--primary);
-  color: var(--primary);
+  display: none;
 }
 
 .fc-delta-root .fc .fc-highlight {

@@ -158,7 +158,7 @@ function taskToEvent(
   };
 
   if (color) {
-    event.backgroundColor = `${color}20`;
+    event.backgroundColor = `${color}40`;
     event.borderColor = color;
   }
 
