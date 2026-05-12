@@ -3,6 +3,7 @@ import { GLOBAL_HELP_ROWS } from "@/lib/keymap/global";
 import { KANBAN_HELP_ROWS } from "@/lib/keymap/kanban";
 import { NAVIGATION_HELP_ROWS } from "@/lib/keymap/navigation";
 import { QUEUE_HELP_ROWS } from "@/lib/keymap/queue";
+import { sectionsForPath } from "@/lib/keymap/sections";
 import { TASK_DETAIL_HELP_ROWS } from "@/lib/keymap/task-detail";
 import type { HelpSection } from "@/lib/keymap/types";
 
@@ -32,3 +33,10 @@ export const HELP_SECTIONS: HelpSection[] = [
     rows: TASK_DETAIL_HELP_ROWS,
   },
 ];
+
+export function helpSectionsForPath(pathname: string): HelpSection[] {
+  const visibleSections = new Set(sectionsForPath(pathname));
+  return HELP_SECTIONS.filter((section) =>
+    visibleSections.has(section.section),
+  );
+}

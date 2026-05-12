@@ -19,6 +19,7 @@ export const SECTION_ORDER: KeySection[] = [
 ];
 
 const VIEW_SECTIONS: Record<string, KeySection[]> = {
+  "/": ["global", "queue", "navigation", "task_detail"],
   "/queue": ["global", "queue", "navigation", "task_detail"],
   "/kanban": ["global", "kanban", "navigation", "task_detail"],
   "/calendar": ["global", "calendar", "navigation", "task_detail"],

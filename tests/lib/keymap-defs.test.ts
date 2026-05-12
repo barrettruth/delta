@@ -4,6 +4,7 @@ import {
   getKeymap,
   getKeymapsBySection,
   HELP_SECTIONS,
+  helpSectionsForPath,
   matchesEvent,
   sectionsForPath,
 } from "@/lib/keymap-defs";
@@ -144,6 +145,12 @@ describe("keymap definitions", () => {
   });
 
   it("resolves view paths to global, view, navigation, and task panel sections", () => {
+    expect(sectionsForPath("/")).toEqual([
+      "global",
+      "queue",
+      "navigation",
+      "task_detail",
+    ]);
     expect(sectionsForPath("/queue")).toEqual([
       "global",
       "queue",
@@ -171,6 +178,27 @@ describe("keymap definitions", () => {
       "global",
     ]);
     expect(sectionsForPath("/settings/shortcuts")).toEqual(["global"]);
+  });
+
+  it("filters shortcut help to the current view", () => {
+    expect(helpSectionsForPath("/").map((section) => section.section)).toEqual([
+      "global",
+      "queue",
+      "navigation",
+      "task_detail",
+    ]);
+    expect(
+      helpSectionsForPath("/calendar").map((section) => section.section),
+    ).toEqual(["global", "calendar", "navigation", "task_detail"]);
+    expect(
+      helpSectionsForPath("/calendar").some(
+        (section) =>
+          section.section === "queue" || section.section === "kanban",
+      ),
+    ).toBe(false);
+    expect(
+      helpSectionsForPath("/settings").map((section) => section.section),
+    ).toEqual(["global"]);
   });
 
   it("does not advertise settings-specific movement shortcuts", () => {

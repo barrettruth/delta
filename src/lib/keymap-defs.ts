@@ -1,7 +1,7 @@
 import type { KeyboardEventLike } from "@/lib/keyboard";
 import { CALENDAR_KEYMAPS } from "@/lib/keymap/calendar";
 import { GLOBAL_KEYMAPS } from "@/lib/keymap/global";
-import { HELP_SECTIONS } from "@/lib/keymap/help";
+import { HELP_SECTIONS, helpSectionsForPath } from "@/lib/keymap/help";
 import { KANBAN_KEYMAPS } from "@/lib/keymap/kanban";
 import { NAVIGATION_KEYMAPS } from "@/lib/keymap/navigation";
 import { QUEUE_KEYMAPS } from "@/lib/keymap/queue";
@@ -20,7 +20,13 @@ export type {
   KeymapDef,
   KeySection,
 } from "@/lib/keymap/types";
-export { HELP_SECTIONS, SECTION_LABELS, SECTION_ORDER, sectionsForPath };
+export {
+  HELP_SECTIONS,
+  helpSectionsForPath,
+  SECTION_LABELS,
+  SECTION_ORDER,
+  sectionsForPath,
+};
 
 export const DEFAULT_KEYMAPS: KeymapDef[] = [
   ...GLOBAL_KEYMAPS,
