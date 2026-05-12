@@ -154,6 +154,7 @@ function taskToEvent(
       isVirtual,
       isRecurring,
       isDueOnly,
+      calendarBorderColor: color,
     },
   };
 

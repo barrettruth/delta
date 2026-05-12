@@ -1,3 +1,5 @@
+import type { EventContentArg } from "@fullcalendar/core";
+import type { ReactNode } from "react";
 import { createElement, forwardRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -72,5 +74,32 @@ describe("FcCalendar", () => {
     ]);
     expect(cellClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
     expect(headerClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
+  });
+
+  it("puts custom event chrome on the owned content wrapper", () => {
+    const props = renderCalendar();
+    const eventContent = props?.eventContent as
+      | ((arg: EventContentArg) => ReactNode)
+      | undefined;
+
+    const html = renderToStaticMarkup(
+      createElement(
+        "div",
+        null,
+        eventContent?.({
+          borderColor: "#3788d8",
+          event: {
+            title: "Drag me",
+            extendedProps: {
+              calendarBorderColor: "#0f766e",
+            },
+          },
+          timeText: "14:30 - 15:00",
+        } as unknown as EventContentArg),
+      ),
+    );
+
+    expect(html).toContain("fc-delta-event-inner");
+    expect(html).toContain("--delta-calendar-event-border:#0f766e");
   });
 });
