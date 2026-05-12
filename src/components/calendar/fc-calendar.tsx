@@ -325,7 +325,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
             hour12: false,
           }}
           firstDay={0}
-          slotEventOverlap
+          slotEventOverlap={false}
           expandRows
           height="100%"
           events={events}
