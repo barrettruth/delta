@@ -76,6 +76,20 @@ describe("FcCalendar", () => {
     expect(headerClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
   });
 
+  it("marks elapsed events for past styling", () => {
+    const props = renderCalendar();
+    const eventClassNames = props?.eventClassNames as
+      | ((arg: EventContentArg) => string[])
+      | undefined;
+
+    expect(
+      eventClassNames?.({ isPast: true } as unknown as EventContentArg),
+    ).toEqual(["is-elapsed"]);
+    expect(
+      eventClassNames?.({ isPast: false } as unknown as EventContentArg),
+    ).toEqual([]);
+  });
+
   it("puts custom event chrome on the owned content wrapper", () => {
     const props = renderCalendar();
     const eventContent = props?.eventContent as
