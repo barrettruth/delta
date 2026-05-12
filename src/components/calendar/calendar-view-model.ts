@@ -109,7 +109,10 @@ export function buildCalendarDraftEvent(
     allDay: Boolean(allDay),
     editable: false,
     classNames: ["is-draft"],
-    extendedProps: { isDraft: true },
+    extendedProps: {
+      isDraft: true,
+      calendarBorderColor: "var(--primary)",
+    },
   };
 }
 

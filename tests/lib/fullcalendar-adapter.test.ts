@@ -101,6 +101,9 @@ describe("tasksToEvents — category colors + classNames", () => {
     });
     expect(events[0].backgroundColor).toBe("#ff000040");
     expect(events[0].borderColor).toBe("#ff0000");
+    expect(events[0].extendedProps).toMatchObject({
+      calendarBorderColor: "#ff0000",
+    });
   });
 
   it("adds status-* and is-recurring classNames", () => {

@@ -4,7 +4,6 @@ import type {
   DateSelectArg,
   DatesSetArg,
   EventClickArg,
-  EventContentArg,
   EventDropArg,
   EventInput,
 } from "@fullcalendar/core";
@@ -16,7 +15,6 @@ import type {
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import {
   type CSSProperties,
   forwardRef,
@@ -28,6 +26,7 @@ import {
 } from "react";
 import type { Task } from "@/core/types";
 import { isSameCalendarDay } from "./calendar-view-model";
+import { renderCalendarEventContent } from "./event-content";
 
 import "./fc-styles.css";
 
@@ -73,46 +72,6 @@ interface FcCalendarProps {
   ) => void;
   onDateClick: (date: Date, allDay: boolean, anchor: HTMLElement) => void;
   onDatesSet: (start: Date, end: Date) => void;
-}
-
-function renderEventContent(arg: EventContentArg) {
-  const task = arg.event.extendedProps.task as Task | undefined;
-  const isRecurring = Boolean(arg.event.extendedProps.isRecurring);
-  const isDoneOrCancelled =
-    task?.status === "done" || task?.status === "cancelled";
-  const titleClass = isDoneOrCancelled ? "line-through" : "";
-
-  return (
-    <div className="fc-delta-event-inner">
-      <div className="fc-delta-event-title">
-        {isRecurring && (
-          <span className="fc-delta-recur" role="img" aria-label="recurring">
-            {"\u21BB"}
-          </span>
-        )}
-        <span className={`fc-delta-title-text ${titleClass}`}>
-          {arg.event.title}
-        </span>
-        {task?.location && (
-          <MapPinSimple
-            className="fc-delta-icon"
-            aria-label="location"
-            weight="regular"
-          />
-        )}
-        {task?.meetingUrl && (
-          <VideoCamera
-            className="fc-delta-icon"
-            aria-label="meeting"
-            weight="regular"
-          />
-        )}
-      </div>
-      {arg.timeText && (
-        <div className="fc-delta-event-time">{arg.timeText}</div>
-      )}
-    </div>
-  );
 }
 
 function viewName(
@@ -504,7 +463,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           height="100%"
           events={events}
           eventDisplay="block"
-          eventContent={renderEventContent}
+          eventContent={renderCalendarEventContent}
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}

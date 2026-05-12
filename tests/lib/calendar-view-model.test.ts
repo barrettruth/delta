@@ -87,6 +87,9 @@ describe("calendar draft event model", () => {
     expect(draft?.end).toEqual(new Date("2026-03-18T14:30:00.000Z"));
     expect(draft?.allDay).toBe(false);
     expect(draft?.classNames).toContain("is-draft");
+    expect(draft?.extendedProps).toMatchObject({
+      calendarBorderColor: "var(--primary)",
+    });
   });
 
   it("builds an all-day draft event with an exclusive next-day end", () => {
