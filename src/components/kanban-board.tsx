@@ -3,13 +3,14 @@
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
-import { Input } from "@/components/ui/input";
+import { TaskSearchBar } from "@/components/task-search-bar";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { KANBAN_COLUMNS, type TaskStatusColumn } from "@/core/task-status";
 import type { Task, TaskStatus } from "@/core/types";
 import { useTaskOperations } from "@/hooks/use-task-operations";
+import { useTaskSearch } from "@/hooks/use-task-search";
 import { registerScopedKeydown } from "@/lib/keyboard";
 import { getKeymap } from "@/lib/keymap-defs";
 import { formatDate } from "@/lib/utils";
@@ -238,9 +239,6 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [columns, setColumns] = useState<BoardColumn[]>(KANBAN_COLUMNS);
   const [visualMode, setVisualMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchActive, setSearchActive] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
   const visualAnchor = useRef(-1);
   const pendingOp = useRef<{ key: string; preCount: number | null } | null>(
     null,
@@ -250,16 +248,26 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
 
   const kbDelete = taskOperations.deleteTasks;
   const kbMoveToStatus = taskOperations.moveTasksToStatus;
-
-  const filteredTasks = useMemo(() => {
-    if (!searchQuery) return tasks;
-    const q = searchQuery.toLowerCase();
-    return tasks.filter(
-      (t) =>
-        t.description.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q),
-    );
-  }, [tasks, searchQuery]);
+  const searchPersistence = useMemo(
+    () => ({
+      load: () => nav.getViewState<string>("kanban:search"),
+      save: (query: string | undefined) =>
+        nav.saveViewState("kanban:search", query),
+    }),
+    [nav.getViewState, nav.saveViewState],
+  );
+  const {
+    active: searchActive,
+    clear: clearSearch,
+    filteredTasks,
+    handleInputKeyDown: handleSearchInputKeyDown,
+    open: openSearch,
+    query: searchQuery,
+    resultCount,
+    searchRef,
+    setQuery: setSearchQuery,
+    totalCount,
+  } = useTaskSearch({ tasks, persistence: searchPersistence });
 
   const grouped = useMemo(() => groupByStatus(filteredTasks), [filteredTasks]);
 
@@ -584,12 +592,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
         }
       } else if (e.key === k.search) {
         e.preventDefault();
-        setSearchActive(true);
-        requestAnimationFrame(() => searchRef.current?.focus());
+        openSearch();
       } else if (e.key === k.escape) {
         if (searchActive) {
-          setSearchQuery("");
-          setSearchActive(false);
+          clearSearch();
         } else if (visualMode) {
           setVisualMode(false);
           setSelectedIds(new Set());
@@ -610,6 +616,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
       visualMode,
       selectedIds,
       searchActive,
+      clearSearch,
+      openSearch,
       nav,
       kbDelete,
       kbMoveToStatus,
@@ -652,18 +660,6 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     }
   }, [colIdx, rowIdx, kbActive, nav]);
 
-  useEffect(() => {
-    const saved = nav.getViewState<string>("kanban:search");
-    if (typeof saved === "string") {
-      setSearchQuery(saved);
-      setSearchActive(true);
-    }
-  }, [nav.getViewState]);
-
-  useEffect(() => {
-    nav.saveViewState("kanban:search", searchQuery || undefined);
-  }, [searchQuery, nav]);
-
   const handleDrop = useCallback(
     (taskId: number, newStatus: TaskStatus) => {
       taskOperations.moveTasksToStatus([taskId], newStatus);
@@ -686,30 +682,16 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   return (
     <div className="flex flex-col h-full w-full">
       {searchActive && (
-        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/60 shrink-0">
-          <span className="text-xs text-muted-foreground">/</span>
-          <Input
-            ref={searchRef}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setSearchQuery("");
-                setSearchActive(false);
-              }
-              if (e.key === "Enter") {
-                e.preventDefault();
-                searchRef.current?.blur();
-              }
-            }}
-            placeholder="filter tasks..."
-            className="h-6 border-0 bg-transparent px-0 text-sm focus-visible:ring-0"
-          />
-          <span className="text-[10px] text-muted-foreground shrink-0">
-            {filteredTasks.length}/{tasks.length}
-          </span>
-        </div>
+        <TaskSearchBar
+          className="px-4 border-border/60 shrink-0"
+          inputRef={searchRef}
+          onInputKeyDown={handleSearchInputKeyDown}
+          onQueryChange={setSearchQuery}
+          query={searchQuery}
+          resultCount={resultCount}
+          slashClassName="text-muted-foreground"
+          totalCount={totalCount}
+        />
       )}
       <KanbanGrid
         visibleColumns={visibleColumns}

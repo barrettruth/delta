@@ -1,9 +1,9 @@
 "use client";
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
-import { Input } from "@/components/ui/input";
+import { TaskSearchBar } from "@/components/task-search-bar";
 import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
@@ -13,6 +13,7 @@ import type { TaskStatus } from "@/core/types";
 import type { RankedTask } from "@/core/urgency";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { useTaskOperations } from "@/hooks/use-task-operations";
+import { useTaskSearch } from "@/hooks/use-task-search";
 import { registerScopedKeydown } from "@/lib/keyboard";
 import { cn, formatRelativeDate, isOverdue } from "@/lib/utils";
 
@@ -172,21 +173,20 @@ export function QueueView({
   const { openKeyboardHelp } = useKeyboardHelp();
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchActive, setSearchActive] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const {
+    active: searchActive,
+    clear: clearSearch,
+    filteredTasks: filtered,
+    handleInputKeyDown: handleSearchInputKeyDown,
+    open: openSearch,
+    query: searchQuery,
+    resultCount,
+    searchRef,
+    setQuery: setSearchQuery,
+    totalCount,
+  } = useTaskSearch({ tasks });
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const filtered = useMemo(() => {
-    if (!searchQuery) return tasks;
-    const q = searchQuery.toLowerCase();
-    return tasks.filter(
-      (t) =>
-        t.description.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q),
-    );
-  }, [tasks, searchQuery]);
 
   const taskOperations = useTaskOperations({ tasks: filtered });
   const gutterWidth = String(filtered.length).length;
@@ -250,16 +250,6 @@ export function QueueView({
     return () => nav.registerScrollContainer(null);
   }, [nav.registerScrollContainer]);
 
-  const clearSearch = useCallback(() => {
-    setSearchQuery("");
-    setSearchActive(false);
-  }, []);
-
-  const openSearch = useCallback(() => {
-    setSearchActive(true);
-    requestAnimationFrame(() => searchRef.current?.focus());
-  }, []);
-
   useEffect(() => {
     function handleSearchKeys(e: KeyboardEvent) {
       if (e.key === "/" && !searchActive && !e.ctrlKey && !e.metaKey) {
@@ -297,29 +287,16 @@ export function QueueView({
   return (
     <div className="flex flex-col h-full">
       {searchActive && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border">
-          <span className="text-xs text-primary font-bold">/</span>
-          <Input
-            ref={searchRef}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                clearSearch();
-              }
-              if (e.key === "Enter") {
-                e.preventDefault();
-                (document.activeElement as HTMLElement)?.blur();
-              }
-            }}
-            placeholder="filter tasks..."
-            className="h-6 border-0 bg-transparent px-0 text-sm focus-visible:ring-0"
-          />
-          <span className="text-[10px] text-muted-foreground shrink-0">
-            {filtered.length}/{tasks.length}
-          </span>
-        </div>
+        <TaskSearchBar
+          className="px-3 border-border"
+          inputRef={searchRef}
+          onInputKeyDown={handleSearchInputKeyDown}
+          onQueryChange={setSearchQuery}
+          query={searchQuery}
+          resultCount={resultCount}
+          slashClassName="text-primary font-bold"
+          totalCount={totalCount}
+        />
       )}
       <div ref={scrollRef} className="flex-1 overflow-auto">
         <QueueTaskList
