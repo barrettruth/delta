@@ -177,7 +177,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-event {
-  border-left: 2px solid var(--fc-event-border-color);
+  border-left: 0;
   border-top: none;
   border-right: none;
   border-bottom: none;
@@ -202,21 +202,11 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   );
 }
 
-.fc-delta-root .fc .fc-event.status-blocked {
-  border-left-color: var(--status-blocked);
-}
-
-.fc-delta-root .fc .fc-event.status-wip {
-  border-left-color: var(--status-wip);
-}
-
 .fc-delta-root .fc .fc-event.status-done {
-  border-left-color: var(--status-done);
   opacity: 0.6;
 }
 
 .fc-delta-root .fc .fc-event.status-cancelled {
-  border-left-color: var(--status-cancelled);
   opacity: 0.6;
 }
 
