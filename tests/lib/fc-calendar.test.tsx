@@ -38,7 +38,6 @@ function renderCalendar(
       events: [],
       viewMode: "week",
       initialDate: new Date("2026-05-12T12:00:00Z"),
-      focusedDate: new Date(2026, 4, 12, 14, 30),
       allDaySlot: true,
       onEventClick: () => {},
       onEventDrop: () => {},
@@ -61,23 +60,11 @@ describe("FcCalendar", () => {
     expect(props?.slotEventOverlap).toBe(false);
   });
 
-  it("marks the focused date in cells and headers", () => {
+  it("does not attach focused date class hooks", () => {
     const props = renderCalendar();
-    const cellClassNames = props?.dayCellClassNames as
-      | ((arg: { date: Date }) => string[])
-      | undefined;
-    const headerClassNames = props?.dayHeaderClassNames as
-      | ((arg: { date: Date }) => string[])
-      | undefined;
 
-    expect(cellClassNames?.({ date: new Date(2026, 4, 12, 8) })).toEqual([
-      "fc-delta-focused-date",
-    ]);
-    expect(headerClassNames?.({ date: new Date(2026, 4, 12, 8) })).toEqual([
-      "fc-delta-focused-date-header",
-    ]);
-    expect(cellClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
-    expect(headerClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
+    expect(props?.dayCellClassNames).toBeUndefined();
+    expect(props?.dayHeaderClassNames).toBeUndefined();
   });
 
   it("exposes week day headers as day-view navigation links", () => {

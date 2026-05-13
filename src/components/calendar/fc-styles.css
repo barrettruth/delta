@@ -1,5 +1,4 @@
 .fc-delta-root {
-  --delta-calendar-focus-outline: var(--primary);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -13,16 +12,20 @@
   --fc-page-bg-color: var(--background);
   --fc-neutral-bg-color: var(--muted);
   --fc-today-bg-color: transparent;
-  --fc-now-indicator-color: var(--primary);
+  --fc-now-indicator-color: var(--muted-foreground);
   --fc-event-bg-color: var(--accent);
-  --fc-event-border-color: var(--primary);
+  --fc-event-border-color: var(--border);
   --fc-event-text-color: var(--foreground);
   --fc-event-selected-overlay-color: color-mix(
     in oklab,
-    var(--primary) 15%,
+    var(--muted-foreground) 12%,
     transparent
   );
-  --fc-highlight-color: color-mix(in oklab, var(--primary) 12%, transparent);
+  --fc-highlight-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 12%,
+    transparent
+  );
   --fc-small-font-size: 10px;
   --delta-calendar-hour-line: color-mix(
     in oklab,
@@ -60,11 +63,6 @@
 
 .fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion {
   color: var(--foreground);
-  font-weight: 700;
-}
-
-.fc-delta-root .fc .fc-delta-focused-date-header .fc-col-header-cell-cushion {
-  color: var(--primary);
   font-weight: 700;
 }
 
@@ -181,22 +179,9 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
   font-weight: 700;
 }
 
-.fc-delta-root .fc .fc-delta-focused-date .fc-daygrid-day-number {
-  color: var(--primary);
-  font-weight: 700;
-}
-
 .fc-delta-root .fc .fc-day-other .fc-daygrid-day-number {
   color: var(--muted-foreground);
   opacity: 0.6;
-}
-
-.fc-delta-root .fc-delta-focus-outline {
-  position: absolute;
-  pointer-events: none;
-  box-sizing: border-box;
-  box-shadow: inset 0 0 0 1px var(--delta-calendar-focus-outline);
-  z-index: 6;
 }
 
 .fc-delta-root .fc .fc-event {
@@ -346,7 +331,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-timegrid-now-indicator-line {
-  border-color: var(--primary);
+  border-color: var(--muted-foreground);
   border-width: 2px 0 0 0;
 }
 
@@ -401,8 +386,8 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 
 /* Ghost draft event shown while the create popover is open. */
 .fc-delta-root .fc .fc-event.is-draft {
-  background: color-mix(in oklab, var(--primary) 15%, transparent);
-  border-color: var(--primary);
+  background: color-mix(in oklab, var(--muted-foreground) 12%, transparent);
+  border-color: var(--border);
   opacity: 0.85;
   pointer-events: none;
 }

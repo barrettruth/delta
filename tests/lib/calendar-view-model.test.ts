@@ -88,7 +88,7 @@ describe("calendar draft event model", () => {
     expect(draft?.allDay).toBe(false);
     expect(draft?.classNames).toContain("is-draft");
     expect(draft?.extendedProps).toMatchObject({
-      calendarBorderColor: "var(--primary)",
+      calendarBorderColor: "var(--border)",
     });
   });
 

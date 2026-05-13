@@ -111,7 +111,7 @@ export function buildCalendarDraftEvent(
     classNames: ["is-draft"],
     extendedProps: {
       isDraft: true,
-      calendarBorderColor: "var(--primary)",
+      calendarBorderColor: "var(--border)",
     },
   };
 }
