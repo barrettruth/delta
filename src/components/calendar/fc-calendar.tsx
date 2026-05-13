@@ -283,7 +283,6 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           allDayText=""
           editable
           selectable
-          selectMirror
           nowIndicator
           slotDuration="00:15:00"
           snapDuration="00:15:00"

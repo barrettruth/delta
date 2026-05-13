@@ -67,6 +67,13 @@ describe("FcCalendar", () => {
     expect(props?.dayHeaderClassNames).toBeUndefined();
   });
 
+  it("does not show FullCalendar's transient selection mirror", () => {
+    const props = renderCalendar();
+
+    expect(props?.selectable).toBe(true);
+    expect(props?.selectMirror).toBeUndefined();
+  });
+
   it("exposes week day headers as day-view navigation links", () => {
     const onDayHeaderClick = vi.fn();
     const props = renderCalendar({ onDayHeaderClick });

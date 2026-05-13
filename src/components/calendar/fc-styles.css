@@ -21,11 +21,6 @@
     var(--muted-foreground) 12%,
     transparent
   );
-  --fc-highlight-color: color-mix(
-    in oklab,
-    var(--muted-foreground) 12%,
-    transparent
-  );
   --fc-small-font-size: 10px;
   --delta-calendar-hour-line: color-mix(
     in oklab,
@@ -340,7 +335,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-highlight {
-  background: var(--fc-highlight-color);
+  display: none;
 }
 
 .fc-delta-root .fc .fc-button {
