@@ -6,14 +6,24 @@ The connection is provider sync only; it is not app login.
 For the full production provider checklist, including API enablement and common
 OAuth failure modes, see [self-hosting setup](./self-hosting.md).
 
-## OAuth client
+## Google Cloud APIs
 
-Enable the Google Tasks API on the same Google Cloud project that owns the OAuth
-client:
+Enable every Google product API that Delta calls on the same Google Cloud
+project that owns the OAuth client. OAuth scopes grant user consent; they do
+not enable product APIs on the project.
 
 ```sh
-gcloud services enable tasks.googleapis.com --project <google-project-id>
+gcloud services enable \
+  tasks.googleapis.com \
+  calendar-json.googleapis.com \
+  --project <google-project-id>
 ```
+
+Current `main` calls Google Tasks for manual pulls. Calendar API is included in
+the baseline because Delta already requests the Calendar events scope and future
+Calendar sync/write paths should use the same OAuth project.
+
+## OAuth client
 
 Create a Google OAuth web client with this redirect URI:
 

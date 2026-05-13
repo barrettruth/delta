@@ -30,16 +30,30 @@ internal Next.js URL.
 Keep `INTEGRATION_ENCRYPTION_KEY` stable after first deploy. It encrypts stored
 provider tokens.
 
-## Google Tasks sync
+## Google provider sync
 
-Enable the Google Tasks API on the same Google Cloud project that owns the OAuth
-client:
+Enable the Google APIs for every Google product Delta calls from the same
+Google Cloud project that owns the OAuth client. OAuth scopes grant user
+consent; they do not enable product APIs on the project.
+
+Recommended production baseline:
 
 ```sh
-gcloud services enable tasks.googleapis.com --project <google-project-id>
+gcloud services enable \
+  tasks.googleapis.com \
+  calendar-json.googleapis.com \
+  --project <google-project-id>
 ```
 
-Or enable `Google Tasks API` in Google Cloud Console.
+Or enable these APIs in Google Cloud Console:
+
+- Google Tasks API
+- Google Calendar API
+
+Current `main` calls the Google Tasks API for manual task pulls. Calendar API is
+included as the forward-compatible baseline because Delta already requests the
+Calendar events scope and Calendar sync/write features should not require a
+second infrastructure pass.
 
 Create a Google OAuth web client and add this exact authorized redirect URI:
 
@@ -189,9 +203,10 @@ from the OAuth client's authorized redirect URIs.
 internal upstream URL for its post-callback redirect. Set `DELTA_PUBLIC_ORIGIN`
 and deploy a build that uses it for callback redirects.
 
-`Google Tasks API request failed (403)` with `SERVICE_DISABLED` or
-`accessNotConfigured`: enable `tasks.googleapis.com` on the OAuth client's
-Google Cloud project.
+`Google <product> API request failed (403)` with `SERVICE_DISABLED` or
+`accessNotConfigured`: enable the matching API on the OAuth client's Google
+Cloud project. For current Google sync, that means `tasks.googleapis.com` for
+Tasks and `calendar-json.googleapis.com` for Calendar.
 
 `missing-tasks-scope`: the stored Google token does not include
 `https://www.googleapis.com/auth/tasks.readonly`. Reconnect the Google account
