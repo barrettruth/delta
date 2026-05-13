@@ -245,7 +245,6 @@ export function CalendarSettingsSection({
       statusBar.message(
         `pulled ${result.created} new, updated ${result.updated}, cancelled ${result.cancelled}`,
       );
-      router.refresh();
     } catch {
       statusBar.clearOperation();
       statusBar.error("google tasks pull failed");

@@ -3,7 +3,17 @@
 Delta uses one Google OAuth connection for first-party Google integrations.
 The connection is provider sync only; it is not app login.
 
+For the full production provider checklist, including API enablement and common
+OAuth failure modes, see [self-hosting setup](./self-hosting.md).
+
 ## OAuth client
+
+Enable the Google Tasks API on the same Google Cloud project that owns the OAuth
+client:
+
+```sh
+gcloud services enable tasks.googleapis.com --project <google-project-id>
+```
 
 Create a Google OAuth web client with this redirect URI:
 
