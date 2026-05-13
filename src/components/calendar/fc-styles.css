@@ -51,7 +51,7 @@
 }
 
 .fc-delta-root .fc .fc-col-header-cell-cushion {
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-weight: 500;
   text-decoration: none;
   padding: 4px 4px;
@@ -62,7 +62,7 @@
 }
 
 .fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion {
-  color: var(--foreground);
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -175,7 +175,7 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 }
 
 .fc-delta-root .fc .fc-day-today .fc-daygrid-day-number {
-  color: var(--foreground);
+  color: var(--primary);
   font-weight: 700;
 }
 
