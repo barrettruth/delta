@@ -11,5 +11,6 @@ describe("ShortcutsSection", () => {
     expect(html).toContain("global");
     expect(html).toContain("g?");
     expect(html).toContain("This help");
+    expect(html).toContain("lg:grid-cols-2");
   });
 });
