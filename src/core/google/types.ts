@@ -1,4 +1,5 @@
 import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
+import type { TaskStatus } from "@/core/types";
 
 export const GOOGLE_PROVIDER = "google";
 export const GOOGLE_TASKS_LINK_PROVIDER = EXTERNAL_LINK_PROVIDER.googleTasks;
@@ -80,6 +81,32 @@ export interface GoogleTasksPullSummary {
   updated: number;
   cancelled: number;
   skipped: number;
+  keptLocal: number;
+  conflicts: number;
+  remoteOutdated: number;
+  deletedProtected: number;
+}
+
+export type GoogleTasksSyncState =
+  | "clean"
+  | "local_modified"
+  | "remote_outdated"
+  | "conflict";
+
+export type GoogleTasksMappedField =
+  | "description"
+  | "notes"
+  | "due"
+  | "status"
+  | "category";
+
+export interface GoogleTasksMappedSnapshot {
+  description: string;
+  notes: string | null;
+  due: string | null;
+  status: TaskStatus;
+  completedAt: string | null;
+  category: string | null;
 }
 
 export interface GoogleTasksMappedTask {

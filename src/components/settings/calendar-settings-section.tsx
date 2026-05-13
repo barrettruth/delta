@@ -32,6 +32,7 @@ interface GoogleSummary {
   name: string | null;
   tasksLastPulledAt: string | null;
   tasksLastError: string | null;
+  tasksLastResult: GoogleTasksPullResult | null;
 }
 
 interface GoogleTasksPullResult {
@@ -41,6 +42,77 @@ interface GoogleTasksPullResult {
   updated: number;
   cancelled: number;
   skipped: number;
+  keptLocal: number;
+  conflicts: number;
+  remoteOutdated: number;
+  deletedProtected: number;
+}
+
+function formatTimestamp(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+}
+
+function hasTaskSyncIssues(result: GoogleTasksPullResult | null): boolean {
+  if (!result) return false;
+  return (
+    result.keptLocal > 0 ||
+    result.conflicts > 0 ||
+    result.remoteOutdated > 0 ||
+    result.deletedProtected > 0
+  );
+}
+
+function formatPullStatus(result: GoogleTasksPullResult): string {
+  const parts = [`pulled ${result.seen}`];
+  if (result.created > 0) parts.push(`${result.created} created`);
+  if (result.updated > 0) parts.push(`${result.updated} updated`);
+  if (result.cancelled > 0) parts.push(`${result.cancelled} cancelled`);
+  if (result.skipped > 0) parts.push(`${result.skipped} skipped`);
+  if (result.keptLocal > 0) {
+    parts.push(`${result.keptLocal} kept local`);
+  }
+  if (result.conflicts > 0) {
+    parts.push(
+      `${result.conflicts} conflict${result.conflicts === 1 ? "" : "s"}`,
+    );
+  }
+  if (result.remoteOutdated > 0) {
+    parts.push(`${result.remoteOutdated} remote held`);
+  }
+  if (result.deletedProtected > 0) {
+    parts.push(`${result.deletedProtected} delete protected`);
+  }
+  if (parts.length === 1) parts.push("no changes");
+  return parts.join(", ");
+}
+
+function formatLastResult(result: GoogleTasksPullResult): string {
+  const parts = [`${result.seen} seen`];
+  if (result.created > 0) parts.push(`${result.created} created`);
+  if (result.updated > 0) parts.push(`${result.updated} updated`);
+  if (result.cancelled > 0) parts.push(`${result.cancelled} cancelled`);
+  if (result.skipped > 0) parts.push(`${result.skipped} skipped`);
+  if (parts.length === 1) parts.push("no changes");
+  return parts.join(" / ");
+}
+
+function formatSyncIssues(result: GoogleTasksPullResult): string {
+  const parts: string[] = [];
+  if (result.keptLocal > 0) parts.push(`${result.keptLocal} kept local`);
+  if (result.conflicts > 0) {
+    parts.push(
+      `${result.conflicts} conflict${result.conflicts === 1 ? "" : "s"}`,
+    );
+  }
+  if (result.remoteOutdated > 0) {
+    parts.push(`${result.remoteOutdated} remote held`);
+  }
+  if (result.deletedProtected > 0) {
+    parts.push(`${result.deletedProtected} delete protected`);
+  }
+  return parts.join(" / ");
 }
 
 export function CalendarSettingsSection({
@@ -63,6 +135,7 @@ export function CalendarSettingsSection({
       name: null,
       tasksLastPulledAt: null,
       tasksLastError: null,
+      tasksLastResult: null,
     },
   );
   const [googlePulling, setGooglePulling] = useState(false);
@@ -210,6 +283,7 @@ export function CalendarSettingsSection({
       name: null,
       tasksLastPulledAt: null,
       tasksLastError: null,
+      tasksLastResult: null,
     });
     statusBar.message("google disconnected");
     router.refresh();
@@ -241,10 +315,9 @@ export function CalendarSettingsSection({
         ...current,
         tasksLastPulledAt: new Date().toISOString(),
         tasksLastError: null,
+        tasksLastResult: result,
       }));
-      statusBar.message(
-        `pulled ${result.created} new, updated ${result.updated}, cancelled ${result.cancelled}`,
-      );
+      statusBar.message(formatPullStatus(result));
     } catch {
       statusBar.clearOperation();
       statusBar.error("google tasks pull failed");
@@ -255,8 +328,10 @@ export function CalendarSettingsSection({
 
   function lastPulledLabel(): string {
     if (!google.tasksLastPulledAt) return "never";
-    return new Date(google.tasksLastPulledAt).toLocaleString();
+    return formatTimestamp(google.tasksLastPulledAt);
   }
+
+  const tasksLastResult = google.tasksLastResult;
 
   return (
     <SettingsPage
@@ -329,6 +404,19 @@ export function CalendarSettingsSection({
                 onClick={handleGoogleTasksPull}
               />
               <SettingsRow label="last pull" value={lastPulledLabel()} />
+              {tasksLastResult && (
+                <SettingsRow
+                  label="last result"
+                  value={formatLastResult(tasksLastResult)}
+                />
+              )}
+              {tasksLastResult && hasTaskSyncIssues(tasksLastResult) && (
+                <SettingsRow
+                  label="sync issues"
+                  value={formatSyncIssues(tasksLastResult)}
+                  destructive={tasksLastResult.conflicts > 0}
+                />
+              )}
               {google.tasksLastError && (
                 <SettingsRow
                   label={google.tasksLastError}

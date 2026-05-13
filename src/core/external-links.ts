@@ -99,3 +99,20 @@ export function listExternalLinksForTask(
     .where(eq(taskExternalLinks.taskId, taskId))
     .all();
 }
+
+export function listExternalLinksForProvider(
+  db: Db,
+  userId: number,
+  provider: ExternalLinkProviderId,
+): (typeof taskExternalLinks.$inferSelect)[] {
+  return db
+    .select()
+    .from(taskExternalLinks)
+    .where(
+      and(
+        eq(taskExternalLinks.userId, userId),
+        eq(taskExternalLinks.provider, provider),
+      ),
+    )
+    .all();
+}

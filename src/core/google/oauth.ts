@@ -9,6 +9,7 @@ import {
   GOOGLE_TASKS_SCOPE,
   type GoogleIntegrationMetadata,
   type GoogleOAuthTokens,
+  type GoogleTasksPullSummary,
 } from "./types";
 
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -276,9 +277,13 @@ export function googleIntegrationSummary(
   name: string | null;
   tasksLastPulledAt: string | null;
   tasksLastError: string | null;
+  tasksLastResult: GoogleTasksPullSummary | null;
 } {
   const config = getGoogleIntegration(db, userId);
   const metadata = config?.metadata;
+  const tasksLastResult = normalizeGoogleTasksPullSummary(
+    metadata?.tasks?.lastResult,
+  );
   return {
     connected: Boolean(config && config.enabled === 1),
     email: typeof metadata?.email === "string" ? metadata.email : null,
@@ -289,5 +294,31 @@ export function googleIntegrationSummary(
         : null,
     tasksLastError:
       typeof metadata?.lastError === "string" ? metadata.lastError : null,
+    tasksLastResult,
+  };
+}
+
+function numberField(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function normalizeGoogleTasksPullSummary(
+  value: unknown,
+): GoogleTasksPullSummary | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const result = value as Record<string, unknown>;
+  return {
+    lists: numberField(result.lists),
+    seen: numberField(result.seen),
+    created: numberField(result.created),
+    updated: numberField(result.updated),
+    cancelled: numberField(result.cancelled),
+    skipped: numberField(result.skipped),
+    keptLocal: numberField(result.keptLocal),
+    conflicts: numberField(result.conflicts),
+    remoteOutdated: numberField(result.remoteOutdated),
+    deletedProtected: numberField(result.deletedProtected),
   };
 }
