@@ -58,12 +58,8 @@
   text-decoration: none;
 }
 
-.fc-delta-root
-  .fc
-  .fc-timeGridWeek-view
-  .fc-day-today
-  .fc-col-header-cell-cushion {
-  color: var(--primary);
+.fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion {
+  color: var(--foreground);
   font-weight: 700;
 }
 
