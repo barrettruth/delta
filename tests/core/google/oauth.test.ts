@@ -26,6 +26,16 @@ describe("Google OAuth helpers", () => {
     ).toBe("https://delta.example.test/api/integrations/google/callback");
   });
 
+  it("uses the configured public origin for proxied callback URLs", () => {
+    vi.stubEnv("DELTA_PUBLIC_ORIGIN", "https://delta.example.test/");
+
+    expect(
+      googleRedirectUri(
+        new Request("https://localhost:3001/settings/calendar"),
+      ),
+    ).toBe("https://delta.example.test/api/integrations/google/callback");
+  });
+
   it("requests offline Google Calendar and Tasks scopes", () => {
     vi.stubEnv("GOOGLE_CLIENT_ID", "client-id");
     vi.stubEnv("GOOGLE_CLIENT_SECRET", "client-secret");

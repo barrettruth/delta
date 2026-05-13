@@ -12,6 +12,7 @@ const oauth = vi.hoisted(() => ({
   exchangeGoogleCode: vi.fn(),
   fetchGoogleUserInfo: vi.fn(),
   getGoogleIntegration: vi.fn(),
+  googlePublicOrigin: vi.fn(),
   googleRedirectUri: vi.fn(),
   hasGoogleTasksScope: vi.fn(),
   saveGoogleIntegration: vi.fn(),
@@ -31,7 +32,7 @@ vi.mock("@/core/google/oauth", () => oauth);
 
 function callbackRequest(query: string) {
   return new Request(
-    `http://delta.test/api/integrations/google/callback${query}`,
+    `https://localhost:3001/api/integrations/google/callback${query}`,
   );
 }
 
@@ -48,6 +49,7 @@ describe("GET /api/integrations/google/callback", () => {
     oauth.googleRedirectUri.mockReturnValue(
       "http://delta.test/api/integrations/google/callback",
     );
+    oauth.googlePublicOrigin.mockReturnValue("http://delta.test");
     oauth.getGoogleIntegration.mockReturnValue(null);
     oauth.fetchGoogleUserInfo.mockResolvedValue({
       email: "owner@example.test",
@@ -63,6 +65,9 @@ describe("GET /api/integrations/google/callback", () => {
     const response = await GET(callbackRequest("?code=code&state=wrong"));
 
     expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://delta.test/settings/calendar?google=invalid-state",
+    );
     expect(redirectStatus(response)).toBe("invalid-state");
     expect(state.cookie.delete).toHaveBeenCalledWith("google_oauth_state");
     expect(oauth.exchangeGoogleCode).not.toHaveBeenCalled();

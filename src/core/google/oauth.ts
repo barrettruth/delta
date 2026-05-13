@@ -59,12 +59,16 @@ export function getGoogleOAuthCredentials(): {
   return { clientId, clientSecret };
 }
 
-export function googleRedirectUri(request: Request): string {
+export function googlePublicOrigin(request: Request): string {
   const origin =
     credential("DELTA_PUBLIC_ORIGIN") ??
     credential("NEXT_PUBLIC_DELTA_ORIGIN") ??
     new URL(request.url).origin;
-  return `${origin.replace(/\/$/, "")}/api/integrations/google/callback`;
+  return origin.replace(/\/$/, "");
+}
+
+export function googleRedirectUri(request: Request): string {
+  return `${googlePublicOrigin(request)}/api/integrations/google/callback`;
 }
 
 export function buildGoogleAuthorizationUrl(

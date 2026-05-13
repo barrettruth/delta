@@ -4,6 +4,7 @@ import {
   exchangeGoogleCode,
   fetchGoogleUserInfo,
   getGoogleIntegration,
+  googlePublicOrigin,
   googleRedirectUri,
   hasGoogleTasksScope,
   saveGoogleIntegration,
@@ -14,7 +15,7 @@ import { unauthorized } from "@/lib/auth-responses";
 import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
 
 function redirectToSettings(request: Request, status: string): NextResponse {
-  const url = new URL("/settings/calendar", request.url);
+  const url = new URL("/settings/calendar", googlePublicOrigin(request));
   url.searchParams.set("google", status);
   return NextResponse.redirect(url);
 }
