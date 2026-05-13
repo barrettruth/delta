@@ -87,6 +87,7 @@ export function CalendarView({
           onEventResize={calendar.handleEventResize}
           onDateSelect={calendar.handleDateSelect}
           onDateClick={calendar.handleDateClick}
+          onDayHeaderClick={calendar.handleDayHeaderClick}
           onDatesSet={calendar.handleDatesSet}
         />
       )}

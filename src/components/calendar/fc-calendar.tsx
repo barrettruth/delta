@@ -72,6 +72,7 @@ interface FcCalendarProps {
     anchorRect: DOMRect,
   ) => void;
   onDateClick: (date: Date, allDay: boolean, anchor: HTMLElement) => void;
+  onDayHeaderClick: (date: Date) => void;
   onDatesSet: (start: Date, end: Date) => void;
 }
 
@@ -197,6 +198,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
       onEventResize,
       onDateSelect,
       onDateClick,
+      onDayHeaderClick,
       onDatesSet,
     } = props;
 
@@ -341,6 +343,13 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
       [onDateClick],
     );
 
+    const handleNavLinkDayClick = useCallback(
+      (date: Date) => {
+        onDayHeaderClick(date);
+      },
+      [onDayHeaderClick],
+    );
+
     const handleDatesSet = useCallback(
       (arg: DatesSetArg) => {
         onDatesSet(arg.start, arg.end);
@@ -479,6 +488,8 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}
+          navLinks={viewMode === "week"}
+          navLinkDayClick={handleNavLinkDayClick}
           select={handleSelect}
           dateClick={handleDateClick}
           datesSet={handleDatesSet}

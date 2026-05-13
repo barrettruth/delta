@@ -54,8 +54,16 @@
   padding: 4px 4px;
 }
 
-.fc-delta-root .fc .fc-day-today .fc-col-header-cell-cushion {
-  color: var(--foreground);
+.fc-delta-root .fc a[data-navlink]:hover {
+  text-decoration: none;
+}
+
+.fc-delta-root
+  .fc
+  .fc-timeGridWeek-view
+  .fc-day-today
+  .fc-col-header-cell-cushion {
+  color: var(--primary);
   font-weight: 700;
 }
 

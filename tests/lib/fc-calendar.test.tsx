@@ -1,5 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { createElement, forwardRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -28,7 +28,9 @@ vi.mock("@fullcalendar/timegrid", () => ({ default: { name: "timeGrid" } }));
 
 import { FcCalendar } from "@/components/calendar/fc-calendar";
 
-function renderCalendar(): FullCalendarProps | null {
+function renderCalendar(
+  overrides: Partial<ComponentProps<typeof FcCalendar>> = {},
+): FullCalendarProps | null {
   lastFullCalendarProps = null;
 
   renderToStaticMarkup(
@@ -43,7 +45,9 @@ function renderCalendar(): FullCalendarProps | null {
       onEventResize: () => {},
       onDateSelect: () => {},
       onDateClick: () => {},
+      onDayHeaderClick: () => {},
       onDatesSet: () => {},
+      ...overrides,
     }),
   );
 
@@ -74,6 +78,19 @@ describe("FcCalendar", () => {
     ]);
     expect(cellClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
     expect(headerClassNames?.({ date: new Date(2026, 4, 13, 8) })).toEqual([]);
+  });
+
+  it("exposes week day headers as day-view navigation links", () => {
+    const onDayHeaderClick = vi.fn();
+    const props = renderCalendar({ onDayHeaderClick });
+    const navLinkDayClick = props?.navLinkDayClick as
+      | ((date: Date, event: UIEvent) => void)
+      | undefined;
+    const date = new Date(2026, 4, 14);
+
+    expect(props?.navLinks).toBe(true);
+    navLinkDayClick?.(date, {} as UIEvent);
+    expect(onDayHeaderClick).toHaveBeenCalledWith(date);
   });
 
   it("marks elapsed events for past styling", () => {

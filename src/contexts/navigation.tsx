@@ -8,6 +8,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 type NavLocation = {
@@ -28,13 +29,17 @@ interface NavigationContextValue {
   saveViewState: (key: string, state: unknown) => void;
   getViewState: <T>(key: string) => T | undefined;
   registerScrollContainer: (el: HTMLElement | null) => void;
+  restoreVersion: number;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
 
 function locationsEqual(a: NavLocation, b: NavLocation): boolean {
   return (
-    a.pathname === b.pathname && a.search === b.search && a.taskId === b.taskId
+    a.pathname === b.pathname &&
+    a.search === b.search &&
+    a.taskId === b.taskId &&
+    JSON.stringify(a.viewState ?? null) === JSON.stringify(b.viewState ?? null)
   );
 }
 
@@ -78,6 +83,7 @@ export function NavigationProvider({
   const viewStateRef = useRef<Map<string, unknown>>(new Map());
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const pendingScrollTopRef = useRef<number | null>(null);
+  const [restoreVersion, setRestoreVersion] = useState(0);
 
   useEffect(() => {
     const search = searchParams.toString();
@@ -122,6 +128,17 @@ export function NavigationProvider({
     return id;
   }, []);
 
+  const snapshotCurrentLocation = useCallback((): NavLocation => {
+    const current = { ...currentLocationRef.current };
+    if (scrollContainerRef.current) {
+      current.scrollTop = scrollContainerRef.current.scrollTop;
+    }
+    if (viewStateRef.current.size > 0) {
+      current.viewState = Object.fromEntries(viewStateRef.current);
+    }
+    return current;
+  }, []);
+
   const navigateTo = useCallback(
     (loc: NavLocation) => {
       if (loc.viewState) {
@@ -140,18 +157,13 @@ export function NavigationProvider({
       if (loc.scrollTop != null) {
         pendingScrollTopRef.current = loc.scrollTop;
       }
+      setRestoreVersion((version) => version + 1);
     },
     [router],
   );
 
   const pushJump = useCallback(() => {
-    const current = { ...currentLocationRef.current };
-    if (scrollContainerRef.current) {
-      current.scrollTop = scrollContainerRef.current.scrollTop;
-    }
-    if (viewStateRef.current.size > 0) {
-      current.viewState = Object.fromEntries(viewStateRef.current);
-    }
+    const current = snapshotCurrentLocation();
     const list = jumpListRef.current;
     const cursor = jumpCursorRef.current;
 
@@ -179,32 +191,32 @@ export function NavigationProvider({
       current,
       viewStateRef.current,
     );
-  }, []);
+  }, [snapshotCurrentLocation]);
 
   const jumpBack = useCallback(() => {
     const list = jumpListRef.current;
-    const cursor = jumpCursorRef.current;
-    if (cursor <= 0 || list.length === 0) return;
+    let cursor = jumpCursorRef.current;
+    if (list.length === 0) return;
 
     if (cursor === list.length - 1) {
-      const current = { ...currentLocationRef.current };
-      if (scrollContainerRef.current) {
-        current.scrollTop = scrollContainerRef.current.scrollTop;
-      }
-      if (viewStateRef.current.size > 0) {
-        current.viewState = Object.fromEntries(viewStateRef.current);
-      }
+      const current = snapshotCurrentLocation();
       if (!locationsEqual(list[cursor], current)) {
         list.push(current);
+        if (list.length > MAX_JUMP_LIST) {
+          list.splice(0, list.length - MAX_JUMP_LIST);
+        }
         jumpCursorRef.current = list.length - 1;
+        cursor = jumpCursorRef.current;
       }
     }
+
+    if (cursor <= 0) return;
 
     const newCursor = jumpCursorRef.current - 1;
     jumpCursorRef.current = newCursor;
     navigateTo(list[newCursor]);
     saveToSession(list, newCursor, alternateRef.current, viewStateRef.current);
-  }, [navigateTo]);
+  }, [navigateTo, snapshotCurrentLocation]);
 
   const jumpForward = useCallback(() => {
     const list = jumpListRef.current;
@@ -221,7 +233,7 @@ export function NavigationProvider({
     const alt = alternateRef.current;
     if (!alt) return;
 
-    const current = { ...currentLocationRef.current };
+    const current = snapshotCurrentLocation();
     alternateRef.current = current;
     navigateTo(alt);
     saveToSession(
@@ -230,7 +242,7 @@ export function NavigationProvider({
       current,
       viewStateRef.current,
     );
-  }, [navigateTo]);
+  }, [navigateTo, snapshotCurrentLocation]);
 
   const registerScrollContainer = useCallback((el: HTMLElement | null) => {
     scrollContainerRef.current = el;
@@ -265,6 +277,7 @@ export function NavigationProvider({
       saveViewState,
       getViewState,
       registerScrollContainer,
+      restoreVersion,
     }),
     [
       pushJump,
@@ -276,6 +289,7 @@ export function NavigationProvider({
       saveViewState,
       getViewState,
       registerScrollContainer,
+      restoreVersion,
     ],
   );
 

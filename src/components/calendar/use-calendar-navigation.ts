@@ -29,6 +29,7 @@ export function useCalendarNavigation({
   );
 
   useEffect(() => {
+    void nav.restoreVersion;
     const savedAnchor = nav.getViewState<string>("cal:anchor");
     const savedFocusedDate = nav.getViewState<string>("cal:focusedDate");
     const savedMode = nav.getViewState<FcViewMode>("cal:viewMode");
@@ -39,8 +40,8 @@ export function useCalendarNavigation({
         savedFocusedDate ? new Date(savedFocusedDate) : nextAnchor,
       ),
     );
-    if (savedMode) setViewMode(savedMode);
-  }, [nav.getViewState]);
+    setViewMode(savedMode ?? defaultViewMode);
+  }, [defaultViewMode, nav.getViewState, nav.restoreVersion]);
 
   useEffect(() => {
     if (anchor) nav.saveViewState("cal:anchor", anchor.toISOString());
@@ -98,9 +99,11 @@ export function useCalendarNavigation({
   );
 
   const setFocusedViewMode = useCallback(
-    (mode: FcViewMode) => {
-      const nextAnchor = focusedDate ?? anchor ?? new Date();
+    (mode: FcViewMode, date?: Date) => {
+      const nextAnchor = date ?? focusedDate ?? anchor ?? new Date();
+      const nextFocusedDate = startOfCalendarDay(nextAnchor);
       setAnchor(nextAnchor);
+      setFocusedDateState(nextFocusedDate);
       setViewMode(mode);
     },
     [anchor, focusedDate],

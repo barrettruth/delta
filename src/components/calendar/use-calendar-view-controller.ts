@@ -269,6 +269,25 @@ export function useCalendarViewController({
     goToday();
   }, [dismissPopover, goToday]);
 
+  const setViewModeWithJump = useCallback(
+    (mode: FcViewMode) => {
+      if (mode === viewMode) return;
+      nav.pushJump();
+      setFocusedViewMode(mode);
+    },
+    [nav, setFocusedViewMode, viewMode],
+  );
+
+  const handleDayHeaderClick = useCallback(
+    (date: Date) => {
+      if (viewMode !== "week") return;
+      dismissPopover();
+      nav.pushJump();
+      setFocusedViewMode("day", date);
+    },
+    [dismissPopover, nav, setFocusedViewMode, viewMode],
+  );
+
   const handleRecurrenceDialogOpenChange = useCallback(
     (open: boolean) => {
       if (!open) recurrenceEdit.cancel();
@@ -294,7 +313,7 @@ export function useCalendarViewController({
     moveFocusedDate,
     setActionsOpen,
     setAllDayVisible,
-    setViewMode: setFocusedViewMode,
+    setViewMode: setViewModeWithJump,
     viewMode,
   });
 
@@ -309,6 +328,7 @@ export function useCalendarViewController({
     goPrev,
     goTodayWithDismiss,
     handleDateClick,
+    handleDayHeaderClick,
     handleDateSelect,
     handleDatesSet,
     handleEventDrop,
