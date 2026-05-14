@@ -1,4 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
+import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
 import { GOOGLE_TASKS_LINK_PROVIDER } from "@/core/google/types";
 import { deleteIntegrationConfig } from "@/core/integration-config";
 import type { Db } from "@/core/types";
@@ -8,17 +9,20 @@ import { GOOGLE_PROVIDER } from "./types";
 export function disconnectGoogleIntegration(db: Db, userId: number): void {
   db.transaction((tx) => {
     const txDb = tx as Db;
-    const googleTaskLinks = txDb
+    const googleLinks = txDb
       .select({ taskId: taskExternalLinks.taskId })
       .from(taskExternalLinks)
       .where(
         and(
           eq(taskExternalLinks.userId, userId),
-          eq(taskExternalLinks.provider, GOOGLE_TASKS_LINK_PROVIDER),
+          inArray(taskExternalLinks.provider, [
+            GOOGLE_TASKS_LINK_PROVIDER,
+            EXTERNAL_LINK_PROVIDER.googleCalendar,
+          ]),
         ),
       )
       .all();
-    const taskIds = googleTaskLinks.map((link) => link.taskId);
+    const taskIds = googleLinks.map((link) => link.taskId);
 
     if (taskIds.length > 0) {
       txDb.delete(tasks).where(inArray(tasks.id, taskIds)).run();

@@ -33,6 +33,9 @@ interface GoogleSummary {
   tasksLastPulledAt: string | null;
   tasksLastError: string | null;
   tasksLastResult: GoogleTasksPullResult | null;
+  calendarLastPulledAt: string | null;
+  calendarLastError: string | null;
+  calendarLastResult: GoogleCalendarPullResult | null;
   calendarSources: GoogleCalendarSource[];
 }
 
@@ -44,6 +47,18 @@ interface GoogleTasksPullResult {
   cancelled: number;
   skipped: number;
   duplicateSkipped: number;
+  errors: string[];
+}
+
+interface GoogleCalendarPullResult {
+  sources: number;
+  seen: number;
+  created: number;
+  updated: number;
+  cancelled: number;
+  skipped: number;
+  duplicateSkipped: number;
+  fullResyncs: number;
   errors: string[];
 }
 
@@ -94,6 +109,40 @@ function formatLastResult(result: GoogleTasksPullResult): string {
   return parts.join(" / ");
 }
 
+function formatCalendarPullStatus(result: GoogleCalendarPullResult): string {
+  const parts = [`pulled ${result.seen}`];
+  if (result.created > 0) parts.push(`${result.created} created`);
+  if (result.updated > 0) parts.push(`${result.updated} updated`);
+  if (result.cancelled > 0) parts.push(`${result.cancelled} cancelled`);
+  if (result.skipped > 0) parts.push(`${result.skipped} skipped`);
+  if (result.duplicateSkipped > 0) {
+    parts.push(`${result.duplicateSkipped} duplicate skipped`);
+  }
+  if (result.fullResyncs > 0) {
+    parts.push(`${result.fullResyncs} full resync`);
+  }
+  if (result.errors.length > 0) parts.push(`${result.errors.length} errors`);
+  if (parts.length === 1) parts.push("no changes");
+  return parts.join(", ");
+}
+
+function formatCalendarLastResult(result: GoogleCalendarPullResult): string {
+  const parts = [`${result.seen} seen`];
+  if (result.created > 0) parts.push(`${result.created} created`);
+  if (result.updated > 0) parts.push(`${result.updated} updated`);
+  if (result.cancelled > 0) parts.push(`${result.cancelled} cancelled`);
+  if (result.skipped > 0) parts.push(`${result.skipped} skipped`);
+  if (result.duplicateSkipped > 0) {
+    parts.push(`${result.duplicateSkipped} duplicate skipped`);
+  }
+  if (result.fullResyncs > 0) {
+    parts.push(`${result.fullResyncs} full resync`);
+  }
+  if (result.errors.length > 0) parts.push(`${result.errors.length} errors`);
+  if (parts.length === 1) parts.push("no changes");
+  return parts.join(" / ");
+}
+
 function sourceLabel(source: GoogleCalendarSource): string {
   return source.hidden ? `${source.title} [hidden]` : source.title;
 }
@@ -124,10 +173,14 @@ export function CalendarSettingsSection({
       tasksLastPulledAt: null,
       tasksLastError: null,
       tasksLastResult: null,
+      calendarLastPulledAt: null,
+      calendarLastError: null,
+      calendarLastResult: null,
       calendarSources: [],
     },
   );
   const [googlePulling, setGooglePulling] = useState(false);
+  const [googleCalendarPulling, setGoogleCalendarPulling] = useState(false);
   const [googleCalendarLoading, setGoogleCalendarLoading] = useState(false);
   const [googleCalendarSavingId, setGoogleCalendarSavingId] = useState<
     number | null
@@ -277,6 +330,9 @@ export function CalendarSettingsSection({
       tasksLastPulledAt: null,
       tasksLastError: null,
       tasksLastResult: null,
+      calendarLastPulledAt: null,
+      calendarLastError: null,
+      calendarLastResult: null,
       calendarSources: [],
     });
     statusBar.message("google disconnected");
@@ -355,6 +411,44 @@ export function CalendarSettingsSection({
     }
   }
 
+  async function handleGoogleCalendarPull() {
+    if (!google.connected || googleCalendarPulling) return;
+    setGoogleCalendarPulling(true);
+    statusBar.setOperation("pulling google calendar...");
+    try {
+      const res = await fetch("/api/integrations/google/calendar/pull", {
+        method: "POST",
+      });
+      const data = (await res.json()) as
+        | GoogleCalendarPullResult
+        | { error?: string };
+      statusBar.clearOperation();
+      if (!res.ok) {
+        statusBar.error(
+          "error" in data && data.error
+            ? data.error
+            : "google calendar pull failed",
+        );
+        return;
+      }
+
+      const result = data as GoogleCalendarPullResult;
+      setGoogle((current) => ({
+        ...current,
+        calendarLastPulledAt: new Date().toISOString(),
+        calendarLastError: result.errors[0] ?? null,
+        calendarLastResult: result,
+      }));
+      statusBar.message(formatCalendarPullStatus(result));
+      router.refresh();
+    } catch {
+      statusBar.clearOperation();
+      statusBar.error("google calendar pull failed");
+    } finally {
+      setGoogleCalendarPulling(false);
+    }
+  }
+
   async function handleGoogleCalendarToggle(source: GoogleCalendarSource) {
     if (!google.connected || googleCalendarSavingId !== null) return;
     setGoogleCalendarSavingId(source.id);
@@ -402,7 +496,13 @@ export function CalendarSettingsSection({
     return formatTimestamp(google.tasksLastPulledAt);
   }
 
+  function calendarLastPulledLabel(): string {
+    if (!google.calendarLastPulledAt) return "never";
+    return formatTimestamp(google.calendarLastPulledAt);
+  }
+
   const tasksLastResult = google.tasksLastResult;
+  const calendarLastResult = google.calendarLastResult;
 
   return (
     <SettingsPage
@@ -494,6 +594,32 @@ export function CalendarSettingsSection({
               title="google calendars"
               description="Choose which Google calendars Delta should import as read-only events."
             >
+              <SettingsRow
+                label={
+                  googleCalendarPulling ? "pulling calendars..." : "pull now"
+                }
+                value={google.connected ? "" : "not connected"}
+                action={google.connected && !googleCalendarPulling}
+                muted={!google.connected}
+                onClick={handleGoogleCalendarPull}
+              />
+              <SettingsRow
+                label="last pull"
+                value={calendarLastPulledLabel()}
+              />
+              {calendarLastResult && (
+                <SettingsRow
+                  label="last result"
+                  value={formatCalendarLastResult(calendarLastResult)}
+                />
+              )}
+              {google.calendarLastError && (
+                <SettingsRow
+                  label={google.calendarLastError}
+                  value="error"
+                  destructive
+                />
+              )}
               <SettingsRow
                 label={
                   googleCalendarLoading

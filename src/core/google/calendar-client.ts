@@ -1,4 +1,4 @@
-import type { GoogleCalendarListEntry } from "./types";
+import type { GoogleCalendarEvent, GoogleCalendarListEntry } from "./types";
 
 const CALENDAR_LIST_URL =
   "https://www.googleapis.com/calendar/v3/users/me/calendarList";
@@ -6,6 +6,12 @@ const CALENDAR_LIST_URL =
 interface GoogleCalendarListResponse {
   items?: GoogleCalendarListEntry[];
   nextPageToken?: string;
+}
+
+export interface GoogleCalendarEventsPage {
+  items: GoogleCalendarEvent[];
+  nextPageToken?: string;
+  nextSyncToken?: string;
 }
 
 export class GoogleCalendarApiError extends Error {
@@ -55,4 +61,30 @@ export async function listGoogleCalendars(
   } while (pageToken);
 
   return calendars;
+}
+
+export async function listGoogleCalendarEventsPage(
+  accessToken: string,
+  calendarId: string,
+  options: { pageToken?: string; syncToken?: string } = {},
+): Promise<GoogleCalendarEventsPage> {
+  const params = new URLSearchParams({
+    maxResults: "2500",
+    showDeleted: "true",
+  });
+  if (options.pageToken) params.set("pageToken", options.pageToken);
+  if (options.syncToken) params.set("syncToken", options.syncToken);
+
+  const data = await googleGet<GoogleCalendarEventsPage>(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+      calendarId,
+    )}/events?${params.toString()}`,
+    accessToken,
+  );
+
+  return {
+    items: data.items ?? [],
+    nextPageToken: data.nextPageToken,
+    nextSyncToken: data.nextSyncToken,
+  };
 }

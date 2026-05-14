@@ -81,6 +81,20 @@ Each selected calendar maps to a Delta category using the Google calendar name
 by default. Delta seeds the category color from Google only when that local
 category does not already have a color.
 
+Use Settings -> Calendar -> Google -> Pull now in the Google Calendars section
+to manually import selected calendars. Google Calendar imports are pull-only and
+read-only in v0.1. Delta stores per-calendar sync tokens in `sync_sources`; if
+Google expires a token with `410 Gone`, Delta clears that calendar token,
+performs a full resync during the same manual pull, and reports the full resync
+in the settings summary.
+
+Repeated pulls update existing `google_calendar` external links instead of
+creating duplicates. Events with an `iCalUID` that already appears in `.ics`
+imports are counted as `duplicate skipped` and are not auto-linked.
+
+Google cancelled/deleted events cancel already-imported rows. Cancelled
+recurring instances are stored as master `exdates` when the master is present.
+
 ## Google Tasks pull
 
 Use Settings -> Calendar -> Google -> Pull now.

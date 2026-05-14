@@ -27,6 +27,9 @@ describe("CalendarSettingsSection", () => {
             tasksLastPulledAt: null,
             tasksLastError: null,
             tasksLastResult: null,
+            calendarLastPulledAt: null,
+            calendarLastError: null,
+            calendarLastResult: null,
             calendarSources: [],
           },
         }),
@@ -67,6 +70,9 @@ describe("CalendarSettingsSection", () => {
               duplicateSkipped: 1,
               errors: [],
             },
+            calendarLastPulledAt: null,
+            calendarLastError: null,
+            calendarLastResult: null,
             calendarSources: [],
           },
         }),
@@ -95,6 +101,19 @@ describe("CalendarSettingsSection", () => {
             tasksLastPulledAt: null,
             tasksLastError: null,
             tasksLastResult: null,
+            calendarLastPulledAt: "2026-05-13T04:30:00.000Z",
+            calendarLastError: null,
+            calendarLastResult: {
+              sources: 2,
+              seen: 5,
+              created: 2,
+              updated: 1,
+              cancelled: 1,
+              skipped: 1,
+              duplicateSkipped: 1,
+              fullResyncs: 1,
+              errors: [],
+            },
             calendarSources: [
               {
                 id: 1,
@@ -128,6 +147,9 @@ describe("CalendarSettingsSection", () => {
 
     expect(html).toContain("Work");
     expect(html).toContain("on / Work");
+    expect(html).toContain(
+      "5 seen / 2 created / 1 updated / 1 cancelled / 1 skipped / 1 duplicate skipped / 1 full resync",
+    );
     expect(html).toContain("Archive [hidden]");
     expect(html).toContain("off / Archive");
   });

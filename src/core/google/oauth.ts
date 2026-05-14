@@ -10,6 +10,7 @@ import {
   GOOGLE_OAUTH_SCOPES,
   GOOGLE_PROVIDER,
   GOOGLE_TASKS_SCOPE,
+  type GoogleCalendarPullSummary,
   type GoogleCalendarSourceSummary,
   type GoogleIntegrationMetadata,
   type GoogleOAuthTokens,
@@ -305,12 +306,18 @@ export function googleIntegrationSummary(
   tasksLastPulledAt: string | null;
   tasksLastError: string | null;
   tasksLastResult: GoogleTasksPullSummary | null;
+  calendarLastPulledAt: string | null;
+  calendarLastError: string | null;
+  calendarLastResult: GoogleCalendarPullSummary | null;
   calendarSources: GoogleCalendarSourceSummary[];
 } {
   const config = getGoogleIntegration(db, userId);
   const metadata = config?.metadata;
   const tasksLastResult = normalizeGoogleTasksPullSummary(
     metadata?.tasks?.lastResult,
+  );
+  const calendarLastResult = normalizeGoogleCalendarPullSummary(
+    metadata?.calendar?.lastResult,
   );
   return {
     connected: Boolean(config && config.enabled === 1),
@@ -323,6 +330,15 @@ export function googleIntegrationSummary(
     tasksLastError:
       typeof metadata?.lastError === "string" ? metadata.lastError : null,
     tasksLastResult,
+    calendarLastPulledAt:
+      typeof metadata?.calendar?.lastPulledAt === "string"
+        ? metadata.calendar.lastPulledAt
+        : null,
+    calendarLastError:
+      typeof metadata?.calendar?.lastError === "string"
+        ? metadata.calendar.lastError
+        : null,
+    calendarLastResult,
     calendarSources: config ? listGoogleCalendarSources(db, userId) : [],
   };
 }
@@ -346,6 +362,28 @@ function normalizeGoogleTasksPullSummary(
     cancelled: numberField(result.cancelled),
     skipped: numberField(result.skipped),
     duplicateSkipped: numberField(result.duplicateSkipped),
+    errors: Array.isArray(result.errors)
+      ? result.errors.filter((item): item is string => typeof item === "string")
+      : [],
+  };
+}
+
+function normalizeGoogleCalendarPullSummary(
+  value: unknown,
+): GoogleCalendarPullSummary | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const result = value as Record<string, unknown>;
+  return {
+    sources: numberField(result.sources),
+    seen: numberField(result.seen),
+    created: numberField(result.created),
+    updated: numberField(result.updated),
+    cancelled: numberField(result.cancelled),
+    skipped: numberField(result.skipped),
+    duplicateSkipped: numberField(result.duplicateSkipped),
+    fullResyncs: numberField(result.fullResyncs),
     errors: Array.isArray(result.errors)
       ? result.errors.filter((item): item is string => typeof item === "string")
       : [],

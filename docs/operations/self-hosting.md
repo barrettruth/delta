@@ -94,14 +94,24 @@ https://www.googleapis.com/auth/calendar.events.readonly
 https://www.googleapis.com/auth/tasks.readonly
 ```
 
-The current manual pull path calls Google Tasks. The Google Calendar settings
-path can also discover calendar sources with Settings -> Calendar -> Google ->
-Refresh calendars after connecting an account.
+The manual pull paths call Google Tasks and selected Google Calendar sources.
+Discover calendar sources with Settings -> Calendar -> Google -> Refresh
+calendars after connecting an account, then use Pull now in the Google
+Calendars section.
 
 Calendar discovery stores one `google_calendar` source row per syncable Google
 calendar. Visible calendars start enabled, hidden calendars are shown as
 `[hidden]` and start disabled, and calendars that expose only free/busy access
 are not selected for event-detail sync.
+
+Google Calendar pull stores one sync token per selected calendar source. If
+Google returns `410 Gone` for an expired token, Delta clears that token, does a
+full resync for that calendar during the same manual pull, and reports the full
+resync in Settings.
+
+Google Calendar imports are pull-only and read-only. `iCalUID` matches against
+existing `.ics` imports are counted as `duplicate skipped`; Delta does not
+auto-link those rows.
 
 Google Tasks sync is pull-only and read-only in v0.1. Imported Google Tasks are
 normal Delta task rows, but user mutation paths reject edits; only the sync
@@ -113,8 +123,8 @@ Google Tasks summary as:
 - `cancelled`: already-imported Google tasks cancelled after remote deletion.
 - `skipped`: Google tasks that were unchanged or intentionally ignored.
 
-Disconnecting Google hard-removes imported Google Tasks rows, their external
-links, and Google sync source state.
+Disconnecting Google hard-removes imported Google Tasks and Google Calendar
+rows, their external links, and Google sync source state.
 
 ## Geocoding providers
 

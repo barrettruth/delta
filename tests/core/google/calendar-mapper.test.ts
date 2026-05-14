@@ -237,6 +237,13 @@ describe("Google Calendar event mapper", () => {
     );
 
     expect(result.cancelledInstances).toBe(1);
+    expect(result.cancelledEvents).toMatchObject([
+      {
+        externalId: "work@example.com:series-1_20260528",
+        recurringMasterExternalId: "work@example.com:series-1",
+        originalStartAt: "2026-05-28T13:00:00.000Z",
+      },
+    ]);
     expect(result.events).toHaveLength(2);
     expect(master?.input).toMatchObject({
       recurrence: "FREQ=WEEKLY;BYDAY=TH",

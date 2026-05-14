@@ -35,6 +35,7 @@ export interface GoogleIntegrationMetadata {
   connectedAt?: string;
   lastRefreshAt?: string;
   tasks?: GoogleTasksSyncMetadata;
+  calendar?: GoogleCalendarSyncMetadata;
   lastError?: string;
   [key: string]: unknown;
 }
@@ -42,6 +43,12 @@ export interface GoogleIntegrationMetadata {
 export interface GoogleTasksSyncMetadata {
   lastPulledAt?: string;
   lastResult?: GoogleTasksPullSummary;
+}
+
+export interface GoogleCalendarSyncMetadata {
+  lastPulledAt?: string;
+  lastError?: string;
+  lastResult?: GoogleCalendarPullSummary;
 }
 
 export interface GoogleTaskList {
@@ -166,6 +173,18 @@ export interface GoogleTasksPullSummary {
   cancelled: number;
   skipped: number;
   duplicateSkipped: number;
+  errors: string[];
+}
+
+export interface GoogleCalendarPullSummary {
+  sources: number;
+  seen: number;
+  created: number;
+  updated: number;
+  cancelled: number;
+  skipped: number;
+  duplicateSkipped: number;
+  fullResyncs: number;
   errors: string[];
 }
 

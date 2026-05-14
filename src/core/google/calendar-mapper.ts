@@ -29,8 +29,18 @@ export interface GoogleCalendarMappedEvent {
   metadata: Record<string, unknown>;
 }
 
+export interface GoogleCalendarCancelledEvent {
+  externalId: string;
+  calendarId: string;
+  eventId: string;
+  recurringMasterExternalId: string | null;
+  originalStartAt: string | null;
+  metadata: Record<string, unknown>;
+}
+
 export interface GoogleCalendarMapResult {
   events: GoogleCalendarMappedEvent[];
+  cancelledEvents: GoogleCalendarCancelledEvent[];
   duplicateSkipped: number;
   cancelledInstances: number;
   errors: string[];
@@ -381,6 +391,7 @@ export function mapGoogleCalendarEvents(
 ): GoogleCalendarMapResult {
   const result: GoogleCalendarMapResult = {
     events: [],
+    cancelledEvents: [],
     duplicateSkipped: 0,
     cancelledInstances: 0,
     errors: [],
@@ -407,6 +418,17 @@ export function mapGoogleCalendarEvents(
     try {
       if (event.recurringEventId) {
         if (event.status === "cancelled") {
+          result.cancelledEvents.push({
+            externalId: eventExternalId(source.sourceId, event.id),
+            calendarId: source.sourceId,
+            eventId: event.id,
+            recurringMasterExternalId: eventExternalId(
+              source.sourceId,
+              event.recurringEventId,
+            ),
+            originalStartAt: originalStartAt(event),
+            metadata: metadataFor(source, event, false),
+          });
           if (!masterIds.has(event.recurringEventId)) {
             result.cancelledInstances++;
           }
