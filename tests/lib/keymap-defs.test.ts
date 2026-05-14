@@ -25,7 +25,7 @@ const EXPECTED_KEYMAP_IDS = [
   "global.kanban",
   "global.calendar",
   "global.settings",
-  "global.calendar_settings",
+  "global.view_settings",
   "global.calendar_day",
   "global.calendar_week",
   "global.calendar_month",
@@ -90,7 +90,6 @@ const EXPECTED_KEYMAP_IDS = [
   "calendar.month_view",
   "calendar.today",
   "calendar.toggle_allday",
-  "calendar.actions",
   "nav.jump_back",
   "nav.jump_forward",
   "nav.alternate",
@@ -122,17 +121,11 @@ describe("keymap definitions", () => {
         triggerKey: "d",
       }),
     );
-    expect(getKeymap("calendar.actions")).toEqual(
-      expect.objectContaining({
-        key: "ga",
-        triggerKey: "a",
-      }),
-    );
-    expect(getKeymap("global.calendar_settings")).toEqual(
+    expect(getKeymap("global.view_settings")).toEqual(
       expect.objectContaining({
         key: "gS",
         triggerKey: "g",
-        label: "Calendar settings",
+        label: "View settings",
       }),
     );
     expect(getKeymap("queue.delete")).toEqual(
@@ -316,6 +309,7 @@ describe("keymap definitions", () => {
         }),
       ]),
     );
+    expect(calendar?.rows.some((row) => row.keyDisplay === "ga")).toBe(false);
   });
 
   it("keeps queue and kanban help free of operator-motion shortcuts", () => {

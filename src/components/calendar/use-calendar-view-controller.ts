@@ -41,7 +41,6 @@ export function useCalendarViewController({
   const recurrenceEdit = useRecurrenceEdit();
   const taskOperations = useTaskOperations({ tasks });
   const fcRef = useRef<FcCalendarHandle>(null);
-  const [actionsOpen, setActionsOpen] = useState(false);
   const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor>(null);
 
   const navigation = useCalendarNavigation({ defaultViewMode, fcRef });
@@ -316,7 +315,6 @@ export function useCalendarViewController({
   );
 
   useCalendarKeyboard({
-    actionsOpen,
     dismissPopover,
     fcRef,
     goNextPeriod,
@@ -324,14 +322,12 @@ export function useCalendarViewController({
     goToday,
     hasVisibleAllDayEvents,
     moveFocusedDate,
-    setActionsOpen,
     setAllDayVisible,
     setViewMode: setViewModeWithJump,
     viewMode,
   });
 
   return {
-    actionsOpen,
     allDaySlotVisible,
     anchor,
     events: eventsWithDraft,
@@ -352,7 +348,6 @@ export function useCalendarViewController({
     openTaskFromEvent,
     popoverAnchor,
     recurrenceEdit,
-    setActionsOpen,
     taskOperations,
     viewMode,
   };

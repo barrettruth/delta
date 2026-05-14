@@ -29,10 +29,11 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsReturnTo = settingsReturnToForPath(pathname, searchParams);
-  const calendarSettingsRoute = settingsHref(
-    "/settings/calendar",
-    settingsReturnTo,
-  );
+  const viewSettingsHref =
+    pathname === "/calendar" || pathname.startsWith("/calendar/")
+      ? "/settings/calendar"
+      : "/settings";
+  const viewSettingsRoute = settingsHref(viewSettingsHref, settingsReturnTo);
 
   const openHelp = useCallback(() => {
     openKeyboardHelp();
@@ -90,7 +91,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
         } else if (key === "S") {
           e.preventDefault();
           pushJump();
-          router.push(calendarSettingsRoute);
+          router.push(viewSettingsRoute);
         } else if (key === ".") {
           e.preventDefault();
           const params = new URLSearchParams(searchParams.toString());
@@ -193,7 +194,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       panel,
       viewKeys,
       openHelp,
-      calendarSettingsRoute,
+      viewSettingsRoute,
     ],
   );
 

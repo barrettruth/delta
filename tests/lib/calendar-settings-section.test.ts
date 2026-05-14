@@ -41,11 +41,46 @@ describe("CalendarSettingsSection", () => {
     expect(html).toContain("google");
     expect(html).toContain("recurrence");
     expect(html).not.toContain("NLP");
+    expect(html).toContain("local calendar");
+    expect(html).toContain("generate subscription");
+    expect(html).not.toContain("copy subscription url");
+    expect(html).toContain("import .ics");
+    expect(html).toContain("export .ics");
     expect(html).toContain("connect google");
     expect(html).toContain("google tasks");
     expect(html).toContain("google calendars");
     expect(html).toContain("pull now (last pull: never)");
     expect(html).toContain("refresh calendars (no calendars discovered)");
+  });
+
+  it("renders subscription copy and revoke actions when a feed exists", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        StatusBarProvider,
+        null,
+        createElement(CalendarSettingsSection, {
+          initialFeedToken: "feed-token",
+          initialGeoProvider: "photon",
+          initialNlpProvider: null,
+          initialGoogle: {
+            connected: false,
+            email: null,
+            name: null,
+            tasksLastPulledAt: null,
+            tasksLastError: null,
+            tasksLastResult: null,
+            calendarLastPulledAt: null,
+            calendarLastError: null,
+            calendarLastResult: null,
+            calendarSources: [],
+          },
+        }),
+      ),
+    );
+
+    expect(html).toContain("copy subscription url");
+    expect(html).toContain("revoke subscription");
+    expect(html).not.toContain("generate subscription");
   });
 
   it("renders Google Tasks pull summary", () => {

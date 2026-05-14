@@ -9,7 +9,6 @@ import type { FcCalendarHandle, FcViewMode } from "./fc-calendar";
 const LEADER_TIMEOUT_MS = 1200;
 
 export function useCalendarKeyboard({
-  actionsOpen,
   dismissPopover,
   fcRef,
   goNextPeriod,
@@ -17,12 +16,10 @@ export function useCalendarKeyboard({
   goToday,
   hasVisibleAllDayEvents,
   moveFocusedDate,
-  setActionsOpen,
   setAllDayVisible,
   setViewMode,
   viewMode,
 }: {
-  actionsOpen: boolean;
   dismissPopover: () => void;
   fcRef: RefObject<FcCalendarHandle | null>;
   goNextPeriod: () => void;
@@ -30,7 +27,6 @@ export function useCalendarKeyboard({
   goToday: () => void;
   hasVisibleAllDayEvents: boolean;
   moveFocusedDate: (days: number) => void;
-  setActionsOpen: Dispatch<SetStateAction<boolean>>;
   setAllDayVisible: Dispatch<SetStateAction<boolean>>;
   setViewMode: (mode: FcViewMode) => void;
   viewMode: FcViewMode;
@@ -80,12 +76,6 @@ export function useCalendarKeyboard({
         if (event.key === scrollTopKey && isTimeGrid) {
           event.preventDefault();
           fcRef.current?.scrollToTime(0);
-          return;
-        }
-        const actionsKey = getKeymap("calendar.actions").triggerKey;
-        if (event.key === actionsKey) {
-          event.preventDefault();
-          setActionsOpen(true);
           return;
         }
         return;
@@ -203,7 +193,6 @@ export function useCalendarKeyboard({
       goToday,
       hasVisibleAllDayEvents,
       moveFocusedDate,
-      setActionsOpen,
       setAllDayVisible,
       setViewMode,
       viewMode,
@@ -211,13 +200,10 @@ export function useCalendarKeyboard({
   );
 
   useEffect(() => {
-    return registerScopedKeydown(
-      window,
-      { scope: "view", popoverOpen: actionsOpen },
-      handleKey,
-      { capture: true },
-    );
-  }, [handleKey, actionsOpen]);
+    return registerScopedKeydown(window, { scope: "view" }, handleKey, {
+      capture: true,
+    });
+  }, [handleKey]);
 
   useEffect(() => {
     return () => {

@@ -1,7 +1,6 @@
 import "server-only";
 
 import type { SafeUser } from "@/core/auth";
-import { getFeedToken } from "@/core/calendar-feed";
 import { listCategoryColors } from "@/core/categories";
 import { getSettings, type ViewType } from "@/core/settings";
 import { listTasksWithSourceInfo } from "@/core/task";
@@ -64,7 +63,6 @@ export interface DashboardCalendarData {
   categoryColors: Record<string, string>;
   categories: string[];
   defaultViewMode?: DashboardCalendarViewMode;
-  feedToken: string | null;
 }
 
 function taskCategories(tasks: Task[]): string[] {
@@ -220,6 +218,5 @@ export async function loadDashboardCalendarData(
     categoryColors: listCategoryColors(db, user.id),
     categories: taskCategories(tasks),
     defaultViewMode: calendarViewMode(params.mode),
-    feedToken: getFeedToken(db, user.id),
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
   GEOCODING_PROVIDERS,
@@ -162,18 +162,23 @@ function sourceValue(source: GoogleCalendarSource): string {
 
 export function CalendarSettingsSection({
   initialGeoProvider = "photon",
+  initialFeedToken = null,
   initialNlpProvider = null,
   initialGoogle,
 }: {
   initialGeoProvider?: GeocodingProvider;
+  initialFeedToken?: string | null;
   initialNlpProvider?: NlpProviderId | null;
   initialGoogle?: GoogleSummary;
 }) {
   const statusBar = useStatusBar();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<ProviderTab>("google");
+  const [feedToken, setFeedToken] = useState(initialFeedToken);
+  const [importingICal, setImportingICal] = useState(false);
   const [google, setGoogle] = useState<GoogleSummary>(
     initialGoogle ?? {
       connected: false,
@@ -226,6 +231,72 @@ export function CalendarSettingsSection({
     }
     geoKey.open(id);
     setGeoProvider(id);
+  }
+
+  function feedUrl(token: string): string {
+    return `${window.location.origin}/api/calendar/feed/${token}`;
+  }
+
+  async function handleGenerateFeed() {
+    const res = await fetch("/api/calendar/feed", { method: "POST" });
+    const data = (await res.json()) as { token?: string };
+    if (!res.ok || !data.token) {
+      statusBar.error("failed to generate subscription url");
+      return;
+    }
+    setFeedToken(data.token);
+    statusBar.message("subscription url generated");
+  }
+
+  async function handleCopyFeedUrl() {
+    if (!feedToken) return;
+    await navigator.clipboard.writeText(feedUrl(feedToken));
+    statusBar.message("copied to clipboard");
+  }
+
+  async function handleRevokeFeed() {
+    const res = await fetch("/api/calendar/feed", { method: "DELETE" });
+    if (!res.ok) {
+      statusBar.error("failed to revoke subscription");
+      return;
+    }
+    setFeedToken(null);
+    statusBar.message("subscription url revoked");
+  }
+
+  async function handleImportICal() {
+    const file = fileRef.current?.files?.[0];
+    if (!file || importingICal) return;
+    setImportingICal(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/import/ical", { method: "POST", body });
+      const data = (await res.json()) as {
+        created?: number;
+        skipped?: number;
+        error?: string;
+      };
+      if (!res.ok) {
+        statusBar.error(data.error ?? "import failed");
+        return;
+      }
+      statusBar.message(
+        `imported ${data.created ?? 0} events, skipped ${
+          data.skipped ?? 0
+        } duplicates`,
+      );
+      if (fileRef.current) fileRef.current.value = "";
+      notifyDashboardTasksChanged();
+    } catch (error) {
+      statusBar.error(error instanceof Error ? error.message : "import failed");
+    } finally {
+      setImportingICal(false);
+    }
+  }
+
+  function handleExportICal() {
+    window.location.href = "/api/export/ical";
   }
 
   async function handleTestGeoKey() {
@@ -544,6 +615,47 @@ export function CalendarSettingsSection({
       description="Manage the providers delta uses for Google sync, location lookup, and recurrence parsing."
     >
       <div className="space-y-6">
+        <SettingsSection title="local calendar">
+          {feedToken ? (
+            <>
+              <SettingsRow
+                label="copy subscription url"
+                action
+                onClick={handleCopyFeedUrl}
+              />
+              <SettingsRow
+                label="revoke subscription"
+                action
+                destructive
+                prefix={{ text: "-", className: "text-destructive" }}
+                onClick={handleRevokeFeed}
+              />
+            </>
+          ) : (
+            <SettingsRow
+              label="generate subscription"
+              action
+              prefix={{ text: "+", className: "text-status-done" }}
+              onClick={handleGenerateFeed}
+            />
+          )}
+          <SettingsRow
+            label={importingICal ? "importing .ics..." : "import .ics"}
+            action={!importingICal}
+            muted={importingICal}
+            prefix={{ text: "+", className: "text-status-done" }}
+            onClick={() => fileRef.current?.click()}
+          />
+          <SettingsRow label="export .ics" action onClick={handleExportICal} />
+        </SettingsSection>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".ics"
+          className="hidden"
+          onChange={handleImportICal}
+        />
+
         <div className="grid grid-cols-3 border border-border/60">
           {(
             [

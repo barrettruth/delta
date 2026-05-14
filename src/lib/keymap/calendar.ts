@@ -125,13 +125,6 @@ export const CALENDAR_KEYMAPS: KeymapDef[] = [
     section: "calendar",
     label: "Toggle all-day bar",
   },
-  {
-    id: "calendar.actions",
-    key: "ga",
-    triggerKey: "a",
-    section: "calendar",
-    label: "Calendar management",
-  },
 ];
 
 export const CALENDAR_HELP_ROWS: HelpRow[] = [
@@ -163,5 +156,4 @@ export const CALENDAR_HELP_ROWS: HelpRow[] = [
   ),
   helpRow("calendar.today", "t", "Jump to today"),
   helpRow("calendar.toggle_allday", "a", "Toggle all-day bar"),
-  helpRow("calendar.actions", "ga", "Calendar management"),
 ];

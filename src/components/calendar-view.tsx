@@ -1,9 +1,9 @@
 "use client";
 
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
-import { useSearchParams } from "next/navigation";
+import { CalendarDots, CaretLeft, CaretRight } from "@phosphor-icons/react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CalendarActionsPopover } from "@/components/calendar/actions-popover";
 import { CalendarEventPopover } from "@/components/calendar/event-popover";
 import { FcCalendar, type FcViewMode } from "@/components/calendar/fc-calendar";
 import { useCalendarViewController } from "@/components/calendar/use-calendar-view-controller";
@@ -11,31 +11,37 @@ import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialo
 import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import type { Task } from "@/core/types";
 import { onDashboardTasksChanged } from "@/lib/dashboard-refresh";
+import {
+  settingsHref,
+  settingsReturnToForPath,
+} from "@/lib/settings-navigation";
 
 export function CalendarView({
   tasks,
   categoryColors = {},
   categories: _categories = [],
   defaultViewMode = "week",
-  feedToken = null,
 }: {
   tasks: Task[];
   categoryColors?: Record<string, string>;
   categories?: string[];
   defaultViewMode?: FcViewMode;
-  feedToken?: string | null;
 }) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = searchParams.toString();
+  const settingsUrl = settingsHref(
+    "/settings/calendar",
+    settingsReturnToForPath(pathname, searchParams),
+  );
   const [calendarData, setCalendarData] = useState(() => ({
     tasks,
     categoryColors,
-    feedToken,
   }));
 
   useEffect(() => {
-    setCalendarData({ tasks, categoryColors, feedToken });
-  }, [tasks, categoryColors, feedToken]);
+    setCalendarData({ tasks, categoryColors });
+  }, [tasks, categoryColors]);
 
   useEffect(() => {
     let active = true;
@@ -57,10 +63,6 @@ export function CalendarView({
               !Array.isArray(data.categoryColors)
                 ? data.categoryColors
                 : categoryColors,
-            feedToken:
-              typeof data.feedToken === "string" || data.feedToken === null
-                ? data.feedToken
-                : feedToken,
           });
         })
         .catch(() => {});
@@ -70,7 +72,7 @@ export function CalendarView({
       active = false;
       cleanup();
     };
-  }, [categoryColors, feedToken, query, tasks]);
+  }, [categoryColors, query, tasks]);
 
   const calendar = useCalendarViewController({
     categoryColors: calendarData.categoryColors,
@@ -116,11 +118,13 @@ export function CalendarView({
           </button>
         </div>
         <div className="flex-1 flex justify-end">
-          <CalendarActionsPopover
-            feedToken={calendarData.feedToken}
-            open={calendar.actionsOpen}
-            onOpenChange={calendar.setActionsOpen}
-          />
+          <Link
+            href={settingsUrl}
+            aria-label="calendar settings"
+            className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+          >
+            <CalendarDots size={12} weight="bold" />
+          </Link>
         </div>
       </div>
 

@@ -7,7 +7,7 @@ export default async function CalendarPage({
   searchParams: Promise<{ mode?: string; showDone?: string }>;
 }) {
   const params = await searchParams;
-  const { tasks, categoryColors, categories, defaultViewMode, feedToken } =
+  const { tasks, categoryColors, categories, defaultViewMode } =
     await loadDashboardCalendarData(params);
 
   return (
@@ -16,7 +16,6 @@ export default async function CalendarPage({
       categoryColors={categoryColors}
       categories={categories}
       defaultViewMode={defaultViewMode}
-      feedToken={feedToken}
     />
   );
 }

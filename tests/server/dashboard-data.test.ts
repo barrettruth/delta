@@ -13,7 +13,6 @@ import {
 
 const mocks = vi.hoisted(() => ({
   db: { test: "db" },
-  getFeedToken: vi.fn(),
   getSettings: vi.fn(),
   listCategoryColors: vi.fn(),
   listTasksWithSourceInfo: vi.fn(),
@@ -23,9 +22,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/db", () => ({ db: mocks.db }));
-vi.mock("@/core/calendar-feed", () => ({
-  getFeedToken: mocks.getFeedToken,
-}));
 vi.mock("@/core/categories", () => ({
   listCategoryColors: mocks.listCategoryColors,
 }));
@@ -79,7 +75,6 @@ describe("dashboard data loaders", () => {
     mocks.rankTasks.mockImplementation((_db, tasks: Task[]) =>
       tasks.map((item) => ({ ...item, urgency: 0 })),
     );
-    mocks.getFeedToken.mockReturnValue(null);
   });
 
   it("loads shell data with de-duplicated task categories", async () => {
@@ -190,13 +185,12 @@ describe("dashboard data loaders", () => {
     expect(data).toEqual({ tasks });
   });
 
-  it("loads calendar data with settings, categories, and feed token", async () => {
+  it("loads calendar data with settings and categories", async () => {
     mocks.getSettings.mockReturnValue(settings({ showCompletedTasks: false }));
     const tasks = [task(1, "Work"), task(2, "Home")];
     const categoryColors = { Work: "#111111", Home: "#222222" };
     mocks.listTasksWithSourceInfo.mockReturnValue(tasks);
     mocks.listCategoryColors.mockReturnValue(categoryColors);
-    mocks.getFeedToken.mockReturnValue("feed-token");
 
     const data = await loadDashboardCalendarData({ mode: "month" });
 
@@ -208,13 +202,11 @@ describe("dashboard data loaders", () => {
       },
     );
     expect(mocks.listCategoryColors).toHaveBeenCalledWith(mocks.db, user.id);
-    expect(mocks.getFeedToken).toHaveBeenCalledWith(mocks.db, user.id);
     expect(data).toEqual({
       tasks,
       categoryColors,
       categories: ["Work", "Home"],
       defaultViewMode: "month",
-      feedToken: "feed-token",
     });
   });
 });
