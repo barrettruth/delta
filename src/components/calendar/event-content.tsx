@@ -3,6 +3,7 @@
 import type { EventContentArg } from "@fullcalendar/core";
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import type { CSSProperties } from "react";
+import { TaskSourceIndicator } from "@/components/task-source-indicator";
 import type { Task } from "@/core/types";
 
 type CalendarEventStyle = CSSProperties & {
@@ -42,6 +43,10 @@ export function renderCalendarEventContent(arg: EventContentArg) {
         <span className={`fc-delta-title-text ${titleClass}`}>
           {arg.event.title}
         </span>
+        <TaskSourceIndicator
+          source={task?.sourceInfo}
+          className="fc-delta-source"
+        />
         {task?.location && (
           <MapPinSimple
             className="fc-delta-icon"

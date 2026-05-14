@@ -1,5 +1,6 @@
 "use client";
 
+import { TaskSourceDetails } from "@/components/task-source-indicator";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,28 +22,46 @@ export function TaskPanelFields({
   form,
   mode,
   onStatusChange,
+  onReadOnlyAttempt,
   preFill,
   task,
 }: {
   form: TaskPanelFormController;
   mode: TaskPanelMode;
   onStatusChange: (status: string) => void;
+  onReadOnlyAttempt: () => void;
   preFill: TaskPreFill | null;
   task: Task | null;
 }) {
   const categorySuggestions = form.categorySuggestions;
   const locationSuggestions = form.locationSuggestions;
+  const isReadOnly = mode === "edit" && task?.sourceInfo?.readOnly === true;
 
   return (
     <div className="grid grid-cols-[4rem_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 border-b border-border/40">
+      {mode === "edit" && task && (
+        <TaskSourceDetails source={task.sourceInfo} />
+      )}
+
       {mode === "edit" && task && (
         <>
           <span className="text-xs text-muted-foreground/60">status</span>
           <Select
             value={task.status}
-            onValueChange={(value) => value && onStatusChange(value)}
+            onValueChange={(value) => {
+              if (!value) return;
+              if (isReadOnly) {
+                onReadOnlyAttempt();
+                return;
+              }
+              onStatusChange(value);
+            }}
           >
-            <SelectTrigger size="sm" className="h-7 text-xs w-full">
+            <SelectTrigger
+              size="sm"
+              className="h-7 text-xs w-full"
+              onPointerDown={isReadOnly ? onReadOnlyAttempt : undefined}
+            >
               <SelectValue>
                 {TASK_STATUS_LABELS[task.status as TaskStatus]}
               </SelectValue>
@@ -63,10 +82,15 @@ export function TaskPanelFields({
         <Input
           value={form.values.category}
           onChange={(event) => {
+            if (isReadOnly) {
+              onReadOnlyAttempt();
+              return;
+            }
             form.setCategory(event.target.value);
             categorySuggestions.show();
           }}
-          onFocus={categorySuggestions.show}
+          readOnly={isReadOnly}
+          onFocus={isReadOnly ? onReadOnlyAttempt : categorySuggestions.show}
           onBlur={categorySuggestions.hideSoon}
           placeholder="#"
           className="h-7 text-xs"
@@ -100,13 +124,28 @@ export function TaskPanelFields({
               : "datetime-local"
           }
           value={form.values.due}
-          onChange={(event) => form.setDue(event.target.value)}
+          readOnly={isReadOnly}
+          onChange={(event) => {
+            if (isReadOnly) {
+              onReadOnlyAttempt();
+              return;
+            }
+            form.setDue(event.target.value);
+          }}
+          onFocus={isReadOnly ? onReadOnlyAttempt : undefined}
           className="h-7 text-xs w-1/2"
         />
         <Input
           value={form.recurrenceInputValue}
-          onChange={(event) => form.setRecurrence(event.target.value || null)}
-          onFocus={form.handleRecurrenceFocus}
+          onChange={(event) => {
+            if (isReadOnly) {
+              onReadOnlyAttempt();
+              return;
+            }
+            form.setRecurrence(event.target.value || null);
+          }}
+          readOnly={isReadOnly}
+          onFocus={isReadOnly ? onReadOnlyAttempt : form.handleRecurrenceFocus}
           onBlur={form.handleRecurrenceBlur}
           placeholder="enter recurrence..."
           disabled={mode === "edit" && !!task?.recurringTaskId}
@@ -119,10 +158,15 @@ export function TaskPanelFields({
         <Input
           value={form.locationInputValue}
           placeholder="address or meeting link"
-          onChange={(event) =>
-            locationSuggestions.setFromInput(event.target.value)
-          }
-          onFocus={locationSuggestions.show}
+          readOnly={isReadOnly}
+          onChange={(event) => {
+            if (isReadOnly) {
+              onReadOnlyAttempt();
+              return;
+            }
+            locationSuggestions.setFromInput(event.target.value);
+          }}
+          onFocus={isReadOnly ? onReadOnlyAttempt : locationSuggestions.show}
           onBlur={locationSuggestions.hideSoon}
           onKeyDown={locationSuggestions.handleKeyDown}
           className="h-7 text-xs"
@@ -181,18 +225,30 @@ export function TaskPanelFields({
 export function TaskPanelNotes({
   form,
   mode,
+  onReadOnlyAttempt,
   task,
 }: {
   form: TaskPanelFormController;
   mode: TaskPanelMode;
+  onReadOnlyAttempt: () => void;
   task: Task | null;
 }) {
+  const isReadOnly = mode === "edit" && task?.sourceInfo?.readOnly === true;
+
   return (
     <div className="flex-1 min-h-0 overflow-auto px-4 pt-3 pb-4">
       <TiptapEditor
         key={mode === "edit" ? task?.id : "create"}
         content={mode === "edit" ? (task?.notes ?? null) : null}
-        onChange={form.handleNotesChange}
+        onChange={(value) => {
+          if (isReadOnly) {
+            onReadOnlyAttempt();
+            return;
+          }
+          form.handleNotesChange(value);
+        }}
+        editable={!isReadOnly}
+        onReadOnlyAttempt={onReadOnlyAttempt}
       />
     </div>
   );

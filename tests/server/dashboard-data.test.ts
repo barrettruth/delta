@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   getFeedToken: vi.fn(),
   getSettings: vi.fn(),
   listCategoryColors: vi.fn(),
-  listTasks: vi.fn(),
+  listTasksWithSourceInfo: vi.fn(),
   rankTasks: vi.fn(),
   requireAuthUser: vi.fn(),
 }));
@@ -33,7 +33,7 @@ vi.mock("@/core/settings", () => ({
   getSettings: mocks.getSettings,
 }));
 vi.mock("@/core/task", () => ({
-  listTasks: mocks.listTasks,
+  listTasksWithSourceInfo: mocks.listTasksWithSourceInfo,
 }));
 vi.mock("@/core/urgency", () => ({
   rankTasks: mocks.rankTasks,
@@ -74,7 +74,7 @@ describe("dashboard data loaders", () => {
     vi.clearAllMocks();
     mocks.requireAuthUser.mockResolvedValue(user);
     mocks.getSettings.mockReturnValue(settings());
-    mocks.listTasks.mockReturnValue([]);
+    mocks.listTasksWithSourceInfo.mockReturnValue([]);
     mocks.listCategoryColors.mockReturnValue({});
     mocks.rankTasks.mockImplementation((_db, tasks: Task[]) =>
       tasks.map((item) => ({ ...item, urgency: 0 })),
@@ -89,12 +89,15 @@ describe("dashboard data loaders", () => {
       task(3, "Work"),
       task(4, "Home"),
     ];
-    mocks.listTasks.mockReturnValue(tasks);
+    mocks.listTasksWithSourceInfo.mockReturnValue(tasks);
 
     const data = await loadDashboardShellData();
 
     expect(mocks.requireAuthUser).toHaveBeenCalledOnce();
-    expect(mocks.listTasks).toHaveBeenCalledWith(mocks.db, user.id);
+    expect(mocks.listTasksWithSourceInfo).toHaveBeenCalledWith(
+      mocks.db,
+      user.id,
+    );
     expect(mocks.listCategoryColors).not.toHaveBeenCalled();
     expect(data).toEqual({
       user,
@@ -111,7 +114,7 @@ describe("dashboard data loaders", () => {
     const data = await loadDashboardQueueData({ showDone: "1" });
 
     expect(data).toEqual({ kind: "redirect", redirectTo: "/calendar" });
-    expect(mocks.listTasks).not.toHaveBeenCalled();
+    expect(mocks.listTasksWithSourceInfo).not.toHaveBeenCalled();
     expect(mocks.rankTasks).not.toHaveBeenCalled();
     expect(mocks.listCategoryColors).not.toHaveBeenCalled();
   });
@@ -122,7 +125,7 @@ describe("dashboard data loaders", () => {
     const ranked = [{ ...tasks[0], urgency: 4 }] as RankedTask[];
     const categoryColors = { Work: "#222222" };
     mocks.getSettings.mockReturnValue(configuredSettings);
-    mocks.listTasks.mockReturnValue(tasks);
+    mocks.listTasksWithSourceInfo.mockReturnValue(tasks);
     mocks.rankTasks.mockReturnValue(ranked);
     mocks.listCategoryColors.mockReturnValue(categoryColors);
 
@@ -131,12 +134,16 @@ describe("dashboard data loaders", () => {
       date: "2026-05-11",
     });
 
-    expect(mocks.listTasks).toHaveBeenCalledWith(mocks.db, user.id, {
-      category: "Work",
-      dueAfter: "2026-05-11T00:00:00.000Z",
-      dueBefore: "2026-05-11T23:59:59.999Z",
-      status: ACTIVE_TASK_STATUSES,
-    });
+    expect(mocks.listTasksWithSourceInfo).toHaveBeenCalledWith(
+      mocks.db,
+      user.id,
+      {
+        category: "Work",
+        dueAfter: "2026-05-11T00:00:00.000Z",
+        dueBefore: "2026-05-11T23:59:59.999Z",
+        status: ACTIVE_TASK_STATUSES,
+      },
+    );
     expect(mocks.rankTasks).toHaveBeenCalledWith(
       mocks.db,
       tasks,
@@ -155,23 +162,31 @@ describe("dashboard data loaders", () => {
 
     await loadDashboardQueueData({ status: "done,wip" });
 
-    expect(mocks.listTasks).toHaveBeenCalledWith(mocks.db, user.id, {
-      status: ["done", "wip"],
-    });
+    expect(mocks.listTasksWithSourceInfo).toHaveBeenCalledWith(
+      mocks.db,
+      user.id,
+      {
+        status: ["done", "wip"],
+      },
+    );
   });
 
   it("loads kanban data with board ordering", async () => {
     mocks.getSettings.mockReturnValue(settings({ showCompletedTasks: false }));
     const tasks = [task(1, "Work")];
-    mocks.listTasks.mockReturnValue(tasks);
+    mocks.listTasksWithSourceInfo.mockReturnValue(tasks);
 
     const data = await loadDashboardKanbanData({});
 
-    expect(mocks.listTasks).toHaveBeenCalledWith(mocks.db, user.id, {
-      sortBy: "order",
-      sortOrder: "desc",
-      status: ACTIVE_TASK_STATUSES,
-    });
+    expect(mocks.listTasksWithSourceInfo).toHaveBeenCalledWith(
+      mocks.db,
+      user.id,
+      {
+        sortBy: "order",
+        sortOrder: "desc",
+        status: ACTIVE_TASK_STATUSES,
+      },
+    );
     expect(data).toEqual({ tasks });
   });
 
@@ -179,15 +194,19 @@ describe("dashboard data loaders", () => {
     mocks.getSettings.mockReturnValue(settings({ showCompletedTasks: false }));
     const tasks = [task(1, "Work"), task(2, "Home")];
     const categoryColors = { Work: "#111111", Home: "#222222" };
-    mocks.listTasks.mockReturnValue(tasks);
+    mocks.listTasksWithSourceInfo.mockReturnValue(tasks);
     mocks.listCategoryColors.mockReturnValue(categoryColors);
     mocks.getFeedToken.mockReturnValue("feed-token");
 
     const data = await loadDashboardCalendarData({ mode: "month" });
 
-    expect(mocks.listTasks).toHaveBeenCalledWith(mocks.db, user.id, {
-      status: ACTIVE_TASK_STATUSES,
-    });
+    expect(mocks.listTasksWithSourceInfo).toHaveBeenCalledWith(
+      mocks.db,
+      user.id,
+      {
+        status: ACTIVE_TASK_STATUSES,
+      },
+    );
     expect(mocks.listCategoryColors).toHaveBeenCalledWith(mocks.db, user.id);
     expect(mocks.getFeedToken).toHaveBeenCalledWith(mocks.db, user.id);
     expect(data).toEqual({

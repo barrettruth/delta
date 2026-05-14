@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
+import { createExternalLink } from "@/core/external-links";
+import {
+  createSyncSource,
+  SYNC_SOURCE_KIND,
+  SYNC_SOURCE_PROVIDER,
+} from "@/core/sync-sources";
 import {
   completeTask,
   createTask,
   deleteTask,
   getTask,
   listTasks,
+  listTasksWithSourceInfo,
   updateTask,
 } from "@/core/task";
 import type { Db } from "@/core/types";
@@ -159,6 +167,47 @@ describe("listTasks", () => {
     expect(result[0].description).toBe("A");
     expect(result[0].status).toBe("pending");
     expect(result[0].category).toBe("Work");
+  });
+
+  it("decorates imported tasks with compact source information", () => {
+    const source = createSyncSource(db, {
+      userId,
+      provider: SYNC_SOURCE_PROVIDER.google,
+      sourceKind: SYNC_SOURCE_KIND.googleCalendar,
+      sourceId: "work@example.com",
+      title: "Work",
+      readOnly: 1,
+      metadata: { hidden: true },
+    });
+    const imported = createTask(db, userId, {
+      description: "Imported",
+      category: "Work",
+    });
+    createExternalLink(db, {
+      userId,
+      taskId: imported.id,
+      syncSourceId: source.id,
+      provider: EXTERNAL_LINK_PROVIDER.googleCalendar,
+      externalId: "work@example.com:event-1",
+      metadata: {
+        readOnly: true,
+        privacy: "[private]",
+        transparency: "transparent",
+        htmlLink: "https://calendar.google.com/event?eid=event-1",
+      },
+    });
+
+    const result = listTasksWithSourceInfo(db, userId);
+    const decorated = result.find((task) => task.id === imported.id);
+
+    expect(decorated?.sourceInfo).toMatchObject({
+      providerLabel: "Google Calendar",
+      sourceKindLabel: "calendar",
+      sourceTitle: "Work",
+      readOnly: true,
+      htmlLink: "https://calendar.google.com/event?eid=event-1",
+      attributes: ["read-only", "private", "free", "hidden"],
+    });
   });
 });
 

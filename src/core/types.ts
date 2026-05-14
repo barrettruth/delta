@@ -4,7 +4,22 @@ import type * as schema from "@/db/schema";
 
 export type Db = BetterSQLite3Database<typeof schema>;
 
-export type Task = typeof schema.tasks.$inferSelect;
+export interface TaskSourceInfo {
+  provider: string;
+  providerLabel: string;
+  sourceKind: string | null;
+  sourceKindLabel: string | null;
+  sourceTitle: string | null;
+  readOnly: boolean;
+  externalId: string;
+  htmlLink: string | null;
+  attributes: string[];
+  transparency: string | null;
+}
+
+export type Task = typeof schema.tasks.$inferSelect & {
+  sourceInfo?: TaskSourceInfo | null;
+};
 
 export const TASK_STATUSES = [
   "pending",

@@ -50,6 +50,7 @@ export function TaskPanelHeader({
   onClose,
   onDelete,
   onDescriptionChange,
+  onReadOnlyAttempt,
   task,
   titleRef,
 }: {
@@ -59,9 +60,12 @@ export function TaskPanelHeader({
   onClose: () => void;
   onDelete: () => void;
   onDescriptionChange: (description: string) => void;
+  onReadOnlyAttempt: () => void;
   task: Task | null;
   titleRef: RefObject<HTMLInputElement | null>;
 }) {
+  const isReadOnly = task?.sourceInfo?.readOnly === true;
+
   return (
     <div className="px-4 pt-3 pb-2">
       {isMobile && (
@@ -77,8 +81,15 @@ export function TaskPanelHeader({
         <input
           ref={titleRef}
           value={description}
-          onChange={(event) => onDescriptionChange(event.target.value)}
-          className="flex-1 text-base font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+          readOnly={isReadOnly}
+          onChange={(event) => {
+            if (isReadOnly) {
+              onReadOnlyAttempt();
+              return;
+            }
+            onDescriptionChange(event.target.value);
+          }}
+          className="flex-1 text-base font-medium bg-transparent border-none outline-none placeholder:text-muted-foreground/50 read-only:text-muted-foreground"
           placeholder={mode === "create" ? "New task..." : "Task description"}
         />
         {mode === "edit" && task && (

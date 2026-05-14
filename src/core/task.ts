@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
-import { tasks } from "@/db/schema";
+import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
+import { syncSources, taskExternalLinks, tasks } from "@/db/schema";
 import { updateBlockedStatus } from "./dag";
 import { getNextTaskData } from "./recurrence";
 import type {
@@ -7,6 +8,7 @@ import type {
   Db,
   Task,
   TaskFilters,
+  TaskSourceInfo,
   UpdateTaskInput,
 } from "./types";
 
@@ -110,6 +112,162 @@ export function listTasks(
   const sortFn = filters?.sortOrder === "asc" ? asc : desc;
 
   return db.select().from(tasks).where(where).orderBy(sortFn(sortColumn)).all();
+}
+
+function parseJsonObject(value: string | null): Record<string, unknown> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function nestedRecord(
+  value: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> {
+  const nested = value[key];
+  return nested && typeof nested === "object" && !Array.isArray(nested)
+    ? (nested as Record<string, unknown>)
+    : {};
+}
+
+function stringField(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function providerLabel(provider: string): string {
+  switch (provider) {
+    case EXTERNAL_LINK_PROVIDER.googleCalendar:
+      return "Google Calendar";
+    case EXTERNAL_LINK_PROVIDER.googleTasks:
+      return "Google Tasks";
+    case EXTERNAL_LINK_PROVIDER.ical:
+      return ".ics";
+    default:
+      return provider;
+  }
+}
+
+function sourceKindLabel(sourceKind: string | null): string | null {
+  switch (sourceKind) {
+    case "google_calendar":
+      return "calendar";
+    case "google_tasks_list":
+      return "task list";
+    default:
+      return sourceKind;
+  }
+}
+
+function sourceAttributes(
+  metadata: Record<string, unknown>,
+  sourceMetadata: Record<string, unknown>,
+  readOnly: boolean,
+): string[] {
+  const attributes: string[] = [];
+  if (readOnly) attributes.push("read-only");
+  if (metadata.privacy === "[private]") attributes.push("private");
+  if (metadata.transparency === "transparent") attributes.push("free");
+  const sourceCalendar = nestedRecord(metadata, "sourceCalendar");
+  if (sourceMetadata.hidden === true || sourceCalendar.hidden === true) {
+    attributes.push("hidden");
+  }
+  return attributes;
+}
+
+function calendarHtmlLink(metadata: Record<string, unknown>): string | null {
+  const raw = nestedRecord(metadata, "raw");
+  return stringField(metadata.htmlLink) ?? stringField(raw.htmlLink);
+}
+
+function buildTaskSourceInfo(row: {
+  provider: string;
+  externalId: string;
+  metadata: string | null;
+  sourceKind: string | null;
+  sourceTitle: string | null;
+  sourceReadOnly: number | null;
+  sourceMetadata: string | null;
+}): TaskSourceInfo {
+  const metadata = parseJsonObject(row.metadata);
+  const sourceMetadata = parseJsonObject(row.sourceMetadata);
+  const readOnly = row.sourceReadOnly === 1 || metadata.readOnly === true;
+
+  return {
+    provider: row.provider,
+    providerLabel: providerLabel(row.provider),
+    sourceKind: row.sourceKind,
+    sourceKindLabel: sourceKindLabel(row.sourceKind),
+    sourceTitle: row.sourceTitle,
+    readOnly,
+    externalId: row.externalId,
+    htmlLink:
+      row.provider === EXTERNAL_LINK_PROVIDER.googleCalendar
+        ? calendarHtmlLink(metadata)
+        : null,
+    attributes: sourceAttributes(metadata, sourceMetadata, readOnly),
+    transparency: stringField(metadata.transparency),
+  };
+}
+
+function decorateTasksWithSourceInfo(
+  db: Db,
+  userId: number,
+  taskRows: Task[],
+): Task[] {
+  if (taskRows.length === 0) return taskRows;
+  const taskIds = taskRows.map((task) => task.id);
+  const linkRows = db
+    .select({
+      taskId: taskExternalLinks.taskId,
+      provider: taskExternalLinks.provider,
+      externalId: taskExternalLinks.externalId,
+      metadata: taskExternalLinks.metadata,
+      sourceKind: syncSources.sourceKind,
+      sourceTitle: syncSources.title,
+      sourceReadOnly: syncSources.readOnly,
+      sourceMetadata: syncSources.metadata,
+    })
+    .from(taskExternalLinks)
+    .leftJoin(syncSources, eq(taskExternalLinks.syncSourceId, syncSources.id))
+    .where(
+      and(
+        eq(taskExternalLinks.userId, userId),
+        inArray(taskExternalLinks.taskId, taskIds),
+      ),
+    )
+    .all();
+
+  const byTask = new Map<number, TaskSourceInfo>();
+  for (const row of linkRows) {
+    const info = buildTaskSourceInfo(row);
+    const existing = byTask.get(row.taskId);
+    if (!existing || (!existing.readOnly && info.readOnly)) {
+      byTask.set(row.taskId, info);
+    }
+  }
+
+  return taskRows.map((task) => ({
+    ...task,
+    sourceInfo: byTask.get(task.id) ?? null,
+  }));
+}
+
+export function listTasksWithSourceInfo(
+  db: Db,
+  userId: number,
+  filters?: TaskFilters,
+): Task[] {
+  return decorateTasksWithSourceInfo(
+    db,
+    userId,
+    listTasks(db, userId, filters),
+  );
 }
 
 export function listExceptions(db: Db, masterId: number): Task[] {

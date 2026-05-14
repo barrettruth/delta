@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 
-type PrimaryType = "message" | "error" | "undo";
+type PrimaryType = "message" | "warning" | "error" | "undo";
 
 interface StatusBarState {
   primary: string;
@@ -23,6 +23,7 @@ interface StatusBarState {
 interface StatusBarContextValue {
   state: StatusBarState;
   message: (text: string, duration?: number) => void;
+  warning: (text: string, duration?: number) => void;
   error: (text: string, duration?: number) => void;
   undo: (text: string, duration?: number) => void;
   setOperation: (label: string) => void;
@@ -33,6 +34,7 @@ interface StatusBarContextValue {
 const StatusBarContext = createContext<StatusBarContextValue | null>(null);
 
 const DEFAULT_MESSAGE_DURATION = 3000;
+const DEFAULT_WARNING_DURATION = 4000;
 const DEFAULT_ERROR_DURATION = 5000;
 const UNDO_DURATION = 10000;
 
@@ -83,6 +85,17 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     [setPrimaryWithTimer],
   );
 
+  const warning = useCallback(
+    (text: string, duration?: number) => {
+      setPrimaryWithTimer(
+        text,
+        "warning",
+        duration ?? DEFAULT_WARNING_DURATION,
+      );
+    },
+    [setPrimaryWithTimer],
+  );
+
   const undo = useCallback(
     (text: string, duration?: number) => {
       setPrimaryWithTimer(text, "undo", duration ?? UNDO_DURATION);
@@ -110,13 +123,23 @@ export function StatusBarProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       message,
+      warning,
       error,
       undo,
       setOperation,
       clearOperation,
       setIdle,
     }),
-    [state, message, error, undo, setOperation, clearOperation, setIdle],
+    [
+      state,
+      message,
+      warning,
+      error,
+      undo,
+      setOperation,
+      clearOperation,
+      setIdle,
+    ],
   );
 
   return (

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { createTaskAction, saveTaskDetailsAction } from "@/app/actions/tasks";
+import { readOnlyImportMessage } from "@/components/task-source-indicator";
 import type { Task } from "@/core/types";
 import type { TaskPreFill } from "@/lib/calendar-utils";
 import {
@@ -15,6 +16,7 @@ type TaskPanelMode = "edit" | "create";
 
 interface StatusMessenger {
   error: (message: string) => void;
+  warning: (message: string) => void;
 }
 
 export interface TaskPanelPersistenceController {
@@ -77,6 +79,11 @@ export function useTaskPanelPersistence({
           return true;
         }
 
+        if (task?.sourceInfo?.readOnly) {
+          statusBar.warning(readOnlyImportMessage(task.sourceInfo));
+          return false;
+        }
+
         let taskInput: ReturnType<typeof buildTaskPanelUpdateInput>;
         try {
           taskInput = buildTaskPanelUpdateInput(
@@ -105,7 +112,7 @@ export function useTaskPanelPersistence({
         return true;
       });
     },
-    [getCurrentFormValues, statusBar],
+    [getCurrentFormValues, statusBar, task],
   );
 
   useEffect(() => {

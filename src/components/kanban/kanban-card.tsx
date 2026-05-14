@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
+import { TaskSourceIndicator } from "@/components/task-source-indicator";
 import type { Task, TaskStatus } from "@/core/types";
 import { formatDate } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ export function KanbanCard({
       >
         <p className="text-sm font-medium leading-snug">{task.description}</p>
         <div className="flex items-center gap-2 mt-2">
+          <TaskSourceIndicator source={task.sourceInfo} />
           {task.category && task.category !== "Todo" && (
             <span className="text-xs text-muted-foreground">
               # {task.category}

@@ -6,6 +6,7 @@ import {
   deleteTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
+import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
@@ -36,8 +37,45 @@ export function useTaskOperations<T extends Task>({
 }): TaskOperations {
   const undo = useUndo();
   const panel = useTaskPanel();
+  const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
   const taskById = useMemo(() => buildTaskMap(tasks), [tasks]);
+
+  const mutableTaskIds = useCallback(
+    (taskIds: number[]) => {
+      const mutable: number[] = [];
+      let readOnlyCount = 0;
+      for (const taskId of taskIds) {
+        const task = taskById.get(taskId);
+        if (task?.sourceInfo?.readOnly) {
+          readOnlyCount++;
+        } else {
+          mutable.push(taskId);
+        }
+      }
+      if (readOnlyCount > 0) {
+        statusBar.warning(
+          readOnlyCount === 1
+            ? "Imported provider task is read-only"
+            : `${readOnlyCount} imported provider tasks are read-only`,
+        );
+      }
+      return mutable;
+    },
+    [statusBar, taskById],
+  );
+
+  const reportActionError = useCallback(
+    (result: { error: string } | { data: unknown } | undefined) => {
+      if (!result || !("error" in result)) return;
+      if (result.error.toLowerCase().includes("read-only")) {
+        statusBar.warning(result.error);
+      } else {
+        statusBar.error(result.error);
+      }
+    },
+    [statusBar],
+  );
 
   const closePanelForDeletedTasks = useCallback(
     (taskIds: number[]) => {
@@ -51,6 +89,7 @@ export function useTaskOperations<T extends Task>({
 
   const completeTasks = useCallback(
     (taskIds: number[]) => {
+      taskIds = mutableTaskIds(taskIds);
       if (taskIds.length === 0) return;
       const entry = buildTaskUndoEntry({
         op: "complete",
@@ -61,6 +100,7 @@ export function useTaskOperations<T extends Task>({
 
       for (const taskId of taskIds) {
         void completeTaskAction(taskId).then((result) => {
+          reportActionError(result);
           const mutation = entry.mutations.find((m) => m.taskId === taskId);
           if (mutation && result && "data" in result) {
             mutation.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
@@ -68,11 +108,12 @@ export function useTaskOperations<T extends Task>({
         });
       }
     },
-    [taskById, undo],
+    [mutableTaskIds, reportActionError, taskById, undo],
   );
 
   const deleteTasks = useCallback(
     (taskIds: number[]) => {
+      taskIds = mutableTaskIds(taskIds);
       if (taskIds.length === 0) return;
 
       if (taskIds.length === 1) {
@@ -96,15 +137,23 @@ export function useTaskOperations<T extends Task>({
       );
 
       for (const taskId of taskIds) {
-        void deleteTaskAction(taskId);
+        void deleteTaskAction(taskId).then(reportActionError);
       }
       closePanelForDeletedTasks(taskIds);
     },
-    [closePanelForDeletedTasks, recurrenceDelete, taskById, undo],
+    [
+      closePanelForDeletedTasks,
+      mutableTaskIds,
+      reportActionError,
+      recurrenceDelete,
+      taskById,
+      undo,
+    ],
   );
 
   const changeTaskStatus = useCallback(
     (taskIds: number[], status: TaskStatus) => {
+      taskIds = mutableTaskIds(taskIds);
       if (taskIds.length === 0) return;
       undo.push(
         buildTaskUndoEntry({
@@ -116,10 +165,10 @@ export function useTaskOperations<T extends Task>({
       );
 
       for (const taskId of taskIds) {
-        void updateTaskAction(taskId, { status });
+        void updateTaskAction(taskId, { status }).then(reportActionError);
       }
     },
-    [taskById, undo],
+    [mutableTaskIds, reportActionError, taskById, undo],
   );
 
   const moveTasksToStatus = useCallback(

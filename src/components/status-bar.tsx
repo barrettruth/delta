@@ -11,6 +11,8 @@ export function StatusBar() {
         {state.primary !== "" ? (
           state.primaryType === "error" ? (
             <span className="text-destructive">{state.primary}</span>
+          ) : state.primaryType === "warning" ? (
+            <span className="text-status-wip">{state.primary}</span>
           ) : state.primaryType === "undo" ? (
             <span>
               <span className="text-line-nr">u</span>

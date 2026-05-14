@@ -127,6 +127,16 @@ function taskToEvent(
   const classNames: string[] = [`status-${task.status ?? "pending"}`];
   if (isRecurring) classNames.push("is-recurring");
   if (isVirtual) classNames.push("is-virtual");
+  if (task.sourceInfo?.readOnly) classNames.push("is-readonly-import");
+  if (
+    task.sourceInfo?.transparency === "transparent" ||
+    task.sourceInfo?.attributes.includes("free")
+  ) {
+    classNames.push("is-transparent-import");
+  }
+  if (task.sourceInfo?.attributes.includes("private")) {
+    classNames.push("is-private-import");
+  }
 
   const color =
     task.category && categoryColors ? categoryColors[task.category] : undefined;

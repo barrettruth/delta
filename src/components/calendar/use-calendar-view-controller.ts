@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/tasks";
 import type { PopoverAnchor } from "@/components/calendar/event-popover";
 import type { RecurrenceStrategy } from "@/components/recurrence-strategy-dialog";
+import { readOnlyImportMessage } from "@/components/task-source-indicator";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
@@ -145,6 +146,12 @@ export function useCalendarViewController({
     ) => {
       const meta = isVirtual ? virtualMetaRef.current.get(task.id) : null;
 
+      if (task.sourceInfo?.readOnly) {
+        statusBar.warning(readOnlyImportMessage(task.sourceInfo));
+        revert();
+        return;
+      }
+
       const isDueOnly = !task.startAt && Boolean(task.due);
       if (isDueOnly && newAllDay) {
         const dueStr =
@@ -184,7 +191,13 @@ export function useCalendarViewController({
         });
       }
     },
-    [clearOptimisticUpdate, pushOptimistic, recurrenceEdit, virtualMetaRef],
+    [
+      clearOptimisticUpdate,
+      pushOptimistic,
+      recurrenceEdit,
+      statusBar,
+      virtualMetaRef,
+    ],
   );
 
   const handleEventDrop = useCallback(

@@ -22,6 +22,7 @@ import {
   useTaskPanelForm,
 } from "@/components/task-panel/use-task-panel-form";
 import { useTaskPanelPersistence } from "@/components/task-panel/use-task-panel-persistence";
+import { readOnlyImportMessage } from "@/components/task-source-indicator";
 import { useNavigation } from "@/contexts/navigation";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
@@ -99,6 +100,12 @@ export function TaskPanel({
   const handledCloseRequestRef = useRef(0);
 
   const { category, description, location, meetingUrl } = form.values;
+  const readOnlyMessage = task?.sourceInfo?.readOnly
+    ? readOnlyImportMessage(task.sourceInfo)
+    : "";
+  const warnReadOnly = useCallback(() => {
+    if (readOnlyMessage) statusBar.warning(readOnlyMessage);
+  }, [readOnlyMessage, statusBar]);
 
   // Wait for the active task to hydrate before exposing optimistic field edits;
   // otherwise a just-materialized recurring instance can inherit stale fields.
@@ -157,17 +164,31 @@ export function TaskPanel({
   const handleStatusChange = useCallback(
     async (status: string) => {
       if (!task) return;
-      if (status === "done") {
-        await completeTaskAction(task.id);
-      } else {
-        await updateTaskAction(task.id, { status: status as TaskStatus });
+      if (task.sourceInfo?.readOnly) {
+        warnReadOnly();
+        return;
+      }
+      const result =
+        status === "done"
+          ? await completeTaskAction(task.id)
+          : await updateTaskAction(task.id, { status: status as TaskStatus });
+      if ("error" in result) {
+        if (result.error.toLowerCase().includes("read-only")) {
+          statusBar.warning(result.error);
+        } else {
+          statusBar.error(result.error);
+        }
       }
     },
-    [task],
+    [statusBar, task, warnReadOnly],
   );
 
   const handleDelete = useCallback(() => {
     if (!task) return;
+    if (task.sourceInfo?.readOnly) {
+      warnReadOnly();
+      return;
+    }
     if (
       (task.recurrence || task.recurringTaskId) &&
       recurrenceDelete.requestDelete(task)
@@ -191,9 +212,24 @@ export function TaskPanel({
       timestamp: Date.now(),
     });
     discardPendingSave();
-    void deleteTaskAction(task.id);
+    void deleteTaskAction(task.id).then((result) => {
+      if (!("error" in result)) return;
+      if (result.error.toLowerCase().includes("read-only")) {
+        statusBar.warning(result.error);
+      } else {
+        statusBar.error(result.error);
+      }
+    });
     forceClose();
-  }, [discardPendingSave, forceClose, recurrenceDelete, task, undo]);
+  }, [
+    discardPendingSave,
+    forceClose,
+    recurrenceDelete,
+    statusBar,
+    task,
+    undo,
+    warnReadOnly,
+  ]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -284,6 +320,7 @@ export function TaskPanel({
           onClose={() => void closePanel()}
           onDelete={handleDelete}
           onDescriptionChange={form.setDescription}
+          onReadOnlyAttempt={warnReadOnly}
           task={task}
           titleRef={form.titleRef}
         />
@@ -292,11 +329,17 @@ export function TaskPanel({
           form={form}
           mode={mode}
           onStatusChange={(status) => void handleStatusChange(status)}
+          onReadOnlyAttempt={warnReadOnly}
           preFill={preFill}
           task={task}
         />
 
-        <TaskPanelNotes form={form} mode={mode} task={task} />
+        <TaskPanelNotes
+          form={form}
+          mode={mode}
+          onReadOnlyAttempt={warnReadOnly}
+          task={task}
+        />
       </TaskPanelFrame>
 
       <RecurrenceStrategyDialog

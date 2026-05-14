@@ -4,6 +4,7 @@ import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import { TaskSearchBar } from "@/components/task-search-bar";
+import { TaskSourceIndicator } from "@/components/task-source-indicator";
 import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { getLineNumber } from "@/contexts/line-numbers";
 import { useNavigation } from "@/contexts/navigation";
@@ -124,13 +125,16 @@ const QueueTaskList = memo(function QueueTaskList({
             {(task.category ||
               task.due ||
               task.location ||
-              task.meetingUrl) && (
+              task.meetingUrl ||
+              task.sourceInfo) && (
               <div
                 className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5"
                 style={{
                   paddingLeft: `calc(${gutterWidth}ch + 0.5rem)`,
                 }}
               >
+                <TaskSourceIndicator source={task.sourceInfo} />
+                {task.sourceInfo && task.category && <span>&middot;</span>}
                 {task.category && <span># {task.category}</span>}
                 {task.location && task.category && <span>&middot;</span>}
                 {task.location && (

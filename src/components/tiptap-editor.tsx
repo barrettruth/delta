@@ -105,10 +105,14 @@ function parseContent(content: string | null): JSONContent | undefined {
 
 export const TiptapEditor = memo(function TiptapEditor({
   content,
+  editable = true,
   onChange,
+  onReadOnlyAttempt,
 }: {
   content: string | null;
+  editable?: boolean;
   onChange: (json: string) => void;
+  onReadOnlyAttempt?: () => void;
 }) {
   const editor = useEditor({
     extensions: [
@@ -127,6 +131,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       Placeholder.configure({ placeholder: "Add notes\u2026" }),
     ],
     content: parseContent(content),
+    editable,
     immediatelyRender: false,
     onUpdate: ({ editor: e }) => {
       onChange(JSON.stringify(e.getJSON()));
@@ -137,6 +142,10 @@ export const TiptapEditor = memo(function TiptapEditor({
       },
     },
   });
+
+  useEffect(() => {
+    editor?.setEditable(editable);
+  }, [editable, editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -150,6 +159,10 @@ export const TiptapEditor = memo(function TiptapEditor({
 
   const setLink = useCallback(() => {
     if (!editor) return;
+    if (!editable) {
+      onReadOnlyAttempt?.();
+      return;
+    }
     const prev = editor.getAttributes("link").href;
     const url = window.prompt("URL", prev ?? "");
     if (url === null) return;
@@ -163,18 +176,34 @@ export const TiptapEditor = memo(function TiptapEditor({
         .setLink({ href: url })
         .run();
     }
-  }, [editor]);
+  }, [editable, editor, onReadOnlyAttempt]);
+
+  const runCommand = useCallback(
+    (command: () => void) => {
+      if (!editable) {
+        onReadOnlyAttempt?.();
+        return;
+      }
+      command();
+    },
+    [editable, onReadOnlyAttempt],
+  );
 
   if (!editor) return null;
 
   return (
-    <div className="bg-transparent">
+    <div
+      className="bg-transparent"
+      onPointerDown={!editable ? onReadOnlyAttempt : undefined}
+    >
       <div className="flex flex-wrap gap-0.5 border-b border-border/40 px-1 py-1">
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleBold().run())
+          }
           className={editor.isActive("bold") ? "bg-muted" : ""}
         >
           <TextB className="size-3.5" />
@@ -183,7 +212,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleItalic().run())
+          }
           className={editor.isActive("italic") ? "bg-muted" : ""}
         >
           <TextItalic className="size-3.5" />
@@ -193,7 +224,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           variant="ghost"
           size="icon-xs"
           onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
+            runCommand(() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run(),
+            )
           }
           className={editor.isActive("heading", { level: 1 }) ? "bg-muted" : ""}
         >
@@ -204,7 +237,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           variant="ghost"
           size="icon-xs"
           onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
+            runCommand(() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run(),
+            )
           }
           className={editor.isActive("heading", { level: 2 }) ? "bg-muted" : ""}
         >
@@ -215,7 +250,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           variant="ghost"
           size="icon-xs"
           onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 3 }).run()
+            runCommand(() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run(),
+            )
           }
           className={editor.isActive("heading", { level: 3 }) ? "bg-muted" : ""}
         >
@@ -225,7 +262,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleBulletList().run())
+          }
           className={editor.isActive("bulletList") ? "bg-muted" : ""}
         >
           <List className="size-3.5" />
@@ -234,7 +273,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleOrderedList().run())
+          }
           className={editor.isActive("orderedList") ? "bg-muted" : ""}
         >
           <ListNumbers className="size-3.5" />
@@ -243,7 +284,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleTaskList().run())
+          }
           className={editor.isActive("taskList") ? "bg-muted" : ""}
         >
           <CheckSquare className="size-3.5" />
@@ -261,7 +304,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleCodeBlock().run())
+          }
           className={editor.isActive("codeBlock") ? "bg-muted" : ""}
         >
           <Code className="size-3.5" />
@@ -270,7 +315,9 @@ export const TiptapEditor = memo(function TiptapEditor({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          onClick={() =>
+            runCommand(() => editor.chain().focus().toggleBlockquote().run())
+          }
           className={editor.isActive("blockquote") ? "bg-muted" : ""}
         >
           <Quotes className="size-3.5" />

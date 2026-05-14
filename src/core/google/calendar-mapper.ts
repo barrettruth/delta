@@ -291,6 +291,7 @@ function metadataFor(
   return {
     calendarId: source.sourceId,
     eventId: event.id,
+    htmlLink: event.htmlLink ?? null,
     iCalUID: event.iCalUID ?? null,
     etag: event.etag ?? null,
     updated: event.updated ?? null,

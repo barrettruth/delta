@@ -4,7 +4,7 @@ import type { SafeUser } from "@/core/auth";
 import { getFeedToken } from "@/core/calendar-feed";
 import { listCategoryColors } from "@/core/categories";
 import { getSettings, type ViewType } from "@/core/settings";
-import { listTasks } from "@/core/task";
+import { listTasksWithSourceInfo } from "@/core/task";
 import { parseTaskFilters } from "@/core/task-filters";
 import { ACTIVE_TASK_STATUSES } from "@/core/task-status";
 import type { Task, TaskFilters } from "@/core/types";
@@ -155,7 +155,7 @@ function calendarViewMode(
 
 export async function loadDashboardShellData(): Promise<DashboardShellData> {
   const user = await requireAuthUser();
-  const tasks = listTasks(db, user.id);
+  const tasks = listTasksWithSourceInfo(db, user.id);
 
   return {
     user,
@@ -175,7 +175,7 @@ export async function loadDashboardQueueData(
     return { kind: "redirect", redirectTo };
   }
 
-  const tasks = listTasks(
+  const tasks = listTasksWithSourceInfo(
     db,
     user.id,
     queueFilters(params, settings.showCompletedTasks),
@@ -196,7 +196,7 @@ export async function loadDashboardKanbanData(
   const settings = getSettings(db, user.id);
 
   return {
-    tasks: listTasks(
+    tasks: listTasksWithSourceInfo(
       db,
       user.id,
       kanbanFilters(params, settings.showCompletedTasks),
@@ -209,7 +209,7 @@ export async function loadDashboardCalendarData(
 ): Promise<DashboardCalendarData> {
   const user = await requireAuthUser();
   const settings = getSettings(db, user.id);
-  const tasks = listTasks(
+  const tasks = listTasksWithSourceInfo(
     db,
     user.id,
     calendarFilters(params, settings.showCompletedTasks),
