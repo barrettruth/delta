@@ -111,6 +111,53 @@ export interface GoogleCalendarSourceSummary {
   foregroundColor: string | null;
 }
 
+export interface GoogleCalendarEventDateTime {
+  date?: string;
+  dateTime?: string;
+  timeZone?: string;
+}
+
+export interface GoogleCalendarEvent {
+  kind?: string;
+  etag?: string;
+  id: string;
+  status?: "confirmed" | "tentative" | "cancelled" | string;
+  htmlLink?: string;
+  created?: string;
+  updated?: string;
+  summary?: string;
+  description?: string;
+  location?: string;
+  colorId?: string;
+  creator?: Record<string, unknown>;
+  organizer?: Record<string, unknown>;
+  start?: GoogleCalendarEventDateTime;
+  end?: GoogleCalendarEventDateTime;
+  endTimeUnspecified?: boolean;
+  recurrence?: string[];
+  recurringEventId?: string;
+  originalStartTime?: GoogleCalendarEventDateTime;
+  iCalUID?: string;
+  sequence?: number;
+  attendees?: Array<Record<string, unknown>>;
+  attendeesOmitted?: boolean;
+  hangoutLink?: string;
+  conferenceData?: Record<string, unknown>;
+  reminders?: Record<string, unknown>;
+  source?: Record<string, unknown>;
+  attachments?: Array<Record<string, unknown>>;
+  eventType?: string;
+  transparency?: "opaque" | "transparent" | string;
+  visibility?: "default" | "public" | "private" | "confidential" | string;
+  extendedProperties?: Record<string, unknown>;
+  guestsCanInviteOthers?: boolean;
+  guestsCanModify?: boolean;
+  guestsCanSeeOtherGuests?: boolean;
+  locked?: boolean;
+  privateCopy?: boolean;
+  [key: string]: unknown;
+}
+
 export interface GoogleTasksPullSummary {
   lists: number;
   seen: number;
