@@ -6,6 +6,7 @@ import {
   getGoogleIntegration,
   googlePublicOrigin,
   googleRedirectUri,
+  hasGoogleCalendarScopes,
   hasGoogleTasksScope,
   saveGoogleIntegration,
 } from "@/core/google/oauth";
@@ -47,6 +48,9 @@ export async function GET(request: Request) {
     );
     if (!hasGoogleTasksScope(tokens)) {
       return redirectToSettings(request, "missing-tasks-scope");
+    }
+    if (!hasGoogleCalendarScopes(tokens)) {
+      return redirectToSettings(request, "missing-calendar-scope");
     }
     const profile = await fetchGoogleUserInfo(tokens.accessToken);
     saveGoogleIntegration(db, user.id, tokens, {

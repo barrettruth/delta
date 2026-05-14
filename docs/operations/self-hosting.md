@@ -89,12 +89,19 @@ Delta requests these scopes for the Google connection:
 openid
 email
 profile
-https://www.googleapis.com/auth/calendar.events
+https://www.googleapis.com/auth/calendar.calendarlist.readonly
+https://www.googleapis.com/auth/calendar.events.readonly
 https://www.googleapis.com/auth/tasks.readonly
 ```
 
-The current manual pull path calls Google Tasks only. Use
-Settings -> Calendar -> Google -> Pull now after connecting an account.
+The current manual pull path calls Google Tasks. The Google Calendar settings
+path can also discover calendar sources with Settings -> Calendar -> Google ->
+Refresh calendars after connecting an account.
+
+Calendar discovery stores one `google_calendar` source row per syncable Google
+calendar. Visible calendars start enabled, hidden calendars are shown as
+`[hidden]` and start disabled, and calendars that expose only free/busy access
+are not selected for event-detail sync.
 
 Google Tasks sync is pull-only and read-only in v0.1. Imported Google Tasks are
 normal Delta task rows, but user mutation paths reject edits; only the sync
@@ -107,7 +114,7 @@ Google Tasks summary as:
 - `skipped`: Google tasks that were unchanged or intentionally ignored.
 
 Disconnecting Google hard-removes imported Google Tasks rows, their external
-links, and their Google Task list source state.
+links, and Google sync source state.
 
 ## Geocoding providers
 
@@ -224,3 +231,7 @@ Tasks and `calendar-json.googleapis.com` for Calendar.
 `missing-tasks-scope`: the stored Google token does not include
 `https://www.googleapis.com/auth/tasks.readonly`. Reconnect the Google account
 after updating the OAuth scopes.
+
+`missing-calendar-scope`: the stored Google token does not include the Calendar
+list and event read-only scopes. Reconnect the Google account after updating the
+OAuth scopes.

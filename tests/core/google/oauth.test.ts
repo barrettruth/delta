@@ -5,6 +5,7 @@ import {
   exchangeGoogleCode,
   getGoogleAccessToken,
   googleRedirectUri,
+  hasGoogleCalendarScopes,
   hasGoogleTasksScope,
 } from "@/core/google/oauth";
 import { upsertIntegrationConfig } from "@/core/integration-config";
@@ -53,7 +54,10 @@ describe("Google OAuth helpers", () => {
       "https://www.googleapis.com/auth/tasks.readonly",
     );
     expect(url.searchParams.get("scope")).toContain(
-      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+    );
+    expect(url.searchParams.get("scope")).toContain(
+      "https://www.googleapis.com/auth/calendar.events.readonly",
     );
   });
 
@@ -90,6 +94,29 @@ describe("Google OAuth helpers", () => {
       }),
     ).toBe(false);
     expect(hasGoogleTasksScope({ accessToken: "access" })).toBe(false);
+  });
+
+  it("detects missing Calendar scopes on callback tokens", () => {
+    expect(
+      hasGoogleCalendarScopes({
+        accessToken: "access",
+        scope:
+          "openid email https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+      }),
+    ).toBe(false);
+    expect(
+      hasGoogleCalendarScopes({
+        accessToken: "access",
+        scope:
+          "https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly",
+      }),
+    ).toBe(true);
+    expect(
+      hasGoogleCalendarScopes({
+        accessToken: "access",
+        scope: "https://www.googleapis.com/auth/calendar.readonly",
+      }),
+    ).toBe(true);
   });
 
   it("refreshes expired tokens from encrypted integration storage", async () => {

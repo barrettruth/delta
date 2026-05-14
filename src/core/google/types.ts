@@ -4,11 +4,16 @@ import type { TaskStatus } from "@/core/types";
 export const GOOGLE_PROVIDER = "google";
 export const GOOGLE_TASKS_LINK_PROVIDER = EXTERNAL_LINK_PROVIDER.googleTasks;
 
+export const GOOGLE_CALENDAR_LIST_SCOPE =
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+export const GOOGLE_CALENDAR_EVENTS_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events.readonly";
 export const GOOGLE_OAUTH_SCOPES = [
   "openid",
   "email",
   "profile",
-  "https://www.googleapis.com/auth/calendar.events",
+  GOOGLE_CALENDAR_LIST_SCOPE,
+  GOOGLE_CALENDAR_EVENTS_SCOPE,
   "https://www.googleapis.com/auth/tasks.readonly",
 ] as const;
 
@@ -66,6 +71,44 @@ export interface GoogleTask {
   links?: Array<{ type?: string; description?: string; link?: string }>;
   webViewLink?: string;
   assignmentInfo?: Record<string, unknown>;
+}
+
+export interface GoogleCalendarListEntry {
+  kind?: string;
+  etag?: string;
+  id: string;
+  summary?: string;
+  summaryOverride?: string;
+  description?: string;
+  location?: string;
+  timeZone?: string;
+  colorId?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
+  hidden?: boolean;
+  selected?: boolean;
+  primary?: boolean;
+  accessRole?:
+    | "none"
+    | "freeBusyReader"
+    | "reader"
+    | "writer"
+    | "owner"
+    | string;
+  deleted?: boolean;
+}
+
+export interface GoogleCalendarSourceSummary {
+  id: number;
+  sourceId: string;
+  title: string;
+  enabled: boolean;
+  hidden: boolean;
+  accessRole: string | null;
+  timeZone: string | null;
+  defaultCategory: string;
+  backgroundColor: string | null;
+  foregroundColor: string | null;
 }
 
 export interface GoogleTasksPullSummary {

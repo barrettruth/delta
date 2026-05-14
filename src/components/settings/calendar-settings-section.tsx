@@ -33,6 +33,7 @@ interface GoogleSummary {
   tasksLastPulledAt: string | null;
   tasksLastError: string | null;
   tasksLastResult: GoogleTasksPullResult | null;
+  calendarSources: GoogleCalendarSource[];
 }
 
 interface GoogleTasksPullResult {
@@ -44,6 +45,19 @@ interface GoogleTasksPullResult {
   skipped: number;
   duplicateSkipped: number;
   errors: string[];
+}
+
+interface GoogleCalendarSource {
+  id: number;
+  sourceId: string;
+  title: string;
+  enabled: boolean;
+  hidden: boolean;
+  accessRole: string | null;
+  timeZone: string | null;
+  defaultCategory: string;
+  backgroundColor: string | null;
+  foregroundColor: string | null;
 }
 
 function formatTimestamp(value: string): string {
@@ -80,6 +94,15 @@ function formatLastResult(result: GoogleTasksPullResult): string {
   return parts.join(" / ");
 }
 
+function sourceLabel(source: GoogleCalendarSource): string {
+  return source.hidden ? `${source.title} [hidden]` : source.title;
+}
+
+function sourceValue(source: GoogleCalendarSource): string {
+  const state = source.enabled ? "on" : "off";
+  return `${state} / ${source.defaultCategory}`;
+}
+
 export function CalendarSettingsSection({
   initialGeoProvider = "photon",
   initialNlpProvider = null,
@@ -101,9 +124,14 @@ export function CalendarSettingsSection({
       tasksLastPulledAt: null,
       tasksLastError: null,
       tasksLastResult: null,
+      calendarSources: [],
     },
   );
   const [googlePulling, setGooglePulling] = useState(false);
+  const [googleCalendarLoading, setGoogleCalendarLoading] = useState(false);
+  const [googleCalendarSavingId, setGoogleCalendarSavingId] = useState<
+    number | null
+  >(null);
   const [geoProvider, setGeoProvider] =
     useState<GeocodingProvider>(initialGeoProvider);
   const geoKey = useProviderKeyEditor<GeocodingApiKeyProvider>();
@@ -249,6 +277,7 @@ export function CalendarSettingsSection({
       tasksLastPulledAt: null,
       tasksLastError: null,
       tasksLastResult: null,
+      calendarSources: [],
     });
     statusBar.message("google disconnected");
     router.refresh();
@@ -288,6 +317,83 @@ export function CalendarSettingsSection({
       statusBar.error("google tasks pull failed");
     } finally {
       setGooglePulling(false);
+    }
+  }
+
+  async function handleGoogleCalendarRefresh() {
+    if (!google.connected || googleCalendarLoading) return;
+    setGoogleCalendarLoading(true);
+    statusBar.setOperation("refreshing google calendars...");
+    try {
+      const res = await fetch("/api/integrations/google/calendar-sources", {
+        method: "POST",
+      });
+      const data = (await res.json()) as
+        | { sources: GoogleCalendarSource[] }
+        | { error?: string };
+      statusBar.clearOperation();
+      if (!res.ok) {
+        statusBar.error(
+          "error" in data && data.error
+            ? data.error
+            : "google calendar refresh failed",
+        );
+        return;
+      }
+
+      setGoogle((current) => ({
+        ...current,
+        calendarSources: "sources" in data ? data.sources : [],
+      }));
+      statusBar.message("google calendars refreshed");
+      router.refresh();
+    } catch {
+      statusBar.clearOperation();
+      statusBar.error("google calendar refresh failed");
+    } finally {
+      setGoogleCalendarLoading(false);
+    }
+  }
+
+  async function handleGoogleCalendarToggle(source: GoogleCalendarSource) {
+    if (!google.connected || googleCalendarSavingId !== null) return;
+    setGoogleCalendarSavingId(source.id);
+    try {
+      const res = await fetch(
+        `/api/integrations/google/calendar-sources/${source.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: !source.enabled }),
+        },
+      );
+      const data = (await res.json()) as
+        | GoogleCalendarSource
+        | { error?: string };
+      if (!res.ok) {
+        statusBar.error(
+          "error" in data && data.error
+            ? data.error
+            : "failed to update google calendar",
+        );
+        return;
+      }
+
+      const updated = data as GoogleCalendarSource;
+      setGoogle((current) => ({
+        ...current,
+        calendarSources: current.calendarSources.map((item) =>
+          item.id === updated.id ? updated : item,
+        ),
+      }));
+      statusBar.message(
+        `${updated.enabled ? "enabled" : "disabled"} ${updated.title}`,
+      );
+      router.refresh();
+    } catch {
+      statusBar.error("failed to update google calendar");
+    } finally {
+      setGoogleCalendarSavingId(null);
     }
   }
 
@@ -381,6 +487,53 @@ export function CalendarSettingsSection({
                   value="error"
                   destructive
                 />
+              )}
+            </SettingsSection>
+
+            <SettingsSection
+              title="google calendars"
+              description="Choose which Google calendars Delta should import as read-only events."
+            >
+              <SettingsRow
+                label={
+                  googleCalendarLoading
+                    ? "refreshing calendars..."
+                    : "refresh calendars"
+                }
+                value={google.connected ? "" : "not connected"}
+                action={google.connected && !googleCalendarLoading}
+                muted={!google.connected}
+                onClick={handleGoogleCalendarRefresh}
+              />
+              {google.calendarSources.length === 0 ? (
+                <SettingsRow
+                  label="no calendars discovered"
+                  muted
+                  value={google.connected ? "" : "not connected"}
+                />
+              ) : (
+                google.calendarSources.map((source) => (
+                  <SettingsRow
+                    key={source.id}
+                    label={
+                      googleCalendarSavingId === source.id
+                        ? "saving..."
+                        : sourceLabel(source)
+                    }
+                    value={sourceValue(source)}
+                    action={
+                      google.connected && googleCalendarSavingId !== source.id
+                    }
+                    muted={!source.enabled}
+                    prefix={{
+                      text: source.enabled ? "+" : "-",
+                      className: source.enabled
+                        ? "text-status-done"
+                        : "text-muted-foreground",
+                    }}
+                    onClick={() => handleGoogleCalendarToggle(source)}
+                  />
+                ))
               )}
             </SettingsSection>
           </div>

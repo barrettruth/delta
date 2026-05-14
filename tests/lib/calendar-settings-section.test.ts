@@ -27,6 +27,7 @@ describe("CalendarSettingsSection", () => {
             tasksLastPulledAt: null,
             tasksLastError: null,
             tasksLastResult: null,
+            calendarSources: [],
           },
         }),
       ),
@@ -38,6 +39,7 @@ describe("CalendarSettingsSection", () => {
     expect(html).not.toContain("NLP");
     expect(html).toContain("connect google");
     expect(html).toContain("google tasks");
+    expect(html).toContain("google calendars");
     expect(html).toContain("pull now");
   });
 
@@ -65,6 +67,7 @@ describe("CalendarSettingsSection", () => {
               duplicateSkipped: 1,
               errors: [],
             },
+            calendarSources: [],
           },
         }),
       ),
@@ -75,5 +78,57 @@ describe("CalendarSettingsSection", () => {
       "12 seen / 3 created / 4 updated / 2 skipped / 1 duplicate skipped",
     );
     expect(html).not.toContain("sync issues");
+  });
+
+  it("renders selected and hidden Google Calendar sources", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        StatusBarProvider,
+        null,
+        createElement(CalendarSettingsSection, {
+          initialGeoProvider: "photon",
+          initialNlpProvider: null,
+          initialGoogle: {
+            connected: true,
+            email: "owner@example.com",
+            name: "Owner",
+            tasksLastPulledAt: null,
+            tasksLastError: null,
+            tasksLastResult: null,
+            calendarSources: [
+              {
+                id: 1,
+                sourceId: "visible@example.com",
+                title: "Work",
+                enabled: true,
+                hidden: false,
+                accessRole: "owner",
+                timeZone: "America/New_York",
+                defaultCategory: "Work",
+                backgroundColor: "#2952a3",
+                foregroundColor: "#ffffff",
+              },
+              {
+                id: 2,
+                sourceId: "hidden@example.com",
+                title: "Archive",
+                enabled: false,
+                hidden: true,
+                accessRole: "reader",
+                timeZone: "America/New_York",
+                defaultCategory: "Archive",
+                backgroundColor: "#7bd148",
+                foregroundColor: "#000000",
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    expect(html).toContain("Work");
+    expect(html).toContain("on / Work");
+    expect(html).toContain("Archive [hidden]");
+    expect(html).toContain("off / Archive");
   });
 });

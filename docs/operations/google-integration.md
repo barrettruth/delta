@@ -19,9 +19,9 @@ gcloud services enable \
   --project <google-project-id>
 ```
 
-Current `main` calls Google Tasks for manual pulls. Calendar API is included in
-the baseline because Delta already requests the Calendar events scope and future
-Calendar sync/write paths should use the same OAuth project.
+Current `main` calls Google Tasks for manual pulls and Google Calendar for
+calendar source discovery. Calendar event import is pull-only and should use the
+same OAuth project.
 
 ## OAuth client
 
@@ -58,11 +58,28 @@ Delta requests:
 - `openid`
 - `email`
 - `profile`
-- `https://www.googleapis.com/auth/calendar.events`
+- `https://www.googleapis.com/auth/calendar.calendarlist.readonly`
+- `https://www.googleapis.com/auth/calendar.events.readonly`
 - `https://www.googleapis.com/auth/tasks.readonly`
 
 `tasks.readonly` is enough for the Google Tasks pull path. Delta does not write
-to Google Tasks.
+to Google Tasks. The Calendar scopes let Delta list the user's calendars and
+later read event details without requesting calendar write access.
+
+## Google Calendar sources
+
+Use Settings -> Calendar -> Google -> Refresh calendars to discover Google
+calendars from the connected account.
+
+Delta stores selected Google calendars in `sync_sources` with source kind
+`google_calendar`. Visible calendars are enabled by default. Hidden calendars
+are shown in settings with `[hidden]` and start disabled. Calendars that only
+grant `freeBusyReader` access are excluded from event-detail sync because they
+do not expose event details.
+
+Each selected calendar maps to a Delta category using the Google calendar name
+by default. Delta seeds the category color from Google only when that local
+category does not already have a color.
 
 ## Google Tasks pull
 
@@ -88,8 +105,8 @@ normal Delta task rows, but user mutation paths reject edits; only the sync
 engine updates them from Google.
 
 Disconnecting Google hard-removes imported Google Tasks rows, their external
-links, and their Google Task list source state. The Google account connection is
-also removed.
+links, and Google sync source state. The Google account connection is also
+removed.
 
 The pull status summarizes the result, for example:
 

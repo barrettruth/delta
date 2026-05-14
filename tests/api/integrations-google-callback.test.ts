@@ -14,6 +14,7 @@ const oauth = vi.hoisted(() => ({
   getGoogleIntegration: vi.fn(),
   googlePublicOrigin: vi.fn(),
   googleRedirectUri: vi.fn(),
+  hasGoogleCalendarScopes: vi.fn(),
   hasGoogleTasksScope: vi.fn(),
   saveGoogleIntegration: vi.fn(),
 }));
@@ -55,6 +56,7 @@ describe("GET /api/integrations/google/callback", () => {
       email: "owner@example.test",
       name: "Owner",
     });
+    oauth.hasGoogleCalendarScopes.mockReturnValue(true);
   });
 
   it("rejects callback requests with an invalid OAuth state", async () => {
@@ -91,14 +93,35 @@ describe("GET /api/integrations/google/callback", () => {
     expect(oauth.saveGoogleIntegration).not.toHaveBeenCalled();
   });
 
+  it("rejects tokens that did not receive the Calendar scopes", async () => {
+    oauth.exchangeGoogleCode.mockResolvedValue({
+      accessToken: "access-token",
+      scope: "openid email https://www.googleapis.com/auth/tasks.readonly",
+    });
+    oauth.hasGoogleTasksScope.mockReturnValue(true);
+    oauth.hasGoogleCalendarScopes.mockReturnValue(false);
+    const { GET } = await import(
+      "@/app/api/integrations/google/callback/route"
+    );
+
+    const response = await GET(
+      callbackRequest("?code=code&state=expected-state"),
+    );
+
+    expect(redirectStatus(response)).toBe("missing-calendar-scope");
+    expect(oauth.saveGoogleIntegration).not.toHaveBeenCalled();
+  });
+
   it("saves the shared Google connection after a scoped callback", async () => {
     const tokens = {
       accessToken: "access-token",
       refreshToken: "refresh-token",
-      scope: "openid email https://www.googleapis.com/auth/tasks.readonly",
+      scope:
+        "openid email https://www.googleapis.com/auth/tasks.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly",
     };
     oauth.exchangeGoogleCode.mockResolvedValue(tokens);
     oauth.hasGoogleTasksScope.mockReturnValue(true);
+    oauth.hasGoogleCalendarScopes.mockReturnValue(true);
     const { GET } = await import(
       "@/app/api/integrations/google/callback/route"
     );

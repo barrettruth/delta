@@ -1,7 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { GOOGLE_TASKS_LINK_PROVIDER } from "@/core/google/types";
 import { deleteIntegrationConfig } from "@/core/integration-config";
-import { SYNC_SOURCE_KIND } from "@/core/sync-sources";
 import type { Db } from "@/core/types";
 import { syncSources, taskExternalLinks, tasks } from "@/db/schema";
 import { GOOGLE_PROVIDER } from "./types";
@@ -31,7 +30,6 @@ export function disconnectGoogleIntegration(db: Db, userId: number): void {
         and(
           eq(syncSources.userId, userId),
           eq(syncSources.provider, GOOGLE_PROVIDER),
-          eq(syncSources.sourceKind, SYNC_SOURCE_KIND.googleTasksList),
         ),
       )
       .run();

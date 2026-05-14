@@ -3,10 +3,14 @@ import {
   upsertIntegrationConfig,
 } from "@/core/integration-config";
 import type { Db } from "@/core/types";
+import { listGoogleCalendarSources } from "./calendar-sources";
 import {
+  GOOGLE_CALENDAR_EVENTS_SCOPE,
+  GOOGLE_CALENDAR_LIST_SCOPE,
   GOOGLE_OAUTH_SCOPES,
   GOOGLE_PROVIDER,
   GOOGLE_TASKS_SCOPE,
+  type GoogleCalendarSourceSummary,
   type GoogleIntegrationMetadata,
   type GoogleOAuthTokens,
   type GoogleTasksPullSummary,
@@ -15,6 +19,13 @@ import {
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
+const GOOGLE_CALENDAR_READONLY_SCOPE =
+  "https://www.googleapis.com/auth/calendar.readonly";
+const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
+const GOOGLE_CALENDAR_LIST_WRITE_SCOPE =
+  "https://www.googleapis.com/auth/calendar.calendarlist";
+const GOOGLE_CALENDAR_EVENTS_WRITE_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events";
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -239,6 +250,22 @@ export function hasGoogleTasksScope(tokens: GoogleOAuthTokens): boolean {
   return tokens.scope.split(" ").includes(GOOGLE_TASKS_SCOPE);
 }
 
+export function hasGoogleCalendarScopes(tokens: GoogleOAuthTokens): boolean {
+  if (!tokens.scope) return false;
+  const scopes = tokens.scope.split(" ");
+  const hasFullRead =
+    scopes.includes(GOOGLE_CALENDAR_READONLY_SCOPE) ||
+    scopes.includes(GOOGLE_CALENDAR_SCOPE);
+  return (
+    (hasFullRead ||
+      scopes.includes(GOOGLE_CALENDAR_LIST_SCOPE) ||
+      scopes.includes(GOOGLE_CALENDAR_LIST_WRITE_SCOPE)) &&
+    (hasFullRead ||
+      scopes.includes(GOOGLE_CALENDAR_EVENTS_SCOPE) ||
+      scopes.includes(GOOGLE_CALENDAR_EVENTS_WRITE_SCOPE))
+  );
+}
+
 export async function getGoogleAccessToken(
   db: Db,
   userId: number,
@@ -278,6 +305,7 @@ export function googleIntegrationSummary(
   tasksLastPulledAt: string | null;
   tasksLastError: string | null;
   tasksLastResult: GoogleTasksPullSummary | null;
+  calendarSources: GoogleCalendarSourceSummary[];
 } {
   const config = getGoogleIntegration(db, userId);
   const metadata = config?.metadata;
@@ -295,6 +323,7 @@ export function googleIntegrationSummary(
     tasksLastError:
       typeof metadata?.lastError === "string" ? metadata.lastError : null,
     tasksLastResult,
+    calendarSources: config ? listGoogleCalendarSources(db, userId) : [],
   };
 }
 
