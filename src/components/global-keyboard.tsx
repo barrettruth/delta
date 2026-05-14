@@ -9,10 +9,7 @@ import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import { registerScopedKeydown } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
-import {
-  settingsHref,
-  settingsReturnToForPath,
-} from "@/lib/settings-navigation";
+import { settingsEntryHrefForPath } from "@/lib/settings-navigation";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const LEADER_TIMEOUT_MS = 1200;
@@ -28,7 +25,6 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const { openKeyboardHelp } = useKeyboardHelp();
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const settingsReturnTo = settingsReturnToForPath(pathname, searchParams);
 
   const openHelp = useCallback(() => {
     openKeyboardHelp();
@@ -39,12 +35,12 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
     map[getKeymap("global.queue").triggerKey] = "/?view=queue";
     map[getKeymap("global.kanban").triggerKey] = "/kanban";
     map[getKeymap("global.calendar").triggerKey] = "/calendar";
-    map[getKeymap("global.settings").triggerKey] = settingsHref(
-      "/settings",
-      settingsReturnTo,
+    map[getKeymap("global.settings").triggerKey] = settingsEntryHrefForPath(
+      pathname,
+      searchParams,
     );
     return map;
-  }, [settingsReturnTo]);
+  }, [pathname, searchParams]);
 
   const handler = useCallback(
     (e: KeyboardEvent) => {

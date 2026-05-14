@@ -19,8 +19,7 @@ import { useNavigation } from "@/contexts/navigation";
 import { getKeymap } from "@/lib/keymap-defs";
 import {
   isSettingsPath,
-  settingsHref,
-  settingsReturnToForPath,
+  settingsEntryHrefForPath,
 } from "@/lib/settings-navigation";
 
 const VIEW_KEYMAP_IDS: {
@@ -37,10 +36,7 @@ export function AppSidebar({ username }: { username: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const nav = useNavigation();
-  const settingsUrl = settingsHref(
-    "/settings",
-    settingsReturnToForPath(pathname, searchParams),
-  );
+  const settingsUrl = settingsEntryHrefForPath(pathname, searchParams);
 
   return (
     <Sidebar>

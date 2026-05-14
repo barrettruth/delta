@@ -89,3 +89,17 @@ export function settingsHref(
   const nextQuery = params.toString();
   return nextQuery ? `${pathname}?${nextQuery}` : pathname;
 }
+
+export function settingsEntryHrefForPath(
+  pathname: string | null | undefined,
+  searchParams: SearchParamsLike,
+): string {
+  const settingsPath =
+    pathname === "/calendar" || pathname?.startsWith("/calendar/") === true
+      ? "/settings/calendar"
+      : "/settings";
+  return settingsHref(
+    settingsPath,
+    settingsReturnToForPath(pathname, searchParams),
+  );
+}

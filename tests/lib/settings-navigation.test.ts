@@ -7,6 +7,7 @@ import {
   pathWithSearch,
   SETTINGS_SECTIONS,
   safeSettingsReturnTo,
+  settingsEntryHrefForPath,
   settingsHref,
   settingsReturnToForPath,
 } from "@/lib/settings-navigation";
@@ -116,6 +117,21 @@ describe("settings navigation helpers", () => {
         settingsReturnToForPath("/calendar", new URLSearchParams("mode=week")),
       ),
     ).toBe("/settings/calendar?returnTo=%2Fcalendar%3Fmode%3Dweek");
+  });
+
+  it("routes the global settings entry to calendar settings from calendar views", () => {
+    expect(
+      settingsEntryHrefForPath("/calendar", new URLSearchParams("mode=week")),
+    ).toBe("/settings/calendar?returnTo=%2Fcalendar%3Fmode%3Dweek");
+    expect(
+      settingsEntryHrefForPath(
+        "/calendar/day",
+        new URLSearchParams("date=2026-05-14"),
+      ),
+    ).toBe("/settings/calendar?returnTo=%2Fcalendar%2Fday%3Fdate%3D2026-05-14");
+    expect(settingsEntryHrefForPath("/kanban", new URLSearchParams())).toBe(
+      "/settings?returnTo=%2Fkanban",
+    );
   });
 
   it("derives settings close targets from the current route", () => {
