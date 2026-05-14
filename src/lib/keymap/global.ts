@@ -31,6 +31,13 @@ export const GLOBAL_KEYMAPS: KeymapDef[] = [
     label: "Settings",
   },
   {
+    id: "global.calendar_settings",
+    key: "gS",
+    triggerKey: "g",
+    section: "global",
+    label: "Calendar settings",
+  },
+  {
     id: "global.calendar_day",
     key: "D",
     triggerKey: "D",
@@ -100,6 +107,7 @@ export const GLOBAL_HELP_ROWS: HelpRow[] = [
   helpRow("global.kanban", "K", "Kanban view"),
   helpRow("global.calendar", "C", "Calendar view"),
   helpRow("global.settings", "S", "Settings"),
+  helpRow("global.calendar_settings", "gS", "Calendar settings"),
   helpRow(
     ["global.calendar_day", "global.calendar_week", "global.calendar_month"],
     "D / w / m",

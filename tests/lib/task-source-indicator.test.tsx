@@ -38,7 +38,7 @@ describe("TaskSourceIndicator", () => {
     );
 
     expect(html).toContain("Work");
-    expect(html).toContain("calendar");
+    expect(html).not.toContain("Google Calendar / Work / calendar");
     expect(html).toContain("open in Google Calendar");
     expect(html).toContain("https://calendar.google.com/event?eid=event-1");
   });

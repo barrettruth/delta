@@ -24,11 +24,14 @@ function sourceIcon(source: TaskSourceInfo) {
 export function taskSourceTitle(source: TaskSourceInfo): string {
   const parts = [
     source.providerLabel,
-    source.sourceKindLabel,
     source.sourceTitle,
     ...source.attributes,
   ].filter(Boolean);
   return parts.join(" / ");
+}
+
+function sourceDetailLabel(source: TaskSourceInfo): string {
+  return source.sourceTitle ?? source.providerLabel;
 }
 
 export function isReadOnlyImportedTask(source: TaskSourceInfo | null): boolean {
@@ -88,11 +91,7 @@ export function TaskSourceDetails({
       <span className="text-xs text-muted-foreground/60">source</span>
       <div className="min-w-0 text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
         <TaskSourceIndicator source={source} />
-        <span className="truncate">
-          {[source.providerLabel, source.sourceTitle, source.sourceKindLabel]
-            .filter(Boolean)
-            .join(" / ")}
-        </span>
+        <span className="truncate">{sourceDetailLabel(source)}</span>
       </div>
       {source.htmlLink && (
         <>

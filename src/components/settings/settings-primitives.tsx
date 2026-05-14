@@ -20,7 +20,7 @@ export function SettingsSection({
   return (
     <section className={cn("space-y-3", className)}>
       <div className="flex items-start justify-between gap-4 px-0.5">
-        <div className="space-y-1.5 min-w-0">
+        <div className="space-y-1.5 min-w-0 flex-1">
           <h2
             data-section={title}
             className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70"
@@ -28,7 +28,7 @@ export function SettingsSection({
             {title}
           </h2>
           {description && (
-            <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>
           )}

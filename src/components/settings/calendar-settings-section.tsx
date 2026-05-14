@@ -517,6 +517,24 @@ export function CalendarSettingsSection({
     return formatTimestamp(google.calendarLastPulledAt);
   }
 
+  function tasksPullLabel(): string {
+    if (googlePulling) return "pulling google tasks...";
+    return `pull now (last pull: ${lastPulledLabel()})`;
+  }
+
+  function calendarPullLabel(): string {
+    if (googleCalendarPulling) return "pulling calendars...";
+    return `pull now (last pull: ${calendarLastPulledLabel()})`;
+  }
+
+  function calendarRefreshLabel(): string {
+    if (googleCalendarLoading) return "refreshing calendars...";
+    if (google.calendarSources.length === 0) {
+      return "refresh calendars (no calendars discovered)";
+    }
+    return "refresh calendars";
+  }
+
   const tasksLastResult = google.tasksLastResult;
   const calendarLastResult = google.calendarLastResult;
 
@@ -584,13 +602,12 @@ export function CalendarSettingsSection({
               description="Pull Google Tasks into read-only Delta tasks without creating duplicates."
             >
               <SettingsRow
-                label={googlePulling ? "pulling google tasks..." : "pull now"}
+                label={tasksPullLabel()}
                 value={google.connected ? "" : "not connected"}
                 action={google.connected && !googlePulling}
                 muted={!google.connected}
                 onClick={handleGoogleTasksPull}
               />
-              <SettingsRow label="last pull" value={lastPulledLabel()} />
               {tasksLastResult && (
                 <SettingsRow
                   label="last result"
@@ -611,17 +628,11 @@ export function CalendarSettingsSection({
               description="Choose which Google calendars Delta should import as read-only events."
             >
               <SettingsRow
-                label={
-                  googleCalendarPulling ? "pulling calendars..." : "pull now"
-                }
+                label={calendarPullLabel()}
                 value={google.connected ? "" : "not connected"}
                 action={google.connected && !googleCalendarPulling}
                 muted={!google.connected}
                 onClick={handleGoogleCalendarPull}
-              />
-              <SettingsRow
-                label="last pull"
-                value={calendarLastPulledLabel()}
               />
               {calendarLastResult && (
                 <SettingsRow
@@ -637,23 +648,13 @@ export function CalendarSettingsSection({
                 />
               )}
               <SettingsRow
-                label={
-                  googleCalendarLoading
-                    ? "refreshing calendars..."
-                    : "refresh calendars"
-                }
+                label={calendarRefreshLabel()}
                 value={google.connected ? "" : "not connected"}
                 action={google.connected && !googleCalendarLoading}
                 muted={!google.connected}
                 onClick={handleGoogleCalendarRefresh}
               />
-              {google.calendarSources.length === 0 ? (
-                <SettingsRow
-                  label="no calendars discovered"
-                  muted
-                  value={google.connected ? "" : "not connected"}
-                />
-              ) : (
+              {google.calendarSources.length > 0 &&
                 google.calendarSources.map((source) => (
                   <SettingsRow
                     key={source.id}
@@ -675,8 +676,7 @@ export function CalendarSettingsSection({
                     }}
                     onClick={() => handleGoogleCalendarToggle(source)}
                   />
-                ))
-              )}
+                ))}
             </SettingsSection>
           </div>
         )}

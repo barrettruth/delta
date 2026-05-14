@@ -44,7 +44,8 @@ describe("CalendarSettingsSection", () => {
     expect(html).toContain("connect google");
     expect(html).toContain("google tasks");
     expect(html).toContain("google calendars");
-    expect(html).toContain("pull now");
+    expect(html).toContain("pull now (last pull: never)");
+    expect(html).toContain("refresh calendars (no calendars discovered)");
   });
 
   it("renders Google Tasks pull summary", () => {
