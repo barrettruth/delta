@@ -9,7 +9,11 @@ A personal, self-hosted todo platform.
 
 ![delta](assets/delta.png)
 
-## Operations
+## Philosophy
 
-- [Self-hosting setup checklist](docs/operations/self-hosting.md)
-- [Google integration](docs/operations/google-integration.md)
+Delta is a personal system for keeping work visible, scheduled, and recoverable
+without handing the workflow to a hosted task manager. It should stay small
+enough to understand, durable enough to run for years, and direct enough that
+sync, import, export, and automation are predictable instead of magical.
+
+## [Self-hosting](docs/self-hosting.md)
