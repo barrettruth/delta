@@ -608,6 +608,41 @@ export function CalendarSettingsSection({
 
   const tasksLastResult = google.tasksLastResult;
   const calendarLastResult = google.calendarLastResult;
+  const localCalendarSettings = (
+    <SettingsSection title="local calendar">
+      {feedToken ? (
+        <>
+          <SettingsRow
+            label="copy subscription url"
+            action
+            onClick={handleCopyFeedUrl}
+          />
+          <SettingsRow
+            label="revoke subscription"
+            action
+            destructive
+            prefix={{ text: "-", className: "text-destructive" }}
+            onClick={handleRevokeFeed}
+          />
+        </>
+      ) : (
+        <SettingsRow
+          label="generate subscription"
+          action
+          prefix={{ text: "+", className: "text-status-done" }}
+          onClick={handleGenerateFeed}
+        />
+      )}
+      <SettingsRow
+        label={importingICal ? "importing .ics..." : "import .ics"}
+        action={!importingICal}
+        muted={importingICal}
+        prefix={{ text: "+", className: "text-status-done" }}
+        onClick={() => fileRef.current?.click()}
+      />
+      <SettingsRow label="export .ics" action onClick={handleExportICal} />
+    </SettingsSection>
+  );
 
   return (
     <SettingsPage
@@ -615,39 +650,6 @@ export function CalendarSettingsSection({
       description="Manage the providers delta uses for Google sync, location lookup, and recurrence parsing."
     >
       <div className="space-y-6">
-        <SettingsSection title="local calendar">
-          {feedToken ? (
-            <>
-              <SettingsRow
-                label="copy subscription url"
-                action
-                onClick={handleCopyFeedUrl}
-              />
-              <SettingsRow
-                label="revoke subscription"
-                action
-                destructive
-                prefix={{ text: "-", className: "text-destructive" }}
-                onClick={handleRevokeFeed}
-              />
-            </>
-          ) : (
-            <SettingsRow
-              label="generate subscription"
-              action
-              prefix={{ text: "+", className: "text-status-done" }}
-              onClick={handleGenerateFeed}
-            />
-          )}
-          <SettingsRow
-            label={importingICal ? "importing .ics..." : "import .ics"}
-            action={!importingICal}
-            muted={importingICal}
-            prefix={{ text: "+", className: "text-status-done" }}
-            onClick={() => fileRef.current?.click()}
-          />
-          <SettingsRow label="export .ics" action onClick={handleExportICal} />
-        </SettingsSection>
         <input
           ref={fileRef}
           type="file"
@@ -710,32 +712,6 @@ export function CalendarSettingsSection({
             </SettingsSection>
 
             <SettingsSection
-              title="google tasks"
-              description="Pull Google Tasks into read-only Delta tasks without creating duplicates."
-            >
-              <SettingsRow
-                label={tasksPullLabel()}
-                value={google.connected ? "" : "not connected"}
-                action={google.connected && !googlePulling}
-                muted={!google.connected}
-                onClick={handleGoogleTasksPull}
-              />
-              {tasksLastResult && (
-                <SettingsRow
-                  label="last result"
-                  value={formatLastResult(tasksLastResult)}
-                />
-              )}
-              {google.tasksLastError && (
-                <SettingsRow
-                  label={google.tasksLastError}
-                  value="error"
-                  destructive
-                />
-              )}
-            </SettingsSection>
-
-            <SettingsSection
               title="google calendars"
               description="Choose which Google calendars Delta should import as read-only events."
             >
@@ -790,6 +766,34 @@ export function CalendarSettingsSection({
                   />
                 ))}
             </SettingsSection>
+
+            <SettingsSection
+              title="google tasks"
+              description="Pull Google Tasks into read-only Delta tasks without creating duplicates."
+            >
+              <SettingsRow
+                label={tasksPullLabel()}
+                value={google.connected ? "" : "not connected"}
+                action={google.connected && !googlePulling}
+                muted={!google.connected}
+                onClick={handleGoogleTasksPull}
+              />
+              {tasksLastResult && (
+                <SettingsRow
+                  label="last result"
+                  value={formatLastResult(tasksLastResult)}
+                />
+              )}
+              {google.tasksLastError && (
+                <SettingsRow
+                  label={google.tasksLastError}
+                  value="error"
+                  destructive
+                />
+              )}
+            </SettingsSection>
+
+            {localCalendarSettings}
           </div>
         )}
 

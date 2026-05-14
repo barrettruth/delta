@@ -51,6 +51,16 @@ describe("CalendarSettingsSection", () => {
     expect(html).toContain("google calendars");
     expect(html).toContain("pull now (last pull: never)");
     expect(html).toContain("refresh calendars (no calendars discovered)");
+
+    const googleAccountIndex = html.indexOf("google account");
+    const googleCalendarsIndex = html.indexOf("google calendars");
+    const googleTasksIndex = html.indexOf("google tasks");
+    const localCalendarIndex = html.indexOf("local calendar");
+
+    expect(googleAccountIndex).toBeGreaterThan(-1);
+    expect(googleCalendarsIndex).toBeGreaterThan(googleAccountIndex);
+    expect(googleTasksIndex).toBeGreaterThan(googleCalendarsIndex);
+    expect(localCalendarIndex).toBeGreaterThan(googleTasksIndex);
   });
 
   it("renders subscription copy and revoke actions when a feed exists", () => {

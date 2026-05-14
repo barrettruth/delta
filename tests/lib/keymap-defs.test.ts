@@ -25,7 +25,6 @@ const EXPECTED_KEYMAP_IDS = [
   "global.kanban",
   "global.calendar",
   "global.settings",
-  "global.view_settings",
   "global.calendar_day",
   "global.calendar_week",
   "global.calendar_month",
@@ -119,13 +118,6 @@ describe("keymap definitions", () => {
       expect.objectContaining({
         key: "d",
         triggerKey: "d",
-      }),
-    );
-    expect(getKeymap("global.view_settings")).toEqual(
-      expect.objectContaining({
-        key: "gS",
-        triggerKey: "g",
-        label: "View settings",
       }),
     );
     expect(getKeymap("queue.delete")).toEqual(
