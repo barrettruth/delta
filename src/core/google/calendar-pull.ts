@@ -227,6 +227,28 @@ function updateImportedLink(
   });
 }
 
+function backfillGoogleAccountEmail(
+  db: Db,
+  userId: number,
+  googleAccountEmail: string | null,
+): void {
+  if (!googleAccountEmail) return;
+  for (const link of listExternalLinksForProvider(
+    db,
+    userId,
+    EXTERNAL_LINK_PROVIDER.googleCalendar,
+  )) {
+    const metadata = parseJsonObject(link.metadata);
+    if (metadata.googleAccountEmail === googleAccountEmail) continue;
+    updateExternalLink(db, link.id, {
+      metadata: {
+        ...metadata,
+        googleAccountEmail,
+      },
+    });
+  }
+}
+
 function setRecurringMasterId(
   db: Db,
   userId: number,
@@ -400,11 +422,14 @@ export async function pullGoogleCalendar(
   userId: number,
 ): Promise<GoogleCalendarPullSummary> {
   let metadata = metadataFor(db, userId);
+  const googleAccountEmail =
+    typeof metadata.email === "string" ? metadata.email : null;
   const summary = emptySummary();
   const syncTime = new Date().toISOString();
   const accessToken = await getGoogleAccessToken(db, userId);
   const sources = selectedCalendarSources(db, userId);
   summary.sources = sources.length;
+  backfillGoogleAccountEmail(db, userId, googleAccountEmail);
 
   for (const source of sources) {
     const sourceCounts = emptySummary();
@@ -423,6 +448,14 @@ export async function pullGoogleCalendar(
       const mapped = mapGoogleCalendarEvents(sourceSummary(source), events, {
         existingICalUIDs: existingICalUIDs(db, userId),
       });
+      if (googleAccountEmail) {
+        for (const event of mapped.events) {
+          event.metadata.googleAccountEmail = googleAccountEmail;
+        }
+        for (const event of mapped.cancelledEvents) {
+          event.metadata.googleAccountEmail = googleAccountEmail;
+        }
+      }
       sourceCounts.duplicateSkipped += mapped.duplicateSkipped;
       for (const error of mapped.errors) {
         sourceCounts.errors.push(error);

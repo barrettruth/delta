@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({
     push: () => {},
     refresh: () => {},
   }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 describe("CalendarSettingsSection", () => {

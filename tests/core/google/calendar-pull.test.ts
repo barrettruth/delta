@@ -25,11 +25,17 @@ function googleResponse(body: Record<string, unknown>, status = 200) {
   return Response.json(body, { status });
 }
 
-function connectGoogle() {
-  upsertIntegrationConfig(db, userId, GOOGLE_PROVIDER, {
-    accessToken: "access-token",
-    refreshToken: "refresh-token",
-  });
+function connectGoogle(metadata: Record<string, unknown> = {}) {
+  upsertIntegrationConfig(
+    db,
+    userId,
+    GOOGLE_PROVIDER,
+    {
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+    },
+    metadata,
+  );
 }
 
 function createCalendarSource(syncCursor?: string | null) {
@@ -68,7 +74,7 @@ beforeEach(() => {
   vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
   db = createTestDb();
   userId = createTestUser(db, "googlecalendarpull").id;
-  connectGoogle();
+  connectGoogle({ email: "archive@example.com" });
 });
 
 afterEach(() => {
@@ -125,6 +131,7 @@ describe("pullGoogleCalendar", () => {
     });
     expect(JSON.parse(link.metadata ?? "{}")).toMatchObject({
       readOnly: true,
+      googleAccountEmail: "archive@example.com",
       eventId: "event-1",
       iCalUID: "event-1@google.com",
     });
@@ -181,6 +188,34 @@ describe("pullGoogleCalendar", () => {
     expect(tasks).toHaveLength(2);
     expect(tasks.find((task) => task.id === imported.id)).toMatchObject({
       description: "New title",
+    });
+  });
+
+  it("backfills the connected Google account email onto unchanged existing imports", async () => {
+    const source = createCalendarSource("sync-token-1");
+    const imported = createTask(db, userId, {
+      description: "Already imported",
+      startAt: "2026-05-14T13:30:00.000Z",
+    });
+    createExternalLink(db, {
+      userId,
+      taskId: imported.id,
+      syncSourceId: source.id,
+      provider: EXTERNAL_LINK_PROVIDER.googleCalendar,
+      externalId: "work@example.com:event-1",
+      metadata: {
+        htmlLink: "https://calendar.google.com/event?eid=event-1",
+      },
+    });
+    fetchCalendarEventsOnce([], "sync-token-2");
+
+    const result = await pullGoogleCalendar(db, userId);
+    const link = listExternalLinksForTask(db, imported.id)[0];
+
+    expect(result).toMatchObject({ seen: 0, created: 0, updated: 0 });
+    expect(JSON.parse(link.metadata ?? "{}")).toMatchObject({
+      htmlLink: "https://calendar.google.com/event?eid=event-1",
+      googleAccountEmail: "archive@example.com",
     });
   });
 

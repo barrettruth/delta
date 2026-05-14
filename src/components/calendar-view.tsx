@@ -1,6 +1,8 @@
 "use client";
 
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { CalendarActionsPopover } from "@/components/calendar/actions-popover";
 import { CalendarEventPopover } from "@/components/calendar/event-popover";
 import { FcCalendar, type FcViewMode } from "@/components/calendar/fc-calendar";
@@ -8,6 +10,7 @@ import { useCalendarViewController } from "@/components/calendar/use-calendar-vi
 import { RecurrenceStrategyDialog } from "@/components/recurrence-strategy-dialog";
 import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import type { Task } from "@/core/types";
+import { onDashboardTasksChanged } from "@/lib/dashboard-refresh";
 
 export function CalendarView({
   tasks,
@@ -22,10 +25,57 @@ export function CalendarView({
   defaultViewMode?: FcViewMode;
   feedToken?: string | null;
 }) {
-  const calendar = useCalendarViewController({
-    categoryColors,
-    defaultViewMode,
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const [calendarData, setCalendarData] = useState(() => ({
     tasks,
+    categoryColors,
+    feedToken,
+  }));
+
+  useEffect(() => {
+    setCalendarData({ tasks, categoryColors, feedToken });
+  }, [tasks, categoryColors, feedToken]);
+
+  useEffect(() => {
+    let active = true;
+    const cleanup = onDashboardTasksChanged(() => {
+      const path = query
+        ? `/api/dashboard/calendar?${query}`
+        : "/api/dashboard/calendar";
+      void fetch(path, {
+        headers: { Accept: "application/json" },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!active || !data) return;
+          setCalendarData({
+            tasks: Array.isArray(data.tasks) ? data.tasks : tasks,
+            categoryColors:
+              data.categoryColors &&
+              typeof data.categoryColors === "object" &&
+              !Array.isArray(data.categoryColors)
+                ? data.categoryColors
+                : categoryColors,
+            feedToken:
+              typeof data.feedToken === "string" || data.feedToken === null
+                ? data.feedToken
+                : feedToken,
+          });
+        })
+        .catch(() => {});
+    });
+
+    return () => {
+      active = false;
+      cleanup();
+    };
+  }, [categoryColors, feedToken, query, tasks]);
+
+  const calendar = useCalendarViewController({
+    categoryColors: calendarData.categoryColors,
+    defaultViewMode,
+    tasks: calendarData.tasks,
   });
 
   return (
@@ -67,7 +117,7 @@ export function CalendarView({
         </div>
         <div className="flex-1 flex justify-end">
           <CalendarActionsPopover
-            feedToken={feedToken}
+            feedToken={calendarData.feedToken}
             open={calendar.actionsOpen}
             onOpenChange={calendar.setActionsOpen}
           />
@@ -91,7 +141,10 @@ export function CalendarView({
         />
       )}
 
-      <CalendarEventPopover tasks={tasks} anchor={calendar.popoverAnchor} />
+      <CalendarEventPopover
+        tasks={calendarData.tasks}
+        anchor={calendar.popoverAnchor}
+      />
 
       <TaskOperationDialogs
         recurrenceDelete={calendar.taskOperations.recurrenceDelete}

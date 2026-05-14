@@ -46,7 +46,9 @@ function redirectStatus(response: Response): string | null {
 describe("GET /api/integrations/google/callback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    state.cookie.get.mockReturnValue({ value: "expected-state" });
+    state.cookie.get.mockImplementation((name: string) =>
+      name === "google_oauth_state" ? { value: "expected-state" } : undefined,
+    );
     oauth.googleRedirectUri.mockReturnValue(
       "http://delta.test/api/integrations/google/callback",
     );
@@ -72,6 +74,7 @@ describe("GET /api/integrations/google/callback", () => {
     );
     expect(redirectStatus(response)).toBe("invalid-state");
     expect(state.cookie.delete).toHaveBeenCalledWith("google_oauth_state");
+    expect(state.cookie.delete).toHaveBeenCalledWith("google_oauth_return_to");
     expect(oauth.exchangeGoogleCode).not.toHaveBeenCalled();
   });
 
@@ -147,5 +150,36 @@ describe("GET /api/integrations/google/callback", () => {
         lastError: undefined,
       }),
     );
+  });
+
+  it("preserves the pre-OAuth settings return target", async () => {
+    state.cookie.get.mockImplementation((name: string) => {
+      if (name === "google_oauth_state") return { value: "expected-state" };
+      if (name === "google_oauth_return_to") {
+        return { value: "/calendar?mode=week" };
+      }
+      return undefined;
+    });
+    const tokens = {
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      scope:
+        "openid email https://www.googleapis.com/auth/tasks.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly",
+    };
+    oauth.exchangeGoogleCode.mockResolvedValue(tokens);
+    oauth.hasGoogleTasksScope.mockReturnValue(true);
+    oauth.hasGoogleCalendarScopes.mockReturnValue(true);
+    const { GET } = await import(
+      "@/app/api/integrations/google/callback/route"
+    );
+
+    const response = await GET(
+      callbackRequest("?code=code&state=expected-state"),
+    );
+
+    expect(response.headers.get("location")).toBe(
+      "http://delta.test/settings/calendar?google=connected&returnTo=%2Fcalendar%3Fmode%3Dweek",
+    );
+    expect(state.cookie.delete).toHaveBeenCalledWith("google_oauth_return_to");
   });
 });

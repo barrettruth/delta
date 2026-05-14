@@ -194,6 +194,7 @@ describe("listTasks", () => {
         privacy: "[private]",
         transparency: "transparent",
         htmlLink: "https://calendar.google.com/event?eid=event-1",
+        googleAccountEmail: "archive@example.com",
       },
     });
 
@@ -205,7 +206,8 @@ describe("listTasks", () => {
       sourceKindLabel: "calendar",
       sourceTitle: "Work",
       readOnly: true,
-      htmlLink: "https://calendar.google.com/event?eid=event-1",
+      htmlLink:
+        "https://calendar.google.com/event?eid=event-1&authuser=archive%40example.com",
       attributes: ["read-only", "private", "free", "hidden"],
     });
   });

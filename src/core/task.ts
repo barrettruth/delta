@@ -182,7 +182,19 @@ function sourceAttributes(
 
 function calendarHtmlLink(metadata: Record<string, unknown>): string | null {
   const raw = nestedRecord(metadata, "raw");
-  return stringField(metadata.htmlLink) ?? stringField(raw.htmlLink);
+  const htmlLink = stringField(metadata.htmlLink) ?? stringField(raw.htmlLink);
+  const googleAccountEmail = stringField(metadata.googleAccountEmail);
+  if (!htmlLink || !googleAccountEmail) return htmlLink;
+
+  try {
+    const url = new URL(htmlLink);
+    if (!url.searchParams.has("authuser")) {
+      url.searchParams.set("authuser", googleAccountEmail);
+    }
+    return url.toString();
+  } catch {
+    return htmlLink;
+  }
 }
 
 function buildTaskSourceInfo(row: {

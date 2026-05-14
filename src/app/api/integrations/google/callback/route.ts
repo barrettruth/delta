@@ -14,10 +14,25 @@ import { GOOGLE_OAUTH_SCOPES } from "@/core/google/types";
 import { db } from "@/db";
 import { unauthorized } from "@/lib/auth-responses";
 import { getApiKeyUserOrLocalOwnerFromRequest } from "@/lib/request-auth";
+import {
+  SETTINGS_RETURN_TO_PARAM,
+  safeSettingsReturnTo,
+} from "@/lib/settings-navigation";
 
-function redirectToSettings(request: Request, status: string): NextResponse {
+const GOOGLE_OAUTH_STATE_COOKIE = "google_oauth_state";
+const GOOGLE_OAUTH_RETURN_TO_COOKIE = "google_oauth_return_to";
+
+function redirectToSettings(
+  request: Request,
+  status: string,
+  returnTo = "/",
+): NextResponse {
   const url = new URL("/settings/calendar", googlePublicOrigin(request));
   url.searchParams.set("google", status);
+  const safeReturnTo = safeSettingsReturnTo(returnTo);
+  if (safeReturnTo !== "/") {
+    url.searchParams.set(SETTINGS_RETURN_TO_PARAM, safeReturnTo);
+  }
   return NextResponse.redirect(url);
 }
 
@@ -26,17 +41,21 @@ export async function GET(request: Request) {
   if (!user) return unauthorized();
 
   const url = new URL(request.url);
+  const cookieStore = await cookies();
+  const returnTo = safeSettingsReturnTo(
+    cookieStore.get(GOOGLE_OAUTH_RETURN_TO_COOKIE)?.value,
+  );
+  const storedState = cookieStore.get(GOOGLE_OAUTH_STATE_COOKIE)?.value;
+  cookieStore.delete(GOOGLE_OAUTH_RETURN_TO_COOKIE);
+  cookieStore.delete(GOOGLE_OAUTH_STATE_COOKIE);
   const error = url.searchParams.get("error");
-  if (error) return redirectToSettings(request, "denied");
+  if (error) return redirectToSettings(request, "denied", returnTo);
 
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const cookieStore = await cookies();
-  const storedState = cookieStore.get("google_oauth_state")?.value;
-  cookieStore.delete("google_oauth_state");
 
   if (!code || !state || state !== storedState) {
-    return redirectToSettings(request, "invalid-state");
+    return redirectToSettings(request, "invalid-state", returnTo);
   }
 
   try {
@@ -47,10 +66,10 @@ export async function GET(request: Request) {
       existing?.tokens,
     );
     if (!hasGoogleTasksScope(tokens)) {
-      return redirectToSettings(request, "missing-tasks-scope");
+      return redirectToSettings(request, "missing-tasks-scope", returnTo);
     }
     if (!hasGoogleCalendarScopes(tokens)) {
-      return redirectToSettings(request, "missing-calendar-scope");
+      return redirectToSettings(request, "missing-calendar-scope", returnTo);
     }
     const profile = await fetchGoogleUserInfo(tokens.accessToken);
     saveGoogleIntegration(db, user.id, tokens, {
@@ -62,8 +81,8 @@ export async function GET(request: Request) {
       lastError: undefined,
     });
 
-    return redirectToSettings(request, "connected");
+    return redirectToSettings(request, "connected", returnTo);
   } catch {
-    return redirectToSettings(request, "failed");
+    return redirectToSettings(request, "failed", returnTo);
   }
 }

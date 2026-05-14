@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useStatusBar } from "@/contexts/status-bar";
 import {
@@ -13,6 +13,14 @@ import {
   type NlpProviderId,
   type NlpSettingsProviderId,
 } from "@/core/provider-registry";
+import {
+  notifyDashboardTasksChanged,
+  syncSummaryChangedTasks,
+} from "@/lib/dashboard-refresh";
+import {
+  SETTINGS_RETURN_TO_PARAM,
+  safeSettingsReturnTo,
+} from "@/lib/settings-navigation";
 import {
   ProviderSettingsList,
   testSettingsProviderApiKey,
@@ -163,6 +171,7 @@ export function CalendarSettingsSection({
 }) {
   const statusBar = useStatusBar();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<ProviderTab>("google");
   const [google, setGoogle] = useState<GoogleSummary>(
@@ -314,7 +323,15 @@ export function CalendarSettingsSection({
   }
 
   function handleGoogleConnect() {
-    window.location.href = "/api/integrations/google/connect";
+    const returnTo = safeSettingsReturnTo(
+      searchParams.get(SETTINGS_RETURN_TO_PARAM),
+    );
+    const params = new URLSearchParams();
+    if (returnTo !== "/") params.set(SETTINGS_RETURN_TO_PARAM, returnTo);
+    const query = params.toString();
+    window.location.href = `/api/integrations/google/connect${
+      query ? `?${query}` : ""
+    }`;
   }
 
   async function handleGoogleDisconnect() {
@@ -368,6 +385,7 @@ export function CalendarSettingsSection({
         tasksLastResult: result,
       }));
       statusBar.message(formatPullStatus(result));
+      if (syncSummaryChangedTasks(result)) notifyDashboardTasksChanged();
     } catch {
       statusBar.clearOperation();
       statusBar.error("google tasks pull failed");
@@ -402,7 +420,6 @@ export function CalendarSettingsSection({
         calendarSources: "sources" in data ? data.sources : [],
       }));
       statusBar.message("google calendars refreshed");
-      router.refresh();
     } catch {
       statusBar.clearOperation();
       statusBar.error("google calendar refresh failed");
@@ -440,7 +457,7 @@ export function CalendarSettingsSection({
         calendarLastResult: result,
       }));
       statusBar.message(formatCalendarPullStatus(result));
-      router.refresh();
+      if (syncSummaryChangedTasks(result)) notifyDashboardTasksChanged();
     } catch {
       statusBar.clearOperation();
       statusBar.error("google calendar pull failed");
@@ -483,7 +500,6 @@ export function CalendarSettingsSection({
       statusBar.message(
         `${updated.enabled ? "enabled" : "disabled"} ${updated.title}`,
       );
-      router.refresh();
     } catch {
       statusBar.error("failed to update google calendar");
     } finally {
