@@ -30,6 +30,7 @@ describe("Google Calendar event mapper", () => {
       etag: '"etag-1"',
       status: "confirmed",
       summary: "Planning",
+      htmlLink: "https://calendar.google.com/event?eid=event-1",
       description:
         '<p>Discuss <strong>roadmap</strong><br><a href="https://example.com/doc">doc</a></p>',
       location: "Conference room",
@@ -64,6 +65,10 @@ describe("Google Calendar event mapper", () => {
       organizer: { email: "organizer@example.com" },
       creator: { email: "creator@example.com" },
       source: { title: "source", url: "https://example.com/source" },
+      extendedProperties: {
+        private: { delta: "private-value" },
+        shared: { team: "platform" },
+      },
     });
 
     expect(event).toMatchObject({
@@ -106,6 +111,7 @@ describe("Google Calendar event mapper", () => {
     expect(event.metadata).toMatchObject({
       calendarId: "work@example.com",
       eventId: "event-1",
+      htmlLink: "https://calendar.google.com/event?eid=event-1",
       etag: '"etag-1"',
       sequence: 3,
       eventType: "default",
@@ -128,8 +134,17 @@ describe("Google Calendar event mapper", () => {
       },
       attendees: [{ email: "friend@example.com", responseStatus: "accepted" }],
       attachments: [{ fileUrl: "https://drive.example/file", title: "Deck" }],
+      reminders: {
+        useDefault: false,
+        overrides: [{ method: "popup", minutes: 10 }],
+      },
       organizer: { email: "organizer@example.com" },
       creator: { email: "creator@example.com" },
+      source: { title: "source", url: "https://example.com/source" },
+      extendedProperties: {
+        private: { delta: "private-value" },
+        shared: { team: "platform" },
+      },
       raw: expect.objectContaining({ id: "event-1" }),
     });
   });

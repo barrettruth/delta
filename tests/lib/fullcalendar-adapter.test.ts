@@ -124,6 +124,44 @@ describe("tasksToEvents — category colors + classNames", () => {
     expect(events[0].classNames).toContain("is-recurring");
     expect(events[0].classNames).toContain("is-virtual");
   });
+
+  it("adds imported-source classNames for read-only private and free Google events", () => {
+    const t: Task = {
+      ...createTask(db, userId, {
+        description: "Private focus",
+        startAt: "2026-03-05T10:00:00.000Z",
+        endAt: "2026-03-05T11:00:00.000Z",
+      }),
+      sourceInfo: {
+        provider: "google_calendar",
+        providerLabel: "Google Calendar",
+        sourceKind: "google_calendar",
+        sourceKindLabel: "calendar",
+        sourceTitle: "Work",
+        readOnly: true,
+        externalId: "work@example.com:event-1",
+        htmlLink: "https://calendar.google.com/event?eid=event-1",
+        attributes: ["read-only", "private", "free"],
+        transparency: "transparent",
+      },
+    };
+
+    const { events } = tasksToEvents([t], {
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    });
+
+    expect(events[0].classNames).toContain("is-readonly-import");
+    expect(events[0].classNames).toContain("is-transparent-import");
+    expect(events[0].classNames).toContain("is-private-import");
+    expect(events[0].extendedProps?.task).toMatchObject({
+      sourceInfo: {
+        readOnly: true,
+        attributes: ["read-only", "private", "free"],
+        transparency: "transparent",
+      },
+    });
+  });
 });
 
 describe("tasksToEvents — recurring masters", () => {

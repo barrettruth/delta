@@ -50,10 +50,9 @@ Or enable these APIs in Google Cloud Console:
 - Google Tasks API
 - Google Calendar API
 
-Current `main` calls the Google Tasks API for manual task pulls. Calendar API is
-included as the forward-compatible baseline because Delta already requests the
-Calendar events scope and Calendar sync/write features should not require a
-second infrastructure pass.
+Delta calls the Google Tasks API for manual task pulls, Google CalendarList for
+source discovery, and Google Calendar Events for manual selected-calendar
+pulls. Google sync is provider sync only; it is not Google login.
 
 Create a Google OAuth web client and add this exact authorized redirect URI:
 
@@ -96,13 +95,13 @@ https://www.googleapis.com/auth/tasks.readonly
 
 The manual pull paths call Google Tasks and selected Google Calendar sources.
 Discover calendar sources with Settings -> Calendar -> Google -> Refresh
-calendars after connecting an account, then use Pull now in the Google
-Calendars section.
+calendars after connecting an account, then use Pull now in the Google Tasks or
+Google Calendars section.
 
 Calendar discovery stores one `google_calendar` source row per syncable Google
 calendar. Visible calendars start enabled, hidden calendars are shown as
-`[hidden]` and start disabled, and calendars that expose only free/busy access
-are not selected for event-detail sync.
+`[hidden]` and start disabled, read-only calendars with event-detail access are
+included, and calendars that expose only free/busy access are excluded.
 
 Google Calendar pull stores one sync token per selected calendar source. If
 Google returns `410 Gone` for an expired token, Delta clears that token, does a
@@ -111,12 +110,21 @@ resync in Settings.
 
 Google Calendar imports are pull-only and read-only. `iCalUID` matches against
 existing `.ics` imports are counted as `duplicate skipped`; Delta does not
-auto-link those rows.
+auto-link those rows. Hidden-detail private events import as `private event`
+placeholders with `[private]` source attributes, and transparent events import
+as normal read-only rows marked `[free]`.
 
-Google Tasks sync is pull-only and read-only in v0.1. Imported Google Tasks are
-normal Delta task rows, but user mutation paths reject edits; only the sync
-engine updates them from Google. After a pull, read the Settings -> Calendar ->
-Google Tasks summary as:
+Delta preserves provider metadata for Calendar imports, including event IDs,
+`iCalUID`, `htmlLink`, `etag`, sequence, visibility, transparency, conference
+data, attendees, attachments, reminders, organizer, creator, extended
+properties, source calendar metadata, and the raw Google payload. Those fields
+are stored for later use; this v1 does not add attachment, attendee, reminder,
+free/busy, raw JSON, or icon-polish features.
+
+Google Tasks sync is pull-only and read-only. Imported Google Tasks and Google
+Calendar events are normal Delta task rows, but user mutation paths reject
+edits, deletes, and dependency edits; only the sync engine updates them from
+Google. After a pull, read the Settings -> Calendar -> Google Tasks summary as:
 
 - `created`: new Delta tasks imported from Google Tasks.
 - `updated`: Google changes applied locally.
@@ -125,6 +133,12 @@ Google Tasks summary as:
 
 Disconnecting Google hard-removes imported Google Tasks and Google Calendar
 rows, their external links, and Google sync source state.
+
+Manual smoke path after deploy: connect Google, refresh calendars, confirm
+selected and hidden source states, pull Tasks and Calendars, inspect Queue,
+Kanban, Calendar, and task detail source indicators, verify read-only mutation
+warnings, then disconnect Google and confirm imported Google rows and sync state
+are removed while local tasks remain.
 
 ## Geocoding providers
 
