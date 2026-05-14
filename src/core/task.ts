@@ -162,6 +162,14 @@ export function updateTask(db: Db, id: number, input: UpdateTaskInput): Task {
   return task;
 }
 
+export function updateTaskFromSync(
+  db: Db,
+  id: number,
+  input: UpdateTaskInput,
+): Task {
+  return updateTask(db, id, input);
+}
+
 export function completeTask(
   db: Db,
   userId: number,

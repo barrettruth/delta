@@ -10,6 +10,7 @@ describe("schema migrations", () => {
     "calendar_feed_tokens",
     "category_colors",
     "integration_configs",
+    "sync_sources",
     "task_dependencies",
     "task_external_links",
     "tasks",
@@ -296,6 +297,32 @@ describe("schema migrations", () => {
       expect(names).toContain("integration_configs");
       expect(columns).toContain("encrypted_tokens");
       expect(columns).toContain("provider");
+    });
+  });
+
+  it("adds durable sync source state and links external tasks to sources", () => {
+    withMigratedSchema((sqlite) => {
+      expect(columnNames(sqlite, "sync_sources")).toEqual([
+        "id",
+        "user_id",
+        "provider",
+        "source_kind",
+        "source_id",
+        "title",
+        "enabled",
+        "read_only",
+        "default_category",
+        "sync_cursor",
+        "last_synced_at",
+        "last_result",
+        "last_error",
+        "metadata",
+        "created_at",
+        "updated_at",
+      ]);
+      expect(columnNames(sqlite, "task_external_links")).toContain(
+        "sync_source_id",
+      );
     });
   });
 

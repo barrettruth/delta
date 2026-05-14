@@ -59,6 +59,31 @@ export const tasks = sqliteTable("tasks", {
   originalStartAt: text("original_start_at"),
 });
 
+export const syncSources = sqliteTable(
+  "sync_sources",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    sourceKind: text("source_kind").notNull(),
+    sourceId: text("source_id").notNull(),
+    title: text("title").notNull(),
+    enabled: integer("enabled").notNull().default(1),
+    readOnly: integer("read_only").notNull().default(1),
+    defaultCategory: text("default_category"),
+    syncCursor: text("sync_cursor"),
+    lastSyncedAt: text("last_synced_at"),
+    lastResult: text("last_result"),
+    lastError: text("last_error"),
+    metadata: text("metadata"),
+    createdAt: text("created_at").notNull().default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at").notNull().default(sql`(current_timestamp)`),
+  },
+  (t) => [unique().on(t.userId, t.provider, t.sourceKind, t.sourceId)],
+);
+
 export const taskExternalLinks = sqliteTable(
   "task_external_links",
   {
@@ -69,6 +94,9 @@ export const taskExternalLinks = sqliteTable(
     taskId: integer("task_id")
       .notNull()
       .references(() => tasks.id, { onDelete: "cascade" }),
+    syncSourceId: integer("sync_source_id").references(() => syncSources.id, {
+      onDelete: "set null",
+    }),
     provider: text("provider").$type<ExternalLinkProviderId>().notNull(),
     externalId: text("external_id").notNull(),
     metadata: text("metadata"),

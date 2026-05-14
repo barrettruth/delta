@@ -7,9 +7,15 @@ import {
 import {
   createExternalLink,
   getExternalLinkByProviderId,
+  isReadOnlyImportedTask,
   listExternalLinksForTask,
   updateExternalLink,
 } from "@/core/external-links";
+import {
+  createSyncSource,
+  SYNC_SOURCE_KIND,
+  SYNC_SOURCE_PROVIDER,
+} from "@/core/sync-sources";
 import { createTask } from "@/core/task";
 import type { Db } from "@/core/types";
 import { createTestDb, createTestUser } from "../helpers";
@@ -146,5 +152,34 @@ describe("external links", () => {
 
     expect(JSON.parse(updated.metadata ?? "{}")).toEqual({ etag: "etag-1" });
     expect(updated.lastSyncedAt).toBe("2026-05-11T12:00:00.000Z");
+  });
+
+  it("detects read-only imported tasks through linked sync source state", () => {
+    const source = createSyncSource(db, {
+      userId,
+      provider: SYNC_SOURCE_PROVIDER.google,
+      sourceKind: SYNC_SOURCE_KIND.googleTasksList,
+      sourceId: "list-1",
+      title: "Errands",
+      readOnly: 1,
+    });
+    const imported = createTask(db, userId, { description: "Imported" });
+    const local = createTask(db, userId, { description: "Local" });
+
+    createExternalLink(db, {
+      userId,
+      taskId: imported.id,
+      syncSourceId: source.id,
+      provider: EXTERNAL_LINK_PROVIDER.googleTasks,
+      externalId: "list-1:task-1",
+    });
+
+    expect(isReadOnlyImportedTask(db, userId, imported.id)).toBe(true);
+    expect(isReadOnlyImportedTask(db, userId, local.id)).toBe(false);
+
+    updateExternalLink(db, listExternalLinksForTask(db, imported.id)[0].id, {
+      syncSourceId: null,
+    });
+    expect(isReadOnlyImportedTask(db, userId, imported.id)).toBe(false);
   });
 });

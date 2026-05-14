@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { taskExternalLinks } from "@/db/schema";
+import { syncSources, taskExternalLinks } from "@/db/schema";
 import type { ExternalLinkProviderId } from "./external-link-providers";
 import type { Db } from "./types";
 
@@ -11,6 +11,7 @@ import type { Db } from "./types";
 export interface CreateExternalLinkInput {
   userId: number;
   taskId: number;
+  syncSourceId?: number | null;
   provider: ExternalLinkProviderId;
   externalId: string;
   metadata?: Record<string, unknown> | null;
@@ -18,6 +19,7 @@ export interface CreateExternalLinkInput {
 }
 
 export interface UpdateExternalLinkInput {
+  syncSourceId?: number | null;
   metadata?: Record<string, unknown> | null;
   lastSyncedAt?: string | null;
 }
@@ -36,6 +38,7 @@ export function createExternalLink(
     .values({
       userId: input.userId,
       taskId: input.taskId,
+      syncSourceId: input.syncSourceId ?? null,
       provider: input.provider,
       externalId: input.externalId,
       metadata: input.metadata ? JSON.stringify(input.metadata) : null,
@@ -57,6 +60,9 @@ export function updateExternalLink(
   };
   if ("metadata" in input) {
     patch.metadata = input.metadata ? JSON.stringify(input.metadata) : null;
+  }
+  if ("syncSourceId" in input) {
+    patch.syncSourceId = input.syncSourceId ?? null;
   }
   if ("lastSyncedAt" in input) {
     patch.lastSyncedAt = input.lastSyncedAt ?? null;
@@ -115,4 +121,25 @@ export function listExternalLinksForProvider(
       ),
     )
     .all();
+}
+
+export function isReadOnlyImportedTask(
+  db: Db,
+  userId: number,
+  taskId: number,
+): boolean {
+  const match = db
+    .select({ id: taskExternalLinks.id })
+    .from(taskExternalLinks)
+    .innerJoin(syncSources, eq(taskExternalLinks.syncSourceId, syncSources.id))
+    .where(
+      and(
+        eq(taskExternalLinks.userId, userId),
+        eq(taskExternalLinks.taskId, taskId),
+        eq(syncSources.readOnly, 1),
+      ),
+    )
+    .get();
+
+  return Boolean(match);
 }

@@ -44,6 +44,10 @@ vi.mock("@/core/task", () => ({
   updateTask: mocks.updateTask,
 }));
 
+vi.mock("@/core/external-links", () => ({
+  isReadOnlyImportedTask: vi.fn(() => false),
+}));
+
 vi.mock("@/core/recurrence-editing", () => ({
   deleteAllInstances: mocks.deleteAllInstances,
   deleteThisAndFuture: mocks.deleteThisAndFuture,

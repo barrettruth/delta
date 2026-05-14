@@ -2,6 +2,7 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 import { addDependency, removeDependency } from "@/core/dag";
+import { isReadOnlyImportedTask } from "@/core/external-links";
 import {
   deleteAllInstances,
   deleteThisAndFuture,
@@ -54,6 +55,10 @@ function badRequest(message: string): TaskMutationError {
   return new TaskMutationError(message, 400);
 }
 
+function readOnlyImportedTask(): TaskMutationError {
+  return badRequest("Imported provider tasks are read-only");
+}
+
 export function findOwnedTask(
   db: Db,
   userId: number,
@@ -72,6 +77,19 @@ export function requireOwnedTask(
 ): Task {
   const task = findOwnedTask(db, userId, taskId);
   if (!task) throw taskNotFound(message);
+  return task;
+}
+
+export function requireMutableOwnedTask(
+  db: Db,
+  userId: number,
+  taskId: number,
+  message = "Task not found",
+): Task {
+  const task = requireOwnedTask(db, userId, taskId, message);
+  if (isReadOnlyImportedTask(db, userId, taskId)) {
+    throw readOnlyImportedTask();
+  }
   return task;
 }
 
@@ -120,7 +138,7 @@ export function updateTaskForUser(
   input: UpdateTaskInput,
   options: UpdateTaskForUserOptions = {},
 ): Task {
-  const existing = requireOwnedTask(db, userId, taskId);
+  const existing = requireMutableOwnedTask(db, userId, taskId);
 
   if (
     existing.recurrence &&
@@ -151,7 +169,7 @@ export function saveTaskDetailsForUser(
   taskId: number,
   input: { task: UpdateTaskInput },
 ): ReturnType<typeof saveTaskDetails> {
-  requireOwnedTask(db, userId, taskId);
+  requireMutableOwnedTask(db, userId, taskId);
   return saveTaskDetails(db, userId, taskId, input);
 }
 
@@ -160,7 +178,7 @@ export function completeTaskForUser(
   userId: number,
   taskId: number,
 ): ReturnType<typeof completeTask> {
-  requireOwnedTask(db, userId, taskId);
+  requireMutableOwnedTask(db, userId, taskId);
   return completeTask(db, userId, taskId);
 }
 
@@ -179,7 +197,7 @@ export function deleteTaskForUser(
   taskId: number,
   options: DeleteTaskForUserOptions = {},
 ): DeleteTaskForUserResult {
-  const existing = requireOwnedTask(db, userId, taskId);
+  const existing = requireMutableOwnedTask(db, userId, taskId);
 
   if (existing.recurrence && options.scope === "this") {
     if (!options.instanceDate) {
@@ -211,8 +229,8 @@ export function addDependencyForUser(
   taskId: number,
   dependsOnId: number,
 ): void {
-  requireOwnedTask(db, userId, taskId);
-  requireOwnedTask(db, userId, dependsOnId, "Dependency task not found");
+  requireMutableOwnedTask(db, userId, taskId);
+  requireMutableOwnedTask(db, userId, dependsOnId, "Dependency task not found");
   addDependency(db, taskId, dependsOnId);
 }
 
@@ -222,7 +240,8 @@ export function removeDependencyForUser(
   taskId: number,
   dependsOnId: number,
 ): void {
-  requireOwnedTask(db, userId, taskId);
+  requireMutableOwnedTask(db, userId, taskId);
+  requireMutableOwnedTask(db, userId, dependsOnId, "Dependency task not found");
   removeDependency(db, taskId, dependsOnId);
 }
 
@@ -232,7 +251,7 @@ export function materializeInstanceForUser(
   masterId: number,
   instanceDate: string,
 ): Task {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   return materializeInstance(db, userId, masterId, instanceDate);
 }
 
@@ -243,6 +262,7 @@ export function completeVirtualInstanceForUser(
   instanceDate: string,
 ): Task {
   const task = materializeInstanceForUser(db, userId, masterId, instanceDate);
+  requireMutableOwnedTask(db, userId, task.id);
   return completeTask(db, userId, task.id).task;
 }
 
@@ -253,7 +273,7 @@ export function editRecurringInstanceForUser(
   instanceDate: string,
   updates: UpdateTaskInput,
 ): Task {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   return editThisInstance(db, userId, masterId, instanceDate, updates);
 }
 
@@ -264,7 +284,7 @@ export function editThisAndFutureForUser(
   instanceDate: string,
   updates: UpdateTaskInput,
 ): Task {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   return editThisAndFuture(db, userId, masterId, instanceDate, updates);
 }
 
@@ -274,7 +294,7 @@ export function editAllInstancesForUser(
   masterId: number,
   updates: UpdateTaskInput,
 ): Task {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   return editAllInstances(db, userId, masterId, updates);
 }
 
@@ -284,7 +304,7 @@ export function deleteThisInstanceForUser(
   masterId: number,
   instanceDate: string,
 ): void {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   deleteThisInstance(db, userId, masterId, instanceDate);
 }
 
@@ -294,7 +314,7 @@ export function deleteThisAndFutureForUser(
   masterId: number,
   instanceDate: string,
 ): void {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   deleteThisAndFuture(db, userId, masterId, instanceDate);
 }
 
@@ -303,7 +323,7 @@ export function deleteAllInstancesForUser(
   userId: number,
   masterId: number,
 ): void {
-  requireOwnedTask(db, userId, masterId);
+  requireMutableOwnedTask(db, userId, masterId);
   deleteAllInstances(db, masterId);
 }
 
@@ -323,7 +343,7 @@ export function undoTaskMutationsForUser(
   mutations: UndoTaskMutation[],
 ): void {
   for (const mutation of mutations) {
-    requireOwnedTask(db, userId, mutation.taskId);
+    requireMutableOwnedTask(db, userId, mutation.taskId);
   }
 
   for (const mutation of mutations) {
@@ -344,10 +364,16 @@ export function undoCompleteTaskMutationsForUser(
   mutations: UndoCompleteTaskMutation[],
 ): void {
   for (const mutation of mutations) {
-    requireOwnedTask(db, userId, mutation.taskId);
+    requireMutableOwnedTask(db, userId, mutation.taskId);
     if (mutation.spawnedTaskId) {
       const spawnedTask = getTask(db, mutation.spawnedTaskId);
       if (spawnedTask && spawnedTask.userId !== userId) throw taskNotFound();
+      if (
+        spawnedTask &&
+        isReadOnlyImportedTask(db, userId, mutation.spawnedTaskId)
+      ) {
+        throw readOnlyImportedTask();
+      }
     }
   }
 

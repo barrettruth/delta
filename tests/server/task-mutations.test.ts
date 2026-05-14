@@ -1,5 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTask, getTask, listTasks } from "@/core/task";
+import { EXTERNAL_LINK_PROVIDER } from "@/core/external-link-providers";
+import { createExternalLink } from "@/core/external-links";
+import {
+  createSyncSource,
+  SYNC_SOURCE_KIND,
+  SYNC_SOURCE_PROVIDER,
+} from "@/core/sync-sources";
+import {
+  createTask,
+  getTask,
+  listTasks,
+  updateTaskFromSync,
+} from "@/core/task";
 import type { Db } from "@/core/types";
 import {
   addDependencyForUser,
@@ -13,6 +25,25 @@ vi.mock("server-only", () => ({}));
 let db: Db;
 let userId: number;
 let otherUserId: number;
+
+function createReadOnlyImportedTask(description = "Imported") {
+  const source = createSyncSource(db, {
+    userId,
+    provider: SYNC_SOURCE_PROVIDER.google,
+    sourceKind: SYNC_SOURCE_KIND.googleTasksList,
+    sourceId: "list-1",
+    title: "Errands",
+  });
+  const task = createTask(db, userId, { description });
+  createExternalLink(db, {
+    userId,
+    taskId: task.id,
+    syncSourceId: source.id,
+    provider: EXTERNAL_LINK_PROVIDER.googleTasks,
+    externalId: `list-1:task-${task.id}`,
+  });
+  return task;
+}
 
 beforeEach(() => {
   db = createTestDb();
@@ -36,6 +67,47 @@ describe("task mutation service", () => {
       }),
     ).toThrow("Task not found");
     expect(getTask(db, otherTask.id)?.description).toBe("Other");
+  });
+
+  it("rejects user updates to read-only imported tasks", () => {
+    const task = createReadOnlyImportedTask();
+
+    expect(() =>
+      updateTaskForUser(db, userId, task.id, {
+        description: "User edit",
+      }),
+    ).toThrow("Imported provider tasks are read-only");
+    expect(getTask(db, task.id)?.description).toBe("Imported");
+  });
+
+  it("allows explicit sync-engine updates to read-only imported tasks", () => {
+    const task = createReadOnlyImportedTask();
+
+    const updated = updateTaskFromSync(db, task.id, {
+      description: "Remote edit",
+      status: "done",
+    });
+
+    expect(updated).toMatchObject({
+      description: "Remote edit",
+      status: "done",
+    });
+  });
+
+  it("rejects deletes and dependency edits for read-only imported tasks", () => {
+    const task = createReadOnlyImportedTask();
+    const local = createTask(db, userId, { description: "Local" });
+
+    expect(() => deleteTaskForUser(db, userId, task.id)).toThrow(
+      "Imported provider tasks are read-only",
+    );
+    expect(() => addDependencyForUser(db, userId, task.id, local.id)).toThrow(
+      "Imported provider tasks are read-only",
+    );
+    expect(() => addDependencyForUser(db, userId, local.id, task.id)).toThrow(
+      "Imported provider tasks are read-only",
+    );
+    expect(getTask(db, task.id)?.status).toBe("pending");
   });
 
   it("routes done status updates through recurring completion behavior", () => {
