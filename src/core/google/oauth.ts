@@ -316,9 +316,9 @@ function normalizeGoogleTasksPullSummary(
     updated: numberField(result.updated),
     cancelled: numberField(result.cancelled),
     skipped: numberField(result.skipped),
-    keptLocal: numberField(result.keptLocal),
-    conflicts: numberField(result.conflicts),
-    remoteOutdated: numberField(result.remoteOutdated),
-    deletedProtected: numberField(result.deletedProtected),
+    duplicateSkipped: numberField(result.duplicateSkipped),
+    errors: Array.isArray(result.errors)
+      ? result.errors.filter((item): item is string => typeof item === "string")
+      : [],
   };
 }

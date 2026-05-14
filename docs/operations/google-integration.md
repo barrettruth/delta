@@ -68,9 +68,9 @@ to Google Tasks.
 
 Use Settings -> Calendar -> Google -> Pull now.
 
-The pull is manual and repeatable. Delta stores Google task identity and sync
-metadata in `task_external_links`, so repeated pulls update existing imported
-tasks instead of creating duplicates.
+The pull is manual and repeatable. Delta stores Google task list state in
+`sync_sources` and task identity in `task_external_links`, so repeated pulls
+update existing imported tasks instead of creating duplicates.
 
 Mapped behavior:
 
@@ -83,25 +83,20 @@ Mapped behavior:
 
 Deleted Google tasks that were never imported are skipped.
 
-Google Tasks is pull-only in v0.1. Delta does not write local task changes back
-to Google Tasks. To avoid silent local data loss, imported tasks keep a
-last-applied Google snapshot. On pull, Delta compares that snapshot with the
-current local task and the incoming Google task:
+Google Tasks is pull-only and read-only in v0.1. Imported Google Tasks are
+normal Delta task rows, but user mutation paths reject edits; only the sync
+engine updates them from Google.
 
-- Google-only changes are applied locally.
-- Delta-only changes are kept and counted as `kept local`.
-- If both sides changed the same mapped field differently, Delta keeps the local
-  value and counts a `conflict`.
-- If Google deletes a task that has local mapped-field changes, Delta keeps the
-  local task and counts a protected remote/delete issue instead of cancelling it
-  silently.
+Disconnecting Google hard-removes imported Google Tasks rows, their external
+links, and their Google Task list source state. The Google account connection is
+also removed.
 
 The pull status summarizes the result, for example:
 
 ```text
-pulled 12, created 3, updated 4, kept 2 local, 1 conflict
+pulled 12, 3 created, 4 updated, 5 skipped
 ```
 
-The settings panel also shows the last result and sync issue counts. These
-counts are operator visibility only; v0.1 does not include a full conflict
-resolver UI.
+The settings panel also shows the last result. `skipped` means unchanged or
+intentionally ignored Google Tasks; deleted Google Tasks that were never
+imported are skipped.

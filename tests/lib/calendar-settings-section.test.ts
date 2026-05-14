@@ -41,7 +41,7 @@ describe("CalendarSettingsSection", () => {
     expect(html).toContain("pull now");
   });
 
-  it("renders Google Tasks pull summary and sync issue counts", () => {
+  it("renders Google Tasks pull summary", () => {
     const html = renderToStaticMarkup(
       createElement(
         StatusBarProvider,
@@ -62,10 +62,8 @@ describe("CalendarSettingsSection", () => {
               updated: 4,
               cancelled: 0,
               skipped: 2,
-              keptLocal: 2,
-              conflicts: 1,
-              remoteOutdated: 1,
-              deletedProtected: 0,
+              duplicateSkipped: 1,
+              errors: [],
             },
           },
         }),
@@ -73,8 +71,9 @@ describe("CalendarSettingsSection", () => {
     );
 
     expect(html).toContain("last result");
-    expect(html).toContain("12 seen / 3 created / 4 updated / 2 skipped");
-    expect(html).toContain("sync issues");
-    expect(html).toContain("2 kept local / 1 conflict / 1 remote held");
+    expect(html).toContain(
+      "12 seen / 3 created / 4 updated / 2 skipped / 1 duplicate skipped",
+    );
+    expect(html).not.toContain("sync issues");
   });
 });

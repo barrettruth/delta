@@ -24,10 +24,8 @@ describe("POST /api/integrations/google/tasks/pull", () => {
       updated: 1,
       cancelled: 0,
       skipped: 0,
-      keptLocal: 0,
-      conflicts: 0,
-      remoteOutdated: 0,
-      deletedProtected: 0,
+      duplicateSkipped: 0,
+      errors: [],
     });
     const { POST } = await import(
       "@/app/api/integrations/google/tasks/pull/route"
@@ -42,7 +40,7 @@ describe("POST /api/integrations/google/tasks/pull", () => {
     await expect(response.json()).resolves.toMatchObject({
       created: 1,
       updated: 1,
-      conflicts: 0,
+      errors: [],
     });
     expect(response.status).toBe(200);
     expect(pullGoogleTasks).toHaveBeenCalledWith({}, 7);

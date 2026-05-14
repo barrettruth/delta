@@ -37,12 +37,6 @@ export interface GoogleIntegrationMetadata {
 export interface GoogleTasksSyncMetadata {
   lastPulledAt?: string;
   lastResult?: GoogleTasksPullSummary;
-  lists?: Record<string, GoogleTaskListSyncState>;
-}
-
-export interface GoogleTaskListSyncState {
-  title?: string;
-  updatedMin?: string;
 }
 
 export interface GoogleTaskList {
@@ -81,24 +75,9 @@ export interface GoogleTasksPullSummary {
   updated: number;
   cancelled: number;
   skipped: number;
-  keptLocal: number;
-  conflicts: number;
-  remoteOutdated: number;
-  deletedProtected: number;
+  duplicateSkipped: number;
+  errors: string[];
 }
-
-export type GoogleTasksSyncState =
-  | "clean"
-  | "local_modified"
-  | "remote_outdated"
-  | "conflict";
-
-export type GoogleTasksMappedField =
-  | "description"
-  | "notes"
-  | "due"
-  | "status"
-  | "category";
 
 export interface GoogleTasksMappedSnapshot {
   description: string;

@@ -96,19 +96,18 @@ https://www.googleapis.com/auth/tasks.readonly
 The current manual pull path calls Google Tasks only. Use
 Settings -> Calendar -> Google -> Pull now after connecting an account.
 
-Google Tasks sync is pull-only in v0.1. Delta preserves local edits to imported
-mapped fields instead of overwriting them silently. After a pull, read the
-Settings -> Calendar -> Google Tasks summary as:
+Google Tasks sync is pull-only and read-only in v0.1. Imported Google Tasks are
+normal Delta task rows, but user mutation paths reject edits; only the sync
+engine updates them from Google. After a pull, read the Settings -> Calendar ->
+Google Tasks summary as:
 
 - `created`: new Delta tasks imported from Google Tasks.
-- `updated`: remote-only Google changes applied locally.
+- `updated`: Google changes applied locally.
+- `cancelled`: already-imported Google tasks cancelled after remote deletion.
 - `skipped`: Google tasks that were unchanged or intentionally ignored.
-- `kept local`: local Delta edits were preserved because Google had no newer
-  value for those fields.
-- `conflict`: Delta and Google changed the same mapped field differently; Delta
-  kept the local value.
-- `remote held` or `delete protected`: Google had a remote change or deletion
-  that Delta did not apply because local mapped fields had diverged.
+
+Disconnecting Google hard-removes imported Google Tasks rows, their external
+links, and their Google Task list source state.
 
 ## Geocoding providers
 
