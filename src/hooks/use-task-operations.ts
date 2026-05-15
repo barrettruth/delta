@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   completeTaskAction,
   deleteTaskAction,
@@ -10,15 +10,23 @@ import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import type { Task, TaskStatus } from "@/core/types";
+import { startShortcutPerf } from "@/lib/shortcut-perf";
 import {
   buildTaskMap,
   buildTaskUndoEntry,
+  optimisticTaskForOperation,
   shouldPromptForRecurringDelete,
 } from "@/lib/task-operations";
 import {
   type RecurrenceDeleteController,
   useRecurrenceDelete,
 } from "./use-recurrence-delete";
+
+async function fetchTaskSnapshot(taskId: number): Promise<Task | null> {
+  const response = await fetch(`/api/tasks/${taskId}`);
+  if (!response.ok) return null;
+  return response.json();
+}
 
 export interface TaskOperations {
   completeTasks: (taskIds: number[]) => void;
@@ -40,6 +48,21 @@ export function useTaskOperations<T extends Task>({
   const statusBar = useStatusBar();
   const recurrenceDelete = useRecurrenceDelete();
   const taskById = useMemo(() => buildTaskMap(tasks), [tasks]);
+  const mutationSeqRef = useRef(0);
+  const latestMutationTokenByTaskRef = useRef(new Map<number, number>());
+
+  const beginMutation = useCallback((taskId: number): number => {
+    const token = mutationSeqRef.current + 1;
+    mutationSeqRef.current = token;
+    latestMutationTokenByTaskRef.current.set(taskId, token);
+    return token;
+  }, []);
+
+  const isCurrentMutation = useCallback(
+    (taskId: number, token: number): boolean =>
+      latestMutationTokenByTaskRef.current.get(taskId) === token,
+    [],
+  );
 
   const mutableTaskIds = useCallback(
     (taskIds: number[]) => {
@@ -91,6 +114,7 @@ export function useTaskOperations<T extends Task>({
     (taskIds: number[]) => {
       taskIds = mutableTaskIds(taskIds);
       if (taskIds.length === 0) return;
+      const metric = startShortcutPerf("task.complete");
       const entry = buildTaskUndoEntry({
         op: "complete",
         taskIds,
@@ -98,17 +122,54 @@ export function useTaskOperations<T extends Task>({
       });
       undo.push(entry);
 
-      for (const taskId of taskIds) {
-        void completeTaskAction(taskId).then((result) => {
-          reportActionError(result);
-          const mutation = entry.mutations.find((m) => m.taskId === taskId);
-          if (mutation && result && "data" in result) {
-            mutation.spawnedTaskId = result.data?.spawnedTaskId ?? undefined;
+      const completeOne = async (taskId: number, token: number) => {
+        const previous = taskById.get(taskId);
+        const result = await completeTaskAction(taskId, { revalidate: false });
+        reportActionError(result);
+        if (!isCurrentMutation(taskId, token)) return;
+        const mutation = entry.mutations.find((m) => m.taskId === taskId);
+        if (mutation && "data" in result) {
+          mutation.spawnedTaskId = result.data.spawnedTaskId ?? undefined;
+        }
+        if ("data" in result) {
+          panel.setOptimisticTask(result.data.task);
+          if (result.data.spawnedTaskId) {
+            const spawned = await fetchTaskSnapshot(result.data.spawnedTaskId);
+            if (spawned && isCurrentMutation(taskId, token)) {
+              panel.setOptimisticTask(spawned);
+            }
           }
-        });
+        } else if (previous) {
+          panel.setOptimisticTask(previous);
+        }
+      };
+
+      const tokens = new Map<number, number>();
+      for (const taskId of taskIds) {
+        const previous = taskById.get(taskId);
+        tokens.set(taskId, beginMutation(taskId));
+        if (previous) {
+          panel.setOptimisticTask(
+            optimisticTaskForOperation(previous, "complete"),
+          );
+        }
       }
+      metric.markVisibleAfterFrame();
+      void Promise.all(
+        taskIds.map((taskId) => completeOne(taskId, tokens.get(taskId) ?? 0)),
+      ).finally(() => {
+        metric.markSettledAfterFrame();
+      });
     },
-    [mutableTaskIds, reportActionError, taskById, undo],
+    [
+      beginMutation,
+      isCurrentMutation,
+      mutableTaskIds,
+      panel,
+      reportActionError,
+      taskById,
+      undo,
+    ],
   );
 
   const deleteTasks = useCallback(
@@ -136,9 +197,35 @@ export function useTaskOperations<T extends Task>({
         }),
       );
 
+      const metric = startShortcutPerf("task.delete");
+      const deleteOne = async (taskId: number, token: number) => {
+        const previous = taskById.get(taskId);
+        const result = await deleteTaskAction(taskId, { revalidate: false });
+        reportActionError(result);
+        if (!isCurrentMutation(taskId, token)) return;
+        if ("data" in result) {
+          panel.setOptimisticTask(result.data);
+        } else if (previous) {
+          panel.setOptimisticTask(previous);
+        }
+      };
+
+      const tokens = new Map<number, number>();
       for (const taskId of taskIds) {
-        void deleteTaskAction(taskId).then(reportActionError);
+        const previous = taskById.get(taskId);
+        tokens.set(taskId, beginMutation(taskId));
+        if (previous) {
+          panel.setOptimisticTask(
+            optimisticTaskForOperation(previous, "delete"),
+          );
+        }
       }
+      metric.markVisibleAfterFrame();
+      void Promise.all(
+        taskIds.map((taskId) => deleteOne(taskId, tokens.get(taskId) ?? 0)),
+      ).finally(() => {
+        metric.markSettledAfterFrame();
+      });
       closePanelForDeletedTasks(taskIds);
     },
     [
@@ -148,6 +235,9 @@ export function useTaskOperations<T extends Task>({
       recurrenceDelete,
       taskById,
       undo,
+      panel,
+      beginMutation,
+      isCurrentMutation,
     ],
   );
 
@@ -164,11 +254,49 @@ export function useTaskOperations<T extends Task>({
         }),
       );
 
+      const metric = startShortcutPerf("task.status", status);
+      const updateOne = async (taskId: number, token: number) => {
+        const previous = taskById.get(taskId);
+        const result = await updateTaskAction(
+          taskId,
+          { status },
+          { revalidate: false },
+        );
+        reportActionError(result);
+        if (!isCurrentMutation(taskId, token)) return;
+        if ("data" in result) {
+          panel.setOptimisticTask(result.data);
+        } else if (previous) {
+          panel.setOptimisticTask(previous);
+        }
+      };
+
+      const tokens = new Map<number, number>();
       for (const taskId of taskIds) {
-        void updateTaskAction(taskId, { status }).then(reportActionError);
+        const previous = taskById.get(taskId);
+        tokens.set(taskId, beginMutation(taskId));
+        if (previous) {
+          panel.setOptimisticTask(
+            optimisticTaskForOperation(previous, "status-change", { status }),
+          );
+        }
       }
+      metric.markVisibleAfterFrame();
+      void Promise.all(
+        taskIds.map((taskId) => updateOne(taskId, tokens.get(taskId) ?? 0)),
+      ).finally(() => {
+        metric.markSettledAfterFrame();
+      });
     },
-    [mutableTaskIds, reportActionError, taskById, undo],
+    [
+      beginMutation,
+      isCurrentMutation,
+      mutableTaskIds,
+      panel,
+      reportActionError,
+      taskById,
+      undo,
+    ],
   );
 
   const moveTasksToStatus = useCallback(

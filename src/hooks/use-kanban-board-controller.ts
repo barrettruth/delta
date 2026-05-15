@@ -29,6 +29,7 @@ import {
 } from "@/lib/kanban-board";
 import { registerScopedKeydown } from "@/lib/keyboard";
 import { getKeymap } from "@/lib/keymap-defs";
+import { mergeOptimisticTasks } from "@/lib/task-operations";
 
 interface KanbanKeyBindings {
   colLeft: string;
@@ -122,7 +123,11 @@ export function useKanbanBoardController({
   const nav = useNavigation();
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
-  const taskOperations = useTaskOperations({ tasks });
+  const displayTasks = useMemo(
+    () => mergeOptimisticTasks(tasks, panel.optimisticTasks),
+    [tasks, panel.optimisticTasks],
+  );
+  const taskOperations = useTaskOperations({ tasks: displayTasks });
 
   const k = useMemo(() => getKanbanKeyBindings(), []);
   const [dragId, setDragId] = useState<number | null>(null);
@@ -156,7 +161,7 @@ export function useKanbanBoardController({
     searchRef,
     setQuery: setSearchQuery,
     totalCount,
-  } = useTaskSearch({ tasks, persistence: searchPersistence });
+  } = useTaskSearch({ tasks: displayTasks, persistence: searchPersistence });
 
   const grouped = useMemo(
     () => groupKanbanTasksByStatus(filteredTasks),

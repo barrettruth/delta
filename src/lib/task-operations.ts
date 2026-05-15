@@ -9,6 +9,8 @@ const OP_ID_PREFIX: Record<UndoOperationType, string> = {
 
 type UndoTaskSnapshot = Pick<Task, "id" | "status" | "completedAt">;
 
+export type OptimisticTaskOperation = "complete" | "delete" | "status-change";
+
 export function buildTaskMap<T extends UndoTaskSnapshot>(
   tasks: T[],
 ): Map<number, T> {
@@ -65,4 +67,49 @@ export function shouldPromptForRecurringDelete(
   task: Pick<Task, "recurrence" | "recurringTaskId"> | null | undefined,
 ): boolean {
   return Boolean(task?.recurrence || task?.recurringTaskId);
+}
+
+export function optimisticTaskForOperation<T extends Task>(
+  task: T,
+  operation: OptimisticTaskOperation,
+  {
+    status,
+    timestamp = new Date().toISOString(),
+  }: {
+    status?: TaskStatus;
+    timestamp?: string;
+  } = {},
+): T {
+  const nextStatus =
+    operation === "complete"
+      ? "done"
+      : operation === "delete"
+        ? "cancelled"
+        : (status ?? task.status);
+
+  return {
+    ...task,
+    status: nextStatus,
+    completedAt:
+      nextStatus === "done" || nextStatus === "cancelled" ? timestamp : null,
+  };
+}
+
+export function mergeOptimisticTasks<T extends Task>(
+  tasks: readonly T[],
+  optimisticTasks: ReadonlyMap<number, Task>,
+): T[] {
+  if (optimisticTasks.size === 0) return [...tasks];
+
+  const merged = tasks.map((task) => {
+    const optimistic = optimisticTasks.get(task.id);
+    return optimistic ? ({ ...task, ...optimistic } as T) : task;
+  });
+  const existingIds = new Set(tasks.map((task) => task.id));
+
+  for (const [id, task] of optimisticTasks) {
+    if (!existingIds.has(id)) merged.push(task as T);
+  }
+
+  return merged;
 }

@@ -30,6 +30,12 @@ import {
 } from "@/server/task-mutations";
 
 type ActionResult<T> = { data: T } | { error: string };
+type MutationOptions = { revalidate?: boolean };
+
+function revalidateDashboard(options?: MutationOptions) {
+  if (options?.revalidate === false) return;
+  revalidatePath("/", "layout");
+}
 
 function validationFailure(
   errors?: Parameters<typeof formatValidationErrors>[0],
@@ -63,6 +69,7 @@ export async function createTaskAction(
 export async function updateTaskAction(
   id: number,
   input: UpdateTaskInput,
+  options?: MutationOptions,
 ): Promise<ActionResult<Task>> {
   try {
     const validation = parseUpdateTaskInput(input);
@@ -72,7 +79,7 @@ export async function updateTaskAction(
 
     const user = await requireUser();
     const task = updateTaskForUser(db, user.id, id, validation.data);
-    revalidatePath("/", "layout");
+    revalidateDashboard(options);
     return { data: task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update task" };
@@ -106,11 +113,12 @@ export async function saveTaskDetailsAction(
 
 export async function completeTaskAction(
   id: number,
+  options?: MutationOptions,
 ): Promise<ActionResult<ReturnType<typeof completeTaskForUser>>> {
   try {
     const user = await requireUser();
     const result = completeTaskForUser(db, user.id, id);
-    revalidatePath("/", "layout");
+    revalidateDashboard(options);
     return { data: result };
   } catch (e) {
     return {
@@ -121,12 +129,13 @@ export async function completeTaskAction(
 
 export async function deleteTaskAction(
   id: number,
+  options?: MutationOptions,
 ): Promise<ActionResult<Task>> {
   try {
     const user = await requireUser();
     const result = deleteTaskForUser(db, user.id, id);
     if (result.kind !== "task") throw new Error("Failed to delete task");
-    revalidatePath("/", "layout");
+    revalidateDashboard(options);
     return { data: result.task };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to delete task" };
