@@ -11,9 +11,15 @@ A personal, self-hosted todo platform.
 
 ## Philosophy
 
-Delta is a personal system for keeping work visible, scheduled, and recoverable
-without handing the workflow to a hosted task manager. It should stay small
-enough to understand, durable enough to run for years, and direct enough that
-sync, import, export, and automation are predictable instead of magical.
+Too many task managers are either closed-source, behind a pay wall,
+or lacking core features. Delta provides the bare minimum: 
+calendaring, a kanban board, and integration with popular tooling.
+
+Designed to be self-hosted, Delta is plug-and-play. For example, I
+use Delta to report on and pull requests opened on select
+open-source repositories.
+
+Delta is functional and aesthetically pleasing while remaining small
+enough to understand, and durable enough to run for years.
 
 ## [Self-hosting](docs/self-hosting.md)
