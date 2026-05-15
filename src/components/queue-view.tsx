@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPinSimple, VideoCamera } from "@phosphor-icons/react";
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { TaskOperationDialogs } from "@/components/task-operation-dialogs";
 import { TaskSearchBar } from "@/components/task-search-bar";
 import { TaskSourceIndicator } from "@/components/task-source-indicator";
@@ -16,6 +16,7 @@ import { useKeyboard } from "@/hooks/use-keyboard";
 import { useTaskOperations } from "@/hooks/use-task-operations";
 import { useTaskSearch } from "@/hooks/use-task-search";
 import { registerScopedKeydown } from "@/lib/keyboard";
+import { mergeOptimisticTasks } from "@/lib/task-operations";
 import { cn, formatRelativeDate, isOverdue } from "@/lib/utils";
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
@@ -177,6 +178,10 @@ export function QueueView({
   const { openKeyboardHelp } = useKeyboardHelp();
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
+  const displayTasks = useMemo(
+    () => mergeOptimisticTasks(tasks, panel.optimisticTasks),
+    [tasks, panel.optimisticTasks],
+  );
   const {
     active: searchActive,
     clear: clearSearch,
@@ -188,7 +193,7 @@ export function QueueView({
     searchRef,
     setQuery: setSearchQuery,
     totalCount,
-  } = useTaskSearch({ tasks });
+  } = useTaskSearch({ tasks: displayTasks });
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 

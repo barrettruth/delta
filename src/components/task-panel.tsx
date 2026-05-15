@@ -32,6 +32,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useRecurrenceDelete } from "@/hooks/use-recurrence-delete";
 import { shouldHandleKeyboardEvent } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
+import { startShortcutPerf } from "@/lib/shortcut-perf";
+import { optimisticTaskForOperation } from "@/lib/task-operations";
+
+async function fetchTaskSnapshot(taskId: number): Promise<Task | null> {
+  const response = await fetch(`/api/tasks/${taskId}`);
+  if (!response.ok) return null;
+  return response.json();
+}
 
 export function TaskPanel({
   tasks,
@@ -54,6 +62,7 @@ export function TaskPanel({
     closeRequestSeq,
     optimisticTasks,
     setPendingEdit,
+    setOptimisticTask,
     clearPendingEdit,
     clearOptimisticTask,
     forceClose,
@@ -62,8 +71,8 @@ export function TaskPanel({
   const task = useMemo(
     () =>
       taskId
-        ? (tasks.find((candidate) => candidate.id === taskId) ??
-          optimisticTasks.get(taskId) ??
+        ? (optimisticTasks.get(taskId) ??
+          tasks.find((candidate) => candidate.id === taskId) ??
           null)
         : null,
     [tasks, taskId, optimisticTasks],
@@ -71,8 +80,15 @@ export function TaskPanel({
 
   useEffect(() => {
     if (taskId == null) return;
-    if (!optimisticTasks.has(taskId)) return;
-    if (tasks.some((candidate) => candidate.id === taskId)) {
+    const optimistic = optimisticTasks.get(taskId);
+    if (!optimistic) return;
+    const serverTask = tasks.find((candidate) => candidate.id === taskId);
+    if (
+      serverTask &&
+      serverTask.status === optimistic.status &&
+      serverTask.completedAt === optimistic.completedAt &&
+      serverTask.updatedAt === optimistic.updatedAt
+    ) {
       clearOptimisticTask(taskId);
     }
   }, [tasks, taskId, optimisticTasks, clearOptimisticTask]);
@@ -98,6 +114,21 @@ export function TaskPanel({
   });
 
   const handledCloseRequestRef = useRef(0);
+  const mutationSeqRef = useRef(0);
+  const latestMutationTokenByTaskRef = useRef(new Map<number, number>());
+
+  const beginMutation = useCallback((taskId: number): number => {
+    const token = mutationSeqRef.current + 1;
+    mutationSeqRef.current = token;
+    latestMutationTokenByTaskRef.current.set(taskId, token);
+    return token;
+  }, []);
+
+  const isCurrentMutation = useCallback(
+    (taskId: number, token: number): boolean =>
+      latestMutationTokenByTaskRef.current.get(taskId) === token,
+    [],
+  );
 
   const { category, description, location, meetingUrl } = form.values;
   const readOnlyMessage = task?.sourceInfo?.readOnly
@@ -168,19 +199,67 @@ export function TaskPanel({
         warnReadOnly();
         return;
       }
-      const result =
-        status === "done"
-          ? await completeTaskAction(task.id)
-          : await updateTaskAction(task.id, { status: status as TaskStatus });
-      if ("error" in result) {
-        if (result.error.toLowerCase().includes("read-only")) {
-          statusBar.warning(result.error);
+      const metric = startShortcutPerf("task-panel.status", status);
+      const token = beginMutation(task.id);
+      setOptimisticTask(
+        optimisticTaskForOperation(task, "status-change", {
+          status: status as TaskStatus,
+        }),
+      );
+      metric.markVisibleAfterFrame();
+      if (status === "done") {
+        const result = await completeTaskAction(task.id, { revalidate: false });
+        if (!isCurrentMutation(task.id, token)) {
+          metric.markSettledAfterFrame();
+          return;
+        }
+        if ("error" in result) {
+          setOptimisticTask(task);
+          if (result.error.toLowerCase().includes("read-only")) {
+            statusBar.warning(result.error);
+          } else {
+            statusBar.error(result.error);
+          }
         } else {
-          statusBar.error(result.error);
+          setOptimisticTask(result.data.task);
+          if (result.data.spawnedTaskId) {
+            const spawned = await fetchTaskSnapshot(result.data.spawnedTaskId);
+            if (spawned && isCurrentMutation(task.id, token)) {
+              setOptimisticTask(spawned);
+            }
+          }
+        }
+      } else {
+        const result = await updateTaskAction(
+          task.id,
+          { status: status as TaskStatus },
+          { revalidate: false },
+        );
+        if (!isCurrentMutation(task.id, token)) {
+          metric.markSettledAfterFrame();
+          return;
+        }
+        if ("error" in result) {
+          setOptimisticTask(task);
+          if (result.error.toLowerCase().includes("read-only")) {
+            statusBar.warning(result.error);
+          } else {
+            statusBar.error(result.error);
+          }
+        } else {
+          setOptimisticTask(result.data);
         }
       }
+      metric.markSettledAfterFrame();
     },
-    [statusBar, task, warnReadOnly],
+    [
+      beginMutation,
+      isCurrentMutation,
+      setOptimisticTask,
+      statusBar,
+      task,
+      warnReadOnly,
+    ],
   );
 
   const handleDelete = useCallback(() => {
@@ -212,19 +291,37 @@ export function TaskPanel({
       timestamp: Date.now(),
     });
     discardPendingSave();
-    void deleteTaskAction(task.id).then((result) => {
-      if (!("error" in result)) return;
+    const metric = startShortcutPerf("task-panel.delete");
+    const token = beginMutation(task.id);
+    const optimisticDeletedTask = optimisticTaskForOperation(task, "delete");
+    forceClose();
+    setOptimisticTask(optimisticDeletedTask);
+    metric.markVisibleAfterFrame();
+    void deleteTaskAction(task.id, { revalidate: false }).then((result) => {
+      if (!isCurrentMutation(task.id, token)) {
+        metric.markSettledAfterFrame();
+        return;
+      }
+      if (!("error" in result)) {
+        setOptimisticTask(result.data);
+        metric.markSettledAfterFrame();
+        return;
+      }
+      setOptimisticTask(task);
       if (result.error.toLowerCase().includes("read-only")) {
         statusBar.warning(result.error);
       } else {
         statusBar.error(result.error);
       }
+      metric.markSettledAfterFrame();
     });
-    forceClose();
   }, [
     discardPendingSave,
+    beginMutation,
     forceClose,
+    isCurrentMutation,
     recurrenceDelete,
+    setOptimisticTask,
     statusBar,
     task,
     undo,

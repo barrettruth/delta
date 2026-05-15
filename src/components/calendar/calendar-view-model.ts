@@ -132,7 +132,8 @@ export function mergeOptimisticCalendarTasks(
   const byId = new Map<number, Task>();
   for (const task of tasks) byId.set(task.id, task);
   for (const [id, extra] of optimisticTasks) {
-    if (!byId.has(id)) byId.set(id, extra);
+    const current = byId.get(id);
+    byId.set(id, current ? { ...current, ...extra } : extra);
   }
 
   if (optimisticMasterExdates.size > 0) {

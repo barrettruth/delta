@@ -5,11 +5,13 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { useNavigation } from "@/contexts/navigation";
+import { useSettingsLauncher } from "@/contexts/settings-launcher";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
 import { registerScopedKeydown } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { settingsEntryHrefForPath } from "@/lib/settings-navigation";
+import { startShortcutPerf } from "@/lib/shortcut-perf";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const LEADER_TIMEOUT_MS = 1200;
@@ -23,11 +25,15 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const { undo: performUndo } = useUndo();
   const panel = useTaskPanel();
   const { openKeyboardHelp } = useKeyboardHelp();
+  const { openSettings } = useSettingsLauncher();
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openHelp = useCallback(() => {
+    const metric = startShortcutPerf("help", "g?");
     openKeyboardHelp();
+    metric.markVisibleAfterFrame();
+    metric.markSettledAfterFrame();
   }, [openKeyboardHelp]);
 
   const viewKeys = useMemo(() => {
@@ -78,7 +84,10 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
           openHelp();
         } else if (key === "c") {
           e.preventDefault();
+          const metric = startShortcutPerf("task.create", "gc");
           panel.create();
+          metric.markVisibleAfterFrame();
+          metric.markSettledAfterFrame();
         } else if (key === ".") {
           e.preventDefault();
           const params = new URLSearchParams(searchParams.toString());
@@ -163,6 +172,10 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       if (viewRoute) {
         e.preventDefault();
         pushJump();
+        if (e.key === getKeymap("global.settings").triggerKey) {
+          openSettings(viewRoute, startShortcutPerf("settings", e.key));
+          return;
+        }
         router.push(viewRoute);
         return;
       }
@@ -181,6 +194,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       panel,
       viewKeys,
       openHelp,
+      openSettings,
     ],
   );
 
