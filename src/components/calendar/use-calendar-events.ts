@@ -1,9 +1,7 @@
 "use client";
 
-import type { EventInput } from "@fullcalendar/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Task } from "@/core/types";
-import type { TaskPreFill } from "@/lib/calendar-utils";
 import {
   hasAllDayEventInRange,
   type OptimisticUpdate,
@@ -12,8 +10,6 @@ import {
 } from "@/lib/fullcalendar-adapter";
 import {
   addOptimisticMasterExdate,
-  buildCalendarDraftEvent,
-  type CalendarPanelMode,
   mergeOptimisticCalendarTasks,
   pruneOptimisticMasterExdates,
 } from "./calendar-view-model";
@@ -22,8 +18,6 @@ export function useCalendarEvents({
   categoryColors,
   isTimeGridView,
   optimisticTasks,
-  panelMode,
-  panelPreFill,
   pendingEdits,
   rangeEnd,
   rangeStart,
@@ -32,8 +26,6 @@ export function useCalendarEvents({
   categoryColors: Record<string, string>;
   isTimeGridView: boolean;
   optimisticTasks: Map<number, Task>;
-  panelMode: CalendarPanelMode;
-  panelPreFill: TaskPreFill | null;
   pendingEdits: Map<number, Partial<Task>>;
   rangeEnd: Date;
   rangeStart: Date;
@@ -90,19 +82,10 @@ export function useCalendarEvents({
 
   virtualMetaRef.current = virtualMeta;
 
-  const draftEvent = useMemo(
-    () => buildCalendarDraftEvent(panelMode, panelPreFill),
-    [panelMode, panelPreFill],
-  );
-
-  const eventsWithDraft = useMemo<EventInput[]>(() => {
-    return draftEvent ? [...events, draftEvent] : events;
-  }, [events, draftEvent]);
-
   const hasVisibleAllDayEvents = useMemo(() => {
     if (!isTimeGridView) return true;
-    return hasAllDayEventInRange(eventsWithDraft, rangeStart, rangeEnd);
-  }, [eventsWithDraft, isTimeGridView, rangeStart, rangeEnd]);
+    return hasAllDayEventInRange(events, rangeStart, rangeEnd);
+  }, [events, isTimeGridView, rangeStart, rangeEnd]);
 
   useEffect(() => {
     if (isTimeGridView && !hasVisibleAllDayEvents && !allDayVisible) {
@@ -141,7 +124,6 @@ export function useCalendarEvents({
     allDaySlotVisible,
     clearOptimisticUpdate,
     events,
-    eventsWithDraft,
     hasVisibleAllDayEvents,
     pushOptimistic,
     setAllDayVisible,

@@ -67,7 +67,7 @@ interface FcCalendarProps {
     allDay: boolean,
     anchorRect: DOMRect,
   ) => void;
-  onDateClick: (date: Date, allDay: boolean, anchor: HTMLElement) => void;
+  onDateClick: (date: Date, allDay: boolean, anchorRect: DOMRect) => void;
   onDayHeaderClick: (date: Date) => void;
   onDatesSet: (start: Date, end: Date) => void;
 }
@@ -88,9 +88,12 @@ function getPointerRect(evt: MouseEvent | TouchEvent | null): DOMRect {
     if ("clientX" in evt) {
       x = evt.clientX;
       y = evt.clientY;
-    } else if (evt.touches?.[0]) {
-      x = evt.touches[0].clientX;
-      y = evt.touches[0].clientY;
+    } else {
+      const touch = evt.touches?.[0] ?? evt.changedTouches?.[0];
+      if (touch) {
+        x = touch.clientX;
+        y = touch.clientY;
+      }
     }
   }
   return new DOMRect(x, y, 0, 0);
@@ -246,7 +249,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
 
     const handleDateClick = useCallback(
       (arg: DateClickArg) => {
-        onDateClick(arg.date, arg.allDay, arg.dayEl);
+        onDateClick(arg.date, arg.allDay, getPointerRect(arg.jsEvent));
       },
       [onDateClick],
     );
@@ -316,6 +319,7 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
           dayMaxEvents
           fixedWeekCount
           scrollTime={`${String(Math.max(0, new Date().getHours() - 1)).padStart(2, "0")}:00:00`}
+          scrollTimeReset={false}
         />
       </div>
     );

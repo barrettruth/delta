@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   addCalendarDays,
-  buildCalendarDraftEvent,
   getCalendarHeaderTitle,
   getCalendarRange,
   isSameCalendarDay,
@@ -71,43 +70,6 @@ describe("calendar view range and title model", () => {
     expect(getCalendarHeaderTitle(new Date(2026, 2, 18, 14), "month")).toBe(
       "March 2026",
     );
-  });
-});
-
-describe("calendar draft event model", () => {
-  it("builds a timed draft event with the default 30 minute duration", () => {
-    const startAt = "2026-03-18T14:00:00.000Z";
-    const draft = buildCalendarDraftEvent("create", {
-      startAt,
-      allDay: 0,
-    });
-
-    expect(draft?.id).toBe("__draft__");
-    expect(draft?.start).toEqual(new Date(startAt));
-    expect(draft?.end).toEqual(new Date("2026-03-18T14:30:00.000Z"));
-    expect(draft?.allDay).toBe(false);
-    expect(draft?.classNames).toContain("is-draft");
-    expect(draft?.extendedProps).toMatchObject({
-      calendarBorderColor: "var(--border)",
-    });
-  });
-
-  it("builds an all-day draft event with an exclusive next-day end", () => {
-    const draft = buildCalendarDraftEvent("create", {
-      startAt: "2026-03-18T12:00:00.000Z",
-      allDay: 1,
-    });
-
-    expect(draft?.allDay).toBe(true);
-    expect(draft?.end).toEqual(new Date("2026-03-19T12:00:00.000Z"));
-  });
-
-  it("does not render a draft outside create mode", () => {
-    expect(
-      buildCalendarDraftEvent("edit", {
-        startAt: "2026-03-18T14:00:00.000Z",
-      }),
-    ).toBeNull();
   });
 });
 

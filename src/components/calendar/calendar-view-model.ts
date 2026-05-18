@@ -1,4 +1,3 @@
-import type { EventInput } from "@fullcalendar/core";
 import type { Task } from "@/core/types";
 import {
   formatDayTitle,
@@ -6,7 +5,6 @@ import {
   formatWeekRange,
   getWeekStart,
   startOfMonth,
-  type TaskPreFill,
 } from "@/lib/calendar-utils";
 import type { FcViewMode } from "./fc-calendar";
 
@@ -14,8 +12,6 @@ export interface CalendarDateRange {
   start: Date;
   end: Date;
 }
-
-export type CalendarPanelMode = "edit" | "create";
 
 export function isCalendarTimeGridView(viewMode: FcViewMode): boolean {
   return viewMode === "week" || viewMode === "day";
@@ -80,40 +76,6 @@ export function getCalendarHeaderTitle(
   if (viewMode === "day") return formatDayTitle(anchor);
   if (viewMode === "week") return formatWeekRange(getWeekStart(anchor));
   return formatMonthTitle(startOfMonth(anchor));
-}
-
-export function buildCalendarDraftEvent(
-  panelMode: CalendarPanelMode,
-  preFill: TaskPreFill | null,
-): EventInput | null {
-  if (panelMode !== "create" || !preFill) return null;
-  const { startAt, endAt, allDay } = preFill;
-  if (!startAt) return null;
-
-  const start = new Date(startAt);
-  let end: Date;
-  if (allDay) {
-    end = new Date(start);
-    end.setDate(end.getDate() + 1);
-  } else if (endAt) {
-    end = new Date(endAt);
-  } else {
-    end = new Date(start.getTime() + 30 * 60_000);
-  }
-
-  return {
-    id: "__draft__",
-    title: "(New event)",
-    start,
-    end,
-    allDay: Boolean(allDay),
-    editable: false,
-    classNames: ["is-draft"],
-    extendedProps: {
-      isDraft: true,
-      calendarBorderColor: "var(--border)",
-    },
-  };
 }
 
 function readTaskExdates(task: Task): string[] {

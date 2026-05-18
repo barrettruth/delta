@@ -1,4 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core";
+import type { DateClickArg } from "@fullcalendar/interaction";
 import type { ComponentProps, ReactNode } from "react";
 import { createElement, forwardRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -27,6 +28,27 @@ vi.mock("@fullcalendar/interaction", () => ({
 vi.mock("@fullcalendar/timegrid", () => ({ default: { name: "timeGrid" } }));
 
 import { FcCalendar } from "@/components/calendar/fc-calendar";
+
+class TestDOMRect {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+
+  constructor(
+    public x = 0,
+    public y = 0,
+    public width = 0,
+    public height = 0,
+  ) {
+    this.left = x;
+    this.top = y;
+    this.right = x + width;
+    this.bottom = y + height;
+  }
+}
+
+vi.stubGlobal("DOMRect", TestDOMRect);
 
 function renderCalendar(
   overrides: Partial<ComponentProps<typeof FcCalendar>> = {},
@@ -72,6 +94,65 @@ describe("FcCalendar", () => {
 
     expect(props?.selectable).toBe(true);
     expect(props?.selectMirror).toBeUndefined();
+  });
+
+  it("does not reset manual scroll when the date changes", () => {
+    const props = renderCalendar();
+
+    expect(props?.scrollTimeReset).toBe(false);
+  });
+
+  it("anchors date clicks to the pointer position", () => {
+    const onDateClick = vi.fn();
+    const props = renderCalendar({ onDateClick });
+    const dateClick = props?.dateClick as ((arg: DateClickArg) => void) | null;
+    const date = new Date(2026, 4, 14, 2);
+
+    dateClick?.({
+      date,
+      allDay: false,
+      dayEl: {} as HTMLElement,
+      jsEvent: { clientX: 123, clientY: 456 },
+    } as unknown as DateClickArg);
+
+    expect(onDateClick).toHaveBeenCalledWith(
+      date,
+      false,
+      expect.objectContaining({
+        x: 123,
+        y: 456,
+        width: 0,
+        height: 0,
+      }),
+    );
+  });
+
+  it("anchors touch date clicks from changed touches", () => {
+    const onDateClick = vi.fn();
+    const props = renderCalendar({ onDateClick });
+    const dateClick = props?.dateClick as ((arg: DateClickArg) => void) | null;
+    const date = new Date(2026, 4, 14, 2);
+
+    dateClick?.({
+      date,
+      allDay: false,
+      dayEl: {} as HTMLElement,
+      jsEvent: {
+        touches: [],
+        changedTouches: [{ clientX: 321, clientY: 654 }],
+      },
+    } as unknown as DateClickArg);
+
+    expect(onDateClick).toHaveBeenCalledWith(
+      date,
+      false,
+      expect.objectContaining({
+        x: 321,
+        y: 654,
+        width: 0,
+        height: 0,
+      }),
+    );
   });
 
   it("exposes week day headers as day-view navigation links", () => {

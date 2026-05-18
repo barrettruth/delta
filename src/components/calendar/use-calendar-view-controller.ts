@@ -66,8 +66,6 @@ export function useCalendarViewController({
     categoryColors,
     isTimeGridView,
     optimisticTasks,
-    panelMode: panel.mode,
-    panelPreFill: panel.preFill,
     pendingEdits,
     rangeEnd,
     rangeStart,
@@ -78,7 +76,6 @@ export function useCalendarViewController({
     allDaySlotVisible,
     clearOptimisticUpdate,
     events,
-    eventsWithDraft,
     hasVisibleAllDayEvents,
     pushOptimistic,
     setAllDayVisible,
@@ -253,9 +250,9 @@ export function useCalendarViewController({
   );
 
   const handleDateClick = useCallback(
-    (date: Date, allDay: boolean, anchorEl: HTMLElement) => {
+    (date: Date, allDay: boolean, anchorRect: DOMRect) => {
       setFocusedDate(date);
-      setPopoverAnchor(anchorEl);
+      setPopoverAnchor({ rect: anchorRect });
       if (allDay) {
         panel.create(buildDayPreFill(date));
       } else {
@@ -330,7 +327,7 @@ export function useCalendarViewController({
   return {
     allDaySlotVisible,
     anchor,
-    events: eventsWithDraft,
+    events,
     fcRef,
     focusedDate,
     goNext,

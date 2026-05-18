@@ -403,16 +403,3 @@ body > div[style*="overflow: scroll"]::-webkit-scrollbar {
 .fc-delta-root .fc .fc-daygrid-dot-event.fc-event-mirror {
   background: inherit;
 }
-
-/* Ghost draft event shown while the create popover is open. */
-.fc-delta-root .fc .fc-event.is-draft {
-  background: color-mix(in oklab, var(--muted-foreground) 12%, transparent);
-  border-color: var(--border);
-  opacity: 0.85;
-  pointer-events: none;
-}
-.fc-delta-root .fc .fc-event.is-draft .fc-event-title,
-.fc-delta-root .fc .fc-event.is-draft .fc-event-time {
-  font-style: italic;
-  color: var(--muted-foreground);
-}
