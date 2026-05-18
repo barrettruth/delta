@@ -1,11 +1,32 @@
 "use client";
 
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
+import type { CSSProperties, HTMLAttributes, Ref } from "react";
 import { TaskPanel } from "@/components/task-panel";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
 
 export type PopoverAnchor = HTMLElement | { rect: DOMRect } | null;
+
+function stablePositioner(
+  props: HTMLAttributes<HTMLDivElement> & {
+    ref?: Ref<HTMLDivElement>;
+  },
+) {
+  const style = props.style as CSSProperties | undefined;
+  const isMeasuring = style?.opacity === 0 || style?.opacity === "0";
+
+  return (
+    <div
+      {...props}
+      data-positioning={isMeasuring ? "" : undefined}
+      style={{
+        ...style,
+        visibility: isMeasuring ? "hidden" : style?.visibility,
+      }}
+    />
+  );
+}
 
 /**
  * Google-style event popover for the calendar view.
@@ -51,6 +72,7 @@ export function CalendarEventPopover({
           collisionAvoidance={{ side: "flip", align: "shift" }}
           sticky
           className="isolate z-50"
+          render={stablePositioner}
         >
           <PopoverPrimitive.Popup
             className="z-50 flex w-[min(480px,calc(100vw-2rem))] max-h-[min(640px,calc(100vh-5rem))] flex-col border border-border bg-popover text-popover-foreground shadow-[0_20px_60px_-20px_rgba(0,0,0,0.35)] outline-none overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"

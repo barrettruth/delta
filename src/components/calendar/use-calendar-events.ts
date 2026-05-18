@@ -1,7 +1,9 @@
 "use client";
 
+import type { EventInput } from "@fullcalendar/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Task } from "@/core/types";
+import type { TaskPreFill } from "@/lib/calendar-utils";
 import {
   hasAllDayEventInRange,
   type OptimisticUpdate,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/fullcalendar-adapter";
 import {
   addOptimisticMasterExdate,
+  buildCalendarQuickAddPreviewEvent,
   mergeOptimisticCalendarTasks,
   pruneOptimisticMasterExdates,
 } from "./calendar-view-model";
@@ -18,6 +21,9 @@ export function useCalendarEvents({
   categoryColors,
   isTimeGridView,
   optimisticTasks,
+  panelIsOpen,
+  panelMode,
+  panelPreFill,
   pendingEdits,
   rangeEnd,
   rangeStart,
@@ -26,6 +32,9 @@ export function useCalendarEvents({
   categoryColors: Record<string, string>;
   isTimeGridView: boolean;
   optimisticTasks: Map<number, Task>;
+  panelIsOpen: boolean;
+  panelMode: "edit" | "create";
+  panelPreFill: TaskPreFill | null;
   pendingEdits: Map<number, Partial<Task>>;
   rangeEnd: Date;
   rangeStart: Date;
@@ -82,10 +91,22 @@ export function useCalendarEvents({
 
   virtualMetaRef.current = virtualMeta;
 
+  const quickAddPreview = useMemo(
+    () =>
+      panelIsOpen && panelMode === "create"
+        ? buildCalendarQuickAddPreviewEvent(panelPreFill)
+        : null,
+    [panelIsOpen, panelMode, panelPreFill],
+  );
+
+  const eventsWithPreview = useMemo<EventInput[]>(() => {
+    return quickAddPreview ? [...events, quickAddPreview] : events;
+  }, [events, quickAddPreview]);
+
   const hasVisibleAllDayEvents = useMemo(() => {
     if (!isTimeGridView) return true;
-    return hasAllDayEventInRange(events, rangeStart, rangeEnd);
-  }, [events, isTimeGridView, rangeStart, rangeEnd]);
+    return hasAllDayEventInRange(eventsWithPreview, rangeStart, rangeEnd);
+  }, [eventsWithPreview, isTimeGridView, rangeStart, rangeEnd]);
 
   useEffect(() => {
     if (isTimeGridView && !hasVisibleAllDayEvents && !allDayVisible) {
@@ -124,6 +145,7 @@ export function useCalendarEvents({
     allDaySlotVisible,
     clearOptimisticUpdate,
     events,
+    eventsWithPreview,
     hasVisibleAllDayEvents,
     pushOptimistic,
     setAllDayVisible,

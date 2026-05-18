@@ -1,3 +1,4 @@
+import type { EventInput } from "@fullcalendar/core";
 import type { Task } from "@/core/types";
 import {
   formatDayTitle,
@@ -5,6 +6,7 @@ import {
   formatWeekRange,
   getWeekStart,
   startOfMonth,
+  type TaskPreFill,
 } from "@/lib/calendar-utils";
 import type { FcViewMode } from "./fc-calendar";
 
@@ -76,6 +78,36 @@ export function getCalendarHeaderTitle(
   if (viewMode === "day") return formatDayTitle(anchor);
   if (viewMode === "week") return formatWeekRange(getWeekStart(anchor));
   return formatMonthTitle(startOfMonth(anchor));
+}
+
+export function buildCalendarQuickAddPreviewEvent(
+  preFill: TaskPreFill | null,
+): EventInput | null {
+  if (!preFill?.startAt) return null;
+
+  const start = new Date(preFill.startAt);
+  let end: Date;
+  if (preFill.allDay) {
+    end = new Date(start);
+    end.setDate(end.getDate() + 1);
+  } else if (preFill.endAt) {
+    end = new Date(preFill.endAt);
+  } else {
+    end = new Date(start.getTime() + 30 * 60_000);
+  }
+
+  return {
+    id: "__quick_add_preview__",
+    title: "",
+    start,
+    end,
+    allDay: Boolean(preFill.allDay),
+    editable: false,
+    classNames: ["is-quick-add-preview"],
+    extendedProps: {
+      isQuickAddPreview: true,
+    },
+  };
 }
 
 function readTaskExdates(task: Task): string[] {
