@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   addCalendarDays,
+  buildCalendarQuickAddPreviewEvent,
   getCalendarHeaderTitle,
   getCalendarRange,
   isSameCalendarDay,
@@ -70,6 +71,51 @@ describe("calendar view range and title model", () => {
     expect(getCalendarHeaderTitle(new Date(2026, 2, 18, 14), "month")).toBe(
       "March 2026",
     );
+  });
+});
+
+describe("calendar quick-add preview event model", () => {
+  it("builds an outline preview with the default timed duration", () => {
+    const startAt = "2026-03-18T14:00:00.000Z";
+    const preview = buildCalendarQuickAddPreviewEvent({
+      startAt,
+      allDay: 0,
+    });
+
+    expect(preview?.id).toBe("__quick_add_preview__");
+    expect(preview?.title).toBe("");
+    expect(preview?.start).toEqual(new Date(startAt));
+    expect(preview?.end).toEqual(new Date("2026-03-18T14:30:00.000Z"));
+    expect(preview?.allDay).toBe(false);
+    expect(preview?.classNames).toContain("is-quick-add-preview");
+    expect(preview?.extendedProps).toMatchObject({
+      isQuickAddPreview: true,
+    });
+  });
+
+  it("uses the selected range end for range previews", () => {
+    const preview = buildCalendarQuickAddPreviewEvent({
+      startAt: "2026-03-18T14:00:00.000Z",
+      endAt: "2026-03-18T15:15:00.000Z",
+      allDay: 0,
+    });
+
+    expect(preview?.end).toEqual(new Date("2026-03-18T15:15:00.000Z"));
+  });
+
+  it("builds an all-day outline preview with an exclusive next-day end", () => {
+    const preview = buildCalendarQuickAddPreviewEvent({
+      startAt: "2026-03-18T12:00:00.000Z",
+      allDay: 1,
+    });
+
+    expect(preview?.allDay).toBe(true);
+    expect(preview?.end).toEqual(new Date("2026-03-19T12:00:00.000Z"));
+  });
+
+  it("does not render a preview without a start", () => {
+    expect(buildCalendarQuickAddPreviewEvent(null)).toBeNull();
+    expect(buildCalendarQuickAddPreviewEvent({ allDay: 0 })).toBeNull();
   });
 });
 

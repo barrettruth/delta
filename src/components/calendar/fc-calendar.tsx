@@ -269,7 +269,12 @@ export const FcCalendar = forwardRef<FcCalendarHandle, FcCalendarProps>(
     );
 
     const eventClassNames = useCallback(
-      (arg: EventContentArg) => (arg.isPast ? ["is-elapsed"] : []),
+      (arg: EventContentArg) =>
+        arg.event?.extendedProps?.isQuickAddPreview
+          ? []
+          : arg.isPast
+            ? ["is-elapsed"]
+            : [],
       [],
     );
 

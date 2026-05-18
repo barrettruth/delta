@@ -182,6 +182,24 @@ describe("FcCalendar", () => {
     ).toEqual([]);
   });
 
+  it("does not mark quick-add previews as elapsed events", () => {
+    const props = renderCalendar();
+    const eventClassNames = props?.eventClassNames as
+      | ((arg: EventContentArg) => string[])
+      | undefined;
+
+    expect(
+      eventClassNames?.({
+        isPast: true,
+        event: {
+          extendedProps: {
+            isQuickAddPreview: true,
+          },
+        },
+      } as unknown as EventContentArg),
+    ).toEqual([]);
+  });
+
   it("puts custom event chrome on the owned content wrapper", () => {
     const props = renderCalendar();
     const eventContent = props?.eventContent as
