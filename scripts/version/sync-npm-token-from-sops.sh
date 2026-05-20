@@ -59,6 +59,9 @@ sops -d --extract '["data"]' "$sops_file" |
   tea actions secrets set "$secret_name" --remote "$remote" --stdin >/dev/null
 
 echo "Setting ${expiry_var}=${expires_on}"
+if tea actions variables list "$expiry_var" --remote "$remote" >/dev/null 2>&1; then
+  tea actions variables delete "$expiry_var" --remote "$remote" --confirm >/dev/null
+fi
 tea actions variables set "$expiry_var" "$expires_on" --remote "$remote" >/dev/null
 
 echo "Forgejo Actions ${secret_name} synced; token value was not printed"
