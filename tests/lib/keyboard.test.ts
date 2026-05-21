@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { consumeEarlyKeyboardEvents } from "@/lib/early-keyboard";
 import {
   hasOpenDialog,
   isBrowserShortcut,
@@ -77,6 +78,10 @@ class KeyboardTarget {
 }
 
 describe("keyboard scope helpers", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("detects editable focus targets", () => {
     expect(isEditableElement(element("input"))).toBe(true);
     expect(isEditableElement(element("TEXTAREA"))).toBe(true);
@@ -199,5 +204,43 @@ describe("keyboard scope helpers", () => {
     expect(target.lastAddOptions).toEqual({ capture: true });
     unregister();
     expect(target.lastRemoveOptions).toEqual({ capture: true });
+  });
+
+  it("drains pre-hydration keyboard events once React handlers mount", () => {
+    const stop = vi.fn();
+    vi.stubGlobal("window", {
+      __deltaEarlyKeyboard: {
+        events: [
+          { key: "g", capturedAt: 1000 },
+          { key: "c", capturedAt: 1010 },
+          { key: "?", capturedAt: 1 },
+        ],
+        pendingGAt: null,
+        stop,
+      },
+    });
+
+    expect(consumeEarlyKeyboardEvents(1500, 1000)).toEqual([
+      { key: "g", capturedAt: 1000 },
+      { key: "c", capturedAt: 1010 },
+    ]);
+    expect(stop).toHaveBeenCalledOnce();
+    expect(window.__deltaEarlyKeyboard).toBeUndefined();
+  });
+
+  it("replays a pending pre-hydration leader when hydration wins the race", () => {
+    const stop = vi.fn();
+    vi.stubGlobal("window", {
+      __deltaEarlyKeyboard: {
+        events: [],
+        pendingGAt: 1000,
+        stop,
+      },
+    });
+
+    expect(consumeEarlyKeyboardEvents(1500)).toEqual([
+      { key: "g", capturedAt: 1000 },
+    ]);
+    expect(stop).toHaveBeenCalledOnce();
   });
 });

@@ -8,6 +8,10 @@ import { useNavigation } from "@/contexts/navigation";
 import { useSettingsLauncher } from "@/contexts/settings-launcher";
 import { useTaskPanel } from "@/contexts/task-panel";
 import { useUndo } from "@/contexts/undo";
+import {
+  consumeEarlyKeyboardEvents,
+  type EarlyKeyboardEvent,
+} from "@/lib/early-keyboard";
 import { registerScopedKeydown } from "@/lib/keyboard";
 import { getKeymap, matchesEvent } from "@/lib/keymap-defs";
 import { settingsEntryHrefForPath } from "@/lib/settings-navigation";
@@ -15,6 +19,17 @@ import { startShortcutPerf } from "@/lib/shortcut-perf";
 
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const LEADER_TIMEOUT_MS = 1200;
+
+function earlyEventToKeyboardEvent(event: EarlyKeyboardEvent): KeyboardEvent {
+  return {
+    key: event.key,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault: () => {},
+  } as KeyboardEvent;
+}
 
 export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   const router = useRouter();
@@ -199,6 +214,10 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
   );
 
   useEffect(() => {
+    for (const event of consumeEarlyKeyboardEvents()) {
+      handler(earlyEventToKeyboardEvent(event));
+    }
+
     return registerScopedKeydown(
       window,
       { scope: "global", taskPanelOpen: panel.isOpen },
