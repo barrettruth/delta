@@ -265,6 +265,7 @@ export function useKeyboard(actions: KeyboardActions) {
         taskPanelOpen: actionsRef.current.taskPanelOpen,
       }),
       handler,
+      { capture: true },
     );
   }, [handler]);
 

@@ -222,6 +222,7 @@ export function GlobalKeyboard({ categories = [] }: { categories?: string[] }) {
       window,
       { scope: "global", taskPanelOpen: panel.isOpen },
       handler,
+      { capture: true },
     );
   }, [handler, panel.isOpen]);
 
