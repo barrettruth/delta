@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { resolveCalendarPendingLeaderAction } from "@/components/calendar/use-calendar-keyboard";
 import { resolveQueuePendingLeaderAction } from "@/hooks/use-keyboard";
 import { consumeEarlyKeyboardEvents } from "@/lib/early-keyboard";
 import {
@@ -250,5 +251,12 @@ describe("keyboard scope helpers", () => {
     expect(resolveQueuePendingLeaderAction("?", "g")).toBe("help");
     expect(resolveQueuePendingLeaderAction("c", "g")).toBe("create");
     expect(resolveQueuePendingLeaderAction("x", "g")).toBeNull();
+  });
+
+  it("lets the calendar g leader delegate global continuations", () => {
+    expect(resolveCalendarPendingLeaderAction("g", "g")).toBe("scroll-top");
+    expect(resolveCalendarPendingLeaderAction("?", "g")).toBe("help");
+    expect(resolveCalendarPendingLeaderAction("c", "g")).toBe("create");
+    expect(resolveCalendarPendingLeaderAction("x", "g")).toBeNull();
   });
 });

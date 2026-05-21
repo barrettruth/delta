@@ -8,6 +8,22 @@ import type { FcCalendarHandle, FcViewMode } from "./fc-calendar";
 
 const LEADER_TIMEOUT_MS = 1200;
 
+export type CalendarPendingLeaderAction =
+  | "scroll-top"
+  | "help"
+  | "create"
+  | null;
+
+export function resolveCalendarPendingLeaderAction(
+  key: string,
+  scrollTopKey: string,
+): CalendarPendingLeaderAction {
+  if (key === scrollTopKey) return "scroll-top";
+  if (key === "?") return "help";
+  if (key === "c") return "create";
+  return null;
+}
+
 export function useCalendarKeyboard({
   dismissPopover,
   fcRef,
@@ -16,6 +32,8 @@ export function useCalendarKeyboard({
   goToday,
   hasVisibleAllDayEvents,
   moveFocusedDate,
+  onCreate,
+  onHelp,
   setAllDayVisible,
   setViewMode,
   viewMode,
@@ -27,6 +45,8 @@ export function useCalendarKeyboard({
   goToday: () => void;
   hasVisibleAllDayEvents: boolean;
   moveFocusedDate: (days: number) => void;
+  onCreate?: () => void;
+  onHelp?: () => void;
   setAllDayVisible: Dispatch<SetStateAction<boolean>>;
   setViewMode: (mode: FcViewMode) => void;
   viewMode: FcViewMode;
@@ -73,9 +93,23 @@ export function useCalendarKeyboard({
           clearTimeout(gTimer.current);
           gTimer.current = null;
         }
-        if (event.key === scrollTopKey && isTimeGrid) {
+        const leaderAction = resolveCalendarPendingLeaderAction(
+          event.key,
+          scrollTopKey,
+        );
+        if (leaderAction === "scroll-top" && isTimeGrid) {
           event.preventDefault();
           fcRef.current?.scrollToTime(0);
+          return;
+        }
+        if (leaderAction === "help") {
+          event.preventDefault();
+          onHelp?.();
+          return;
+        }
+        if (leaderAction === "create") {
+          event.preventDefault();
+          onCreate?.();
           return;
         }
         return;
@@ -193,6 +227,8 @@ export function useCalendarKeyboard({
       goToday,
       hasVisibleAllDayEvents,
       moveFocusedDate,
+      onCreate,
+      onHelp,
       setAllDayVisible,
       setViewMode,
       viewMode,
