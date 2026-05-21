@@ -8,6 +8,7 @@ import {
 import type { PopoverAnchor } from "@/components/calendar/event-popover";
 import type { RecurrenceStrategy } from "@/components/recurrence-strategy-dialog";
 import { readOnlyImportMessage } from "@/components/task-source-indicator";
+import { useKeyboardHelp } from "@/contexts/keyboard-help";
 import { useStatusBar } from "@/contexts/status-bar";
 import { useTaskPanel } from "@/contexts/task-panel";
 import type { Task } from "@/core/types";
@@ -37,6 +38,7 @@ export function useCalendarViewController({
 }) {
   const statusBar = useStatusBar();
   const panel = useTaskPanel();
+  const { openKeyboardHelp } = useKeyboardHelp();
   const { pendingEdits, optimisticTasks, setOptimisticTask } = panel;
   const recurrenceEdit = useRecurrenceEdit();
   const taskOperations = useTaskOperations({ tasks });
@@ -282,6 +284,23 @@ export function useCalendarViewController({
     goToday();
   }, [dismissPopover, goToday]);
 
+  const openCreatePanel = useCallback(() => {
+    const scrollerRect = fcRef.current
+      ?.getScrollerEl()
+      ?.getBoundingClientRect();
+    const x =
+      scrollerRect && scrollerRect.width > 0
+        ? scrollerRect.left + scrollerRect.width / 2
+        : window.innerWidth / 2;
+    const y =
+      scrollerRect && scrollerRect.height > 0
+        ? scrollerRect.top + Math.min(96, scrollerRect.height / 2)
+        : window.innerHeight / 3;
+
+    setPopoverAnchor({ rect: new DOMRect(x, y, 1, 1) });
+    panel.create();
+  }, [panel]);
+
   const setViewModeWithJump = useCallback(
     (mode: FcViewMode) => {
       if (mode === viewMode) return;
@@ -323,6 +342,8 @@ export function useCalendarViewController({
     goToday,
     hasVisibleAllDayEvents,
     moveFocusedDate,
+    onCreate: openCreatePanel,
+    onHelp: openKeyboardHelp,
     setAllDayVisible,
     setViewMode: setViewModeWithJump,
     viewMode,

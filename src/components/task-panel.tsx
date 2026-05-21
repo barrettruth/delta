@@ -179,9 +179,19 @@ export function TaskPanel({
 
   useEffect(() => {
     void taskId;
-    if (isOpen) {
-      requestAnimationFrame(() => form.titleRef.current?.focus());
-    }
+    if (!isOpen) return;
+
+    let settledFrame: number | null = null;
+    const focusTitle = () => form.titleRef.current?.focus();
+    const mountedFrame = requestAnimationFrame(() => {
+      focusTitle();
+      settledFrame = requestAnimationFrame(focusTitle);
+    });
+
+    return () => {
+      cancelAnimationFrame(mountedFrame);
+      if (settledFrame !== null) cancelAnimationFrame(settledFrame);
+    };
   }, [isOpen, taskId, form.titleRef]);
 
   useEffect(() => {
