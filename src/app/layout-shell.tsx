@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import { Providers } from "@/components/providers";
+import { EARLY_KEYBOARD_BUFFER_SCRIPT } from "@/lib/early-keyboard";
 import "./globals.css";
 
 const berkeleyMono = localFont({
@@ -84,6 +86,12 @@ export function RootLayoutShell({
       <body
         className={`${berkeleyMono.variable} ${signifier.variable} ${apercuMono.variable}`}
       >
+        <Script
+          id="delta-early-keyboard"
+          strategy="beforeInteractive"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static pre-hydration key buffer
+          dangerouslySetInnerHTML={{ __html: EARLY_KEYBOARD_BUFFER_SCRIPT }}
+        />
         {scan}
         <Providers>{children}</Providers>
       </body>
