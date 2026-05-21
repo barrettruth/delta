@@ -19,6 +19,18 @@ interface KeyboardActions {
   taskPanelOpen?: boolean;
 }
 
+export type QueuePendingLeaderAction = "jump-top" | "help" | "create" | null;
+
+export function resolveQueuePendingLeaderAction(
+  key: string,
+  gPrefix: string,
+): QueuePendingLeaderAction {
+  if (key === gPrefix) return "jump-top";
+  if (key === "?") return "help";
+  if (key === "c") return "create";
+  return null;
+}
+
 function rangeSet(tasks: Task[], a: number, b: number): Set<number> {
   const lo = Math.min(a, b);
   const hi = Math.max(a, b);
@@ -125,7 +137,8 @@ export function useKeyboard(actions: KeyboardActions) {
           clearTimeout(gTimer.current);
           gTimer.current = null;
         }
-        if (e.key === k.gPrefix) {
+        const leaderAction = resolveQueuePendingLeaderAction(e.key, k.gPrefix);
+        if (leaderAction === "jump-top") {
           e.preventDefault();
           if (tasks.length > 0) {
             actionsRef.current.onJump?.();
@@ -133,9 +146,14 @@ export function useKeyboard(actions: KeyboardActions) {
           }
           return;
         }
-        if (e.key === "?") {
+        if (leaderAction === "help") {
           e.preventDefault();
           actionsRef.current.onHelp?.();
+          return;
+        }
+        if (leaderAction === "create") {
+          e.preventDefault();
+          onCreate?.();
           return;
         }
         return;

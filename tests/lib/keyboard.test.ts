@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { resolveQueuePendingLeaderAction } from "@/hooks/use-keyboard";
 import { consumeEarlyKeyboardEvents } from "@/lib/early-keyboard";
 import {
   hasOpenDialog,
@@ -242,5 +243,12 @@ describe("keyboard scope helpers", () => {
       { key: "g", capturedAt: 1000 },
     ]);
     expect(stop).toHaveBeenCalledOnce();
+  });
+
+  it("lets the queue g leader delegate gc to task creation", () => {
+    expect(resolveQueuePendingLeaderAction("g", "g")).toBe("jump-top");
+    expect(resolveQueuePendingLeaderAction("?", "g")).toBe("help");
+    expect(resolveQueuePendingLeaderAction("c", "g")).toBe("create");
+    expect(resolveQueuePendingLeaderAction("x", "g")).toBeNull();
   });
 });
