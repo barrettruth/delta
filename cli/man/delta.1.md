@@ -24,7 +24,9 @@ Task CRUD and status changes. Running `delta task` with no verb defaults to
 `delta task list`.
 
 * `delta task list` \[`--from` date\] \[`--until` date\] \[filters\]:
-  List tasks. Accepts filter expressions and date range flags.
+  List tasks. Defaults to `status:pending` when no status filter is given.
+  Accepts filter expressions and date range flags. Use explicit filters such as
+  `status:wip` or `status:blocked` before claiming those states are empty.
 
 * `delta task add` description \[flags\]:
   Create a new task. The description is a positional argument (quote multi-word
@@ -147,7 +149,7 @@ iCal subscription management. Running `delta feed` with no verb shows the curren
 
 * `delta export` \[`--from` date\] \[`--until` date\] \[filters\]:
   Export tasks and events as iCal to stdout. Redirect to save:
-  `delta export > calendar.ics`.
+  `delta export > calendar.ics`. Accepts `status:` and `category:` filters.
 
 * `delta export --id` id:
   Export a single event as iCal.
@@ -234,8 +236,9 @@ Universal flags accepted by every command:
 
 ## FILTERS
 
-Filters use `key:value` syntax and are passed as positional arguments to list
-commands. Date-type keys support `.before` and `.after` modifiers.
+Filters use `key:value` syntax and are passed as positional arguments to task
+list and export commands. Date-type keys support `.before` and `.after`
+modifiers.
 
 ### Filter keys
 

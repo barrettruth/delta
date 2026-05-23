@@ -8,6 +8,12 @@ export interface DeltaConfig {
 
 export const DEFAULT_SERVER = "https://delta.barrettruth.com";
 
+let serverOverride: string | undefined;
+
+export function setServerOverride(server: string | undefined): void {
+  serverOverride = server;
+}
+
 export function readConfig(): DeltaConfig {
   const config: DeltaConfig = {};
 
@@ -21,6 +27,10 @@ export function readConfig(): DeltaConfig {
 
   if (process.env.DELTA_SERVER) {
     config.server = process.env.DELTA_SERVER;
+  }
+
+  if (serverOverride) {
+    config.server = serverOverride;
   }
 
   return config;

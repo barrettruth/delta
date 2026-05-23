@@ -30,7 +30,11 @@ Task CRUD and status changes\. Running \fBdelta task\fP with no verb defaults to
 .IP \(bu 2
 \fBdelta task list\fP [\fB\-\-from\fP date] [\fB\-\-until\fP date] [filters]:
 .br
-List tasks\. Accepts filter expressions and date range flags\.
+List tasks\. Defaults to \fBstatus:pending\fP when no status filter is given\.
+.br
+Accepts filter expressions and date range flags\. Use explicit filters such as
+.br
+\fBstatus:wip\fP or \fBstatus:blocked\fP before claiming those states are empty\.
 .IP \(bu 2
 \fBdelta task add\fP description [flags]:
 .br
@@ -213,7 +217,7 @@ category\.
 .br
 Export tasks and events as iCal to stdout\. Redirect to save:
 .br
-\fBdelta export > calendar\.ics\fP\|\.
+\fBdelta export > calendar\.ics\fP\|\. Accepts \fBstatus:\fP and \fBcategory:\fP filters\.
 .IP \(bu 2
 \fBdelta export \-\-id\fP id:
 .br
@@ -341,9 +345,11 @@ Print HTTP requests and responses to stderr\.
 .RE
 .SH FILTERS
 .P
-Filters use \fBkey:value\fP syntax and are passed as positional arguments to list
+Filters use \fBkey:value\fP syntax and are passed as positional arguments to task
 .br
-commands\. Date\-type keys support \fB\|\.before\fP and \fB\|\.after\fP modifiers\.
+list and export commands\. Date\-type keys support \fB\|\.before\fP and \fB\|\.after\fP
+.br
+modifiers\.
 .SS Filter keys
 
 .RS 1

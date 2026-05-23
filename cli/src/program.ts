@@ -9,8 +9,9 @@ import { registerHelp } from "./help.js";
 import { registerImportCommand } from "./import.js";
 import { registerIntegrationCommands } from "./integration.js";
 import { setDebug } from "./lib/client.js";
+import { setServerOverride } from "./lib/config.js";
 import { configure } from "./lib/output.js";
-import { registerTaskCommands } from "./task.js";
+import { listTasks, registerTaskCommands } from "./task.js";
 
 export function createProgram(version: string): Command {
   const program = new Command();
@@ -36,6 +37,7 @@ export function createProgram(version: string): Command {
         quiet: opts.quiet,
         jq: opts.jq,
       });
+      setServerOverride(opts.server);
       if (opts.debug) {
         setDebug(true);
       }
@@ -69,8 +71,8 @@ export function createProgram(version: string): Command {
   registerHelp(program);
   registerCompletionCommands(program);
 
-  program.action(() => {
-    task.commands.find((c) => c.name() === "list")?.parse(process.argv);
+  program.action(async () => {
+    await listTasks();
   });
 
   return program;
