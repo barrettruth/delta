@@ -27,6 +27,9 @@
             sqlite
             biome
             bun
+            (python3.withPackages (ps: [
+              ps.pyyaml
+            ]))
             curl
             just
           ];
