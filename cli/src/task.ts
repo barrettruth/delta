@@ -58,40 +58,72 @@ function addTaskFlags(cmd: Command): Command {
     .option("--status <status>", "Task status");
 }
 
+const TASK_LIST_HELP = `
+Defaults:
+  Without a status filter, only pending tasks are shown.
+
+Filters:
+  status:pending|wip|done|blocked|cancelled
+  category:<name>
+  due.before:<date>
+  due.after:<date>
+  sort:due|createdAt|order
+
+Examples:
+  delta task list status:wip --json
+  delta task list status:blocked --json
+  delta task list category:work sort:due
+`;
+
+export async function listTasks(
+  filterArgs: string[] | undefined = [],
+  opts: Record<string, string> = {},
+): Promise<void> {
+  const client = createClient();
+  const filters = parseFilters(filterArgs);
+  const params: Record<string, string> = {};
+
+  if (!filters.status) {
+    params.status = "pending";
+  } else {
+    params.status = filters.status.value;
+  }
+
+  if (filters.category) params.category = filters.category.value;
+  if (filters["due.before"])
+    params.due_before = parseDate(filters["due.before"].value);
+  if (filters["due.after"])
+    params.due_after = parseDate(filters["due.after"].value);
+  if (filters.sort) params.sort_by = filters.sort.value;
+
+  if (opts.from) params.due_after = parseDate(opts.from);
+  if (opts.until) params.due_before = parseDate(opts.until);
+
+  const tasks = await client.get<TaskResponse[]>("/api/tasks", params);
+  print(tasks, {
+    columns: ["id", "description", "category", "status", "due"],
+  });
+}
+
 export function registerTaskCommands(task: Command): void {
+  task.argument("[filters...]", "Task list filters");
+
   task
     .command("list")
-    .description("List tasks with filters")
+    .description("List tasks with filters (defaults to pending)")
+    .argument("[filters...]", "Filter expressions")
     .option("--from <date>", "Due date lower bound")
     .option("--until <date>", "Due date upper bound")
     .allowUnknownOption(false)
-    .action(async (opts: Record<string, string>, cmd: Command) => {
-      const client = createClient();
-      const remaining = cmd.args;
-      const filters = parseFilters(remaining);
-      const params: Record<string, string> = {};
-
-      if (!filters.status) {
-        params.status = "pending";
-      } else {
-        params.status = filters.status.value;
-      }
-
-      if (filters.category) params.category = filters.category.value;
-      if (filters["due.before"])
-        params.due_before = parseDate(filters["due.before"].value);
-      if (filters["due.after"])
-        params.due_after = parseDate(filters["due.after"].value);
-      if (filters.sort) params.sort_by = filters.sort.value;
-
-      if (opts.from) params.due_after = parseDate(opts.from);
-      if (opts.until) params.due_before = parseDate(opts.until);
-
-      const tasks = await client.get<TaskResponse[]>("/api/tasks", params);
-      print(tasks, {
-        columns: ["id", "description", "category", "status", "due"],
-      });
-    });
+    .addHelpText("after", TASK_LIST_HELP)
+    .action(
+      async (
+        filterArgs: string[] | undefined,
+        opts: Record<string, string>,
+      ) => {
+        await listTasks(filterArgs, opts);
+      },
+    );
 
   addTaskFlags(
     task
@@ -205,7 +237,7 @@ export function registerTaskCommands(task: Command): void {
       });
     });
 
-  task.action(() => {
-    task.commands.find((c) => c.name() === "list")?.parse(process.argv);
+  task.action(async (filterArgs: string[] | undefined) => {
+    await listTasks(filterArgs);
   });
 }

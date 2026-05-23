@@ -38,7 +38,7 @@ Run 'delta help <topic>' for detailed help:
 function filters(): string {
   return `Filter Syntax
 
-Filters are key:value pairs passed as positional args to list commands.
+Filters are key:value pairs passed as positional args to task list and export commands.
 Date keys support .before and .after modifiers.
 
   status:pending         Exact status match (pending|wip|done|blocked|cancelled)
@@ -51,7 +51,8 @@ Date range shorthand (on due date):
   --from monday --until friday
 
 Combine freely:
-  delta task list category:work due.before:eow sort:due`;
+  delta task list category:work due.before:eow sort:due
+  delta export status:wip category:work`;
 }
 
 function dates(): string {
